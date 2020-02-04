@@ -5,14 +5,14 @@ import izumi.sbtgen.model._
 object Izumi {
 
   object V {
-    val izumi = Version.VExpr("V.izumi")
+    val izumi = Version.VExpr("Izumi.version")
     // val collection_compat = Version.VExpr("V.collection_compat")
-    val kind_projector = Version.VExpr("V.kind_projector")
+    val kind_projector = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version")
     val scalatest = Version.VExpr("V.scalatest")
     // val shapeless = Version.VExpr("V.shapeless")
-    val cats = Version.VExpr("V.cats")
-    val cats_effect = Version.VExpr("V.cats_effect")
-    val zio = Version.VExpr("V.zio")
+    val cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version")
+    val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
+    val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
     val zio_interop_cats = Version.VExpr("V.zio_interop_cats")
     // val circe = Version.VExpr("V.circe")
     // val circe_generic_extras = Version.VExpr("V.circe_generic_extras")
@@ -33,6 +33,7 @@ object Izumi {
   }
 
   object PV {
+    val izumi = Version.VExpr("PV.izumi")
     val sbt_mdoc = Version.VExpr("PV.sbt_mdoc")
     val sbt_paradox_material_theme = Version.VExpr("PV.sbt_paradox_material_theme")
     val sbt_ghpages = Version.VExpr("PV.sbt_ghpages")
@@ -170,7 +171,7 @@ object Izumi {
   object Projects {
 
     final val plugins = Plugins(
-      Seq.empty,
+      Seq(Plugin("IzumiPlugin")),
       Seq(assemblyPluginJs, assemblyPluginJvm),
     )
 
@@ -476,6 +477,7 @@ object Izumi {
       SbtPlugin("com.typesafe.sbt", "sbt-ghpages", PV.sbt_ghpages),
       SbtPlugin("io.github.jonas", "sbt-paradox-material-theme", PV.sbt_paradox_material_theme),
       SbtPlugin("org.scalameta", "sbt-mdoc", PV.sbt_mdoc),
+      SbtPlugin("io.7mind.izumi", "sbt-izumi-deps", PV.izumi),
     )
   )
 }

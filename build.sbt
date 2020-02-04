@@ -7,11 +7,11 @@ disablePlugins(AssemblyPlugin)
 lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-model"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
-      "io.7mind.izumi" %% "fundamentals-collections" % V.izumi,
-      "io.7mind.izumi" %% "fundamentals-platform" % V.izumi,
-      "io.7mind.izumi" %% "fundamentals-functional" % V.izumi
+      "io.7mind.izumi" %% "fundamentals-collections" % Izumi.version,
+      "io.7mind.izumi" %% "fundamentals-platform" % Izumi.version,
+      "io.7mind.izumi" %% "fundamentals-functional" % Izumi.version
     )
   )
   .settings(
@@ -84,6 +84,7 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
       "2.13.1"
     )
   )
+  .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-core"))
@@ -92,10 +93,10 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "com.lihaoyi" %% "fastparse" % V.fastparse,
-      "io.7mind.izumi" %% "fundamentals-reflection" % V.izumi
+      "io.7mind.izumi" %% "fundamentals-reflection" % Izumi.version
     )
   )
   .settings(
@@ -168,20 +169,21 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
       "2.13.1"
     )
   )
+  .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-scala"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
-      "org.typelevel" %% "cats-core" % V.cats,
-      "org.typelevel" %% "cats-effect" % V.cats_effect,
-      "dev.zio" %% "zio" % V.zio,
+      "org.typelevel" %% "cats-core" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version,
+      "org.typelevel" %% "cats-effect" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version,
+      "dev.zio" %% "zio" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version,
       "dev.zio" %% "zio-interop-cats" % V.zio_interop_cats,
-      "io.7mind.izumi" %% "fundamentals-bio" % V.izumi,
-      "io.7mind.izumi" %% "fundamentals-json-circe" % V.izumi
+      "io.7mind.izumi" %% "fundamentals-bio" % Izumi.version,
+      "io.7mind.izumi" %% "fundamentals-json-circe" % Izumi.version
     )
   )
   .settings(
@@ -254,6 +256,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
       "2.13.1"
     )
   )
+  .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-http4s"))
@@ -263,15 +266,15 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "org.http4s" %% "http4s-dsl" % V.http4s,
       "org.http4s" %% "http4s-circe" % V.http4s,
       "org.http4s" %% "http4s-blaze-server" % V.http4s,
       "org.http4s" %% "http4s-blaze-client" % V.http4s,
       "org.asynchttpclient" % "async-http-client" % V.asynchttpclient,
-      "io.7mind.izumi" %% "logstage-core" % V.izumi,
-      "io.7mind.izumi" %% "logstage-adapter-slf4j" % V.izumi
+      "io.7mind.izumi" %% "logstage-core" % Izumi.version,
+      "io.7mind.izumi" %% "logstage-adapter-slf4j" % Izumi.version
     )
   )
   .settings(
@@ -344,6 +347,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
       "2.13.1"
     )
   )
+  .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua-v1-transpilers"))
@@ -357,12 +361,12 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "org.scala-lang.modules" %% "scala-xml" % V.scala_xml,
       "org.scalameta" %% "scalameta" % V.scalameta,
-      "io.7mind.izumi" %% "fundamentals-bio" % V.izumi,
-      "io.7mind.izumi" %% "fundamentals-json-circe" % V.izumi
+      "io.7mind.izumi" %% "fundamentals-bio" % Izumi.version,
+      "io.7mind.izumi" %% "fundamentals-json-circe" % Izumi.version
     )
   )
   .settings(
@@ -436,6 +440,7 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
     ),
     fork in Test := true
   )
+  .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v1-test-defs"))
@@ -444,7 +449,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     )
   )
@@ -518,12 +523,13 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
       "2.13.1"
     )
   )
+  .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-typescript"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     )
   )
@@ -597,12 +603,13 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
       "2.13.1"
     )
   )
+  .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-go"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     )
   )
@@ -676,12 +683,13 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
       "2.13.1"
     )
   )
+  .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-csharp"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     )
   )
@@ -755,6 +763,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
       "2.13.1"
     )
   )
+  .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1-compiler"))
@@ -768,7 +777,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "com.typesafe" % "config" % V.typesafe_config
     )
@@ -856,7 +865,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
       "2.13.1"
     )
   )
-  .enablePlugins(AssemblyPlugin)
+  .enablePlugins(AssemblyPlugin, IzumiPlugin)
 
 lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
   .settings(
@@ -867,6 +876,7 @@ lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
     ),
     scalaVersion := crossScalaVersions.value.head
   )
+  .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
   .aggregate(
     `idealingua-v1-model`,
@@ -974,6 +984,7 @@ lazy val `izumi` = (project in file("."))
     scmInfo in ThisBuild := Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git")),
     scalacOptions in ThisBuild += """-Xmacro-settings:scalatest-version=VExpr(V.scalatest)"""
   )
+  .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
   .aggregate(
     `idealingua`

@@ -1,5 +1,5 @@
 object V {
-  val izumi = "0.10.1"
+  //val izumi = "0.10.1"
 
   // foundation
   // val collection_compat = "2.1.3"
