@@ -42,15 +42,15 @@ jobs:
               inputs:
                 codeCoverageTool: 'Cobertura'
                 summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/target/**/cobertura.xml'
-        - job: site
-          dependsOn:
-            - build_212
-            - build_213
-          displayName: 'Publish Site'
-          steps:
-            - script: |
-                bash sbtgen.sc --js
-                bash .build.sh secrets site
+#        - job: site
+#          dependsOn:
+#            - build_212
+#            - build_213
+#          displayName: 'Publish Site'
+#          steps:
+#            - script: |
+#                bash sbtgen.sc --js
+#                bash .build.sh secrets site
         - job: publishAlien
           displayName: 'Publish non-scala artifacts'
           steps:
