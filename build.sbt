@@ -180,10 +180,10 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
       "org.typelevel" %% "cats-core" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version,
       "org.typelevel" %% "cats-effect" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version,
-      "dev.zio" %% "zio" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version,
-      "dev.zio" %% "zio-interop-cats" % V.zio_interop_cats,
       "io.7mind.izumi" %% "fundamentals-bio" % Izumi.version,
-      "io.7mind.izumi" %% "fundamentals-json-circe" % Izumi.version
+      "io.7mind.izumi" %% "fundamentals-json-circe" % Izumi.version,
+      "dev.zio" %% "zio" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version % Test,
+      "dev.zio" %% "zio-interop-cats" % V.zio_interop_cats % Test
     )
   )
   .settings(
@@ -450,7 +450,9 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
   .settings(
     libraryDependencies ++= Seq(
       compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
-      "org.scalatest" %% "scalatest" % V.scalatest % Test
+      "org.scalatest" %% "scalatest" % V.scalatest % Test,
+      "dev.zio" %% "zio" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version,
+      "dev.zio" %% "zio-interop-cats" % V.zio_interop_cats
     )
   )
   .settings(

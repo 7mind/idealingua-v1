@@ -27,6 +27,4 @@ object GreeterRunnerExample {
     println(io.unsafeRunSync(invoked1))
     println(io.unsafeRunSync(invoked2))
   }
-
-
 }

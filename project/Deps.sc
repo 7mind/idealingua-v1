@@ -54,7 +54,7 @@ object Izumi {
 
   val settings = GlobalSettings(
     groupId = "io.7mind.izumi",
-    sbtVersion = "1.3.7",
+    sbtVersion = "1.3.8",
     scalaJsVersion = PV.scala_js_version,
     crossProjectVersion = PV.crossproject_version,
     bundlerVersion = PV.scalajs_bundler_version,
@@ -290,7 +290,9 @@ object Izumi {
       ),
       Artifact(
         name = Projects.idealingua.runtimeRpcScala,
-        libs = Seq(scala_reflect in Scope.Provided.all) ++ (cats_all ++ zio_all).map(_ in Scope.Compile.all) ++ Seq(Deps.fundamentals_bio, Deps.fundamentals_json_circe).map(_ in Scope.Compile.all),
+        libs = Seq(scala_reflect in Scope.Provided.all) ++ cats_all.map(_ in Scope.Compile.all) ++
+          Seq(Deps.fundamentals_bio, Deps.fundamentals_json_circe).map(_ in Scope.Compile.all) ++
+          zio_all.map(_ in Scope.Test.all),
         depends = Seq.empty,
       ),
       Artifact(
@@ -309,7 +311,7 @@ object Izumi {
       ),
       Artifact(
         name = Projects.idealingua.testDefs,
-        libs = Seq.empty,
+        libs = zio_all,
         depends = Seq(Projects.idealingua.runtimeRpcScala).map(_ in Scope.Compile.all),
         platforms = Targets.jvm,
       ),
