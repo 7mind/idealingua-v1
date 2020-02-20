@@ -916,7 +916,7 @@ lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"
     `idealingua-v1-compiler`
   )
 
-lazy val `izumi-jvm` = (project in file(".agg/.agg-jvm"))
+lazy val `idealingua-v1-jvm` = (project in file(".agg/.agg-jvm"))
   .settings(
     skip in publish := true,
     crossScalaVersions := Seq(
@@ -930,7 +930,7 @@ lazy val `izumi-jvm` = (project in file(".agg/.agg-jvm"))
     `idealingua-jvm`
   )
 
-lazy val `izumi` = (project in file("."))
+lazy val `idealingua-v1` = (project in file("."))
   .settings(
     skip in publish := true,
     publishMavenStyle in ThisBuild := true,
