@@ -1,3 +1,11 @@
+[![Gitter](https://badges.gitter.im/7mind/izumi.svg)](https://gitter.im/7mind/izumi)
+[![Patreon](https://img.shields.io/badge/patreon-sponsor-ff69b4.svg)](https://www.patreon.com/7mind)
+[![Build Status](https://dev.azure.com/7mind/izumi/_apis/build/status/7mind.izumi?branchName=develop)](https://dev.azure.com/7mind/izumi/_build/latest?definitionId=6&branchName=develop)
+[![codecov](https://codecov.io/gh/7mind/idealingua-v1/branch/develop/graph/badge.svg)](https://codecov.io/gh/7mind/idealingua-v1)
+[![CodeFactor](https://www.codefactor.io/repository/github/7mind/idealingua-v1/badge)](https://www.codefactor.io/repository/github/7mind/idealingua-v1)
+[![License](https://img.shields.io/github/license/7mind/idealingua-v1.svg)](https://github.com/7mind/idealingua-v1/blob/develop/LICENSE)
+[![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/lauris/awesome-scala)
+
 <p align="center">
   <a href="https://izumi.7mind.io/">
   <img width="40%" src="https://github.com/7mind/izumi/blob/develop/doc/microsite/src/main/tut/media/izumi-logo-full-purple.png?raw=true" alt="Izumi"/>
