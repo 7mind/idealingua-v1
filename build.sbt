@@ -183,7 +183,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
       "io.7mind.izumi" %% "fundamentals-bio" % Izumi.version,
       "io.7mind.izumi" %% "fundamentals-json-circe" % Izumi.version,
       "dev.zio" %% "zio" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version % Test,
-      "dev.zio" %% "zio-interop-cats" % V.zio_interop_cats % Test
+      "dev.zio" %% "zio-interop-cats" % Izumi.Deps.microsite.dev_zio_zio_interop_cats_version % Test
     )
   )
   .settings(
@@ -452,7 +452,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
       compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "dev.zio" %% "zio" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version,
-      "dev.zio" %% "zio-interop-cats" % V.zio_interop_cats
+      "dev.zio" %% "zio-interop-cats" % Izumi.Deps.microsite.dev_zio_zio_interop_cats_version
     )
   )
   .settings(

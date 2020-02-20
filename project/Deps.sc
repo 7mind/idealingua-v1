@@ -6,30 +6,23 @@ object Izumi {
 
   object V {
     val izumi = Version.VExpr("Izumi.version")
-    // val collection_compat = Version.VExpr("V.collection_compat")
+
     val kind_projector = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version")
     val scalatest = Version.VExpr("V.scalatest")
-    // val shapeless = Version.VExpr("V.shapeless")
+
     val cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version")
     val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
     val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
-    val zio_interop_cats = Version.VExpr("V.zio_interop_cats")
-    // val circe = Version.VExpr("V.circe")
-    // val circe_generic_extras = Version.VExpr("V.circe_generic_extras")
-    // val circe_derivation = Version.VExpr("V.circe_derivation")
-    // val circe_config = Version.VExpr("V.circe_config")
-    // val jawn = Version.VExpr("V.jawn")
+    val zio_interop_cats = Version.VExpr("Izumi.Deps.microsite.dev_zio_zio_interop_cats_version")
+
     val http4s = Version.VExpr("V.http4s")
     val scalameta = Version.VExpr("V.scalameta")
     val fastparse = Version.VExpr("V.fastparse")
     val scala_xml = Version.VExpr("V.scala_xml")
     val asynchttpclient = Version.VExpr("V.asynchttpclient")
-    // val classgraph = Version.VExpr("V.classgraph")
+
     val slf4j = Version.VExpr("V.slf4j")
     val typesafe_config = Version.VExpr("V.typesafe_config")
-    // val cglib_nodep = Version.VExpr("V.cglib_nodep")
-    val scala_java_time = Version.VExpr("V.scala_java_time")
-    // val docker_java = Version.VExpr("V.docker_java")
   }
 
   object PV {
@@ -48,7 +41,7 @@ object Izumi {
     val scalajs_bundler_version = Version.VExpr("PV.scalajs_bundler_version")
   }
 
-  def entrypoint(args: Seq[String]) = {
+  def entrypoint(args: Seq[String]): Unit = {
     Entrypoint.main(izumi, settings, Seq("-o", ".") ++ args)
   }
 
@@ -101,8 +94,6 @@ object Izumi {
 
     final val projector = Library("org.typelevel", "kind-projector", V.kind_projector, LibraryType.Invariant)
       .more(LibSetting.Raw("cross CrossVersion.full"))
-
-    final val scala_java_time = Library("io.github.cquiroz", "scala-java-time", V.scala_java_time, LibraryType.Auto) in Scope.Compile.js
 
     final val slf4j_api = Library("org.slf4j", "slf4j-api", V.slf4j, LibraryType.Invariant) in Scope.Compile.jvm
     final val slf4j_simple = Library("org.slf4j", "slf4j-simple", V.slf4j, LibraryType.Invariant) in Scope.Test.jvm
@@ -176,7 +167,7 @@ object Izumi {
     )
 
     object root {
-      final val id = ArtifactId("izumi")
+      final val id = ArtifactId("idealingua-v1")
       final val plugins = Plugins(
         enabled = Seq(Plugin("SbtgenVerificationPlugin")),
         disabled = Seq(Plugin("AssemblyPlugin")),
@@ -370,89 +361,6 @@ object Izumi {
     defaultPlatforms = Targets.cross,
   )
 
-  /*val all = Seq(fundamentals, distage, logstage)
-
-  final lazy val docs = Aggregate(
-    name = Projects.docs.id,
-    artifacts = Seq(
-      Artifact(
-        name = Projects.docs.microsite,
-        libs = (cats_all ++ zio_all ++ http4s_all).map(_ in Scope.Compile.all),
-        depends = all.flatMap(_.artifacts).map(_.name in Scope.Compile.all).distinct,
-        settings = Seq(
-          "coverageEnabled" := false,
-          "skip" in SettingScope.Raw("publish") := true,
-          "DocKeys.prefix" :=
-            """{if (isSnapshot.value) {
-            "latest/snapshot"
-          } else {
-            "latest/release"
-          }}""".raw,
-          "previewFixedPort" := "Some(9999)".raw,
-          "git.remoteRepo" := "git@github.com:7mind/izumi-microsite.git",
-          "classLoaderLayeringStrategy" in SettingScope.Raw("Compile") := "ClassLoaderLayeringStrategy.Flat".raw,
-          "mdocIn" := """baseDirectory.value / "src/main/tut"""".raw,
-          "sourceDirectory" in SettingScope.Raw("Paradox") := "mdocOut.value".raw,
-          "mdocExtraArguments" ++= Seq(" --no-link-hygiene"),
-          "mappings" in SettingScope.Raw("SitePlugin.autoImport.makeSite") :=
-            """{
-            (mappings in SitePlugin.autoImport.makeSite)
-              .dependsOn(mdoc.toTask(" "))
-              .value
-          }""".raw,
-          "version" in SettingScope.Raw("Paradox") := "version.value".raw,
-
-          SettingDef.RawSettingDef("ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox)"),
-          SettingDef.RawSettingDef("addMappingsToSiteDir(mappings in(ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc)"),
-          SettingDef.RawSettingDef("unidocProjectFilter in(ScalaUnidoc, unidoc) := inAggregates(`fundamentals-jvm`, transitive = true) || inAggregates(`distage-jvm`, transitive = true) || inAggregates(`logstage-jvm`, transitive = true)"),
-
-          SettingDef.RawSettingDef(
-            """paradoxMaterialTheme in Paradox ~= {
-            _.withCopyright("7mind.io")
-              .withRepository(uri("https://github.com/7mind/izumi"))
-            //        .withColor("222", "434343")
-          }"""),
-          "siteSubdirName" in SettingScope.Raw("ScalaUnidoc") := """s"${DocKeys.prefix.value}/api"""".raw,
-          "siteSubdirName" in SettingScope.Raw("Paradox") := """s"${DocKeys.prefix.value}/doc"""".raw,
-          SettingDef.RawSettingDef(
-            """paradoxProperties ++= Map(
-            "scaladoc.izumi.base_url" -> s"/${DocKeys.prefix.value}/api/",
-            "scaladoc.base_url" -> s"/${DocKeys.prefix.value}/api/",
-            "izumi.version" -> version.value,
-          )"""),
-          SettingDef.RawSettingDef(
-            """excludeFilter in ghpagesCleanSite :=
-            new FileFilter {
-              def accept(f: File): Boolean = {
-                (f.toPath.startsWith(ghpagesRepository.value.toPath.resolve("latest")) && !f.toPath.startsWith(ghpagesRepository.value.toPath.resolve(DocKeys.prefix.value))) ||
-                  (ghpagesRepository.value / "CNAME").getCanonicalPath == f.getCanonicalPath ||
-                  (ghpagesRepository.value / ".nojekyll").getCanonicalPath == f.getCanonicalPath ||
-                  (ghpagesRepository.value / "index.html").getCanonicalPath == f.getCanonicalPath ||
-                  (ghpagesRepository.value / "README.md").getCanonicalPath == f.getCanonicalPath ||
-                  f.toPath.startsWith((ghpagesRepository.value / "media").toPath) ||
-                  f.toPath.startsWith((ghpagesRepository.value / "v0.5.50-SNAPSHOT").toPath)
-              }
-            }""")
-        ),
-        plugins = Plugins(
-          enabled = Seq(
-            Plugin("ScalaUnidocPlugin"),
-            Plugin("ParadoxSitePlugin"),
-            Plugin("SitePlugin"),
-            Plugin("GhpagesPlugin"),
-            Plugin("ParadoxMaterialThemePlugin"),
-            Plugin("PreprocessPlugin"),
-            Plugin("MdocPlugin")),
-          disabled = Seq(Plugin("ScoverageSbtPlugin")))
-      ),
-    ),
-    pathPrefix = Projects.docs.basePath,
-    groups = Groups.docs,
-    defaultPlatforms = Targets.jvm,
-    dontIncludeInSuperAgg = true,
-  )
-*/
-
   val izumi: Project = Project(
     name = Projects.root.id,
     aggregates = Seq(
@@ -474,11 +382,6 @@ object Izumi {
       SbtPlugin("com.eed3si9n", "sbt-assembly", PV.sbt_assembly),
       SbtPlugin("com.jsuereth", "sbt-pgp", PV.sbt_pgp),
       SbtPlugin("org.scoverage", "sbt-scoverage", PV.sbt_scoverage),
-      SbtPlugin("com.eed3si9n", "sbt-unidoc", PV.sbt_unidoc),
-      SbtPlugin("com.typesafe.sbt", "sbt-site", PV.sbt_site),
-      SbtPlugin("com.typesafe.sbt", "sbt-ghpages", PV.sbt_ghpages),
-      SbtPlugin("io.github.jonas", "sbt-paradox-material-theme", PV.sbt_paradox_material_theme),
-      SbtPlugin("org.scalameta", "sbt-mdoc", PV.sbt_mdoc),
       SbtPlugin("io.7mind.izumi", "sbt-izumi-deps", PV.izumi),
     )
   )
