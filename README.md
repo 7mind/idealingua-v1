@@ -8,3 +8,7 @@
 * Support frontend-to-backend and backend-to-frontend calls (ala push notifications, via buzzer definitions)
 * Abstract away details such as the network protocol or the serialization format.
 * Save developers from untyped and brittle REST.
+
+### Documentation
+
+Please head to the [microsite](https://izumi.7mind.io/latest/release/doc/idealingua/index.html) for the latest documentaiton
