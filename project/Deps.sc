@@ -1,4 +1,4 @@
-import $ivy.`io.7mind.izumi.sbt::sbtgen:0.0.47`
+import $ivy.`io.7mind.izumi.sbt::sbtgen:0.0.50`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
 
@@ -47,7 +47,7 @@ object Izumi {
 
   val settings = GlobalSettings(
     groupId = "io.7mind.izumi",
-    sbtVersion = "1.3.8",
+    sbtVersion = None,
     scalaJsVersion = PV.scala_js_version,
     crossProjectVersion = PV.crossproject_version,
     bundlerVersion = PV.scalajs_bundler_version,
