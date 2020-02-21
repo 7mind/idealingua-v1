@@ -28,6 +28,8 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.10") => Seq(
         "-Xsource:2.13",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
         "-Xlint:adapted-args",
@@ -58,16 +60,22 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
         "-Ywarn-nullary-unit",
         "-Ywarn-numeric-widen",
         "-Ywarn-unused-import",
-        "-Ywarn-value-discard"
+        "-Ywarn-value-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, "2.13.1") => Seq(
         "-Xlint:_,-eta-sam",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
         "-Wunused:_",
-        "-Wvalue-discard"
+        "-Wvalue-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, _) => Seq.empty
     } },
@@ -113,6 +121,8 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.10") => Seq(
         "-Xsource:2.13",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
         "-Xlint:adapted-args",
@@ -143,16 +153,22 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
         "-Ywarn-nullary-unit",
         "-Ywarn-numeric-widen",
         "-Ywarn-unused-import",
-        "-Ywarn-value-discard"
+        "-Ywarn-value-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, "2.13.1") => Seq(
         "-Xlint:_,-eta-sam",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
         "-Wunused:_",
-        "-Wvalue-discard"
+        "-Wvalue-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, _) => Seq.empty
     } },
@@ -200,6 +216,8 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.10") => Seq(
         "-Xsource:2.13",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
         "-Xlint:adapted-args",
@@ -230,16 +248,22 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
         "-Ywarn-nullary-unit",
         "-Ywarn-numeric-widen",
         "-Ywarn-unused-import",
-        "-Ywarn-value-discard"
+        "-Ywarn-value-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, "2.13.1") => Seq(
         "-Xlint:_,-eta-sam",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
         "-Wunused:_",
-        "-Wvalue-discard"
+        "-Wvalue-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, _) => Seq.empty
     } },
@@ -291,6 +315,8 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.10") => Seq(
         "-Xsource:2.13",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
         "-Xlint:adapted-args",
@@ -321,16 +347,22 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-Ywarn-nullary-unit",
         "-Ywarn-numeric-widen",
         "-Ywarn-unused-import",
-        "-Ywarn-value-discard"
+        "-Ywarn-value-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, "2.13.1") => Seq(
         "-Xlint:_,-eta-sam",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
         "-Wunused:_",
-        "-Wvalue-discard"
+        "-Wvalue-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, _) => Seq.empty
     } },
@@ -383,6 +415,8 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.10") => Seq(
         "-Xsource:2.13",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
         "-Xlint:adapted-args",
@@ -413,16 +447,22 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
         "-Ywarn-nullary-unit",
         "-Ywarn-numeric-widen",
         "-Ywarn-unused-import",
-        "-Ywarn-value-discard"
+        "-Ywarn-value-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, "2.13.1") => Seq(
         "-Xlint:_,-eta-sam",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
         "-Wunused:_",
-        "-Wvalue-discard"
+        "-Wvalue-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, _) => Seq.empty
     } },
@@ -469,6 +509,8 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.10") => Seq(
         "-Xsource:2.13",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
         "-Xlint:adapted-args",
@@ -499,16 +541,22 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-Ywarn-nullary-unit",
         "-Ywarn-numeric-widen",
         "-Ywarn-unused-import",
-        "-Ywarn-value-discard"
+        "-Ywarn-value-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, "2.13.1") => Seq(
         "-Xlint:_,-eta-sam",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
         "-Wunused:_",
-        "-Wvalue-discard"
+        "-Wvalue-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, _) => Seq.empty
     } },
@@ -549,6 +597,8 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.10") => Seq(
         "-Xsource:2.13",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
         "-Xlint:adapted-args",
@@ -579,16 +629,22 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-Ywarn-nullary-unit",
         "-Ywarn-numeric-widen",
         "-Ywarn-unused-import",
-        "-Ywarn-value-discard"
+        "-Ywarn-value-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, "2.13.1") => Seq(
         "-Xlint:_,-eta-sam",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
         "-Wunused:_",
-        "-Wvalue-discard"
+        "-Wvalue-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, _) => Seq.empty
     } },
@@ -629,6 +685,8 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.10") => Seq(
         "-Xsource:2.13",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
         "-Xlint:adapted-args",
@@ -659,16 +717,22 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
         "-Ywarn-nullary-unit",
         "-Ywarn-numeric-widen",
         "-Ywarn-unused-import",
-        "-Ywarn-value-discard"
+        "-Ywarn-value-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, "2.13.1") => Seq(
         "-Xlint:_,-eta-sam",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
         "-Wunused:_",
-        "-Wvalue-discard"
+        "-Wvalue-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, _) => Seq.empty
     } },
@@ -709,6 +773,8 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.10") => Seq(
         "-Xsource:2.13",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
         "-Xlint:adapted-args",
@@ -739,16 +805,22 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-Ywarn-nullary-unit",
         "-Ywarn-numeric-widen",
         "-Ywarn-unused-import",
-        "-Ywarn-value-discard"
+        "-Ywarn-value-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, "2.13.1") => Seq(
         "-Xlint:_,-eta-sam",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
         "-Wunused:_",
-        "-Wvalue-discard"
+        "-Wvalue-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, _) => Seq.empty
     } },
@@ -811,6 +883,8 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.10") => Seq(
         "-Xsource:2.13",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
         "-Xlint:adapted-args",
@@ -841,16 +915,22 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-Ywarn-nullary-unit",
         "-Ywarn-numeric-widen",
         "-Ywarn-unused-import",
-        "-Ywarn-value-discard"
+        "-Ywarn-value-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, "2.13.1") => Seq(
         "-Xlint:_,-eta-sam",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
         "-Wunused:_",
-        "-Wvalue-discard"
+        "-Wvalue-discard",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
       )
       case (_, _) => Seq.empty
     } },
@@ -916,7 +996,7 @@ lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"
     `idealingua-v1-compiler`
   )
 
-lazy val `izumi-jvm` = (project in file(".agg/.agg-jvm"))
+lazy val `idealingua-v1-jvm` = (project in file(".agg/.agg-jvm"))
   .settings(
     skip in publish := true,
     crossScalaVersions := Seq(
@@ -930,7 +1010,7 @@ lazy val `izumi-jvm` = (project in file(".agg/.agg-jvm"))
     `idealingua-jvm`
   )
 
-lazy val `izumi` = (project in file("."))
+lazy val `idealingua-v1` = (project in file("."))
   .settings(
     skip in publish := true,
     publishMavenStyle in ThisBuild := true,
@@ -942,11 +1022,7 @@ lazy val `izumi` = (project in file("."))
       "-unchecked",
       "-deprecation",
       "-language:higherKinds",
-      "-Ybackend-parallelism",
-      math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
-      "-explaintypes",
-      "-Ycache-plugin-class-loader:always",
-      "-Ycache-macro-class-loader:last-modified"
+      "-explaintypes"
     ),
     javacOptions in ThisBuild ++= Seq(
       "-encoding",
