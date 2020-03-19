@@ -22,9 +22,7 @@ object GreeterRunnerExample {
     val invoked1 = multiplexor.doInvoke(json1, (), greeter.greet.signature.id)
     val invoked2 = multiplexor.doInvoke(json1, (), greeter.alternative.signature.id)
 
-    object io extends DefaultRuntime
-
-    println(io.unsafeRunSync(invoked1))
-    println(io.unsafeRunSync(invoked2))
+    println(zio.Runtime.default.unsafeRunSync(invoked1))
+    println(zio.Runtime.default.unsafeRunSync(invoked2))
   }
 }
