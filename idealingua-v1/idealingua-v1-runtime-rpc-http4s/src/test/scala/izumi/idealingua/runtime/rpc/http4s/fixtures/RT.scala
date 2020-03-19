@@ -19,14 +19,14 @@ import scala.concurrent.ExecutionContext.global
 object RT {
   final val logger = makeLogger()
   final val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
-  implicit val clock: Clock = Clock.Live
+  implicit val clock: Clock = zio.Has(Clock.Service.live)
 
   final val handler = BIORunner.FailureHandler.Custom(message => logger.warn(s"Fiber failed: $message"))
   val platform = new bio.BIORunner.ZIOPlatform(
-    Executors.newFixedThreadPool(8).asInstanceOf[ThreadPoolExecutor]
-  , handler
-  , 1024
-  , TracingConfig.enabled
+    Executors.newFixedThreadPool(8).asInstanceOf[ThreadPoolExecutor],
+    handler,
+    1024,
+    TracingConfig.enabled,
   )
   implicit val runtime: Runtime[Any] = Runtime((), platform)
   implicit val BIOR: BIORunner[zio.IO] = BIORunner.createZIO(platform)
@@ -34,10 +34,10 @@ object RT {
 
   private def makeLogger(): IzLogger = {
     val router = ConfigurableLogRouter(Log.Level.Info, levels = Map(
-      "org.http4s" -> Log.Level.Warn
-      , "org.http4s.server.blaze" -> Log.Level.Error
-      , "org.http4s.blaze.channel.nio1" -> Log.Level.Crit
-      , "izumi.idealingua.runtime.rpc.http4s" -> Log.Level.Crit
+      "org.http4s" -> Log.Level.Warn,
+      "org.http4s.server.blaze" -> Log.Level.Error,
+      "org.http4s.blaze.channel.nio1" -> Log.Level.Crit,
+      "izumi.idealingua.runtime.rpc.http4s" -> Log.Level.Crit,
     ))
 
     val out = IzLogger(router)

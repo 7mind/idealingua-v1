@@ -101,12 +101,12 @@ class ServiceRenderer(ctx: STContext) {
       , qqServiceMethods
       , qqServiceCodecs
       , List(
-        runtime.Import.from(runtime.Pkg.language, "higherKinds")
-        , runtime.Import[BIO[Dummy]](Some("IRTBIO"))
-        , runtime.Import[Json](Some("IRTJson"))
-        , runtime.Import[DecodingFailure](Some("IRTDecodingFailure"))
-        , runtime.Pkg.of[_root_.io.circe.syntax.EncoderOps[Nothing]].`import`
-        , rt.services.`import`
+        runtime.Import.from(runtime.Pkg.language, "higherKinds"),
+        runtime.Import.from(runtime.Pkg.of[BIO[Dummy]], "BIO", Some("IRTBIO")),
+        runtime.Import[Json](Some("IRTJson")),
+        runtime.Import[DecodingFailure](Some("IRTDecodingFailure")),
+        runtime.Pkg.of[_root_.io.circe.syntax.EncoderOps[Nothing]].`import`,
+        rt.services.`import`,
       )
     )
 
