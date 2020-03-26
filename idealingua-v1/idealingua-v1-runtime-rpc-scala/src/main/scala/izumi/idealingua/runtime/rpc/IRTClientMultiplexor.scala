@@ -1,11 +1,14 @@
 package izumi.idealingua.runtime.rpc
 
-import izumi.functional.bio.BIO
 import io.circe.Json
+import izumi.functional.bio.{BIO, F}
 
-class IRTClientMultiplexor[F[+ _, + _] : BIO](clients: Set[IRTWrappedClient]) {
-  protected val F: BIO[F] = implicitly
+trait IRTClientMultiplexor[F[+ _, + _]] {
+  def encode(input: IRTMuxRequest): F[Throwable, Json]
+  def decode(input: Json, method: IRTMethodId): F[Throwable, IRTMuxResponse]
+}
 
+class IRTClientMultiplexorImpl[F[+ _, + _] : BIO](clients: Set[IRTWrappedClient]) extends IRTClientMultiplexor[F] {
   val codecs: Map[IRTMethodId, IRTCirceMarshaller] = clients.flatMap(_.allCodecs).toMap
 
   def encode(input: IRTMuxRequest): F[Throwable, Json] = {

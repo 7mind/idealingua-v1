@@ -31,7 +31,7 @@ class ClientWsDispatcher[C <: Http4sContext]
   val c: C#IMPL[C],
   protected val baseUri: URI,
   protected val codec: IRTClientMultiplexor[C#BiIO],
-  protected val buzzerMuxer: IRTServerMultiplexor[C#BiIO, C#ClientContext, C#ClientMethodContext],
+  protected val buzzerMuxer: IRTServerMultiplexor[C#BiIO, C#ClientContext],
   protected val wsClientContextProvider: WsClientContextProvider[C#ClientContext],
   logger: IzLogger,
   printer: Printer,
