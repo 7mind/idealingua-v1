@@ -92,7 +92,6 @@ class ServiceRenderer(ctx: STContext) {
          }
        """
 
-    type Dummy[+X, +Y] = Nothing
     val out = CogenServiceProduct(
       qqServer
       , qqClient
@@ -102,7 +101,7 @@ class ServiceRenderer(ctx: STContext) {
       , qqServiceCodecs
       , List(
         runtime.Import.from(runtime.Pkg.language, "higherKinds"),
-        runtime.Import.from(runtime.Pkg.of[BIO[Dummy]], "BIO", Some("IRTBIO")),
+        runtime.Import.from(runtime.Pkg.of[BIO[Nothing]], "BIO", Some("IRTBIO")),
         runtime.Import[Json](Some("IRTJson")),
         runtime.Import[DecodingFailure](Some("IRTDecodingFailure")),
         runtime.Pkg.of[_root_.io.circe.syntax.EncoderOps[Nothing]].`import`,
