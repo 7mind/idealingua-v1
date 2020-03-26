@@ -4,31 +4,31 @@ import izumi.functional.bio.{BIO, BIOExit, F}
 import izumi.fundamentals.platform.language.Quirks
 import io.circe.Json
 
-trait ContextExtender[B[+ _, + _], Ctx, Ctx2] {
-  def extend(context: Ctx, body: Json): Ctx2
+trait ContextExtender[-Ctx, +Ctx2] {
+  def extend(context: Ctx, body: Json, irtMethodId: IRTMethodId): Ctx2
 }
 
 object ContextExtender {
-  def id[B[+ _, + _], Ctx]: ContextExtender[B, Ctx, Ctx] = new ContextExtender[B, Ctx, Ctx] {
-    override def extend(context: Ctx, body: Json): Ctx = {
-      Quirks.discard(body)
-      context
-    }
-  }
+  def id[Ctx]: ContextExtender[Ctx, Ctx] = (context, _, _) => context
 }
 
-class IRTServerMultiplexor[F[+_, +_] : BIO, C, C2](list: Set[IRTWrappedService[F, C2]], extender: ContextExtender[F, C, C2]) {
+trait IRTServerMultiplexor[F[+_, +_], -C] {
+  def doInvoke(parsedBody: Json, context: C, toInvoke: IRTMethodId): F[Throwable, Option[Json]]
+}
+
+class IRTServerMultiplexorImpl[F[+_, +_]: BIO, -C, -C2](
+  list: Set[IRTWrappedService[F, C2]],
+  extender: ContextExtender[C, C2],
+) extends IRTServerMultiplexor[F, C] {
   val services: Map[IRTServiceId, IRTWrappedService[F, C2]] = list.map(s => s.serviceId -> s).toMap
 
   def doInvoke(parsedBody: Json, context: C, toInvoke: IRTMethodId): F[Throwable, Option[Json]] = {
     (for {
       service <- services.get(toInvoke.service)
       method <- service.allMethods.get(toInvoke)
-    } yield {
-      method
-    }) match {
+    } yield method) match {
       case Some(value) =>
-        invoke(extender.extend(context, parsedBody), toInvoke, value, parsedBody).map(Some.apply)
+        invoke(extender.extend(context, parsedBody, toInvoke), toInvoke, value, parsedBody).map(Some.apply)
       case None =>
         F.pure(None)
     }
@@ -47,8 +47,6 @@ class IRTServerMultiplexor[F[+_, +_] : BIO, C, C2](list: Set[IRTWrappedService[F
       resultAction <- F.syncThrowable(method.invoke(context, casted))
       safeResult <- resultAction
       encoded <- F.syncThrowable(method.marshaller.encodeResponse.apply(IRTResBody(safeResult)))
-    } yield {
-      encoded
-    }
+    } yield encoded
   }
 }
