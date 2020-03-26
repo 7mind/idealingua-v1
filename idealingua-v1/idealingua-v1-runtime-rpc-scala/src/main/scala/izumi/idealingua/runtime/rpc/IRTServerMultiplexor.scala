@@ -1,8 +1,7 @@
 package izumi.idealingua.runtime.rpc
 
-import izumi.functional.bio.{BIO, BIOExit, F}
-import izumi.fundamentals.platform.language.Quirks
 import io.circe.Json
+import izumi.functional.bio.{BIO, BIOExit, F}
 
 trait ContextExtender[-Ctx, +Ctx2] {
   def extend(context: Ctx, body: Json, irtMethodId: IRTMethodId): Ctx2
