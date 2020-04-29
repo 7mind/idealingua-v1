@@ -2,7 +2,7 @@ object V {
   // foundation
 
   val scalatest = "3.1.1"
-  val http4s = "0.21.3"
+  val http4s = "0.21.4"
 
   val scalameta = "4.3.10"
   val fastparse = "2.2.4"
