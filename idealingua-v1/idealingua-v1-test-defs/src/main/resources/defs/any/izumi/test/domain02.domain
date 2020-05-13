@@ -8,6 +8,8 @@ import izumi.test.domain01.{
     ImportAppId
     GenericFailure
     GenericFailureData
+    TokenId
+    TokenD
 }
 
 include "model01.model"
@@ -129,4 +131,5 @@ service ImportIdService {
     def some(id: ImportAppId) => u64
     def mixi(par: GenericFailureData) => (AdtA2 | GenericFailureData)
     def update(id: ImportAppId) => (AdtA2 | GenericFailure)
+    def impres() => (TokenId | TokenD) !! GenericFailure
 }
