@@ -107,13 +107,19 @@ class CSharpTranslator(ts: Typespace, options: CSharpTranslatorOptions) extends 
     )
   }
 
-  protected def renderAdtMember(adtName: String, member: AdtMember): String = {
+  protected def renderAdtMember(adtName: String, member: AdtMember)(implicit im: CSharpImports, ts: Typespace): String = {
+    val needsFQN = im.imports.find(i => i.id == member.typeId)
+    // Sometimes we import something, but don't generate an using for it because
+    // it has no ambiguous name with regards to the rest. However, methods for adt will
+    // have the same name making it ambiguous, so we bail out here by providing
+    // an FQN
+    val nonambName = if(needsFQN.isDefined && needsFQN.get.usingName == "") CSharpType(member.typeId).renderType(true) else s"_${member.wireId}"
     val operators =
-      s"""    public static explicit operator _${member.wireId}(${member.wireId} m) {
+      s"""    public static explicit operator $nonambName(${member.wireId} m) {
          |        return m.Value;
          |    }
          |
-         |    public static explicit operator ${member.wireId}(_${member.wireId} m) {
+         |    public static explicit operator ${member.wireId}(${nonambName} m) {
          |        return new ${member.wireId}(m);
          |    }
        """.stripMargin
@@ -121,19 +127,19 @@ class CSharpTranslator(ts: Typespace, options: CSharpTranslatorOptions) extends 
     val operatorsDummy =
       s"""    // We would normally want to have an operator, but unfortunately if it is an interface,
          |    // it will fail on "user-defined conversions to or from an interface are not allowed".
-         |    // public static explicit operator _${member.wireId}(${member.wireId} m) {
+         |    // public static explicit operator ${nonambName}(${member.wireId} m) {
          |    //     return m.Value;
          |    // }
          |    //
-         |    // public static explicit operator ${member.wireId}(_${member.wireId} m) {
+         |    // public static explicit operator ${member.wireId}(${nonambName} m) {
          |    //     return new ${member.wireId}(m);
          |    // }
        """.stripMargin
 
     //    val memberType = CSharpType(member.typeId)
     s"""public sealed class ${member.wireId}: $adtName {
-       |    public _${member.wireId} Value { get; private set; }
-       |    public ${member.wireId}(_${member.wireId} value) {
+       |    public ${nonambName} Value { get; private set; }
+       |    public ${member.wireId}(${nonambName} value) {
        |        this.Value = value;
        |    }
        |
