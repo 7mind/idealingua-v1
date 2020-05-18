@@ -13,7 +13,7 @@ object Izumi {
     val cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version")
     val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
     val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
-    val zio_interop_cats = Version.VConst("2.0.0.0-RC12")
+    val zio_interop_cats = Version.VExpr("Izumi.Deps.microsite.dev_zio_zio_interop_cats_version")
 
     val http4s = Version.VExpr("V.http4s")
     val scalameta = Version.VExpr("V.scalameta")
@@ -147,7 +147,7 @@ object Izumi {
       language = targetScala,
       settings = Seq(
         "coverageEnabled" := false,
-        "scalaJSModuleKind" in(SettingScope.Project, Platform.Js) := "ModuleKind.CommonJSModule".raw,
+        "scalaJSLinkerConfig" in (SettingScope.Project, Platform.Js) := "{ scalaJSLinkerConfig.value.withModuleKind(ModuleKind.CommonJSModule) }".raw,
       ),
     )
     final val cross = Seq(jvmPlatform, jsPlatform)
