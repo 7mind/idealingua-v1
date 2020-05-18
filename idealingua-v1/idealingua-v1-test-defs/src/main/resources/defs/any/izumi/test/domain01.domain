@@ -275,12 +275,12 @@ data GenericFailure {
     + GenericFailureData
     code: GenericFailureCode
 }
-
 //
-id TokenId {
-    id: uid
-}
-
-data TokenD {
-    data: str
-}
+////
+//id TokenId {
+//    id: uid
+//}
+//
+//data TokenD {
+//    data: str
+//}
