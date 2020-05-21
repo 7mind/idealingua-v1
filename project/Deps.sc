@@ -1,4 +1,4 @@
-import $ivy.`io.7mind.izumi.sbt::sbtgen:0.0.56`
+import $ivy.`io.7mind.izumi.sbt::sbtgen:0.0.57`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
 
@@ -12,6 +12,7 @@ object Izumi {
 
     val cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version")
     val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
+    val circe = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
     val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
     val zio_interop_cats = Version.VExpr("Izumi.Deps.microsite.dev_zio_zio_interop_cats_version")
 
@@ -118,8 +119,8 @@ object Izumi {
   import Deps._
 
   // DON'T REMOVE, these variables are read from CI build (build.sh)
-  final val scala212 = ScalaVersion("2.12.10")
-  final val scala213 = ScalaVersion("2.13.1")
+  final val scala212 = ScalaVersion("2.12.11")
+  final val scala213 = ScalaVersion("2.13.2")
 
   object Groups {
     final val fundamentals = Set(Group("fundamentals"))
@@ -128,19 +129,12 @@ object Izumi {
   }
 
   object Targets {
-    // switch order to use 2.13 in IDEA
-    val targetScala = Seq(scala212, scala213)
-//    val targetScala = Seq(scala213, scala212)
+    // switch order to use 2.12 in IDEA
+    val targetScala = Seq(scala213, scala212)
+//    val targetScala = Seq(scala212, scala213)
     private val jvmPlatform = PlatformEnv(
       platform = Platform.Jvm,
       language = targetScala,
-    )
-    private val jvmPlatformSbt = PlatformEnv(
-      platform = Platform.Jvm,
-      language = Seq(scala212),
-      settings = Seq(
-        "coverageEnabled" := false,
-      ),
     )
     private val jsPlatform = PlatformEnv(
       platform = Platform.Js,
@@ -152,8 +146,6 @@ object Izumi {
     )
     final val cross = Seq(jvmPlatform, jsPlatform)
     final val jvm = Seq(jvmPlatform)
-    final val js = Seq(jsPlatform)
-    final val jvmSbt = Seq(jvmPlatformSbt)
   }
 
   final val assemblyPluginJvm = Plugin("AssemblyPlugin", Platform.Jvm)
