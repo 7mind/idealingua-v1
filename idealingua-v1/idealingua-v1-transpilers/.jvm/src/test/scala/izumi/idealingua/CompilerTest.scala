@@ -15,7 +15,7 @@ class CompilerTest extends AnyWordSpec {
 
     "be able to compile into scala" in {
       require("scalac")
-      assume(Properties.versionNumberString.startsWith("2.13"), "compiler test can run on the 2.12 only (local compiler used for test should be the same as build compiler)")
+      assume(Properties.versionNumberString.startsWith("2.12"), "compiler test can run on the 2.12 only (local compiler used for test should be the same as build compiler)")
       assert(compilesScala(s"$id-plain", loadDefs(), ScalaProjectLayout.PLAIN))
       assert(compilesScala(s"$id-plain-nonportable", loadDefs("/defs/scala"), ScalaProjectLayout.PLAIN))
     }
