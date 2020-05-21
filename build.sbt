@@ -87,8 +87,8 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
     } },
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.13.2",
-      "2.12.11"
+      "2.12.11",
+      "2.13.2"
     )
   )
   .enablePlugins(IzumiPlugin)
@@ -179,8 +179,8 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
     } },
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.13.2",
-      "2.12.11"
+      "2.12.11",
+      "2.13.2"
     )
   )
   .enablePlugins(IzumiPlugin)
@@ -273,8 +273,8 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
     } },
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.13.2",
-      "2.12.11"
+      "2.12.11",
+      "2.13.2"
     )
   )
   .enablePlugins(IzumiPlugin)
@@ -371,8 +371,8 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     } },
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.13.2",
-      "2.12.11"
+      "2.12.11",
+      "2.13.2"
     )
   )
   .enablePlugins(IzumiPlugin)
@@ -470,8 +470,8 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
     } },
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.13.2",
-      "2.12.11"
+      "2.12.11",
+      "2.13.2"
     ),
     fork in Test := true
   )
@@ -563,8 +563,8 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     } },
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.13.2",
-      "2.12.11"
+      "2.12.11",
+      "2.13.2"
     )
   )
   .enablePlugins(IzumiPlugin)
@@ -650,8 +650,8 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     } },
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.13.2",
-      "2.12.11"
+      "2.12.11",
+      "2.13.2"
     )
   )
   .enablePlugins(IzumiPlugin)
@@ -737,8 +737,8 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     } },
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.13.2",
-      "2.12.11"
+      "2.12.11",
+      "2.13.2"
     )
   )
   .enablePlugins(IzumiPlugin)
@@ -824,8 +824,8 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     } },
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.13.2",
-      "2.12.11"
+      "2.12.11",
+      "2.13.2"
     )
   )
   .enablePlugins(IzumiPlugin)
@@ -933,8 +933,8 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     } },
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.13.2",
-      "2.12.11"
+      "2.12.11",
+      "2.13.2"
     )
   )
   .enablePlugins(AssemblyPlugin, IzumiPlugin)
@@ -943,8 +943,8 @@ lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
   .settings(
     skip in publish := true,
     crossScalaVersions := Seq(
-      "2.13.2",
-      "2.12.11"
+      "2.12.11",
+      "2.13.2"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
@@ -967,8 +967,8 @@ lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"
   .settings(
     skip in publish := true,
     crossScalaVersions := Seq(
-      "2.13.2",
-      "2.12.11"
+      "2.12.11",
+      "2.13.2"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
@@ -990,8 +990,8 @@ lazy val `idealingua-v1-jvm` = (project in file(".agg/.agg-jvm"))
   .settings(
     skip in publish := true,
     crossScalaVersions := Seq(
-      "2.13.2",
-      "2.12.11"
+      "2.12.11",
+      "2.13.2"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
@@ -1032,7 +1032,7 @@ lazy val `idealingua-v1` = (project in file("."))
       s"-Xmacro-settings:sbt-version=${sbtVersion.value}"
     ),
     crossScalaVersions := Nil,
-    scalaVersion := "2.13.2",
+    scalaVersion := "2.12.11",
     organization in ThisBuild := "io.7mind.izumi",
     sonatypeProfileName := "io.7mind",
     sonatypeSessionName := s"[sbt-sonatype] ${name.value} ${version.value} ${java.util.UUID.randomUUID}",
