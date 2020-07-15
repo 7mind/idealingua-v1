@@ -9,6 +9,8 @@ object V {
 
   val scala_xml = "1.3.0"
 
+  val interop_cats = "2.1.4.0-RC17"
+
   // java-only dependencies below
   // java, we need it bcs http4s ws client isn't ready yet
   val asynchttpclient = "2.12.1"

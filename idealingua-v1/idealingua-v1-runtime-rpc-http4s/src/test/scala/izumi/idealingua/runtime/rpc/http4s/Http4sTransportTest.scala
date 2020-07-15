@@ -12,6 +12,8 @@ import zio.Task
 import zio.interop.catz._
 import zio.interop.catz.implicits._
 
+import scala.concurrent.ExecutionContext
+
 class Http4sTransportTest extends AnyWordSpec {
 
   import fixtures._
@@ -91,7 +93,7 @@ class Http4sTransportTest extends AnyWordSpec {
   def withServer(f: => Unit): Unit = {
     import org.http4s.implicits._
     val router = Router("/" -> ioService.service).orNotFound
-    val io = BlazeServerBuilder[rt.MonoIO]
+    val io = BlazeServerBuilder[rt.MonoIO](ExecutionContext.global)
       .bindHttp(port, host)
       .withWebSockets(true)
       .withHttpApp(router)
@@ -99,7 +101,7 @@ class Http4sTransportTest extends AnyWordSpec {
       .evalMap(_ => Task(f))
       .compile.drain
 
-    BIOR.unsafeRun(io/*.interruptChildren*/)
+    BIOR.unsafeRun(io)
   }
 
   def checkBadBody(body: String, disp: IRTDispatcher[rt.BiIO] with TestHttpDispatcher): Unit = {
