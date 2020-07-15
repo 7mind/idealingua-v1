@@ -120,8 +120,7 @@ object Http4sTestContext {
   )
 
   final def clientDispatcher(): ClientDispatcher[rt.type] with TestHttpDispatcher =
-    new ClientDispatcher[rt.DECL](rt.self, RT.logger, RT.printer, baseUri, demo.Client.codec)
-      with TestHttpDispatcher {
+    new ClientDispatcher[rt.DECL](rt.self, RT.logger, RT.printer, baseUri, demo.Client.codec) with TestHttpDispatcher {
 
       override def sendRaw(request: IRTMuxRequest, body: Array[Byte]): BiIO[Throwable, IRTMuxResponse] = {
         val req = buildRequest(baseUri, request, body)
