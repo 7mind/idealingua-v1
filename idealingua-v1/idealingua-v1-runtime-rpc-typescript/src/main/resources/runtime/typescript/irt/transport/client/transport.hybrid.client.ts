@@ -1,16 +1,17 @@
 
 import { Logger } from '../../logger';
 import { WebSocketClientTransport } from './transport.websocket.client';
-import { ClientTransport, IncomingData, OutgoingData } from '../transport';
+import {ClientSocketTransport, IncomingData, OutgoingData} from '../transport';
 import { HTTPClientTransport } from './transport.http.client';
 import { JSONMarshaller } from '../../marshaller';
 import { AuthMethod } from '../auth';
 import { TransportHeaders } from '../transport';
+import { ServiceDispatcher } from "../../dispatcher";
 
 export type handlerSuccess = (service: string, method: string, payload: string) => void;
 export type handlerFailure = (service: string, method: string, error: string) => void;
 
-export class HybridClientTransportGeneric<C> implements ClientTransport {
+export class HybridClientTransportGeneric<C> implements ClientSocketTransport<C, string> {
     private _restTransport: HTTPClientTransport;
     private _wsTransport: WebSocketClientTransport<C>;
     private _authMethod: AuthMethod | undefined;
@@ -40,10 +41,34 @@ export class HybridClientTransportGeneric<C> implements ClientTransport {
         this._wsTransport.onFailure = value;
     }
 
+    public setContext(context: C): void {
+        this._wsTransport.setContext(context);
+    }
+
+    public getContext(): C {
+        return this._wsTransport.getContext();
+    }
+
+    public registerBuzzer(buzzer: ServiceDispatcher<C, string>): boolean {
+        return this._wsTransport.registerBuzzer(buzzer);
+    }
+
+    public unregisterBuzzer(id: string): boolean {
+        return this._wsTransport.unregisterBuzzer(id);
+    }
+
     constructor(restEndpoint: string, wsEndpoint: string, marshaller: JSONMarshaller, logger: Logger) {
         this._headers = {};
         this._restTransport = new HTTPClientTransport(restEndpoint, marshaller, logger);
         this._wsTransport = new WebSocketClientTransport<C>(wsEndpoint, marshaller, logger);
+    }
+
+    public getHTTPTransport() {
+        return this._restTransport;
+    }
+
+    public getWebsocketTransport() {
+        return this._wsTransport;
     }
 
     public getAuthorization(): AuthMethod | undefined {
