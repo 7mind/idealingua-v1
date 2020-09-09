@@ -143,9 +143,9 @@ export class HTTPClientTransport implements ClientTransport {
             }
 
             if (this.onSend) {
-                this.onSend(service, method, json);
+                this.onSend(service, method, json as string);
             }
-            this.doRequest(url, json,
+            this.doRequest(url, json as string,
                 (successContent) => {
                     this.logger.logf(LogLevel.Trace, 'Response body:\n' + successContent);
                     if (this.onSuccess) {

@@ -780,51 +780,57 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
     case _ => true
   }
 
-  protected def renderServiceReturnSerialization(method: DefMethod.RPCMethod): String = method.signature.output match {
-    case _: Algebraic | _: Alternative =>
-      s"const serialized = this.marshaller.Marshal<object>(Out${method.name.capitalize}Helpers.serialize(res));"
-    case _ => s"const serialized = this.marshaller.Marshal<${renderServiceMethodOutputSignature(method)}>(res);"
+  protected def renderServiceReturnSerialization(method: DefMethod.RPCMethod, useRawMarshaller: Boolean = false): String = {
+    val useRawParam = if (useRawMarshaller) ", true" else ""
+    method.signature.output match {
+      case _: Algebraic | _: Alternative =>
+        s"const serialized = this.marshaller.Marshal<object>(Out${method.name.capitalize}Helpers.serialize(res)$useRawParam);"
+      case _ => s"const serialized = this.marshaller.Marshal<${renderServiceMethodOutputSignature(method)}>(res$useRawParam);"
+    }
   }
 
-  protected def renderServiceDispatcherHandler(method: DefMethod, impl: String): String = method match {
-    case m: DefMethod.RPCMethod =>
-      if (isServiceMethodReturnExistent(m))
-        s"""case "${m.name}": {
-           |    ${if (m.signature.input.fields.isEmpty) "// No input params for this method" else s"const obj = ${if (m.signature.input.fields.nonEmpty) s"new In${m.name.capitalize}(" else ""}this.marshaller.Unmarshal<${if (m.signature.input.fields.nonEmpty) s"In${m.name.capitalize}Serialized" else "object"}>(data)${if (m.signature.input.fields.nonEmpty) ")" else ""};"}
-           |    return new Promise((resolve, reject) => {
-           |        try {
-           |            this.$impl.${m.name}(context${if (m.signature.input.fields.isEmpty) "" else ", "}${m.signature.input.fields.map(f => s"obj.${conv.safeName(f.name)}").mkString(", ")})
-           |                .then((res: ${renderServiceMethodOutputSignature(m)}) => {
-           |${renderServiceReturnSerialization(m).shift(20)}
-           |                    resolve(serialized);
-           |                })
-           |                .catch((err) => {
-           |                    reject(err);
-           |                });
-           |        } catch (err) {
-           |            reject(err);
-           |        }
-           |    });
-           |}
+  protected def renderServiceDispatcherHandler(method: DefMethod, impl: String, useRawMarshaller: Boolean = false): String = {
+    val useRawParam = if (useRawMarshaller) ", true" else ""
+    method match {
+      case m: DefMethod.RPCMethod =>
+        if (isServiceMethodReturnExistent(m))
+          s"""case "${m.name}": {
+             |    ${if (m.signature.input.fields.isEmpty) "// No input params for this method" else s"const obj = ${if (m.signature.input.fields.nonEmpty) s"new In${m.name.capitalize}(" else ""}this.marshaller.Unmarshal<${if (m.signature.input.fields.nonEmpty) s"In${m.name.capitalize}Serialized" else "object"}>(data$useRawParam)${if (m.signature.input.fields.nonEmpty) ")" else ""};"}
+             |    return new Promise((resolve, reject) => {
+             |        try {
+             |            this.$impl.${m.name}(context${if (m.signature.input.fields.isEmpty) "" else ", "}${m.signature.input.fields.map(f => s"obj.${conv.safeName(f.name)}").mkString(", ")})
+             |                .then((res: ${renderServiceMethodOutputSignature(m)}) => {
+             |${renderServiceReturnSerialization(m, useRawMarshaller = useRawMarshaller).shift(20)}
+             |                    resolve(serialized);
+             |                })
+             |                .catch((err) => {
+             |                    reject(err);
+             |                });
+             |        } catch (err) {
+             |            reject(err);
+             |        }
+             |    });
+             |}
          """.stripMargin
-      else
-        s"""case "${m.name}": {
-           |    ${if (m.signature.input.fields.isEmpty) "// No input params for this method" else s"const obj = this.marshaller.Unmarshal<${if (m.signature.input.fields.nonEmpty) s"In${m.name.capitalize}" else "object"}>(data);"}
-           |    return new Promise((resolve, reject) => {
-           |        try {
-           |            this.$impl.${m.name}(context${if (m.signature.input.fields.isEmpty) "" else ", "}${m.signature.input.fields.map(f => s"obj.${conv.safeName(f.name)}").mkString(", ")})
-           |                .then(() => {
-           |                    resolve(this.marshaller.Marshal<Void>(Void.instance));
-           |                })
-           |                .catch((err) => {
-           |                    reject(err);
-           |                });
-           |        } catch (err) {
-           |            reject(err);
-           |        }
-           |    });
-           |}
+        else
+          s"""case "${m.name}": {
+             |    ${if (m.signature.input.fields.isEmpty) "// No input params for this method" else s"const obj = this.marshaller.Unmarshal<${if (m.signature.input.fields.nonEmpty) s"In${m.name.capitalize}" else "object"}>(data$useRawParam);"}
+             |    return new Promise((resolve, reject) => {
+             |        try {
+             |            this.$impl.${m.name}(context${if (m.signature.input.fields.isEmpty) "" else ", "}${m.signature.input.fields.map(f => s"obj.${conv.safeName(f.name)}").mkString(", ")})
+             |                .then(() => {
+             |                    resolve(this.marshaller.Marshal<Void>(Void.instance${useRawParam}));
+             |                })
+             |                .catch((err) => {
+             |                    reject(err);
+             |                });
+             |        } catch (err) {
+             |            reject(err);
+             |        }
+             |    });
+             |}
          """.stripMargin
+    }
   }
 
   protected def renderServiceDispatcher(i: Service): String = {
@@ -986,7 +992,7 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
        |
        |    public dispatch(context: C, method: string, data: D | undefined): Promise<D> {
        |        switch (method) {
-       |${i.events.map(m => renderServiceDispatcherHandler(m, "handlers")).mkString("\n").shift(12)}
+       |${i.events.map(m => renderServiceDispatcherHandler(m, "handlers", useRawMarshaller = true)).mkString("\n").shift(12)}
        |            default:
        |                throw new Error(`Method $${method} is not supported by ${i.id.name}Dispatcher.`);
        |        }

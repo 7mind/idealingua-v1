@@ -121,7 +121,7 @@ export class WebSocketClientTransport<C> implements ClientSocketTransport<C, str
         this._requests[request.id] = record;
         this._wsc.send(serialized);
         if (this.onSend) {
-            this.onSend(service, method, serialized);
+            this.onSend(service, method, serialized as string);
         }
         return record.promise;
     }
@@ -246,12 +246,12 @@ export class WebSocketClientTransport<C> implements ClientSocketTransport<C, str
         this._dispatcher.dispatch(this._context, req.service, req.method, req.data)
             .then((data: string) => {
                 res.data = data;
-                this._wsc.send(res)
+                this._wsc.send(JSON.stringify(res));
             })
             .catch((err: string) => {
                 res.kind = WebSocketMessageKind.BuzzerFailure;
                 res.data = err;
-                this._wsc.send(res);
+                this._wsc.send(JSON.stringify(res));
             });
     }
 

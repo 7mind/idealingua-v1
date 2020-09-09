@@ -171,6 +171,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
          |// Exporting module for domain ${ts.domain.id.toPackage.mkString(".")}
          |${ts.domain.types.filterNot(_.id.isInstanceOf[AliasId]).map(t => s"export * from './${t.id.name}';").mkString("\n")}
          |${ts.domain.services.map(s => s"export * from './${s.id.name}';").mkString("\n")}
+         |${ts.domain.buzzers.map(s => s"export * from './${s.id.name}';").mkString("\n")}
          """.stripMargin
 
     Module(ModuleId(ts.domain.id.toPackage, "index.ts"), content)
