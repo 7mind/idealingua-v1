@@ -10,7 +10,10 @@ import izumi.fundamentals.platform.files.IzFiles
 import izumi.fundamentals.platform.jvm.IzJvm
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.properties.EnvVarsCI
-import izumi.fundamentals.platform.resources.IzResources
+import izumi.fundamentals.platform.resources.IzResourcesDirty
+import izumi.fundamentals.platform.strings.IzString._
+import izumi.fundamentals.platform.time.IzTime._
+import izumi.fundamentals.platform.time.Timed
 import izumi.idealingua.il.loader._
 import izumi.idealingua.il.renderer.{IDLRenderer, IDLRenderingOptions}
 import izumi.idealingua.model.loader.LoadedDomain
@@ -19,16 +22,13 @@ import izumi.idealingua.model.publishing.manifests._
 import izumi.idealingua.translator._
 import izumi.idealingua.translator.tocsharp.CSharpTranslator
 import izumi.idealingua.translator.tocsharp.extensions.CSharpTranslatorExtension
+import izumi.idealingua.translator.tocsharp.layout.CSharpNamingConvention
 import izumi.idealingua.translator.togolang.GoLangTranslator
 import izumi.idealingua.translator.togolang.extensions.GoLangTranslatorExtension
 import izumi.idealingua.translator.toscala.ScalaTranslator
 import izumi.idealingua.translator.toscala.extensions.ScalaTranslatorExtension
 import izumi.idealingua.translator.totypescript.TypeScriptTranslator
 import izumi.idealingua.translator.totypescript.extensions.TypeScriptTranslatorExtension
-import izumi.fundamentals.platform.strings.IzString._
-import izumi.fundamentals.platform.time.Timed
-import izumi.idealingua.translator.tocsharp.layout.CSharpNamingConvention
-import izumi.fundamentals.platform.time.IzTime._
 
 import scala.sys.process._
 
@@ -222,9 +222,9 @@ object IDLTestTools {
         IzFiles.recreateDirs(refsDir)
 
         val refsSrc = s"refs/${lang.toString.toLowerCase()}"
-        val refDlls = IzResources.copyFromClasspath(refsSrc, refsDir).files
+        val refDlls = IzResourcesDirty.copyFromClasspath(refsSrc, refsDir).files
           .filter(f => f.toFile.isFile && f.toString.endsWith(".dll")).map(f => out.absoluteTargetDir.relativize(f.toAbsolutePath))
-        IzResources.copyFromClasspath(refsSrc, out.phase2)
+        IzResourcesDirty.copyFromClasspath(refsSrc, out.phase2)
 
 
         val outname = "test-output.dll"

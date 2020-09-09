@@ -3,9 +3,14 @@ package izumi.idealingua.compiler
 import java.nio.file._
 import java.time.{ZoneId, ZonedDateTime}
 
+import com.typesafe.config.ConfigFactory
+import io.circe
+import io.circe.parser.parse
+import io.circe.syntax._
+import io.circe.{Json, JsonObject}
 import izumi.fundamentals.platform.files.IzFiles
 import izumi.fundamentals.platform.language.Quirks._
-import izumi.fundamentals.platform.resources.{IzManifest, IzResources}
+import izumi.fundamentals.platform.resources.{IzManifest, IzResourcesDirty}
 import izumi.fundamentals.platform.strings.IzString._
 import izumi.fundamentals.platform.time.Timed
 import izumi.idealingua.compiler.Codecs._
@@ -13,11 +18,6 @@ import izumi.idealingua.il.loader.{LocalModelLoaderContext, ModelResolver}
 import izumi.idealingua.model.loader.UnresolvedDomains
 import izumi.idealingua.model.publishing.{BuildManifest, ProjectVersion}
 import izumi.idealingua.translator._
-import com.typesafe.config.ConfigFactory
-import io.circe
-import io.circe.parser.parse
-import io.circe.syntax._
-import io.circe.{Json, JsonObject}
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
@@ -90,7 +90,7 @@ object CommandlineIDLCompiler {
 
         val mfdir = p.resolve("manifests")
         mfdir.toFile.mkdirs().discard()
-        IzResources.copyFromClasspath("defs/example", p).discard()
+        IzResourcesDirty.copyFromClasspath("defs/example", p).discard()
 
         TypespaceCompilerBaseFacade.descriptors.foreach {
           d =>
