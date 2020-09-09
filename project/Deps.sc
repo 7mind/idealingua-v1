@@ -211,6 +211,7 @@ object Izumi {
           ),
           SettingKey.Default := Const.EmptySeq
         ),
+        "scalacOptions" -= "-Wconf:any:error",
       )
 
     }

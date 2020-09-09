@@ -36,7 +36,7 @@ class Http4sTransportTest extends AnyWordSpec {
 
 
           disp.cancelCredentials()
-          BIOR.unsafeRunSyncAsEither(greeterClient.alternative()) match {
+          BIOR.unsafeRunSync(greeterClient.alternative()) match {
             case Termination(exception: IRTUnexpectedHttpStatus, _, _) =>
               assert(exception.status == Status.Forbidden)
             case o =>
@@ -45,7 +45,7 @@ class Http4sTransportTest extends AnyWordSpec {
 
           //
           disp.setupCredentials("user", "badpass")
-          BIOR.unsafeRunSyncAsEither(greeterClient.alternative()) match {
+          BIOR.unsafeRunSync(greeterClient.alternative()) match {
             case Termination(exception: IRTUnexpectedHttpStatus, _, _) =>
               assert(exception.status == Status.Unauthorized)
             case o =>
@@ -67,7 +67,7 @@ class Http4sTransportTest extends AnyWordSpec {
         assert(BIOR.unsafeRun(greeterClient.greet("John", "Smith")) == "Hi, John Smith!")
         assert(BIOR.unsafeRun(greeterClient.alternative()) == "value")
 
-        BIOR.unsafeRunSyncAsEither(ioService.wsSessionStorage.buzzersFor("user")) match {
+        BIOR.unsafeRunSync(ioService.wsSessionStorage.buzzersFor("user")) match {
           case Success(buzzers) =>
             buzzers.foreach {
               buzzer =>
@@ -78,7 +78,7 @@ class Http4sTransportTest extends AnyWordSpec {
         }
 
         disp.setupCredentials("user", "badpass")
-        BIOR.unsafeRunSyncAsEither(greeterClient.alternative()) match {
+        BIOR.unsafeRunSync(greeterClient.alternative()) match {
           case Termination(_: IRTGenericFailure, _, _) =>
           case o =>
             fail(s"Expected IRTGenericFailure but got $o")
@@ -106,7 +106,7 @@ class Http4sTransportTest extends AnyWordSpec {
 
   def checkBadBody(body: String, disp: IRTDispatcher[rt.BiIO] with TestHttpDispatcher): Unit = {
     val dummy = IRTMuxRequest(IRTReqBody((1, 2)), GreeterServiceMethods.greet.id)
-    val badJson = BIOR.unsafeRunSyncAsEither(disp.sendRaw(dummy, body.getBytes))
+    val badJson = BIOR.unsafeRunSync(disp.sendRaw(dummy, body.getBytes))
     badJson match {
       case Error(value: IRTUnexpectedHttpStatus, _) =>
         assert(value.status == Status.BadRequest).discard()

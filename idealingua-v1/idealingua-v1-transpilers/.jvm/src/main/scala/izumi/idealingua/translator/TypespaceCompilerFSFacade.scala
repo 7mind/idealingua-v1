@@ -4,11 +4,11 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
 
 import izumi.fundamentals.platform.files.{IzFiles, IzZip}
-import izumi.fundamentals.platform.resources.IzResources
+import izumi.fundamentals.platform.resources.IzResourcesDirty
+import izumi.fundamentals.platform.strings.IzString._
 import izumi.idealingua.model.loader.LoadedDomain
 import izumi.idealingua.model.output.{Module, ModuleId}
 import izumi.idealingua.model.problems.IDLException
-import izumi.fundamentals.platform.strings.IzString._
 
 class TypespaceCompilerFSFacade(toCompile: Seq[LoadedDomain.Success]) {
 
@@ -76,7 +76,7 @@ class TypespaceCompilerFSFacade(toCompile: Seq[LoadedDomain.Success]) {
 
   private def loadBundledRuntime(options: UntypedCompilerOptions): Option[ProvidedRuntime] = {
     if (options.withBundledRuntime) {
-      val iterator = IzResources.enumerateClasspath(s"runtime/${options.language.toString}")
+      val iterator = IzResourcesDirty.enumerateClasspath(s"runtime/${options.language.toString}")
       val rtFiles = iterator.files.map {
         f =>
           import scala.jdk.CollectionConverters._

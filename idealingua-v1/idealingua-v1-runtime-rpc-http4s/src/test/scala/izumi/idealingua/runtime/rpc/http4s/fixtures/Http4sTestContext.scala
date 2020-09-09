@@ -16,8 +16,6 @@ import org.http4s.{BasicCredentials, Credentials, Headers, Request, Uri}
 import zio.Task
 import zio.interop.catz._
 
-import scala.concurrent.duration.FiniteDuration
-
 object Http4sTestContext {
   //
   final val addr = IzSockets.temporaryServerAddress()

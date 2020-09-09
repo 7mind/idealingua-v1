@@ -88,6 +88,7 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
       )
       case (_, _) => Seq.empty
     } },
+    scalacOptions -= "-Wconf:any:error",
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.11",
@@ -183,6 +184,7 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
       )
       case (_, _) => Seq.empty
     } },
+    scalacOptions -= "-Wconf:any:error",
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.11",
@@ -280,6 +282,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
       )
       case (_, _) => Seq.empty
     } },
+    scalacOptions -= "-Wconf:any:error",
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.11",
@@ -381,6 +384,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
       )
       case (_, _) => Seq.empty
     } },
+    scalacOptions -= "-Wconf:any:error",
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.11",
@@ -483,6 +487,7 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
       )
       case (_, _) => Seq.empty
     } },
+    scalacOptions -= "-Wconf:any:error",
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.11",
@@ -579,6 +584,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
       )
       case (_, _) => Seq.empty
     } },
+    scalacOptions -= "-Wconf:any:error",
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.11",
@@ -669,6 +675,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
       )
       case (_, _) => Seq.empty
     } },
+    scalacOptions -= "-Wconf:any:error",
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.11",
@@ -759,6 +766,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
       )
       case (_, _) => Seq.empty
     } },
+    scalacOptions -= "-Wconf:any:error",
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.11",
@@ -849,6 +857,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
       )
       case (_, _) => Seq.empty
     } },
+    scalacOptions -= "-Wconf:any:error",
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.11",
@@ -961,6 +970,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
       )
       case (_, _) => Seq.empty
     } },
+    scalacOptions -= "-Wconf:any:error",
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.11",
@@ -1066,7 +1076,7 @@ lazy val `idealingua-v1` = (project in file("."))
     organization in ThisBuild := "io.7mind.izumi",
     sonatypeProfileName := "io.7mind",
     sonatypeSessionName := s"[sbt-sonatype] ${name.value} ${version.value} ${java.util.UUID.randomUUID}",
-    publishTo in ThisBuild := 
+    publishTo in ThisBuild :=
     (if (!isSnapshot.value) {
         sonatypePublishToBundle.value
       } else {

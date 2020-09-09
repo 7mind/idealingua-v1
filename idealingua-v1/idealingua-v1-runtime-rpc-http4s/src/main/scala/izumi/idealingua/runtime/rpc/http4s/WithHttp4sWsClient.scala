@@ -93,7 +93,7 @@ class ClientWsDispatcher[C <: Http4sContext]
       v
     }
 
-    BIORunner.unsafeRunAsyncAsEither(result) {
+    BIORunner.unsafeRunAsync(result) {
       case Success(PacketInfo(packetId, method)) =>
         logger.debug(s"Processed incoming packet $method: $packetId")
 
