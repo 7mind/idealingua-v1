@@ -1,7 +1,30 @@
 domain idltest.events
 
+enum EnumType {
+    EnumA,
+    EnumB
+}
+
+data BranchA {
+    a: str
+}
+
+data BranchB {
+    b: str
+}
+
+adt ADTType {
+    // Ephemeral activity
+    BranchA
+    BranchB
+}
+
 buzzer TestBuzzer {
   line empty()
   line userRegistered(firstName: str, secondName: str)
   line hello(name: str): str
+  line enumInput(value: EnumType): str
+  line enumInputVoid(value: EnumType)
+  line adtInput(value: ADTType): str
+  line adtInputVoid(value: ADTType)
 }

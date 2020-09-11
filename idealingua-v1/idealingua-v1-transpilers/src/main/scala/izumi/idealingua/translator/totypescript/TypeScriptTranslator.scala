@@ -793,33 +793,19 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
     val useRawParam = if (useRawMarshaller) ", true" else ""
     method match {
       case m: DefMethod.RPCMethod =>
-        if (isServiceMethodReturnExistent(m))
+        val resolveCode = if (isServiceMethodReturnExistent(m))
+          s"""${renderServiceReturnSerialization(m, useRawMarshaller = useRawMarshaller).shift(20)}
+             |                    resolve(serialized);""".stripMargin
+          else
+            s"                    resolve(this.marshaller.Marshal<Void>(Void.instance${useRawParam}));"
+
           s"""case "${m.name}": {
              |    ${if (m.signature.input.fields.isEmpty) "// No input params for this method" else s"const obj = ${if (m.signature.input.fields.nonEmpty) s"new In${m.name.capitalize}(" else ""}this.marshaller.Unmarshal<${if (m.signature.input.fields.nonEmpty) s"In${m.name.capitalize}Serialized" else "object"}>(data$useRawParam)${if (m.signature.input.fields.nonEmpty) ")" else ""};"}
              |    return new Promise((resolve, reject) => {
              |        try {
              |            this.$impl.${m.name}(context${if (m.signature.input.fields.isEmpty) "" else ", "}${m.signature.input.fields.map(f => s"obj.${conv.safeName(f.name)}").mkString(", ")})
              |                .then((res: ${renderServiceMethodOutputSignature(m)}) => {
-             |${renderServiceReturnSerialization(m, useRawMarshaller = useRawMarshaller).shift(20)}
-             |                    resolve(serialized);
-             |                })
-             |                .catch((err) => {
-             |                    reject(err);
-             |                });
-             |        } catch (err) {
-             |            reject(err);
-             |        }
-             |    });
-             |}
-         """.stripMargin
-        else
-          s"""case "${m.name}": {
-             |    ${if (m.signature.input.fields.isEmpty) "// No input params for this method" else s"const obj = this.marshaller.Unmarshal<${if (m.signature.input.fields.nonEmpty) s"In${m.name.capitalize}" else "object"}>(data$useRawParam);"}
-             |    return new Promise((resolve, reject) => {
-             |        try {
-             |            this.$impl.${m.name}(context${if (m.signature.input.fields.isEmpty) "" else ", "}${m.signature.input.fields.map(f => s"obj.${conv.safeName(f.name)}").mkString(", ")})
-             |                .then(() => {
-             |                    resolve(this.marshaller.Marshal<Void>(Void.instance${useRawParam}));
+             |$resolveCode
              |                })
              |                .catch((err) => {
              |                    reject(err);
