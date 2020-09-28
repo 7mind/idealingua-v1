@@ -4,8 +4,8 @@ import java.io.File
 import java.nio.file.{Path, Paths}
 
 import izumi.fundamentals.platform.cli.model.raw.RawEntrypointParams
-import izumi.fundamentals.platform.cli.model.schema.{GlobalArgsSchema, ParserDef, ParserSchema, ParserSchemaFormatter, RoleParserSchema}
-import izumi.fundamentals.platform.cli.{CLIParser, ParserFailureHandler}
+import izumi.fundamentals.platform.cli.model.schema._
+import izumi.fundamentals.platform.cli.{CLIParserImpl, ParserFailureHandler}
 
 case class LanguageOpts(
                          id: String,
@@ -61,7 +61,7 @@ object IDLCArgs {
   object IP extends ParserDef {}
 
   def parseUnsafe(args: Array[String]): IDLCArgs = {
-    val parsed = new CLIParser().parse(args) match {
+    val parsed = new CLIParserImpl().parse(args) match {
       case Left(value) =>
         ParserFailureHandler.TerminatingHandler.onParserError(value)
       case Right(value) =>

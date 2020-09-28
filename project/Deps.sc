@@ -7,13 +7,13 @@ object Izumi {
   object V {
     val izumi = Version.VExpr("Izumi.version")
 
-    val kind_projector = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version")
+    val kind_projector = Version.VExpr("Izumi.Deps.fundamentals_bio.org_typelevel_kind_projector_version")
     val scalatest = Version.VExpr("V.scalatest")
 
-    val cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version")
-    val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
-    val circe = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
-    val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
+    val cats = Version.VExpr("Izumi.Deps.fundamentals_bio.org_typelevel_cats_core_version")
+    val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bio.org_typelevel_cats_effect_version")
+    val circe = Version.VExpr("Izumi.Deps.fundamentals_bio.org_typelevel_cats_effect_version")
+    val zio = Version.VExpr("Izumi.Deps.fundamentals_bio.dev_zio_zio_version")
     val zio_interop_cats = Version.VExpr("V.interop_cats")
 
     val http4s = Version.VExpr("V.http4s")
@@ -264,7 +264,7 @@ object Izumi {
     artifacts = Seq(
       Artifact(
         name = Projects.idealingua.model,
-        libs = Deps.fundamentals_basics.map(_ in Scope.Compile.all),
+        libs = Seq(scala_reflect in Scope.Provided.all) ++ Deps.fundamentals_basics.map(_ in Scope.Compile.all),
         depends = Seq.empty,
       ),
       Artifact(
