@@ -9,7 +9,7 @@ object V {
 
   val scala_xml = "1.3.0"
 
-  val interop_cats = "2.1.4.0"
+  val interop_cats = "2.1.4.1"
 
   // java-only dependencies below
   // java, we need it bcs http4s ws client isn't ready yet
