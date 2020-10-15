@@ -24,7 +24,7 @@ object YarnOptions {
   def example: YarnOptions = YarnOptions(
     projectNaming = ProjectNamingRule.example,
     devDependencies = List(
-      ManifestDependency("typescript", "4.0.1"),
+      ManifestDependency("typescript", "4.0.3"),
     ),
     peerDependencies = List(
       ManifestDependency("moment", "^2.29.1"),
