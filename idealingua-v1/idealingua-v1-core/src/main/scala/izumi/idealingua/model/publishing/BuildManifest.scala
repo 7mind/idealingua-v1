@@ -1,6 +1,6 @@
 package izumi.idealingua.model.publishing
 
-import izumi.fundamentals.platform.build.ProjectAttributeMacro
+import izumi.idealingua.`macro`.ProjectAttributeMacro
 import izumi.idealingua.model.publishing.BuildManifest._
 
 trait BuildManifest {

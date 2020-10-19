@@ -1,6 +1,6 @@
 package izumi.idealingua.translator.toscala.types.runtime
 
-import izumi.functional.bio.BIO
+import izumi.functional.bio.IO2
 import izumi.idealingua.model.common.TypeId
 import izumi.idealingua.runtime.model._
 import izumi.idealingua.runtime.rpc.{IRTMethodName, IRTMethodSignature, IRTWrappedService, _}
@@ -23,8 +23,8 @@ object IDLRuntimeTypes {
   final val adt = model.conv.toScala[IDLAdt]
   final val adtEl = model.conv.toScala[IDLAdtElement]
 
-  final val WithResult = services.conv.toScala[BIO[Nothing]]
-  final val IRTBio: ScalaType = services.conv.toScala[BIO[Nothing]]
+  final val WithResult = services.conv.toScala[IO2[Nothing]]
+  final val IRTIO2: ScalaType = services.conv.toScala[IO2[Nothing]]
   final val IRTMethodSignature = services.conv.toScala[IRTMethodSignature]
   final val IRTServiceId = services.conv.toScala[IRTServiceId]
   final val IRTMethodId = services.conv.toScala[IRTMethodId]

@@ -1,8 +1,8 @@
-import $ivy.`io.7mind.izumi.sbt::sbtgen:0.0.62`
+import $ivy.`io.7mind.izumi.sbt::sbtgen:0.0.64`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
 
-object Izumi {
+object Idealingua {
 
   object V {
     val izumi = Version.VExpr("Izumi.version")
@@ -196,7 +196,7 @@ object Izumi {
         "scalacOptions" in SettingScope.Build += s"""${"\"" * 3}-Xmacro-settings:scalatest-version=${V.scalatest}${"\"" * 3}""".raw,
       )
 
-      final val sharedSettings = Defaults.SbtMeta ++ Seq(
+      final val sharedSettings = Defaults.SbtMetaOptions ++ Seq(
         "testOptions" in SettingScope.Test += """Tests.Argument("-oDF")""".raw,
         //"testOptions" in (SettingScope.Test, Platform.Jvm) ++= s"""Seq(Tests.Argument("-u"), Tests.Argument(s"$${target.value}/junit-xml-$${scalaVersion.value}"))""".raw,
         "scalacOptions" ++= Seq(
@@ -264,7 +264,7 @@ object Izumi {
     artifacts = Seq(
       Artifact(
         name = Projects.idealingua.model,
-        libs = Deps.fundamentals_basics.map(_ in Scope.Compile.all),
+        libs = Seq(scala_reflect in Scope.Provided.all) ++ Deps.fundamentals_basics.map(_ in Scope.Compile.all),
         depends = Seq.empty,
       ),
       Artifact(

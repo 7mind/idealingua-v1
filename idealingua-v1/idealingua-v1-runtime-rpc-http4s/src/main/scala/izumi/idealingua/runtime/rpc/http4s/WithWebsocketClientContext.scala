@@ -7,7 +7,7 @@ import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedDeque, TimeUnit,
 import fs2.concurrent.Queue
 import io.circe.Json
 import io.circe.syntax._
-import izumi.functional.bio.BIOApplicative
+import izumi.functional.bio.Applicative2
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.time.IzTime
 import izumi.fundamentals.platform.uuid.UUIDGen
@@ -49,7 +49,7 @@ trait WsSessionListener[F[+_, +_], ClientId] {
 }
 
 object WsSessionListener {
-  def empty[F[+_, +_]: BIOApplicative, ClientId]: WsSessionListener[F, ClientId] = new WsSessionListener[F, ClientId] {
+  def empty[F[+_, +_]: Applicative2, ClientId]: WsSessionListener[F, ClientId] = new WsSessionListener[F, ClientId] {
     import izumi.functional.bio.F
     override def onSessionOpened(context: WsClientId[ClientId]): F[Throwable, Unit] = F.unit
     override def onClientIdUpdate(context: WsClientId[ClientId], old: WsClientId[ClientId]): F[Throwable, Unit] = F.unit
@@ -97,7 +97,7 @@ class WsSessionsStorageImpl[C <: Http4sContext](
 ) extends WsSessionsStorage[C#BiIO, C#ClientId, C#RequestContext] {
 
   import c._
-  import izumi.functional.bio.BIO
+  import izumi.functional.bio.IO2
 
   type WSC = WebsocketClientContext[BiIO, ClientId, RequestContext]
 

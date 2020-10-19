@@ -4,9 +4,9 @@ import java.net.URI
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
-import izumi.functional.bio.BIO
-import izumi.functional.bio.BIOExit
-import izumi.functional.bio.BIOExit.{Error, Success, Termination}
+import izumi.functional.bio.IO2
+import izumi.functional.bio.Exit
+import izumi.functional.bio.Exit.{Error, Success, Termination}
 import izumi.idealingua.runtime.rpc
 import izumi.idealingua.runtime.rpc._
 import izumi.logstage.api.IzLogger
@@ -93,7 +93,7 @@ class ClientWsDispatcher[C <: Http4sContext]
       v
     }
 
-    BIORunner.unsafeRunAsync(result) {
+    UnsafeRun2.unsafeRunAsync(result) {
       case Success(PacketInfo(packetId, method)) =>
         logger.debug(s"Processed incoming packet $method: $packetId")
 
@@ -123,10 +123,10 @@ class ClientWsDispatcher[C <: Http4sContext]
 
         for {
           maybePacket <- responsePkt.sandbox.catchAll {
-            case BIOExit.Termination(exception, allExceptions, trace) =>
+            case Exit.Termination(exception, allExceptions, trace) =>
               logger.error(s"${packetInfo -> null}: WS processing terminated, $exception, $allExceptions, $trace")
               F.pure(Some(rpc.RpcPacket.buzzerFail(Some(id), exception.getMessage)))
-            case BIOExit.Error(exception, trace) =>
+            case Exit.Error(exception, trace) =>
               logger.error(s"${packetInfo -> null}: WS processing failed, $exception $trace")
               F.pure(Some(rpc.RpcPacket.buzzerFail(Some(id), exception.getMessage)))
           }
