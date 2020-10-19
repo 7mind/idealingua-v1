@@ -1,6 +1,6 @@
 package izumi.r2.idealingua.test.generated
 
-import izumi.functional.bio.BIO
+import izumi.functional.bio.IO2
 import izumi.idealingua.runtime.rpc._
 import io.circe._
 import io.circe.generic.semiauto._
@@ -30,10 +30,10 @@ trait GreeterServiceClient[Or[+ _, + _]] {
   def alternative(): Or[Long, String]
 }
 
-class GreeterServiceClientWrapped[F[+ _, + _] : BIO](dispatcher: IRTDispatcher[F])
+class GreeterServiceClientWrapped[F[+ _, + _] : IO2](dispatcher: IRTDispatcher[F])
   extends GreeterServiceClient[F] {
 
-  val R: BIO[F] = implicitly
+  val R: IO2[F] = implicitly
   import izumi.r2.idealingua.test.generated.{GreeterServiceMethods => _M}
 
   override def greet(name: String, surname: String): R.Just[String] = {
@@ -77,10 +77,10 @@ object GreeterServiceClientWrapped extends IRTWrappedClient {
   }
 }
 
-class GreeterServiceServerWrapped[F[+ _, + _] : BIO, C](service: GreeterServiceServer[F, C])
+class GreeterServiceServerWrapped[F[+ _, + _] : IO2, C](service: GreeterServiceServer[F, C])
   extends IRTWrappedService[F, C] {
 
-  val F: BIO[F] = implicitly
+  val F: IO2[F] = implicitly
 
   object greet extends IRTMethodWrapper[F, C] {
 
@@ -184,12 +184,12 @@ object GreeterServerMarshallers {
       case IRTResBody(value: Output) => value.asJson
     }
 
-    override def decodeRequest[Or[+ _, + _] : BIO]: PartialFunction[IRTJsonBody, Or[DecodingFailure, IRTReqBody]] = {
+    override def decodeRequest[Or[+ _, + _] : IO2]: PartialFunction[IRTJsonBody, Or[DecodingFailure, IRTReqBody]] = {
       case IRTJsonBody(m, packet) if m == id =>
         decoded[Or, IRTReqBody](packet.as[Input].map(v => IRTReqBody(v)))
     }
 
-    override def decodeResponse[Or[+ _, + _] : BIO]: PartialFunction[IRTJsonBody, Or[DecodingFailure, IRTResBody]] = {
+    override def decodeResponse[Or[+ _, + _] : IO2]: PartialFunction[IRTJsonBody, Or[DecodingFailure, IRTResBody]] = {
       case IRTJsonBody(m, packet) if m == id =>
         decoded[Or, IRTResBody](packet.as[Output].map(v => IRTResBody(v)))
     }
@@ -207,12 +207,12 @@ object GreeterServerMarshallers {
       case IRTResBody(value: Output) => value.asJson
     }
 
-    override def decodeRequest[Or[+ _, + _] : BIO]: PartialFunction[IRTJsonBody, Or[DecodingFailure, IRTReqBody]] = {
+    override def decodeRequest[Or[+ _, + _] : IO2]: PartialFunction[IRTJsonBody, Or[DecodingFailure, IRTReqBody]] = {
       case IRTJsonBody(m, packet) if m == id =>
         decoded[Or, IRTReqBody](packet.as[Input].map(v => IRTReqBody(v)))
     }
 
-    override def decodeResponse[Or[+ _, + _] : BIO]: PartialFunction[IRTJsonBody, Or[DecodingFailure, IRTResBody]] = {
+    override def decodeResponse[Or[+ _, + _] : IO2]: PartialFunction[IRTJsonBody, Or[DecodingFailure, IRTResBody]] = {
       case IRTJsonBody(m, packet) if m == id =>
         decoded[Or, IRTResBody](packet.as[Output].map(v => IRTResBody(v)))
     }

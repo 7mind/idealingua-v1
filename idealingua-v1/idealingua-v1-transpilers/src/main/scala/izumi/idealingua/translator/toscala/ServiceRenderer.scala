@@ -1,7 +1,7 @@
 package izumi.idealingua.translator.toscala
 
 import _root_.io.circe.{DecodingFailure, Json}
-import izumi.functional.bio.BIO
+import izumi.functional.bio.IO2
 import izumi.idealingua.model.il.ast.typed.DefMethod.RPCMethod
 import izumi.idealingua.model.il.ast.typed.Service
 import izumi.idealingua.translator.toscala.products.CogenProduct.CogenServiceProduct
@@ -34,9 +34,9 @@ class ServiceRenderer(ctx: STContext) {
           }"""
 
     val qqClientWrapped =
-      q"""class ${c.svcWrappedClientTpe.typeName}[Or[+_, +_] : IRTBIO](_dispatcher: ${rt.IRTDispatcher.parameterize(List(c.F.t)).typeFull})
+      q"""class ${c.svcWrappedClientTpe.typeName}[Or[+_, +_] : IRTIO2](_dispatcher: ${rt.IRTDispatcher.parameterize(List(c.F.t)).typeFull})
                extends ${c.svcClientTpe.parameterize(List(c.F.t)).init()} {
-               final val _F: IRTBIO[${c.F.t}] =  implicitly
+               final val _F: IRTIO2[${c.F.t}] =  implicitly
                ${c.methodImport}
 
                ..${decls.map(_.defnClientWrapped)}
@@ -52,11 +52,11 @@ class ServiceRenderer(ctx: STContext) {
        """
 
     val qqServerWrapped =
-      q"""class ${c.svcWrappedServerTpe.typeName}[Or[+_, +_] : IRTBIO, ${c.Ctx.p}](
+      q"""class ${c.svcWrappedServerTpe.typeName}[Or[+_, +_] : IRTIO2, ${c.Ctx.p}](
               _service: ${c.svcServerTpe.typeName}[${c.F.t}, ${c.Ctx.t}]
             )
                extends IRTWrappedService[${c.F.t}, ${c.Ctx.t}] {
-            final val _F: IRTBIO[${c.F.t}] = implicitly
+            final val _F: IRTIO2[${c.F.t}] = implicitly
 
             final val serviceId: ${rt.IRTServiceId.typeName} = ${c.svcMethods.termName}.serviceId
 
@@ -101,7 +101,7 @@ class ServiceRenderer(ctx: STContext) {
       , qqServiceCodecs
       , List(
         runtime.Import.from(runtime.Pkg.language, "higherKinds"),
-        runtime.Import.from(runtime.Pkg.of[BIO[Nothing]], "BIO", Some("IRTBIO")),
+        runtime.Import.from(runtime.Pkg.of[IO2[Nothing]], "IO2", Some("IRTIO2")),
         runtime.Import[Json](Some("IRTJson")),
         runtime.Import[DecodingFailure](Some("IRTDecodingFailure")),
         runtime.Pkg.of[_root_.io.circe.syntax.EncoderOps[Nothing]].`import`,

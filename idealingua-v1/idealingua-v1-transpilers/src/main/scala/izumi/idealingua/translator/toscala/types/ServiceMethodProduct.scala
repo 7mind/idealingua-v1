@@ -51,13 +51,13 @@ final case class ServiceMethodProduct(ctx: STContext, sp: ServiceContext, method
       case DefMethod.Output.Singular(_) =>
         q"""def invoke(ctx: ${sp.Ctx.t}, input: Input): Just[Output] = {
               assert(ctx != null && input != null)
-            ${sp.BIO.n}.map(_service.$nameTerm(ctx, ..${Input.sigCall}))(v => new Output(v))
+            ${sp.IO2.n}.map(_service.$nameTerm(ctx, ..${Input.sigCall}))(v => new Output(v))
            }"""
 
       case DefMethod.Output.Void() =>
         q"""def invoke(ctx: ${sp.Ctx.t}, input: Input): Just[Output] = {
               assert(ctx != null && input != null)
-              ${sp.BIO.n}.map(_service.$nameTerm(ctx, ..${Input.sigCall}))(_ => new Output())
+              ${sp.IO2.n}.map(_service.$nameTerm(ctx, ..${Input.sigCall}))(_ => new Output())
            }"""
 
       case DefMethod.Output.Algebraic(_) | DefMethod.Output.Struct(_) =>
@@ -69,7 +69,7 @@ final case class ServiceMethodProduct(ctx: STContext, sp: ServiceContext, method
       case DefMethod.Output.Alternative(_, _) =>
         q"""
            def invoke(ctx: ${sp.Ctx.t}, input: Input): Just[Output] = {
-              ${sp.BIO.n}.redeem(_service.$nameTerm(ctx, ..${Input.sigCall}))(
+              ${sp.IO2.n}.redeem(_service.$nameTerm(ctx, ..${Input.sigCall}))(
                       err => _F.pure(new ${Output.negativeBranchType.typeFull}(err))
                       , succ => _F.pure(new ${Output.positiveBranchType.typeFull}(succ))
                    )
@@ -92,63 +92,63 @@ final case class ServiceMethodProduct(ctx: STContext, sp: ServiceContext, method
       q"""
           val id = ${Lit.String(s"${sp.typeName}.${sp.svcWrappedClientTpe.termName.value}.$nameTerm")}
           val expected = classOf[_M.$nameTerm.Input].toString
-          ${sp.BIO.n}.terminate(new IRTTypeMismatchException(s"Unexpected type in $$id: $$v, expected $$expected got $${v.getClass}", v, None))
+          ${sp.IO2.n}.terminate(new IRTTypeMismatchException(s"Unexpected type in $$id: $$v, expected $$expected got $${v.getClass}", v, None))
        """
 
     method.signature.output match {
       case DefMethod.Output.Singular(_) =>
         q"""def $nameTerm(..${Input.signature}): ${Output.outputType} = {
-               ${sp.BIO.n}.redeem(_dispatcher
+               ${sp.IO2.n}.redeem(_dispatcher
                  .dispatch(IRTMuxRequest(IRTReqBody(new _M.$nameTerm.Input(..${Input.sigDirectCall})), _M.$nameTerm.id))
                )(
-                  { err => ${sp.BIO.n}.terminate(err) },
+                  { err => ${sp.IO2.n}.terminate(err) },
                   {
                     case IRTMuxResponse(IRTResBody(v: _M.$nameTerm.Output), method) if method == _M.$nameTerm.id =>
-                      ${sp.BIO.n}.pure(v.value)
+                      ${sp.IO2.n}.pure(v.value)
                     case v => $exception
                   })
            }"""
 
       case DefMethod.Output.Void() =>
         q"""def $nameTerm(..${Input.signature}): ${Output.outputType} = {
-               ${sp.BIO.n}.redeem(_dispatcher
+               ${sp.IO2.n}.redeem(_dispatcher
                  .dispatch(IRTMuxRequest(IRTReqBody(new _M.$nameTerm.Input(..${Input.sigDirectCall})), _M.$nameTerm.id))
                )(
-                   { err => ${sp.BIO.n}.terminate(err) },
+                   { err => ${sp.IO2.n}.terminate(err) },
                    {
                      case IRTMuxResponse(IRTResBody(_: _M.$nameTerm.Output), method) if method == _M.$nameTerm.id =>
-                       ${sp.BIO.n}.pure(())
+                       ${sp.IO2.n}.pure(())
                      case v => $exception
             })
            }"""
 
       case DefMethod.Output.Algebraic(_) | DefMethod.Output.Struct(_) =>
         q"""def $nameTerm(..${Input.signature}): ${Output.outputType} = {
-            ${sp.BIO.n}.redeem(_dispatcher
+            ${sp.IO2.n}.redeem(_dispatcher
                  .dispatch(IRTMuxRequest(IRTReqBody(new _M.$nameTerm.Input(..${Input.sigDirectCall})), _M.$nameTerm.id))
                )(
-                    { err => ${sp.BIO.n}.terminate(err) },
+                    { err => ${sp.IO2.n}.terminate(err) },
                     {
                       case IRTMuxResponse(IRTResBody(v: _M.$nameTerm.Output), method) if method == _M.$nameTerm.id =>
-                        ${sp.BIO.n}.pure(v)
+                        ${sp.IO2.n}.pure(v)
                       case v => $exception
                     })
            }"""
 
       case DefMethod.Output.Alternative(_, _) =>
         q"""def $nameTerm(..${Input.signature}): ${Output.outputType} = {
-           ${sp.BIO.n}.redeem(_dispatcher
+           ${sp.IO2.n}.redeem(_dispatcher
                  .dispatch(IRTMuxRequest(IRTReqBody(new _M.$nameTerm.Input(..${Input.sigDirectCall})), _M.$nameTerm.id))
                )(
-                    { err => ${sp.BIO.n}.terminate(err) },
+                    { err => ${sp.IO2.n}.terminate(err) },
                     {
                        case IRTMuxResponse(IRTResBody(r), method) if method == _M.$nameTerm.id =>
                          r match {
                            case va : ${Output.negativeBranchType.typeFull} =>
-                             ${sp.BIO.n}.fail(va.value)
+                             ${sp.IO2.n}.fail(va.value)
 
                            case va : ${Output.positiveBranchType.typeFull} =>
-                             ${sp.BIO.n}.pure(va.value)
+                             ${sp.IO2.n}.pure(va.value)
 
                            case v =>
                              $exception
@@ -201,7 +201,7 @@ final case class ServiceMethodProduct(ctx: STContext, sp: ServiceContext, method
           }"""
 
     def defnDecoder: Defn.Def =
-      q"""def decodeRequest[Or[+_, +_] : IRTBIO]: PartialFunction[IRTJsonBody, Or[IRTDecodingFailure, IRTReqBody]] = {
+      q"""def decodeRequest[Or[+_, +_] : IRTIO2]: PartialFunction[IRTJsonBody, Or[IRTDecodingFailure, IRTReqBody]] = {
             case IRTJsonBody(m, packet) if m == id => this.decoded[Or, IRTReqBody](packet.as[Input].map(v => IRTReqBody(v)))
           }
        """
@@ -263,7 +263,7 @@ final case class ServiceMethodProduct(ctx: STContext, sp: ServiceContext, method
     }
 
     def defnDecoder: Defn.Def = {
-      q"""def decodeResponse[Or[+_, +_] : IRTBIO]: PartialFunction[IRTJsonBody, Or[IRTDecodingFailure, IRTResBody]] = {
+      q"""def decodeResponse[Or[+_, +_] : IRTIO2]: PartialFunction[IRTJsonBody, Or[IRTDecodingFailure, IRTResBody]] = {
             case IRTJsonBody(m, packet) if m == id =>
               decoded[Or, IRTResBody](packet.as[Output].map(v => IRTResBody(v)))
           }"""

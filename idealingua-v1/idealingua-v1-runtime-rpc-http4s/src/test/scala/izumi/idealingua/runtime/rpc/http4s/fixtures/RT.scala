@@ -2,12 +2,11 @@ package izumi.idealingua.runtime.rpc.http4s.fixtures
 
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
 
-import izumi.functional.bio
-import izumi.functional.bio.BIORunner
+import io.circe.Printer
+import izumi.functional.bio.UnsafeRun2
 import izumi.idealingua.runtime.rpc.http4s.Http4sRuntime
 import izumi.logstage.api.routing.{ConfigurableLogRouter, StaticLogRouter}
 import izumi.logstage.api.{IzLogger, Log}
-import io.circe.Printer
 import zio.Runtime
 import zio.clock.Clock
 import zio.internal.tracing.TracingConfig
@@ -21,15 +20,15 @@ object RT {
   final val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
   implicit val clock: Clock = zio.Has(Clock.Service.live)
 
-  final val handler = BIORunner.FailureHandler.Custom(message => logger.warn(s"Fiber failed: $message"))
-  val platform = new bio.BIORunner.ZIOPlatform(
+  final val handler = UnsafeRun2.FailureHandler.Custom(message => logger.warn(s"Fiber failed: $message"))
+  val platform = new UnsafeRun2.ZIOPlatform(
     Executors.newFixedThreadPool(8).asInstanceOf[ThreadPoolExecutor],
     handler,
     1024,
     TracingConfig.enabled,
   )
   implicit val runtime: Runtime[Any] = Runtime((), platform)
-  implicit val BIOR: BIORunner[zio.IO] = BIORunner.createZIO(platform)
+  implicit val IO2R: UnsafeRun2[zio.IO] = UnsafeRun2.createZIO(platform)
   final val rt = new Http4sRuntime[zio.IO, DummyRequestContext, DummyRequestContext, String, Unit, Unit](global)
 
   private def makeLogger(): IzLogger = {

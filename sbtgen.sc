@@ -5,5 +5,5 @@ exit
 import $file.project.Deps, Deps._
 
 @main
-def entrypoint(args: String*) = Izumi.entrypoint(args)
+def entrypoint(args: String*) = Idealingua.entrypoint(args)
 

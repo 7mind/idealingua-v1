@@ -1,7 +1,7 @@
 package izumi.idealingua.runtime.rpc
 
 import io.circe.Json
-import izumi.functional.bio.{BIO, BIOExit, F}
+import izumi.functional.bio.{IO2, Exit, F}
 
 trait ContextExtender[-Ctx, +Ctx2] {
   def extend(context: Ctx, body: Json, irtMethodId: IRTMethodId): Ctx2
@@ -15,7 +15,7 @@ trait IRTServerMultiplexor[F[+_, +_], -C] {
   def doInvoke(parsedBody: Json, context: C, toInvoke: IRTMethodId): F[Throwable, Option[Json]]
 }
 
-class IRTServerMultiplexorImpl[F[+_, +_]: BIO, -C, -C2](
+class IRTServerMultiplexorImpl[F[+_, +_]: IO2, -C, -C2](
   list: Set[IRTWrappedService[F, C2]],
   extender: ContextExtender[C, C2],
 ) extends IRTServerMultiplexor[F, C] {
@@ -37,9 +37,9 @@ class IRTServerMultiplexorImpl[F[+_, +_]: BIO, -C, -C2](
     for {
       decodeAction <- F.syncThrowable(method.marshaller.decodeRequest[F].apply(IRTJsonBody(toInvoke, parsedBody)))
       safeDecoded <- decodeAction.sandbox.catchAll {
-        case BIOExit.Termination(_, exceptions, trace) =>
+        case Exit.Termination(_, exceptions, trace) =>
           F.fail(new IRTDecodingException(s"$toInvoke: Failed to decode JSON ${parsedBody.toString()} $trace", exceptions.headOption))
-        case BIOExit.Error(decodingFailure, trace) =>
+        case Exit.Error(decodingFailure, trace) =>
           F.fail(new IRTDecodingException(s"$toInvoke: Failed to decode JSON ${parsedBody.toString()} $trace", Some(decodingFailure)))
       }
       casted = safeDecoded.value.asInstanceOf[method.signature.Input]

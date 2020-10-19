@@ -1,11 +1,11 @@
 package izumi.idealingua.runtime.rpc.http4s.fixtures
 
-import izumi.functional.bio.BIO
+import izumi.functional.bio.IO2
 import izumi.idealingua.runtime.rpc._
 import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceServerWrapped}
 import izumi.r2.idealingua.test.impls.AbstractGreeterServer
 
-class DummyServices[F[+ _, + _] : BIO, Ctx] {
+class DummyServices[F[+ _, + _] : IO2, Ctx] {
 
   object Server {
     private val greeterService = new AbstractGreeterServer.Impl[F, Ctx]

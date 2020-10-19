@@ -2,14 +2,14 @@ object V {
   // foundation
 
   val scalatest = "3.2.2"
-  val http4s = "0.21.7"
+  val http4s = "0.21.8"
 
-  val scalameta = "4.3.22"
+  val scalameta = "4.3.24"
   val fastparse = "2.2.4"
 
   val scala_xml = "1.3.0"
 
-  val interop_cats = "2.1.4.0"
+  val interop_cats = "2.1.4.1"
 
   // java-only dependencies below
   // java, we need it bcs http4s ws client isn't ready yet

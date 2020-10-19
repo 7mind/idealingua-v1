@@ -10,7 +10,7 @@ import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import izumi.fundamentals.platform.files.IzFiles
 import izumi.fundamentals.platform.language.Quirks._
-import izumi.fundamentals.platform.resources.{IzManifest, IzResourcesDirty}
+import izumi.fundamentals.platform.resources.{IzArtifactMaterializer, IzResourcesDirty}
 import izumi.fundamentals.platform.strings.IzString._
 import izumi.fundamentals.platform.time.Timed
 import izumi.idealingua.compiler.Codecs._
@@ -27,9 +27,9 @@ object CommandlineIDLCompiler {
   private val shutdown: Shutdown = ShutdownImpl
 
   def main(args: Array[String]): Unit = {
-    val mf = IzManifest.manifest[CommandlineIDLCompiler.type]().map(IzManifest.read)
-    val izumiVersion = mf.map(_.version.toString).getOrElse("UKNNOWN-IZUMI")
-    val izumiInfoVersion = mf.map(_.justVersion).getOrElse("UNKNOWN-BUILD")
+    val mf = IzArtifactMaterializer.currentArtifact
+    val izumiVersion = mf.version.toString
+    val izumiInfoVersion = mf.justVersion
 
     log.log(s"Izumi IDL Compiler $izumiInfoVersion")
 
