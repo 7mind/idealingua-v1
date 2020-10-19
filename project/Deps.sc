@@ -7,13 +7,13 @@ object Idealingua {
   object V {
     val izumi = Version.VExpr("Izumi.version")
 
-    val kind_projector = Version.VExpr("Izumi.Deps.fundamentals_IO2JVM.org_typelevel_kind_projector_version")
+    val kind_projector = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version")
     val scalatest = Version.VExpr("V.scalatest")
 
-    val cats = Version.VExpr("Izumi.Deps.fundamentals_IO2JVM.org_typelevel_cats_core_version")
-    val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_IO2JVM.org_typelevel_cats_effect_version")
-    val circe = Version.VExpr("Izumi.Deps.fundamentals_IO2JVM.org_typelevel_cats_effect_version")
-    val zio = Version.VExpr("Izumi.Deps.fundamentals_IO2JVM.dev_zio_zio_version")
+    val cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version")
+    val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
+    val circe = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
+    val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
     val zio_interop_cats = Version.VExpr("V.interop_cats")
 
     val http4s = Version.VExpr("V.http4s")
@@ -60,7 +60,7 @@ object Idealingua {
      final val fundamentals_functional = Library("io.7mind.izumi", "fundamentals-functional", V.izumi, LibraryType.Auto)
      final val fundamentals_reflection = Library("io.7mind.izumi", "fundamentals-reflection", V.izumi, LibraryType.Auto)
      final val fundamentals_json_circe = Library("io.7mind.izumi", "fundamentals-json-circe", V.izumi, LibraryType.Auto)
-     final val fundamentals_IO2 = Library("io.7mind.izumi", "fundamentals-IO2", V.izumi, LibraryType.Auto)
+     final val fundamentals_bio = Library("io.7mind.izumi", "fundamentals-bio", V.izumi, LibraryType.Auto)
      final val logstage_core = Library("io.7mind.izumi", "logstage-core", V.izumi, LibraryType.Auto)
      final val logstage_adapter_slf4j = Library("io.7mind.izumi", "logstage-adapter-slf4j", V.izumi, LibraryType.Auto)
 
@@ -275,7 +275,7 @@ object Idealingua {
       Artifact(
         name = Projects.idealingua.runtimeRpcScala,
         libs = Seq(scala_reflect in Scope.Provided.all) ++ cats_all.map(_ in Scope.Compile.all) ++
-          Seq(Deps.fundamentals_IO2, Deps.fundamentals_json_circe).map(_ in Scope.Compile.all) ++
+          Seq(Deps.fundamentals_bio, Deps.fundamentals_json_circe).map(_ in Scope.Compile.all) ++
           zio_all.map(_ in Scope.Test.all),
         depends = Seq.empty,
       ),
@@ -288,7 +288,7 @@ object Idealingua {
       ),
       Artifact(
         name = Projects.idealingua.transpilers,
-        libs = Seq(scala_xml, scalameta) ++ Seq(Deps.fundamentals_IO2, Deps.fundamentals_json_circe).map(_ in Scope.Compile.all),
+        libs = Seq(scala_xml, scalameta) ++ Seq(Deps.fundamentals_bio, Deps.fundamentals_json_circe).map(_ in Scope.Compile.all),
         depends = Seq(Projects.idealingua.core, Projects.idealingua.runtimeRpcScala).map(_ in Scope.Compile.all) ++
           Seq(Projects.idealingua.testDefs, Projects.idealingua.runtimeRpcTypescript, Projects.idealingua.runtimeRpcGo, Projects.idealingua.runtimeRpcCSharp).map(_ in Scope.Test.jvm),
         settings = forkTests
