@@ -1,7 +1,7 @@
 package izumi.idealingua.runtime.rpc.http4s
 
 import cats.effect.{ConcurrentEffect, Timer}
-import izumi.functional.bio.{BIO, BIORunner, BIOTemporal}
+import izumi.functional.bio.{IO2, UnsafeRun2, Temporal2}
 import org.http4s._
 import org.http4s.dsl._
 
@@ -25,12 +25,12 @@ trait Http4sContext { outer =>
 
   type StreamDecoder = EntityDecoder[MonoIO, MaterializedStream]
 
-  implicit def F: BIO[BiIO]
-  implicit def FT: BIOTemporal[BiIO]
+  implicit def F: IO2[BiIO]
+  implicit def FT: Temporal2[BiIO]
   implicit def CIO: ConcurrentEffect[MonoIO]
   implicit def CIOT: Timer[MonoIO]
 
-  def BIORunner: BIORunner[BiIO]
+  def UnsafeRun2: UnsafeRun2[BiIO]
   val dsl: Http4sDsl[MonoIO]
 
   def clientExecutionContext: ExecutionContext

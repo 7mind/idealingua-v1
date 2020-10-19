@@ -4,9 +4,9 @@ import java.time.ZonedDateTime
 import java.util.concurrent.RejectedExecutionException
 
 import _root_.io.circe.parser._
-import izumi.functional.bio.BIO
-import izumi.functional.bio.BIOExit
-import izumi.functional.bio.BIOExit.{Error, Success, Termination}
+import izumi.functional.bio.IO2
+import izumi.functional.bio.Exit
+import izumi.functional.bio.Exit.{Error, Success, Termination}
 import izumi.fundamentals.platform.language.Quirks._
 import izumi.fundamentals.platform.time.IzTime
 import izumi.idealingua.runtime.rpc
@@ -130,7 +130,7 @@ class HttpServer[C <: Http4sContext](
 
   protected def handleWsMessage(context: WebsocketClientContextImpl[C], requestTime: ZonedDateTime = IzTime.utcNow): WebSocketFrame => MonoIO[Option[String]] = {
     case Text(msg, _) =>
-      makeResponse(context, msg).sandboxBIOExit
+      makeResponse(context, msg).sandboxExit
         .map(handleResult(context, _))
 
     case Close(_) =>
@@ -152,7 +152,7 @@ class HttpServer[C <: Http4sContext](
     F.unit
   }
 
-  protected def handleResult(context: WebsocketClientContextImpl[C], result: BIOExit[Throwable, Option[RpcPacket]]): Option[String] = {
+  protected def handleResult(context: WebsocketClientContextImpl[C], result: Exit[Throwable, Option[RpcPacket]]): Option[String] = {
     result match {
       case Success(v) =>
         v.map(_.asJson).map(printer.print)
@@ -172,10 +172,10 @@ class HttpServer[C <: Http4sContext](
       id <- wsContextProvider.toId(context.initialContext, context.id, unmarshalled)
       _ <- context.updateId(id)
       response <- respond(context, unmarshalled).sandbox.catchAll {
-        case BIOExit.Termination(exception, allExceptions, trace) =>
+        case Exit.Termination(exception, allExceptions, trace) =>
           logger.error(s"${context -> null}: WS processing terminated, $message, $exception, $allExceptions, $trace")
           F.pure(Some(rpc.RpcPacket.rpcFail(unmarshalled.id, exception.getMessage)))
-        case BIOExit.Error(exception, trace) =>
+        case Exit.Error(exception, trace) =>
           logger.error(s"${context -> null}: WS processing failed, $message, $exception $trace")
           F.pure(Some(rpc.RpcPacket.rpcFail(unmarshalled.id, exception.getMessage)))
       }
@@ -238,14 +238,14 @@ class HttpServer[C <: Http4sContext](
       maybeResult
     }
 
-    ioR.sandboxBIOExit
+    ioR.sandboxExit
       .flatMap(handleResult(context, method, _))
   }
 
   private def handleResult(
     context: HttpRequestContext[MonoIO, RequestContext],
     method: IRTMethodId,
-    result: BIOExit[Throwable, Option[Json]]
+    result: Exit[Throwable, Option[Json]]
   ): C#MonoIO[Response[MonoIO]] = {
     result match {
       case Success(v) =>

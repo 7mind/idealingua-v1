@@ -8,7 +8,7 @@ import scala.meta._
 
 final case class ServiceContext(ctx: STContext, svc: Service) {
 
-  object BIO {
+  object IO2 {
     val n = q"_F"
   }
 

@@ -7,7 +7,7 @@ disablePlugins(AssemblyPlugin)
 lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-model"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bio.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_IO2JVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
       "io.7mind.izumi" %% "fundamentals-collections" % Izumi.version,
@@ -22,6 +22,9 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
     unmanagedSourceDirectories in Test += baseDirectory.value / ".jvm/src/test/scala" ,
     unmanagedResourceDirectories in Test += baseDirectory.value / ".jvm/src/test/resources" ,
     scalacOptions ++= Seq(
+      s"-Xmacro-settings:product-name=${name.value}",
+      s"-Xmacro-settings:product-version=${version.value}",
+      s"-Xmacro-settings:product-group=${organization.value}",
       s"-Xmacro-settings:scala-version=${scalaVersion.value}",
       s"-Xmacro-settings:scala-versions=${crossScalaVersions.value.mkString(":")}"
     ),
@@ -29,10 +32,10 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.11") => Seq(
         "-Xsource:2.13",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
         "-Xlint:by-name-right-associative",
         "-Xlint:constant",
@@ -105,7 +108,7 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bio.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_IO2JVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "com.lihaoyi" %% "fastparse" % V.fastparse,
       "io.7mind.izumi" %% "fundamentals-reflection" % Izumi.version
@@ -118,6 +121,9 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
     unmanagedSourceDirectories in Test += baseDirectory.value / ".jvm/src/test/scala" ,
     unmanagedResourceDirectories in Test += baseDirectory.value / ".jvm/src/test/resources" ,
     scalacOptions ++= Seq(
+      s"-Xmacro-settings:product-name=${name.value}",
+      s"-Xmacro-settings:product-version=${version.value}",
+      s"-Xmacro-settings:product-group=${organization.value}",
       s"-Xmacro-settings:scala-version=${scalaVersion.value}",
       s"-Xmacro-settings:scala-versions=${crossScalaVersions.value.mkString(":")}"
     ),
@@ -125,10 +131,10 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.11") => Seq(
         "-Xsource:2.13",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
         "-Xlint:by-name-right-associative",
         "-Xlint:constant",
@@ -198,14 +204,14 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
 lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-scala"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bio.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_IO2JVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
-      "org.typelevel" %% "cats-core" % Izumi.Deps.fundamentals_bio.org_typelevel_cats_core_version,
-      "org.typelevel" %% "cats-effect" % Izumi.Deps.fundamentals_bio.org_typelevel_cats_effect_version,
-      "io.7mind.izumi" %% "fundamentals-bio" % Izumi.version,
+      "org.typelevel" %% "cats-core" % Izumi.Deps.fundamentals_IO2JVM.org_typelevel_cats_core_version,
+      "org.typelevel" %% "cats-effect" % Izumi.Deps.fundamentals_IO2JVM.org_typelevel_cats_effect_version,
+      "io.7mind.izumi" %% "fundamentals-IO2" % Izumi.version,
       "io.7mind.izumi" %% "fundamentals-json-circe" % Izumi.version,
-      "dev.zio" %% "zio" % Izumi.Deps.fundamentals_bio.dev_zio_zio_version % Test,
+      "dev.zio" %% "zio" % Izumi.Deps.fundamentals_IO2JVM.dev_zio_zio_version % Test,
       "dev.zio" %% "zio-interop-cats" % V.interop_cats % Test
     )
   )
@@ -216,6 +222,9 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
     unmanagedSourceDirectories in Test += baseDirectory.value / ".jvm/src/test/scala" ,
     unmanagedResourceDirectories in Test += baseDirectory.value / ".jvm/src/test/resources" ,
     scalacOptions ++= Seq(
+      s"-Xmacro-settings:product-name=${name.value}",
+      s"-Xmacro-settings:product-version=${version.value}",
+      s"-Xmacro-settings:product-group=${organization.value}",
       s"-Xmacro-settings:scala-version=${scalaVersion.value}",
       s"-Xmacro-settings:scala-versions=${crossScalaVersions.value.mkString(":")}"
     ),
@@ -223,10 +232,10 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.11") => Seq(
         "-Xsource:2.13",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
         "-Xlint:by-name-right-associative",
         "-Xlint:constant",
@@ -300,7 +309,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bio.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_IO2JVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "org.http4s" %% "http4s-dsl" % V.http4s,
       "org.http4s" %% "http4s-circe" % V.http4s,
@@ -318,6 +327,9 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     unmanagedSourceDirectories in Test += baseDirectory.value / ".jvm/src/test/scala" ,
     unmanagedResourceDirectories in Test += baseDirectory.value / ".jvm/src/test/resources" ,
     scalacOptions ++= Seq(
+      s"-Xmacro-settings:product-name=${name.value}",
+      s"-Xmacro-settings:product-version=${version.value}",
+      s"-Xmacro-settings:product-group=${organization.value}",
       s"-Xmacro-settings:scala-version=${scalaVersion.value}",
       s"-Xmacro-settings:scala-versions=${crossScalaVersions.value.mkString(":")}"
     ),
@@ -325,10 +337,10 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.11") => Seq(
         "-Xsource:2.13",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
         "-Xlint:by-name-right-associative",
         "-Xlint:constant",
@@ -406,11 +418,11 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bio.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_IO2JVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "org.scala-lang.modules" %% "scala-xml" % V.scala_xml,
       "org.scalameta" %% "scalameta" % V.scalameta,
-      "io.7mind.izumi" %% "fundamentals-bio" % Izumi.version,
+      "io.7mind.izumi" %% "fundamentals-IO2" % Izumi.version,
       "io.7mind.izumi" %% "fundamentals-json-circe" % Izumi.version
     )
   )
@@ -421,6 +433,9 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
     unmanagedSourceDirectories in Test += baseDirectory.value / ".jvm/src/test/scala" ,
     unmanagedResourceDirectories in Test += baseDirectory.value / ".jvm/src/test/resources" ,
     scalacOptions ++= Seq(
+      s"-Xmacro-settings:product-name=${name.value}",
+      s"-Xmacro-settings:product-version=${version.value}",
+      s"-Xmacro-settings:product-group=${organization.value}",
       s"-Xmacro-settings:scala-version=${scalaVersion.value}",
       s"-Xmacro-settings:scala-versions=${crossScalaVersions.value.mkString(":")}"
     ),
@@ -428,10 +443,10 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.11") => Seq(
         "-Xsource:2.13",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
         "-Xlint:by-name-right-associative",
         "-Xlint:constant",
@@ -505,9 +520,9 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bio.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_IO2JVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
-      "dev.zio" %% "zio" % Izumi.Deps.fundamentals_bio.dev_zio_zio_version,
+      "dev.zio" %% "zio" % Izumi.Deps.fundamentals_IO2JVM.dev_zio_zio_version,
       "dev.zio" %% "zio-interop-cats" % V.interop_cats
     )
   )
@@ -518,6 +533,9 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     unmanagedSourceDirectories in Test += baseDirectory.value / ".jvm/src/test/scala" ,
     unmanagedResourceDirectories in Test += baseDirectory.value / ".jvm/src/test/resources" ,
     scalacOptions ++= Seq(
+      s"-Xmacro-settings:product-name=${name.value}",
+      s"-Xmacro-settings:product-version=${version.value}",
+      s"-Xmacro-settings:product-group=${organization.value}",
       s"-Xmacro-settings:scala-version=${scalaVersion.value}",
       s"-Xmacro-settings:scala-versions=${crossScalaVersions.value.mkString(":")}"
     ),
@@ -525,10 +543,10 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.11") => Seq(
         "-Xsource:2.13",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
         "-Xlint:by-name-right-associative",
         "-Xlint:constant",
@@ -598,7 +616,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
 lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-typescript"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bio.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_IO2JVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     )
   )
@@ -609,6 +627,9 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     unmanagedSourceDirectories in Test += baseDirectory.value / ".jvm/src/test/scala" ,
     unmanagedResourceDirectories in Test += baseDirectory.value / ".jvm/src/test/resources" ,
     scalacOptions ++= Seq(
+      s"-Xmacro-settings:product-name=${name.value}",
+      s"-Xmacro-settings:product-version=${version.value}",
+      s"-Xmacro-settings:product-group=${organization.value}",
       s"-Xmacro-settings:scala-version=${scalaVersion.value}",
       s"-Xmacro-settings:scala-versions=${crossScalaVersions.value.mkString(":")}"
     ),
@@ -616,10 +637,10 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.11") => Seq(
         "-Xsource:2.13",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
         "-Xlint:by-name-right-associative",
         "-Xlint:constant",
@@ -689,7 +710,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
 lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-go"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bio.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_IO2JVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     )
   )
@@ -700,6 +721,9 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     unmanagedSourceDirectories in Test += baseDirectory.value / ".jvm/src/test/scala" ,
     unmanagedResourceDirectories in Test += baseDirectory.value / ".jvm/src/test/resources" ,
     scalacOptions ++= Seq(
+      s"-Xmacro-settings:product-name=${name.value}",
+      s"-Xmacro-settings:product-version=${version.value}",
+      s"-Xmacro-settings:product-group=${organization.value}",
       s"-Xmacro-settings:scala-version=${scalaVersion.value}",
       s"-Xmacro-settings:scala-versions=${crossScalaVersions.value.mkString(":")}"
     ),
@@ -707,10 +731,10 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.11") => Seq(
         "-Xsource:2.13",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
         "-Xlint:by-name-right-associative",
         "-Xlint:constant",
@@ -780,7 +804,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
 lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-csharp"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bio.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_IO2JVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     )
   )
@@ -791,6 +815,9 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     unmanagedSourceDirectories in Test += baseDirectory.value / ".jvm/src/test/scala" ,
     unmanagedResourceDirectories in Test += baseDirectory.value / ".jvm/src/test/resources" ,
     scalacOptions ++= Seq(
+      s"-Xmacro-settings:product-name=${name.value}",
+      s"-Xmacro-settings:product-version=${version.value}",
+      s"-Xmacro-settings:product-group=${organization.value}",
       s"-Xmacro-settings:scala-version=${scalaVersion.value}",
       s"-Xmacro-settings:scala-versions=${crossScalaVersions.value.mkString(":")}"
     ),
@@ -798,10 +825,10 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.11") => Seq(
         "-Xsource:2.13",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
         "-Xlint:by-name-right-associative",
         "-Xlint:constant",
@@ -879,7 +906,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bio.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_IO2JVM.org_typelevel_kind_projector_version cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "com.typesafe" % "config" % V.typesafe_config
     )
@@ -904,6 +931,9 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     },
     addArtifact(artifact in(Compile, assembly), assembly),
     scalacOptions ++= Seq(
+      s"-Xmacro-settings:product-name=${name.value}",
+      s"-Xmacro-settings:product-version=${version.value}",
+      s"-Xmacro-settings:product-group=${organization.value}",
       s"-Xmacro-settings:scala-version=${scalaVersion.value}",
       s"-Xmacro-settings:scala-versions=${crossScalaVersions.value.mkString(":")}"
     ),
@@ -911,10 +941,10 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.11") => Seq(
         "-Xsource:2.13",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Ypartial-unification",
         "-Yno-adapted-args",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
         "-Xlint:by-name-right-associative",
         "-Xlint:constant",
@@ -1068,9 +1098,11 @@ lazy val `idealingua-v1` = (project in file("."))
       "-XDignore.symbol.file"
     ),
     scalacOptions in ThisBuild ++= Seq(
-      s"-Xmacro-settings:product-version=${version.value}",
-      s"-Xmacro-settings:product-group=${organization.value}",
-      s"-Xmacro-settings:sbt-version=${sbtVersion.value}"
+      s"-Xmacro-settings:sbt-version=${sbtVersion.value}",
+      s"-Xmacro-settings:git-repo-clean=${com.typesafe.sbt.SbtGit.GitKeys.gitUncommittedChanges.value}",
+      s"-Xmacro-settings:git-branch=${com.typesafe.sbt.SbtGit.GitKeys.gitCurrentBranch.value}",
+      s"-Xmacro-settings:git-described-version=${com.typesafe.sbt.SbtGit.GitKeys.gitDescribedVersion.value.getOrElse("")}",
+      s"-Xmacro-settings:git-head-commit=${com.typesafe.sbt.SbtGit.GitKeys.gitHeadCommit.value.getOrElse("")}"
     ),
     crossScalaVersions := Nil,
     scalaVersion := "2.12.11",

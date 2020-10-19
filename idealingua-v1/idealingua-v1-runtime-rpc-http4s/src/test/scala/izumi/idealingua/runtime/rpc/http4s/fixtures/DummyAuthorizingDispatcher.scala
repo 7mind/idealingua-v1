@@ -1,17 +1,17 @@
 package izumi.idealingua.runtime.rpc.http4s.fixtures
 
-import izumi.functional.bio.BIO
+import izumi.functional.bio.IO2
 import izumi.idealingua.runtime.rpc._
 import izumi.idealingua.runtime.rpc.http4s.{IRTBadCredentialsException, IRTNoCredentialsException}
 import org.http4s.{BasicCredentials, Status}
 
-final class DummyAuthorizingDispatcher[F[+ _, + _] : BIO, Ctx](proxied: IRTWrappedService[F, Ctx]) extends IRTWrappedService[F, Ctx] {
+final class DummyAuthorizingDispatcher[F[+ _, + _] : IO2, Ctx](proxied: IRTWrappedService[F, Ctx]) extends IRTWrappedService[F, Ctx] {
   override def serviceId: IRTServiceId = proxied.serviceId
 
   override def allMethods: Map[IRTMethodId, IRTMethodWrapper[F, Ctx]] = proxied.allMethods.mapValues {
     method =>
       new IRTMethodWrapper[F, Ctx] {
-        val R: BIO[F] = implicitly
+        val R: IO2[F] = implicitly
 
         override val signature: IRTMethodSignature = method.signature
         override val marshaller: IRTCirceMarshaller = method.marshaller
