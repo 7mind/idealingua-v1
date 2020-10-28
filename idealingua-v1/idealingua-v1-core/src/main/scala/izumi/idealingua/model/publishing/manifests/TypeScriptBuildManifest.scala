@@ -16,20 +16,20 @@ object TypeScriptProjectLayout {
 case class YarnOptions(
                         projectNaming: ProjectNamingRule,
                         scope: String,
+                        dependencies: List[ManifestDependency],
                         devDependencies: List[ManifestDependency],
-                        peerDependencies: List[ManifestDependency],
                       )
 
 object YarnOptions {
   def example: YarnOptions = YarnOptions(
     projectNaming = ProjectNamingRule.example,
-    devDependencies = List(
-      ManifestDependency("typescript", "4.0.3"),
-    ),
-    peerDependencies = List(
+    dependencies = List(
       ManifestDependency("moment", "^2.29.1"),
-      ManifestDependency("@types/node", "^14.11.8"),
+      ManifestDependency("@types/node", "^14.14.5"),
       ManifestDependency("@types/websocket", "1.0.1"),
+    ),
+    devDependencies = List(
+      ManifestDependency("typescript", "4.0.5"),
     ),
     scope = "@TestScope",
   )

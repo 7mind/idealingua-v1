@@ -5,10 +5,11 @@
   "description": "Preliminary Izumi TypeScript runtime",
   "author": "Izumi Framework contributors",
   "license": "MIT",
-  "peerDependencies": {
+  "dependencies": {
     "moment": "^2.29.1",
-    "websocket": "1.0.32",
-    "@types/node": "^14.11.8",
-    "@types/websocket": "1.0.1"
-  }
+    "websocket": "^1.0.32",
+    "@types/node": "^14.14.5",
+    "@types/websocket": "^1.0.1"
+  },
+  "peerDependencies": {}
 }

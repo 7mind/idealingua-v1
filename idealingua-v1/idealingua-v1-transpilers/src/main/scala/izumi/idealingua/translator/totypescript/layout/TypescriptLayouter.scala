@@ -136,7 +136,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
 
     val name = naming.toScopedId(ts.domain.id.toPackage)
 
-    val mf = options.manifest.copy(yarn = options.manifest.yarn.copy(peerDependencies = options.manifest.yarn.peerDependencies ++ allDeps))
+    val mf = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDeps))
     val content = generatePackage(mf, Some("index"), name)
     Module(ModuleId(ts.domain.id.toPackage, "package.json"), content.toString())
   }
@@ -153,7 +153,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
         ManifestDependency(naming.toScopedId(ts.typespace.domain.id.toPackage), mfVersion)
     }
 
-    val mf = options.manifest.copy(yarn = options.manifest.yarn.copy(peerDependencies = options.manifest.yarn.peerDependencies ++ allDeps))
+    val mf = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDeps))
     val content = generatePackage(mf, None, naming.bundleId)
     Seq(
       ExtendedModule.RuntimeModule(Module(ModuleId(Seq(naming.bundleId), "package.json"), content.toString())),
@@ -179,8 +179,8 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
 
   private def generatePackage(manifest: TypeScriptBuildManifest, main: Option[String], name: String): Json = {
     val author = s"${manifest.common.publisher.name} (${manifest.common.publisher.id})"
+    val deps = manifest.yarn.dependencies.map(d => d.module -> d.version).toMap.asJson
     val devDeps = manifest.yarn.devDependencies.map(d => d.module -> d.version).toMap.asJson
-    val peerDeps = manifest.yarn.peerDependencies.map(d => d.module -> d.version).toMap.asJson
 
     val base =
       json"""{
@@ -189,8 +189,8 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
          "description": ${manifest.common.description},
          "author": $author,
          "license": ${manifest.common.licenses.head.name},
-         "devDependencies": $devDeps,
-         "peerDependencies": $peerDeps
+         "dependencies": $deps,
+         "devDependencies": $devDeps
        }
      """
 
