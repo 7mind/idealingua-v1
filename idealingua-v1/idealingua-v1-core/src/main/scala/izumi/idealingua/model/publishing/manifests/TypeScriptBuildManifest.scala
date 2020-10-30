@@ -25,7 +25,7 @@ object YarnOptions {
     projectNaming = ProjectNamingRule.example,
     dependencies = List(
       ManifestDependency("moment", "^2.29.1"),
-      ManifestDependency("@types/node", "^14.14.5"),
+      ManifestDependency("@types/node", "^14.14.6"),
       ManifestDependency("@types/websocket", "1.0.1"),
     ),
     devDependencies = List(
