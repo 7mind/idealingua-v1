@@ -45,13 +45,13 @@ export class HttpServerGeneric<C> {
             return;
         }
 
-        this._server.listen(this._port, (err: string) => {
-            if (err) {
+        this._server
+            .listen(this._port, () => {
+                this._logger.logf(LogLevel.Info, 'Server is listening on port ' + this._port)
+            })
+            .on('error', (err) => {
                 this._logger.logf(LogLevel.Error, 'Failed to start server ' + err)
-            }
-
-            this._logger.logf(LogLevel.Info, 'Server is listening on port ' + this._port)
-        });
+            });
     }
 
     protected requestHandler(request: http.IncomingMessage, response: http.ServerResponse) {
