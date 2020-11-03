@@ -24,12 +24,12 @@ object YarnOptions {
   def example: YarnOptions = YarnOptions(
     projectNaming = ProjectNamingRule.example,
     dependencies = List(
-      ManifestDependency("moment", "^2.20.1"),
-      ManifestDependency("@types/node", "^10.7.1"),
-      ManifestDependency("@types/websocket", "0.0.39"),
+      ManifestDependency("moment", "^2.29.1"),
+      ManifestDependency("@types/node", "^14.14.6"),
+      ManifestDependency("@types/websocket", "1.0.1"),
     ),
     devDependencies = List(
-      ManifestDependency("typescript", "3.2.2"),
+      ManifestDependency("typescript", "4.0.5"),
     ),
     scope = "@TestScope",
   )
