@@ -1,4 +1,4 @@
-import $ivy.`io.7mind.izumi.sbt::sbtgen:0.0.64`
+import $ivy.`io.7mind.izumi.sbt::sbtgen:0.0.66`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
 
@@ -194,6 +194,7 @@ object Idealingua {
         )""".raw,
         "scmInfo" in SettingScope.Build := """Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git"))""".raw,
         "scalacOptions" in SettingScope.Build += s"""${"\"" * 3}-Xmacro-settings:scalatest-version=${V.scalatest}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += """s"-Xmacro-settings:is-ci=${insideCI.value}"""".raw,
       )
 
       final val sharedSettings = Defaults.SbtMetaOptions ++ Seq(

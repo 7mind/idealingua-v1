@@ -3,10 +3,9 @@ package izumi.idealingua.runtime.rpc.http4s
 import java.net.URI
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
-
 import izumi.functional.bio.IO2
 import izumi.functional.bio.Exit
-import izumi.functional.bio.Exit.{Error, Success, Termination}
+import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
 import izumi.idealingua.runtime.rpc
 import izumi.idealingua.runtime.rpc._
 import izumi.logstage.api.IzLogger
@@ -102,6 +101,9 @@ class ClientWsDispatcher[C <: Http4sContext]
 
       case Termination(cause, _, trace) =>
         logger.error(s"Failed to process request, termination: $cause $trace")
+
+      case Interruption(error, trace) =>
+        logger.error(s"Request processing was interrupted: $error $trace")
     }
   }
 
@@ -128,6 +130,9 @@ class ClientWsDispatcher[C <: Http4sContext]
               F.pure(Some(rpc.RpcPacket.buzzerFail(Some(id), exception.getMessage)))
             case Exit.Error(exception, trace) =>
               logger.error(s"${packetInfo -> null}: WS processing failed, $exception $trace")
+              F.pure(Some(rpc.RpcPacket.buzzerFail(Some(id), exception.getMessage)))
+            case Exit.Interruption(exception, trace) =>
+              logger.error(s"${packetInfo -> null}: WS processing interrupted, $exception $trace")
               F.pure(Some(rpc.RpcPacket.buzzerFail(Some(id), exception.getMessage)))
           }
           maybeEncoded <- F(maybePacket.map(r => printer.print(r.asJson)))

@@ -16,6 +16,11 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
     )
   )
   .settings(
+    scalaVersion := crossScalaVersions.value.head,
+    crossScalaVersions := Seq(
+      "2.12.11",
+      "2.13.3"
+    ),
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
     unmanagedResourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -92,12 +97,7 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
       )
       case (_, _) => Seq.empty
     } },
-    scalacOptions -= "-Wconf:any:error",
-    scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := Seq(
-      "2.12.11",
-      "2.13.3"
-    )
+    scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
@@ -115,6 +115,11 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
     )
   )
   .settings(
+    scalaVersion := crossScalaVersions.value.head,
+    crossScalaVersions := Seq(
+      "2.12.11",
+      "2.13.3"
+    ),
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
     unmanagedResourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -191,12 +196,7 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
       )
       case (_, _) => Seq.empty
     } },
-    scalacOptions -= "-Wconf:any:error",
-    scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := Seq(
-      "2.12.11",
-      "2.13.3"
-    )
+    scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
@@ -216,6 +216,11 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
     )
   )
   .settings(
+    scalaVersion := crossScalaVersions.value.head,
+    crossScalaVersions := Seq(
+      "2.12.11",
+      "2.13.3"
+    ),
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
     unmanagedResourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -292,12 +297,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
       )
       case (_, _) => Seq.empty
     } },
-    scalacOptions -= "-Wconf:any:error",
-    scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := Seq(
-      "2.12.11",
-      "2.13.3"
-    )
+    scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
@@ -321,6 +321,11 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     )
   )
   .settings(
+    scalaVersion := crossScalaVersions.value.head,
+    crossScalaVersions := Seq(
+      "2.12.11",
+      "2.13.3"
+    ),
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
     unmanagedResourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -397,12 +402,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
       )
       case (_, _) => Seq.empty
     } },
-    scalacOptions -= "-Wconf:any:error",
-    scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := Seq(
-      "2.12.11",
-      "2.13.3"
-    )
+    scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
@@ -427,6 +427,12 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
     )
   )
   .settings(
+    scalaVersion := crossScalaVersions.value.head,
+    crossScalaVersions := Seq(
+      "2.12.11",
+      "2.13.3"
+    ),
+    fork in Test := true,
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
     unmanagedResourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -503,13 +509,7 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
       )
       case (_, _) => Seq.empty
     } },
-    scalacOptions -= "-Wconf:any:error",
-    scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := Seq(
-      "2.12.11",
-      "2.13.3"
-    ),
-    fork in Test := true
+    scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
@@ -527,6 +527,11 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     )
   )
   .settings(
+    scalaVersion := crossScalaVersions.value.head,
+    crossScalaVersions := Seq(
+      "2.12.11",
+      "2.13.3"
+    ),
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
     unmanagedResourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -603,12 +608,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
       )
       case (_, _) => Seq.empty
     } },
-    scalacOptions -= "-Wconf:any:error",
-    scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := Seq(
-      "2.12.11",
-      "2.13.3"
-    )
+    scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
@@ -621,6 +621,11 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     )
   )
   .settings(
+    scalaVersion := crossScalaVersions.value.head,
+    crossScalaVersions := Seq(
+      "2.12.11",
+      "2.13.3"
+    ),
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
     unmanagedResourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -697,12 +702,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
       )
       case (_, _) => Seq.empty
     } },
-    scalacOptions -= "-Wconf:any:error",
-    scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := Seq(
-      "2.12.11",
-      "2.13.3"
-    )
+    scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
@@ -715,6 +715,11 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     )
   )
   .settings(
+    scalaVersion := crossScalaVersions.value.head,
+    crossScalaVersions := Seq(
+      "2.12.11",
+      "2.13.3"
+    ),
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
     unmanagedResourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -791,12 +796,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
       )
       case (_, _) => Seq.empty
     } },
-    scalacOptions -= "-Wconf:any:error",
-    scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := Seq(
-      "2.12.11",
-      "2.13.3"
-    )
+    scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
@@ -809,6 +809,11 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     )
   )
   .settings(
+    scalaVersion := crossScalaVersions.value.head,
+    crossScalaVersions := Seq(
+      "2.12.11",
+      "2.13.3"
+    ),
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
     unmanagedResourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -885,12 +890,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
       )
       case (_, _) => Seq.empty
     } },
-    scalacOptions -= "-Wconf:any:error",
-    scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := Seq(
-      "2.12.11",
-      "2.13.3"
-    )
+    scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
@@ -912,24 +912,16 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     )
   )
   .settings(
+    scalaVersion := crossScalaVersions.value.head,
+    crossScalaVersions := Seq(
+      "2.12.11",
+      "2.13.3"
+    ),
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
     unmanagedResourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/resources" ,
     unmanagedSourceDirectories in Test += baseDirectory.value / ".jvm/src/test/scala" ,
     unmanagedResourceDirectories in Test += baseDirectory.value / ".jvm/src/test/resources" ,
-    mainClass in assembly := Some("izumi.idealingua.compiler.CommandlineIDLCompiler"),
-    assemblyMergeStrategy in assembly := {
-          // FIXME: workaround for https://github.com/zio/interop-cats/issues/16
-          case path if path.contains("zio/BuildInfo$.class") =>
-            MergeStrategy.last
-          case p =>
-            (assemblyMergeStrategy in assembly).value(p)
-    },
-    artifact in (Compile, assembly) := {
-          val art = (artifact in(Compile, assembly)).value
-          art.withClassifier(Some("assembly"))
-    },
-    addArtifact(artifact in(Compile, assembly), assembly),
     scalacOptions ++= Seq(
       s"-Xmacro-settings:product-name=${name.value}",
       s"-Xmacro-settings:product-version=${version.value}",
@@ -1002,11 +994,19 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
       case (_, _) => Seq.empty
     } },
     scalacOptions -= "-Wconf:any:error",
-    scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := Seq(
-      "2.12.11",
-      "2.13.3"
-    )
+    mainClass in assembly := Some("izumi.idealingua.compiler.CommandlineIDLCompiler"),
+    assemblyMergeStrategy in assembly := {
+          // FIXME: workaround for https://github.com/zio/interop-cats/issues/16
+          case path if path.contains("zio/BuildInfo$.class") =>
+            MergeStrategy.last
+          case p =>
+            (assemblyMergeStrategy in assembly).value(p)
+    },
+    artifact in (Compile, assembly) := {
+          val art = (artifact in(Compile, assembly)).value
+          art.withClassifier(Some("assembly"))
+    },
+    addArtifact(artifact in(Compile, assembly), assembly)
   )
   .enablePlugins(AssemblyPlugin, IzumiPlugin)
 
@@ -1123,7 +1123,8 @@ lazy val `idealingua-v1` = (project in file("."))
               Developer(id = "7mind", name = "Septimal Mind", url = url("https://github.com/7mind"), email = "team@7mind.io"),
             ),
     scmInfo in ThisBuild := Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git")),
-    scalacOptions in ThisBuild += """-Xmacro-settings:scalatest-version=VExpr(V.scalatest)"""
+    scalacOptions in ThisBuild += """-Xmacro-settings:scalatest-version=VExpr(V.scalatest)""",
+    scalacOptions in ThisBuild += s"-Xmacro-settings:is-ci=${insideCI.value}"
   )
   .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
