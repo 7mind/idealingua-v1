@@ -1,7 +1,7 @@
 package izumi.idealingua.runtime.rpc.http4s
 
 import izumi.fundamentals.platform.language.Quirks._
-import izumi.functional.bio.Exit.{Error, Success, Termination}
+import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
 import izumi.idealingua.runtime.rpc._
 import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceMethods}
 import org.http4s._
@@ -116,6 +116,8 @@ class Http4sTransportTest extends AnyWordSpec {
         fail(s"Unexpected success: $value")
       case Termination(exception, _, _) =>
         fail("Unexpected failure", exception)
+      case Interruption(value, _) =>
+        fail(s"Interrupted: $value")
     }
   }
 }

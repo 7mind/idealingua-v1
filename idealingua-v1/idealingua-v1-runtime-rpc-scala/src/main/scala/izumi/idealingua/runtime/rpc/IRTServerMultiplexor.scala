@@ -37,6 +37,8 @@ class IRTServerMultiplexorImpl[F[+_, +_]: IO2, -C, -C2](
     for {
       decodeAction <- F.syncThrowable(method.marshaller.decodeRequest[F].apply(IRTJsonBody(toInvoke, parsedBody)))
       safeDecoded <- decodeAction.sandbox.catchAll {
+        case Exit.Interruption(decodingFailure, trace) =>
+          F.fail(new IRTDecodingException(s"$toInvoke: Failed to decode JSON ${parsedBody.toString()} $trace", Some(decodingFailure)))
         case Exit.Termination(_, exceptions, trace) =>
           F.fail(new IRTDecodingException(s"$toInvoke: Failed to decode JSON ${parsedBody.toString()} $trace", exceptions.headOption))
         case Exit.Error(decodingFailure, trace) =>

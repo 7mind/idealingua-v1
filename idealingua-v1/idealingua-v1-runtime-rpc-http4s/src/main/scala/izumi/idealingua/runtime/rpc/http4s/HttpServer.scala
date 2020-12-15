@@ -2,11 +2,10 @@ package izumi.idealingua.runtime.rpc.http4s
 
 import java.time.ZonedDateTime
 import java.util.concurrent.RejectedExecutionException
-
 import _root_.io.circe.parser._
 import izumi.functional.bio.IO2
 import izumi.functional.bio.Exit
-import izumi.functional.bio.Exit.{Error, Success, Termination}
+import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
 import izumi.fundamentals.platform.language.Quirks._
 import izumi.fundamentals.platform.time.IzTime
 import izumi.idealingua.runtime.rpc
@@ -162,6 +161,9 @@ class HttpServer[C <: Http4sContext](
 
       case Termination(cause, _, _) =>
         Some(handleWsError(context, List(cause), None, "termination"))
+
+      case Interruption(cause, _)=>
+        Some(handleWsError(context, List(cause), None, "interruption"))
     }
   }
 
@@ -177,6 +179,9 @@ class HttpServer[C <: Http4sContext](
           F.pure(Some(rpc.RpcPacket.rpcFail(unmarshalled.id, exception.getMessage)))
         case Exit.Error(exception, trace) =>
           logger.error(s"${context -> null}: WS processing failed, $message, $exception $trace")
+          F.pure(Some(rpc.RpcPacket.rpcFail(unmarshalled.id, exception.getMessage)))
+        case Exit.Interruption(exception, trace) =>
+          logger.error(s"${context -> null}: WS processing interrupted, $message, $exception $trace")
           F.pure(Some(rpc.RpcPacket.rpcFail(unmarshalled.id, exception.getMessage)))
       }
     } yield response
@@ -288,6 +293,10 @@ class HttpServer[C <: Http4sContext](
 
       case Termination(cause, _, trace) =>
         logger.error(s"${context -> null}: Execution failed, termination, $method, ${context.request}, $cause, $trace")
+        dsl.InternalServerError()
+
+      case Interruption(cause, trace) =>
+        logger.info(s"${context -> null}: Unexpected interruption while handling $method: $cause $trace")
         dsl.InternalServerError()
     }
   }

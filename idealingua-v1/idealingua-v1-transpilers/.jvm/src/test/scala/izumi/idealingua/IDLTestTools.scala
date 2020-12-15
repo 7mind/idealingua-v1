@@ -1,15 +1,9 @@
 package izumi.idealingua
 
-import java.io.File
-import java.lang.management.ManagementFactory
-import java.nio.charset.StandardCharsets
-import java.nio.file._
-
-import izumi.fundamentals.platform.build.ExposedTestScope
+import izumi.fundamentals.platform.build.{ExposedTestScope, MacroParameters}
 import izumi.fundamentals.platform.files.IzFiles
 import izumi.fundamentals.platform.jvm.IzJvm
 import izumi.fundamentals.platform.language.Quirks
-import izumi.fundamentals.platform.properties.EnvVarsCI
 import izumi.fundamentals.platform.resources.IzResourcesDirty
 import izumi.fundamentals.platform.strings.IzString._
 import izumi.fundamentals.platform.time.IzTime._
@@ -30,6 +24,10 @@ import izumi.idealingua.translator.toscala.extensions.ScalaTranslatorExtension
 import izumi.idealingua.translator.totypescript.TypeScriptTranslator
 import izumi.idealingua.translator.totypescript.extensions.TypeScriptTranslatorExtension
 
+import java.io.File
+import java.lang.management.ManagementFactory
+import java.nio.charset.StandardCharsets
+import java.nio.file._
 import scala.sys.process._
 
 @ExposedTestScope
@@ -47,7 +45,7 @@ final case class CompilerOutput(targetDir: Path, allFiles: Seq[Path]) {
 @ExposedTestScope
 object IDLTestTools {
   def hasDocker: Boolean = IzFiles.haveExecutables("docker")
-  def isCI: Boolean = EnvVarsCI.isIzumiCI()
+  def isCI: Boolean = MacroParameters.sbtIsInsideCI().contains(true)
 
   def loadDefs(): Seq[LoadedDomain.Success] = loadDefs("/defs/any")
 
