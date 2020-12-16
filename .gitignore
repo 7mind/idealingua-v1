@@ -1,4 +1,5 @@
 .hydra
+.bsp
 .idea
 *.jps
 /local.sbt
