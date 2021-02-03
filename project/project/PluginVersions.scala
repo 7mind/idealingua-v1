@@ -1,5 +1,5 @@
 object PV {
-  val izumi = "1.0.1"
+  val izumi = "1.0.3"
 
   val sbt_scoverage = "1.6.1"
   val sbt_pgp = "2.1.1"
