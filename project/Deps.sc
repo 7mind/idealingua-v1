@@ -135,6 +135,13 @@ object Idealingua {
     private val jvmPlatform = PlatformEnv(
       platform = Platform.Jvm,
       language = targetScala,
+      settings = Seq(
+        // disable scoverage on 2.12 for now due to incompatibility with 2.12.13
+        "coverageEnabled" := Seq(
+          SettingKey(Some(scala212), None) := false,
+          SettingKey.Default := true,
+        )
+      ),
     )
     private val jsPlatform = PlatformEnv(
       platform = Platform.Js,
