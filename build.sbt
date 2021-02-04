@@ -7,7 +7,7 @@ disablePlugins(AssemblyPlugin)
 lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-model"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
       "io.7mind.izumi" %% "fundamentals-collections" % Izumi.version,
@@ -18,7 +18,7 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
   .settings(
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.12.11",
+      "2.12.13",
       "2.13.3"
     ),
     organization := "io.7mind.izumi",
@@ -35,7 +35,7 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
     ),
     testOptions in Test += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.11") => Seq(
+      case (_, "2.12.13") => Seq(
         "-Xsource:2.13",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -113,7 +113,7 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "com.lihaoyi" %% "fastparse" % V.fastparse,
       "io.7mind.izumi" %% "fundamentals-reflection" % Izumi.version
@@ -122,7 +122,7 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
   .settings(
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.12.11",
+      "2.12.13",
       "2.13.3"
     ),
     organization := "io.7mind.izumi",
@@ -139,7 +139,7 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
     ),
     testOptions in Test += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.11") => Seq(
+      case (_, "2.12.13") => Seq(
         "-Xsource:2.13",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -214,7 +214,7 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
 lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-scala"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
       "org.typelevel" %% "cats-core" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version,
@@ -222,13 +222,13 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
       "io.7mind.izumi" %% "fundamentals-bio" % Izumi.version,
       "io.7mind.izumi" %% "fundamentals-json-circe" % Izumi.version,
       "dev.zio" %% "zio" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version % Test,
-      "dev.zio" %% "zio-interop-cats" % V.interop_cats % Test
+      "dev.zio" %% "zio-interop-cats" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version % Test
     )
   )
   .settings(
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.12.11",
+      "2.12.13",
       "2.13.3"
     ),
     organization := "io.7mind.izumi",
@@ -245,7 +245,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
     ),
     testOptions in Test += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.11") => Seq(
+      case (_, "2.12.13") => Seq(
         "-Xsource:2.13",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -324,7 +324,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "org.http4s" %% "http4s-dsl" % V.http4s,
       "org.http4s" %% "http4s-circe" % V.http4s,
@@ -338,7 +338,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
   .settings(
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.12.11",
+      "2.12.13",
       "2.13.3"
     ),
     organization := "io.7mind.izumi",
@@ -355,7 +355,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     ),
     testOptions in Test += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.11") => Seq(
+      case (_, "2.12.13") => Seq(
         "-Xsource:2.13",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -438,7 +438,7 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "org.scala-lang.modules" %% "scala-xml" % V.scala_xml,
       "org.scalameta" %% "scalameta" % V.scalameta,
@@ -449,7 +449,7 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
   .settings(
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.12.11",
+      "2.12.13",
       "2.13.3"
     ),
     fork in Test := true,
@@ -467,7 +467,7 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
     ),
     testOptions in Test += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.11") => Seq(
+      case (_, "2.12.13") => Seq(
         "-Xsource:2.13",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -545,16 +545,16 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "dev.zio" %% "zio" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version,
-      "dev.zio" %% "zio-interop-cats" % V.interop_cats
+      "dev.zio" %% "zio-interop-cats" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version
     )
   )
   .settings(
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.12.11",
+      "2.12.13",
       "2.13.3"
     ),
     organization := "io.7mind.izumi",
@@ -571,7 +571,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     ),
     testOptions in Test += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.11") => Seq(
+      case (_, "2.12.13") => Seq(
         "-Xsource:2.13",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -646,14 +646,14 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
 lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-typescript"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     )
   )
   .settings(
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.12.11",
+      "2.12.13",
       "2.13.3"
     ),
     organization := "io.7mind.izumi",
@@ -670,7 +670,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     ),
     testOptions in Test += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.11") => Seq(
+      case (_, "2.12.13") => Seq(
         "-Xsource:2.13",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -745,14 +745,14 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
 lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-go"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     )
   )
   .settings(
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.12.11",
+      "2.12.13",
       "2.13.3"
     ),
     organization := "io.7mind.izumi",
@@ -769,7 +769,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     ),
     testOptions in Test += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.11") => Seq(
+      case (_, "2.12.13") => Seq(
         "-Xsource:2.13",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -844,14 +844,14 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
 lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-csharp"))
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     )
   )
   .settings(
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.12.11",
+      "2.12.13",
       "2.13.3"
     ),
     organization := "io.7mind.izumi",
@@ -868,7 +868,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     ),
     testOptions in Test += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.11") => Seq(
+      case (_, "2.12.13") => Seq(
         "-Xsource:2.13",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -951,7 +951,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
   )
   .settings(
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "com.typesafe" % "config" % V.typesafe_config
     )
@@ -959,7 +959,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
   .settings(
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
-      "2.12.11",
+      "2.12.13",
       "2.13.3"
     ),
     organization := "io.7mind.izumi",
@@ -976,7 +976,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     ),
     testOptions in Test += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.11") => Seq(
+      case (_, "2.12.13") => Seq(
         "-Xsource:2.13",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -1064,7 +1064,7 @@ lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
   .settings(
     skip in publish := true,
     crossScalaVersions := Seq(
-      "2.12.11",
+      "2.12.13",
       "2.13.3"
     ),
     scalaVersion := crossScalaVersions.value.head
@@ -1088,7 +1088,7 @@ lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"
   .settings(
     skip in publish := true,
     crossScalaVersions := Seq(
-      "2.12.11",
+      "2.12.13",
       "2.13.3"
     ),
     scalaVersion := crossScalaVersions.value.head
@@ -1111,7 +1111,7 @@ lazy val `idealingua-v1-jvm` = (project in file(".agg/.agg-jvm"))
   .settings(
     skip in publish := true,
     crossScalaVersions := Seq(
-      "2.12.11",
+      "2.12.13",
       "2.13.3"
     ),
     scalaVersion := crossScalaVersions.value.head
@@ -1155,7 +1155,7 @@ lazy val `idealingua-v1` = (project in file("."))
       s"-Xmacro-settings:git-head-commit=${com.typesafe.sbt.SbtGit.GitKeys.gitHeadCommit.value.getOrElse("")}"
     ),
     crossScalaVersions := Nil,
-    scalaVersion := "2.12.11",
+    scalaVersion := "2.12.13",
     organization in ThisBuild := "io.7mind.izumi",
     sonatypeProfileName := "io.7mind",
     sonatypeSessionName := s"[sbt-sonatype] ${name.value} ${version.value} ${java.util.UUID.randomUUID}",

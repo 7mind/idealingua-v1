@@ -7,14 +7,14 @@ object Idealingua {
   object V {
     val izumi = Version.VExpr("Izumi.version")
 
-    val kind_projector = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_kind_projector_version")
+    val kind_projector = Version.VExpr("V.kind_projector")
     val scalatest = Version.VExpr("V.scalatest")
 
     val cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version")
     val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
     val circe = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
     val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
-    val zio_interop_cats = Version.VExpr("V.interop_cats")
+    val zio_interop_cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version")
 
     val http4s = Version.VExpr("V.http4s")
     val scalameta = Version.VExpr("V.scalameta")
@@ -119,7 +119,7 @@ object Idealingua {
   import Deps._
 
   // DON'T REMOVE, these variables are read from CI build (build.sh)
-  final val scala212 = ScalaVersion("2.12.11")
+  final val scala212 = ScalaVersion("2.12.13")
   final val scala213 = ScalaVersion("2.13.3")
 
   object Groups {
@@ -380,4 +380,3 @@ object Idealingua {
     )
   )
 }
-
