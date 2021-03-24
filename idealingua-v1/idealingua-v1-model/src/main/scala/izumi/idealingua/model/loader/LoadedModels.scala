@@ -61,7 +61,8 @@ class LoadedModels(loaded: Seq[LoadedDomain], diagnostics: IDLDiagnostics) {
           s"Typespace verification phase (3) failed on ${f.domain} (${f.path}): ${f.issues.issues.niceList().shift(2)}"
         case PostVerificationFailure(issues) =>
           s"Global verification phase (4) failed: ${issues.issues.niceList().shift(2)}"
-
+        case other =>
+          s"Unknown failure: $other"
       }
   }
 

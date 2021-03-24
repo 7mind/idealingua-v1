@@ -33,10 +33,13 @@ class DefStructure(context: IDLParserContext) extends Separators {
     def embed[_: P]: P[StructOp.Mix] = P((("+" ~ "++".?) | "...") ~/ (inline ~ ids.identifier)).map(_.toMixinId).map(StructOp.Mix)
 
     def minus[_: P]: P[StructOp] = P(("-" ~ "--".?) ~/ (inline ~ (field | ids.identifier))).map {
-      case v: RawField =>
-        StructOp.RemoveField(v)
-      case i: ParsedId =>
-        StructOp.Drop(i.toMixinId)
+      id =>
+        (id: @unchecked) match {
+          case v: RawField =>
+            StructOp.RemoveField(v)
+          case i: ParsedId =>
+            StructOp.Drop(i.toMixinId)
+        }
     }
 
     def plusField[_: P]: P[StructOp.AddField] = field.map(StructOp.AddField)

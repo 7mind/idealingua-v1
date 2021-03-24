@@ -17,7 +17,7 @@ class ModelParserImpl() extends ModelParser {
         case (p, Parsed.Success(value, _)) =>
           ModelParsingResult.Success(p, value)
 
-        case (p, f@Parsed.Failure(_, _, _)) =>
+        case (p, f: Parsed.Failure) =>
           ModelParsingResult.Failure(p, s"Failed to parse model $p: ${f.msg}")
 
       }
@@ -34,7 +34,7 @@ class ModelParserImpl() extends ModelParser {
         case (p, Parsed.Success(value, _)) =>
           DomainParsingResult.Success(p, value)
 
-        case (p, f@Parsed.Failure(_, _, _)) =>
+        case (p, f: Parsed.Failure) =>
           DomainParsingResult.Failure(p, s"Failed to parse domain $p: ${f.trace().msg}")
       }
   }

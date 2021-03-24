@@ -18,7 +18,7 @@ import Codecs._
 
 class ManifestWriter() {
   def write(mf: BuildManifest): String = {
-    (mf match {
+    ((mf: @unchecked) match {
       case m: ScalaBuildManifest =>
         m.asJson
       case m: TypeScriptBuildManifest =>

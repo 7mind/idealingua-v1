@@ -28,7 +28,7 @@ trait ScalaMetaTools {
 
 
     def modifyDefinitions(modify: (List[Stat]) => List[Stat]): T = {
-      val extended = defn match {
+      val extended = (defn: @unchecked) match {
         case o: Defn.Object =>
           o.copy(templ = o.templ.copy(stats = modify(o.templ.stats)))
         case o: Defn.Class =>
@@ -62,7 +62,7 @@ trait ScalaMetaTools {
     }
 
     def modifyBase(modify: (List[Init]) => List[Init]): T = {
-      val extended = defn match {
+      val extended = (defn: @unchecked) match {
         case o: Defn.Object =>
           o.copy(templ = o.templ.copy(inits = modify(o.templ.inits)))
         case o: Defn.Class =>

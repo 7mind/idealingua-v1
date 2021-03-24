@@ -17,7 +17,7 @@ object IDLLanguage {
   }
 
   def parse(s: String): IDLLanguage = {
-    s.trim.toLowerCase match {
+    (s.trim.toLowerCase: @unchecked) match {
       case Scala.toString  =>
         Scala
       case Go.toString  =>
