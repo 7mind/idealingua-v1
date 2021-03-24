@@ -54,5 +54,5 @@ object FSPath {
     }
   }
 
-  def parse(path: String): FSPath = apply(path.split(separator))
+  def parse(path: String): FSPath = apply(path.split(separator).toSeq)
 }

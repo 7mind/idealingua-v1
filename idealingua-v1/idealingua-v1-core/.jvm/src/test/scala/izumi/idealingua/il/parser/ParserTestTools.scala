@@ -26,7 +26,7 @@ trait ParserTestTools {
   }
 
   def assertParseable[T](p: P[_] => P[T], str: String): T = {
-    parse(str, p) match {
+    (parse(str, p): @unchecked) match {
       case Parsed.Success(v, index) =>
         assert(index == str.length, s"Seems like value wasn't parsed completely: $v")
         v

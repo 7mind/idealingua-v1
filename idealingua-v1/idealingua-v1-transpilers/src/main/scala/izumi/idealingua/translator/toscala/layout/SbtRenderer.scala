@@ -29,7 +29,7 @@ class SbtRenderer {
   }
 
   def renderValue(v: Any): String = {
-    v match {
+    (v: @unchecked) match {
       case s: String =>
         s""""$s""""
       case b: Boolean =>

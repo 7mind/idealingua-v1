@@ -298,7 +298,7 @@ class IDLPostTyper(defn: DomainMeshLoaded) {
   }
 
   protected def fixId[T <: AbstractIndefiniteId, R <: TypeId](t: T): R = {
-    (t match {
+    ((t: @unchecked) match {
       case t: IndefiniteId =>
         makeDefinite(t)
 
@@ -379,7 +379,7 @@ class IDLPostTyper(defn: DomainMeshLoaded) {
 
 
   protected def makeDefinite(id: AbstractIndefiniteId): TypeId = {
-    id match {
+    (id: @unchecked) match {
       case p if isPrimitive(p) =>
         Primitive.mapping(p.name)
 

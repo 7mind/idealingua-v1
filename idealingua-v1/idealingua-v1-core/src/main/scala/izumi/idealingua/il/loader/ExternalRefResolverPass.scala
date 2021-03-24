@@ -90,7 +90,7 @@ private[loader] class ExternalRefResolverPass(domains: UnresolvedDomains) {
   }
 
   private def resolveOverlay(forDomain: DomainId)(result: ModelParsingResult): Either[Vector[RefResolverIssue], LoadedModel] = {
-    result match {
+    (result: @unchecked) match {
       case ModelParsingResult.Success(_, model) if model.includes.isEmpty =>
         Right(LoadedModel(model.definitions))
 

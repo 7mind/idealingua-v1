@@ -16,7 +16,7 @@ import scala.jdk.CollectionConverters._
 class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, manifest: BuildManifest) {
   private val log: CompilerLog = CompilerLog.Default
 
-  def publish(): Either[Throwable, Unit] = (creds, lang, manifest) match {
+  def publish(): Either[Throwable, Unit] = ((creds, lang, manifest): @unchecked) match {
     case (c: ScalaCredentials, IDLLanguage.Scala, _) => publishScala(targetDir, c)
     case (c: TypescriptCredentials, IDLLanguage.Typescript, _) => publishTypescript(targetDir, c)
     case (c: GoCredentials, IDLLanguage.Go, m: GoLangBuildManifest) => publishGo(targetDir, c, m)

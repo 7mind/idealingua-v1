@@ -238,7 +238,7 @@ object CommandlineIDLCompiler {
   private def valToJson(v: AnyRef): Json = {
     import io.circe.syntax._
 
-    v match {
+    (v: @unchecked) match {
       case m: java.util.HashMap[_, _] =>
         m.asScala
           .map {
