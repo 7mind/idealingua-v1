@@ -51,6 +51,8 @@ object IDLTestTools {
 
   def loadDefs(base: String): Seq[LoadedDomain.Success] = loadDefs(makeLoader(base), makeResolver(base))
 
+  // fixme: workaround for `Error: Could not create the Java Virtual Machine.` (remove if it doesn't reproduce anymore)
+  def scalaSysEnv = Map("JAVA_OPTS" -> "")
 
   def makeLoader(base: String): LocalModelLoaderContext = {
     val src = new File(getClass.getResource(base).toURI).toPath
@@ -100,7 +102,7 @@ object IDLTestTools {
         Seq("sbt", "clean", "compile")
     }
 
-    val exitCode = run(out.absoluteTargetDir, cmd, Map.empty, "scalac")
+    val exitCode = run(out.absoluteTargetDir, cmd, scalaSysEnv, "scalac")
     exitCode == 0
   }
 
@@ -183,7 +185,6 @@ object IDLTestTools {
     if (run(out.absoluteTargetDir, Seq("yarn", "install"), Map.empty, "yarn") != 0) {
       return false
     }
-
 
     val tscCmd = layout match {
       case TypeScriptProjectLayout.YARN =>

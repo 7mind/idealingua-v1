@@ -4,7 +4,7 @@ import izumi.fundamentals.platform.files.IzFiles
 import izumi.idealingua.model.publishing.manifests.{CSharpProjectLayout, GoProjectLayout, ScalaProjectLayout, TypeScriptProjectLayout}
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.sys.process.Process
+import scala.sys.process.{Process, stderr}
 import scala.util.Properties
 
 class CompilerTest extends AnyWordSpec {
@@ -19,7 +19,8 @@ class CompilerTest extends AnyWordSpec {
     "be able to compile into scala" in {
       if (!useDockerForLocalScalaTest) {
         require("scalac")
-        val systemScalaVersion = Process(Seq("scalac", "-version")).#|(Process(Seq("sed", "-r", """s/.*version (.*) --.*/\1/"""))).!!.split("\\.").take(2).mkString(".")
+        val systemScalaVersion = Process(Seq("scalac", "-version"), None, scalaSysEnv.toSeq: _*).#|(Process(Seq("sed", "-r", """s/.*version (.*) --.*/\1/"""))).!!.split("\\.").take(2).mkString(".")
+        assume(systemScalaVersion.nonEmpty)
         assume(Properties.versionNumberString.startsWith(systemScalaVersion), s"compiler test can run on systemScalaVersion=$systemScalaVersion only (local compiler used for test should be the same as build compiler)")
       }
 
