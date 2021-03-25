@@ -1096,8 +1096,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     scalacOptions -= "-Wconf:any:error",
     mainClass in assembly := Some("izumi.idealingua.compiler.CommandlineIDLCompiler"),
     assemblyMergeStrategy in assembly := {
-          // FIXME: workaround for https://github.com/zio/interop-cats/issues/16
-          case path if path.contains("zio/BuildInfo$.class") =>
+          case path if path.contains("scala/annotation/nowarn") =>
             MergeStrategy.last
           case p =>
             (assemblyMergeStrategy in assembly).value(p)

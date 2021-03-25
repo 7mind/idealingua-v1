@@ -342,8 +342,7 @@ object Idealingua {
           "mainClass" in SettingScope.Raw("assembly") := """Some("izumi.idealingua.compiler.CommandlineIDLCompiler")""".raw,
           "assemblyMergeStrategy" in SettingScope.Raw("assembly") :=
             """{
-              |      // FIXME: workaround for https://github.com/zio/interop-cats/issues/16
-              |      case path if path.contains("zio/BuildInfo$.class") =>
+              |      case path if path.contains("scala/annotation/nowarn") =>
               |        MergeStrategy.last
               |      case p =>
               |        (assemblyMergeStrategy in assembly).value(p)
