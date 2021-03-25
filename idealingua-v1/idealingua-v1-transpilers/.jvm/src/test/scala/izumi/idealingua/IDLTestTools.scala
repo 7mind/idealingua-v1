@@ -334,8 +334,8 @@ object IDLTestTools {
     Files.write(cmdscript, cmdSh.getBytes)
 
     val log = workDir.getParent.resolve(s"$cname.log").toFile
-    val logger = ProcessLogger(log)
-    val exitCode = Timed {
+    val Timed(exitCode, duration) = Timed {
+      val logger = ProcessLogger(log)
       try {
         Process(Seq("/bin/bash", cmdscript.toString), Some(workDir.toFile), env.toSeq: _*)
           .run(logger)
@@ -345,17 +345,21 @@ object IDLTestTools {
       }
     }
 
-    System.out.println(s"Done in ${exitCode.duration} ${exitCode.duration.readable}")
+    System.out.println(s"Done in $duration ${duration.readable}")
+    System.out.flush()
 
-    if (exitCode.value != 0) {
-      System.out.flush()
-      System.err.flush()
+    if (exitCode != 0) {
       System.out.println(cmdSh)
       System.out.flush()
-      System.err.println(s"Process failed for $cname: $exitCode")
+
       System.err.flush()
-      System.out.println(IzFiles.readString(log))
-      System.out.flush()
+      System.err.println(s"Process failed for $cname: exitCode=$exitCode in $duration ${duration.readable}")
+      System.err.flush()
+      System.err.println(
+        s"""
+           |Failure log (${log.getAbsolutePath}]):
+           |${IzFiles.readString(log)}""".stripMargin)
+      System.err.flush()
     }
     exitCode
   }
