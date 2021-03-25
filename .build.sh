@@ -21,39 +21,9 @@ function csbt {
   eval $COMMAND
 }
 
-# function versionate {
-#   if [[ "$CI_BRANCH" != "master" &&  "$CI_BRANCH" != "develop" && ! ( "$CI_TAG" =~ ^v.*$ ) ]] ; then
-#     echo "Setting version suffix to $CI_BRANCH"
-#     csbt "\"addVersionSuffix $CI_BRANCH\""
-#   else
-#     echo "No version suffix required"
-#   fi
-# }
-
 function coverage {
   csbt clean coverage "'$VERSION_COMMAND test'" "'$VERSION_COMMAND coverageReport'" || exit 1
   bash <(curl -s https://codecov.io/bash)
-}
-
-# function scripted {
-#   csbt clean publishLocal '"scripted sbt-izumi-plugins/*"' || exit 1
-# }
-
-function site {
-  if [[ "$CI_PULL_REQUEST" != "false"  ]] ; then
-    return 0
-  fi
-  if [[ "$CI_BRANCH" == "develop" || "$CI_TAG" =~ ^v.*$ ]] ; then
-    echo "Publishing site from branch=$CI_BRANCH; tag=$CI_TAG"
-    chown -R root:root ~/.ssh
-    chmod 600 .secrets/travis-deploy-key
-    eval "$(ssh-agent -s)"
-    ssh-add .secrets/travis-deploy-key
-
-    csbt +clean doc/ghpagesSynchLocal doc/ghpagesPushSite || exit 1
-  else
-    echo "Not publishing site, because $CI_BRANCH is not 'develop'"
-  fi
 }
 
 function publishIDL {
@@ -90,13 +60,13 @@ function publishScala {
     return 0
   fi
 
-  if [[ ! ("$CI_BRANCH" == "develop" || "$CI_BRANCH" == "zio-RC16" || "$CI_TAG" =~ ^v.*$ ) ]] ; then
+  if [[ ! ("$CI_BRANCH" == "develop" || "$CI_TAG" =~ ^v.*$ ) ]] ; then
     return 0
   fi
 
   echo "PUBLISH SCALA LIBRARIES..."
 
-  if [[ "$CI_BRANCH" == "develop" || "$CI_BRANCH" == "zio-RC16" ]] ; then
+  if [[ "$CI_BRANCH" == "develop" ]] ; then
     csbt "'$VERSION_COMMAND clean'" "'$VERSION_COMMAND package'" "'$VERSION_COMMAND publishSigned'" || exit 1
   else
     csbt "'$VERSION_COMMAND clean'" "'$VERSION_COMMAND package'" "'$VERSION_COMMAND publishSigned'" sonatypeBundleRelease || exit 1
@@ -171,17 +141,9 @@ case $i in
         scala212
     ;;
 
-    # versionate)
-    #     versionate
-    # ;;
-
     coverage)
         coverage
     ;;
-
-    # scripted)
-    #     scripted
-    # ;;
 
     publishIDL)
         publishIDL
@@ -193,10 +155,6 @@ case $i in
 
     sonatypeRelease)
         sonatypeRelease
-    ;;
-
-    site)
-        site
     ;;
 
     secrets)
