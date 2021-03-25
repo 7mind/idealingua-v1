@@ -4,9 +4,12 @@ import izumi.fundamentals.platform.files.IzFiles
 import izumi.idealingua.model.publishing.manifests.{CSharpProjectLayout, GoProjectLayout, ScalaProjectLayout, TypeScriptProjectLayout}
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.sys.process.Process
 import scala.util.Properties
 
 class CompilerTest extends AnyWordSpec {
+
+  final val useDockerForLocalScalaTest = false
 
   import IDLTestTools._
 
@@ -14,16 +17,20 @@ class CompilerTest extends AnyWordSpec {
     val id = getClass.getSimpleName
 
     "be able to compile into scala" in {
-      require("scalac")
-      assume(Properties.versionNumberString.startsWith("2.12"), "compiler test can run on the 2.12 only (local compiler used for test should be the same as build compiler)")
-      assert(compilesScala(s"$id-plain", loadDefs(), ScalaProjectLayout.PLAIN))
-      assert(compilesScala(s"$id-plain-nonportable", loadDefs("/defs/scala"), ScalaProjectLayout.PLAIN))
+      if (!useDockerForLocalScalaTest) {
+        require("scalac")
+        val systemScalaVersion = Process(Seq("scalac", "-version")).#|(Process(Seq("sed", "-r", """s/.*version (.*) --.*/\1/"""))).!!.split("\\.").take(2).mkString(".")
+        assume(Properties.versionNumberString.startsWith(systemScalaVersion), s"compiler test can run on systemScalaVersion=$systemScalaVersion only (local compiler used for test should be the same as build compiler)")
+      }
+
+      assert(compilesScala(s"$id-plain", loadDefs(), ScalaProjectLayout.PLAIN, useDockerForLocalScalaTest))
+      assert(compilesScala(s"$id-plain-nonportable", loadDefs("/defs/scala"), ScalaProjectLayout.PLAIN, useDockerForLocalScalaTest))
     }
 
     "be able to compile into scala with SBT" ignore {
       require("sbt")
       // we can't test sbt build: it depends on artifacts which may not exist yet
-      assert(compilesScala(s"$id-sbt", loadDefs(), ScalaProjectLayout.SBT))
+      assert(compilesScala(s"$id-sbt", loadDefs(), ScalaProjectLayout.SBT, useDockerForLocalScalaTest))
       // circular sbt projects are broken in V1
       //assert(compilesScala(s"$id-sbt-nonportable", loadDefs("/defs/scala"), ScalaProjectLayout.SBT))
     }
@@ -62,4 +69,3 @@ class CompilerTest extends AnyWordSpec {
     assume(IzFiles.haveExecutables(tools: _*), s"One of required tools is not available: $tools")
   }
 }
-

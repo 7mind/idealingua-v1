@@ -81,18 +81,17 @@ object IDLTestTools {
     resolved.successful
   }
 
-  def compilesScala(id: String, domains: Seq[LoadedDomain.Success], layout: ScalaProjectLayout, extensions: Seq[ScalaTranslatorExtension] = ScalaTranslator.defaultExtensions): Boolean = {
+  def compilesScala(id: String, domains: Seq[LoadedDomain.Success], layout: ScalaProjectLayout, useDockerForLocalTest: Boolean, extensions: Seq[ScalaTranslatorExtension] = ScalaTranslator.defaultExtensions): Boolean = {
     val mf = ScalaBuildManifest.example
     val manifest = mf.copy(layout = ScalaProjectLayout.SBT, sbt = mf.sbt.copy(projectNaming = mf.sbt.projectNaming.copy(dropFQNSegments = Some(1))))
     val out = compiles(id, domains, CompilerOptions(IDLLanguage.Scala, extensions, manifest))
     val classpath: String = IzJvm.safeClasspath()
 
-
     val cmd = layout match {
       case ScalaProjectLayout.PLAIN =>
         // it's hard to map volumes on CI agent bcs our build runs in docker but all the mounts happens on the docker host
-        if (hasDocker && !isCI) {
-          dockerRun(out, classpath)
+        if (useDockerForLocalTest && hasDocker && !isCI) {
+          dockerRun(out, classpath, scala213 = true)
         } else {
           directRun(out, classpath)
         }
@@ -114,14 +113,13 @@ object IDLTestTools {
     }
   }
 
-  private def dockerRun(out: CompilerOutput, classpath: String) = {
+  private def dockerRun(out: CompilerOutput, classpath: String, scala213: Boolean) = {
     val v = classpath.split(':')
     val cp = virtualiseFs(v, "cp")
 
     val cpe = cp.flatMap(_._1)
     val scp = cp.map(_._2).mkString(":")
 
-    val scala213 = false
     val flags = if (scala213) {
       Seq(
         "-Wunused:_",
@@ -141,7 +139,7 @@ object IDLTestTools {
     ) ++ cpe ++
       Seq(
         "-v", s"'${out.absoluteTargetDir}:/work:Z'",
-        "septimalmind/izumi-env",
+        "septimalmind/izumi-env:latest",
 
         "scalac",
         "-J-Xmx2g",
@@ -287,7 +285,6 @@ object IDLTestTools {
     IzFiles.recreateDirs(runDir, domainsDir, compilerDir)
     IzFiles.refreshSymlink(targetDir.resolve(stablePrefix), runDir)
 
-
     val products = new TypespaceCompilerFSFacade(domains)
       .compile(compilerDir, UntypedCompilerOptions(options.language, options.extensions, options.manifest, options.withBundledRuntime))
       .compilationProducts
@@ -357,7 +354,7 @@ object IDLTestTools {
       System.err.flush()
       System.err.println(
         s"""
-           |Failure log (${log.getAbsolutePath}]):
+           |Failure log (${log.getAbsolutePath}):
            |${IzFiles.readString(log)}""".stripMargin)
       System.err.flush()
     }
