@@ -16,11 +16,11 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
     )
   )
   .settings(
-    scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.13",
       "2.13.5"
     ),
+    scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
       case (_, _) => true
@@ -92,8 +92,9 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
-        "-Wunused:_",
         "-Wvalue-discard",
+        "-Wunused:_",
+        "-Wmacros:after",
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
@@ -124,11 +125,11 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
     )
   )
   .settings(
-    scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.13",
       "2.13.5"
     ),
+    scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
       case (_, _) => true
@@ -200,8 +201,9 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
-        "-Wunused:_",
         "-Wvalue-discard",
+        "-Wunused:_",
+        "-Wmacros:after",
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
@@ -234,11 +236,11 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
     )
   )
   .settings(
-    scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.13",
       "2.13.5"
     ),
+    scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
       case (_, _) => true
@@ -310,8 +312,9 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
-        "-Wunused:_",
         "-Wvalue-discard",
+        "-Wunused:_",
+        "-Wmacros:after",
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
@@ -348,11 +351,11 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     )
   )
   .settings(
-    scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.13",
       "2.13.5"
     ),
+    scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
       case (_, _) => true
@@ -424,8 +427,9 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
-        "-Wunused:_",
         "-Wvalue-discard",
+        "-Wunused:_",
+        "-Wmacros:after",
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
@@ -463,11 +467,11 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
     )
   )
   .settings(
-    scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.13",
       "2.13.5"
     ),
+    scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
       case (_, _) => true
@@ -540,8 +544,9 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
-        "-Wunused:_",
         "-Wvalue-discard",
+        "-Wunused:_",
+        "-Wmacros:after",
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
@@ -572,11 +577,11 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     )
   )
   .settings(
-    scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.13",
       "2.13.5"
     ),
+    scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
       case (_, _) => true
@@ -648,8 +653,9 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
-        "-Wunused:_",
         "-Wvalue-discard",
+        "-Wunused:_",
+        "-Wmacros:after",
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
@@ -675,11 +681,11 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     )
   )
   .settings(
-    scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.13",
       "2.13.5"
     ),
+    scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
       case (_, _) => true
@@ -751,8 +757,9 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
-        "-Wunused:_",
         "-Wvalue-discard",
+        "-Wunused:_",
+        "-Wmacros:after",
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
@@ -778,11 +785,11 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     )
   )
   .settings(
-    scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.13",
       "2.13.5"
     ),
+    scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
       case (_, _) => true
@@ -854,8 +861,9 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
-        "-Wunused:_",
         "-Wvalue-discard",
+        "-Wunused:_",
+        "-Wmacros:after",
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
@@ -881,11 +889,11 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     )
   )
   .settings(
-    scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.13",
       "2.13.5"
     ),
+    scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
       case (_, _) => true
@@ -957,8 +965,9 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
-        "-Wunused:_",
         "-Wvalue-discard",
+        "-Wunused:_",
+        "-Wmacros:after",
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
@@ -993,11 +1002,11 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     )
   )
   .settings(
-    scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Seq(
       "2.12.13",
       "2.13.5"
     ),
+    scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
       case (_, _) => true
@@ -1069,8 +1078,9 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-Wextra-implicit",
         "-Wnumeric-widen",
         "-Woctal-literal",
-        "-Wunused:_",
         "-Wvalue-discard",
+        "-Wunused:_",
+        "-Wmacros:after",
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
