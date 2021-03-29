@@ -23,7 +23,7 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
-      case (_, _) => true
+      case (_, _) => coverageEnabled.value
     } },
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
@@ -132,7 +132,7 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
-      case (_, _) => true
+      case (_, _) => coverageEnabled.value
     } },
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
@@ -243,7 +243,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
-      case (_, _) => true
+      case (_, _) => coverageEnabled.value
     } },
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
@@ -358,7 +358,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
-      case (_, _) => true
+      case (_, _) => coverageEnabled.value
     } },
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
@@ -474,7 +474,7 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
-      case (_, _) => true
+      case (_, _) => coverageEnabled.value
     } },
     fork in Test := true,
     organization := "io.7mind.izumi",
@@ -584,7 +584,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
-      case (_, _) => true
+      case (_, _) => coverageEnabled.value
     } },
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
@@ -688,7 +688,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
-      case (_, _) => true
+      case (_, _) => coverageEnabled.value
     } },
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
@@ -792,7 +792,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
-      case (_, _) => true
+      case (_, _) => coverageEnabled.value
     } },
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
@@ -896,7 +896,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
-      case (_, _) => true
+      case (_, _) => coverageEnabled.value
     } },
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
@@ -1009,7 +1009,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.12.13") => false
-      case (_, _) => true
+      case (_, _) => coverageEnabled.value
     } },
     organization := "io.7mind.izumi",
     unmanagedSourceDirectories in Compile += baseDirectory.value / ".jvm/src/main/scala" ,
