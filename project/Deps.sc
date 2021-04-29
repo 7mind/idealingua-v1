@@ -345,14 +345,14 @@ object Idealingua {
               |      case path if path.contains("scala/annotation/nowarn") =>
               |        MergeStrategy.last
               |      case p =>
-              |        (assemblyMergeStrategy in assembly).value(p)
+              |        (assembly / assemblyMergeStrategy).value(p)
               |}""".stripMargin.raw,
-          "artifact" in SettingScope.Raw("(Compile, assembly)") :=
+          "artifact" in SettingScope.Raw("Compile / assembly") :=
             """{
-              |      val art = (artifact in(Compile, assembly)).value
+              |      val art = (Compile / assembly / artifact).value
               |      art.withClassifier(Some("assembly"))
               |}""".stripMargin.raw,
-          SettingDef.RawSettingDef("addArtifact(artifact in(Compile, assembly), assembly)")
+          SettingDef.RawSettingDef("addArtifact(Compile / assembly / artifact, assembly)")
         )
       ),
     ),
