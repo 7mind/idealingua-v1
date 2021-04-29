@@ -1099,13 +1099,13 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
           case path if path.contains("scala/annotation/nowarn") =>
             MergeStrategy.last
           case p =>
-            (assemblyMergeStrategy in assembly).value(p)
+            (assembly / assemblyMergeStrategy).value(p)
     },
-    (Compile, assembly) / artifact := {
-          val art = (artifact in(Compile, assembly)).value
+    Compile / assembly / artifact := {
+          val art = (Compile / assembly / artifact).value
           art.withClassifier(Some("assembly"))
     },
-    addArtifact(artifact in(Compile, assembly), assembly)
+    addArtifact(Compile / assembly / artifact, assembly)
   )
   .enablePlugins(AssemblyPlugin, IzumiPlugin)
 
