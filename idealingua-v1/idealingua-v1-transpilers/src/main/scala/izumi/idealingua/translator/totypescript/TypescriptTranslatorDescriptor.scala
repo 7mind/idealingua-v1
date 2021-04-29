@@ -40,6 +40,7 @@ object TypescriptTranslatorDescriptor extends TranslatorDescriptor[TypescriptTra
     "do",
     "else",
     "enum",
+    "Error",
     "export",
     "extends",
     "false",
