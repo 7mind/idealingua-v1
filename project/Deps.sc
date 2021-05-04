@@ -91,7 +91,7 @@ object Idealingua {
     final val circe_all = Seq(
       Library("io.circe", "circe-parser", V.circe, LibraryType.Auto),
       Library("io.circe", "circe-literal", V.circe, LibraryType.Auto),
-      Library("io.circe", "circe-generic", V.circe, LibraryType.Auto),
+      Library("io.circe", "circe-generic-extras", V.circe, LibraryType.Auto),
       fundamentals_json_circe
     )
 
