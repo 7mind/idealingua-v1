@@ -12,7 +12,7 @@ object Idealingua {
 
     val cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version")
     val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
-    val circe = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
+    val circe = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version")
     val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
     val zio_interop_cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version")
 
@@ -87,6 +87,13 @@ object Idealingua {
     )
 
     final val typesafe_config = Library("com.typesafe", "config", V.typesafe_config, LibraryType.Invariant) in Scope.Compile.all
+
+    final val circe_all = Seq(
+      Library("io.circe", "circe-parser", V.circe, LibraryType.Auto),
+      Library("io.circe", "circe-literal", V.circe, LibraryType.Auto),
+      Library("io.circe", "circe-generic", V.circe, LibraryType.Auto),
+      fundamentals_json_circe
+    )
 
     final val scala_sbt = Library("org.scala-sbt", "sbt", Version.VExpr("sbtVersion.value"), LibraryType.Invariant)
     final val scala_reflect = Library("org.scala-lang", "scala-reflect", Version.VExpr("scalaVersion.value"), LibraryType.Invariant)
@@ -277,13 +284,15 @@ object Idealingua {
       ),
       Artifact(
         name = Projects.idealingua.core,
-        libs = Seq(fastparse) ++ Seq(Deps.fundamentals_reflection).map(_ in Scope.Compile.all),
+        libs = Seq(fastparse) ++ Seq(Deps.fundamentals_reflection in Scope.Compile.all),
         depends = Seq(Projects.idealingua.model).map(_ in Scope.Compile.all),
       ),
       Artifact(
         name = Projects.idealingua.runtimeRpcScala,
-        libs = Seq(scala_reflect in Scope.Provided.all) ++ cats_all.map(_ in Scope.Compile.all) ++
-          Seq(Deps.fundamentals_bio, Deps.fundamentals_json_circe).map(_ in Scope.Compile.all) ++
+        libs = Seq(scala_reflect in Scope.Provided.all) ++
+          cats_all.map(_ in Scope.Compile.all) ++
+          circe_all.map(_ in Scope.Compile.all) ++
+          Seq(Deps.fundamentals_bio in Scope.Compile.all) ++
           zio_all.map(_ in Scope.Test.all),
         depends = Seq.empty,
       ),
@@ -296,7 +305,9 @@ object Idealingua {
       ),
       Artifact(
         name = Projects.idealingua.transpilers,
-        libs = Seq(scala_xml, scalameta) ++ Seq(Deps.fundamentals_bio, Deps.fundamentals_json_circe).map(_ in Scope.Compile.all),
+        libs = Seq(scala_xml, scalameta) ++
+          circe_all.map(_ in Scope.Compile.all) ++
+          Seq(Deps.fundamentals_bio in Scope.Compile.all),
         depends = Seq(Projects.idealingua.core, Projects.idealingua.runtimeRpcScala).map(_ in Scope.Compile.all) ++
           Seq(Projects.idealingua.testDefs, Projects.idealingua.runtimeRpcTypescript, Projects.idealingua.runtimeRpcGo, Projects.idealingua.runtimeRpcCSharp).map(_ in Scope.Test.jvm),
         settings = forkTests
