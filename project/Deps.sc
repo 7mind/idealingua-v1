@@ -13,6 +13,7 @@ object Idealingua {
     val cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version")
     val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
     val circe = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version")
+    val jawn = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.org_typelevel_jawn_parser_version")
     val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
     val zio_interop_cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version")
 
@@ -87,6 +88,8 @@ object Idealingua {
     )
 
     final val typesafe_config = Library("com.typesafe", "config", V.typesafe_config, LibraryType.Invariant) in Scope.Compile.all
+
+    final val jawn = Library("org.typelevel", "jawn-parser", V.jawn, LibraryType.AutoJvm)
 
     final val circe_all = Seq(
       Library("io.circe", "circe-parser", V.circe, LibraryType.Auto),
@@ -289,10 +292,13 @@ object Idealingua {
       ),
       Artifact(
         name = Projects.idealingua.runtimeRpcScala,
-        libs = Seq(scala_reflect in Scope.Provided.all) ++
+        libs = Seq(
+          scala_reflect in Scope.Provided.all,
+          jawn in Scope.Compile.js,
+          Deps.fundamentals_bio in Scope.Compile.all
+        ) ++
           cats_all.map(_ in Scope.Compile.all) ++
           circe_all.map(_ in Scope.Compile.all) ++
-          Seq(Deps.fundamentals_bio in Scope.Compile.all) ++
           zio_all.map(_ in Scope.Test.all),
         depends = Seq.empty,
       ),
@@ -305,9 +311,13 @@ object Idealingua {
       ),
       Artifact(
         name = Projects.idealingua.transpilers,
-        libs = Seq(scala_xml, scalameta) ++
-          circe_all.map(_ in Scope.Compile.all) ++
-          Seq(Deps.fundamentals_bio in Scope.Compile.all),
+        libs = Seq(
+          scala_xml,
+          scalameta,
+          Deps.fundamentals_bio in Scope.Compile.all,
+          jawn in Scope.Compile.js,
+        ) ++
+          circe_all.map(_ in Scope.Compile.all),
         depends = Seq(Projects.idealingua.core, Projects.idealingua.runtimeRpcScala).map(_ in Scope.Compile.all) ++
           Seq(Projects.idealingua.testDefs, Projects.idealingua.runtimeRpcTypescript, Projects.idealingua.runtimeRpcGo, Projects.idealingua.runtimeRpcCSharp).map(_ in Scope.Test.jvm),
         settings = forkTests
