@@ -4,7 +4,7 @@ import izumi.fundamentals.platform.files.IzFiles
 import izumi.idealingua.model.publishing.manifests.{CSharpProjectLayout, GoProjectLayout, ScalaProjectLayout, TypeScriptProjectLayout}
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.sys.process.{Process, stderr}
+import scala.sys.process.Process
 import scala.util.Properties
 
 class CompilerTest extends AnyWordSpec {
