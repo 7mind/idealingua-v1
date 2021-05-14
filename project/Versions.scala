@@ -7,7 +7,7 @@ object V {
   val scalameta = "4.4.17"
   val fastparse = "2.3.2"
 
-  val scala_xml = "1.3.0"
+  val scala_xml = "2.0.0"
 
   // java-only dependencies below
   // java, we need it bcs http4s ws client isn't ready yet
