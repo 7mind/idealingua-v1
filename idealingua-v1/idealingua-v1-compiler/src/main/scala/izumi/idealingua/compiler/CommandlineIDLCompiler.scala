@@ -239,7 +239,7 @@ object CommandlineIDLCompiler {
     import io.circe.syntax._
 
     (v: @unchecked) match {
-      case m: java.util.HashMap[_, _] =>
+      case m: java.util.HashMap[?, ?] =>
         m.asScala
           .map {
             case (k, value) =>

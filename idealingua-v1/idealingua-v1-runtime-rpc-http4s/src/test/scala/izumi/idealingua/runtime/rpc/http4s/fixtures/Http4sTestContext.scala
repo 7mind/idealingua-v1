@@ -32,7 +32,7 @@ object Http4sTestContext {
   final val demo = new DummyServices[rt.BiIO, DummyRequestContext]()
 
   //
-  final val authUser: Kleisli[OptionT[MonoIO, ?], Request[MonoIO], DummyRequestContext] =
+  final val authUser: Kleisli[OptionT[MonoIO, _], Request[MonoIO], DummyRequestContext] =
     Kleisli {
       request: Request[MonoIO] =>
         val context = DummyRequestContext(request.remoteAddr.getOrElse("0.0.0.0"), request.headers.get(Authorization).map(_.credentials))

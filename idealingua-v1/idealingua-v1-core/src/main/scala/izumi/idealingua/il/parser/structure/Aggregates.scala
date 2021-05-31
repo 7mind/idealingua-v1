@@ -8,26 +8,22 @@ trait Aggregates
   extends Separators
     with Identifiers {
 
-
-
-  def enclosed[T](defparser: => P[T])(implicit v: P[_]): P[T] = {
+  def enclosed[T](defparser: => P[T])(implicit v: P[?]): P[T] = {
     P(("{" ~ any ~ defparser ~ any ~ "}") | "(" ~ any ~ defparser ~ any ~ ")")
   }
 
-  def enclosedB[T](defparser: => P[T])(implicit v: P[_]): P[T] = {
+  def enclosedB[T](defparser: => P[T])(implicit v: P[?]): P[T] = {
     P("[" ~ any ~ defparser ~ any ~ "]")
   }
 
 
-  def starting[T](keyword: => P[Unit], defparser: => P[T])(implicit v: P[_]): P[(ParsedId, T)] = {
+  def starting[T](keyword: => P[Unit], defparser: => P[T])(implicit v: P[?]): P[(ParsedId, T)] = {
     kw(keyword, idShort ~ inline ~ defparser)
   }
 
-  def block[T](keyword: => P[Unit], defparser: => P[T])(implicit v: P[_]): P[(ParsedId, T)] = {
+  def block[T](keyword: => P[Unit], defparser: => P[T])(implicit v: P[?]): P[(ParsedId, T)] = {
     starting(keyword, enclosed(defparser))
   }
 
 
 }
-
-

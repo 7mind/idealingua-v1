@@ -68,7 +68,7 @@ class ScalaTypeConverter(domain: DomainId) {
     toScala(classTag[T].runtimeClass)
   }
 
-  def toScala(clazz: Class[_]): ScalaType = {
+  def toScala(clazz: Class[?]): ScalaType = {
     val parts = clazz.getName.split('.')
     val javaType = JavaType(parts.init, parts.last)
     toScala(javaType)
@@ -183,6 +183,3 @@ class ScalaTypeConverter(domain: DomainId) {
     }
   }
 }
-
-
-

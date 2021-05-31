@@ -5,7 +5,7 @@ import fastparse.NoWhitespace._
 import fastparse._
 
 class DefPositions(context: IDLParserContext) {
-  def positioned[T](defparser: => P[T])(implicit v: P[_]): P[(InputPosition, T)] = {
+  def positioned[T](defparser: => P[T])(implicit v: P[?]): P[(InputPosition, T)] = {
     (Index ~ defparser ~ Index).map {
       case (start, value, stop) =>
         (InputPosition.Defined(start, stop, context.file), value)

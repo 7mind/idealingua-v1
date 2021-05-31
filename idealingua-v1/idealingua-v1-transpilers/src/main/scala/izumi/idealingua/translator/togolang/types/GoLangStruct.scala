@@ -94,7 +94,7 @@ final case class GoLangStruct(
       if (!consts) {
         methodsSection
       } else {
-        consts + "\n" + methodsSection
+        consts.toString + "\n" + methodsSection
       }
   }
 

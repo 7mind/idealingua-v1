@@ -56,7 +56,7 @@ object CompilerOptions {
   type CSharpTranslatorOptions = CompilerOptions[CSharpTranslatorExtension, CSharpBuildManifest]
   type ScalaTranslatorOptions = CompilerOptions[ScalaTranslatorExtension, ScalaBuildManifest]
 
-  def from[E <: TranslatorExtension : ClassTag, M <: BuildManifest : ClassTag](options: UntypedCompilerOptions): CompilerOptions[E, M] = {
+  def from[E <: TranslatorExtension : ClassTag, M <: BuildManifest](options: UntypedCompilerOptions): CompilerOptions[E, M] = {
     val extensions = options.extensions.collect {
       case e: E => e
     }
@@ -82,9 +82,3 @@ final case class UntypedCompilerOptions
     Seq(language, rtRepr, rtfRepr, extRepr).mkString(" ")
   }
 }
-
-
-
-
-
-

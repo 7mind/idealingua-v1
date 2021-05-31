@@ -35,9 +35,8 @@ trait Keywords extends Separators {
   def upstream[_:P]: P[Unit] = kw("toserver", "up", "upstream")
   def downstream[_:P]: P[Unit] = kw("toclient", "down", "downstream")
 
-  def apply[T](kw: => P[Unit], defparser: => P[T])(implicit v: P[_]): P[T] = {
+  def apply[T](kw: => P[Unit], defparser: => P[T])(implicit v: P[?]): P[T] = {
     P(kw ~/ defparser)
   }
 
 }
-

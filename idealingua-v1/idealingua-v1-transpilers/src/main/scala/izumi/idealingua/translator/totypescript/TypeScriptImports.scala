@@ -105,10 +105,10 @@ object TypeScriptImports {
     var destPkg = t.path.toPackage
     var matching = 0
 
-    breakable{
+    breakable {
       for( i <- srcPkg.indices){
         if (destPkg.size < i || pathDiffers(srcPkg, destPkg, i)) {
-          break
+          break()
         }
 
         matching += 1
