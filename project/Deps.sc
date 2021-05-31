@@ -174,7 +174,9 @@ object Idealingua {
         enabled = Seq(Plugin("SbtgenVerificationPlugin")),
         disabled = Seq(Plugin("AssemblyPlugin")),
       )
-      final val settings = Seq()
+      final val settings = Seq(
+        "libraryDependencySchemes" in SettingScope.Build := Seq(""""org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always""".raw)
+      )
 
       final val sharedAggSettings = Seq(
         "crossScalaVersions" := Targets.targetScala.map(_.value),
