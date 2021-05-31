@@ -17,14 +17,10 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.12.13",
-      "2.13.5"
+      "2.13.6",
+      "2.12.14"
     ),
     scalaVersion := crossScalaVersions.value.head,
-    coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => false
-      case (_, _) => coverageEnabled.value
-    } },
     organization := "io.7mind.izumi",
     Compile / unmanagedSourceDirectories += baseDirectory.value / ".jvm/src/main/scala" ,
     Compile / unmanagedResourceDirectories += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -39,13 +35,14 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => Seq(
-        "-Xsource:2.13",
+      case (_, "2.12.14") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
@@ -80,12 +77,15 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.5") => Seq(
-        "-Xlint:_,-eta-sam,-multiarg-infix,-byname-implicit",
+      case (_, "2.13.6") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
+        "-Vimplicits",
+        "-Vtype-diffs",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
@@ -126,14 +126,10 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.12.13",
-      "2.13.5"
+      "2.13.6",
+      "2.12.14"
     ),
     scalaVersion := crossScalaVersions.value.head,
-    coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => false
-      case (_, _) => coverageEnabled.value
-    } },
     organization := "io.7mind.izumi",
     Compile / unmanagedSourceDirectories += baseDirectory.value / ".jvm/src/main/scala" ,
     Compile / unmanagedResourceDirectories += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -148,13 +144,14 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => Seq(
-        "-Xsource:2.13",
+      case (_, "2.12.14") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
@@ -189,12 +186,15 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.5") => Seq(
-        "-Xlint:_,-eta-sam,-multiarg-infix,-byname-implicit",
+      case (_, "2.13.6") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
+        "-Vimplicits",
+        "-Vtype-diffs",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
@@ -240,14 +240,10 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.12.13",
-      "2.13.5"
+      "2.13.6",
+      "2.12.14"
     ),
     scalaVersion := crossScalaVersions.value.head,
-    coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => false
-      case (_, _) => coverageEnabled.value
-    } },
     organization := "io.7mind.izumi",
     Compile / unmanagedSourceDirectories += baseDirectory.value / ".jvm/src/main/scala" ,
     Compile / unmanagedResourceDirectories += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -262,13 +258,14 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => Seq(
-        "-Xsource:2.13",
+      case (_, "2.12.14") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
@@ -303,12 +300,15 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.5") => Seq(
-        "-Xlint:_,-eta-sam,-multiarg-infix,-byname-implicit",
+      case (_, "2.13.6") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
+        "-Vimplicits",
+        "-Vtype-diffs",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
@@ -355,14 +355,10 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.12.13",
-      "2.13.5"
+      "2.13.6",
+      "2.12.14"
     ),
     scalaVersion := crossScalaVersions.value.head,
-    coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => false
-      case (_, _) => coverageEnabled.value
-    } },
     organization := "io.7mind.izumi",
     Compile / unmanagedSourceDirectories += baseDirectory.value / ".jvm/src/main/scala" ,
     Compile / unmanagedResourceDirectories += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -377,13 +373,14 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => Seq(
-        "-Xsource:2.13",
+      case (_, "2.12.14") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
@@ -418,12 +415,15 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.5") => Seq(
-        "-Xlint:_,-eta-sam,-multiarg-infix,-byname-implicit",
+      case (_, "2.13.6") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
+        "-Vimplicits",
+        "-Vtype-diffs",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
@@ -474,14 +474,10 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.12.13",
-      "2.13.5"
+      "2.13.6",
+      "2.12.14"
     ),
     scalaVersion := crossScalaVersions.value.head,
-    coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => false
-      case (_, _) => coverageEnabled.value
-    } },
     Test / fork := true,
     organization := "io.7mind.izumi",
     Compile / unmanagedSourceDirectories += baseDirectory.value / ".jvm/src/main/scala" ,
@@ -497,13 +493,14 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => Seq(
-        "-Xsource:2.13",
+      case (_, "2.12.14") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
@@ -538,12 +535,15 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.5") => Seq(
-        "-Xlint:_,-eta-sam,-multiarg-infix,-byname-implicit",
+      case (_, "2.13.6") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
+        "-Vimplicits",
+        "-Vtype-diffs",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
@@ -584,14 +584,10 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.12.13",
-      "2.13.5"
+      "2.13.6",
+      "2.12.14"
     ),
     scalaVersion := crossScalaVersions.value.head,
-    coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => false
-      case (_, _) => coverageEnabled.value
-    } },
     organization := "io.7mind.izumi",
     Compile / unmanagedSourceDirectories += baseDirectory.value / ".jvm/src/main/scala" ,
     Compile / unmanagedResourceDirectories += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -606,13 +602,14 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => Seq(
-        "-Xsource:2.13",
+      case (_, "2.12.14") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
@@ -647,12 +644,15 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.5") => Seq(
-        "-Xlint:_,-eta-sam,-multiarg-infix,-byname-implicit",
+      case (_, "2.13.6") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
+        "-Vimplicits",
+        "-Vtype-diffs",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
@@ -688,14 +688,10 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.12.13",
-      "2.13.5"
+      "2.13.6",
+      "2.12.14"
     ),
     scalaVersion := crossScalaVersions.value.head,
-    coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => false
-      case (_, _) => coverageEnabled.value
-    } },
     organization := "io.7mind.izumi",
     Compile / unmanagedSourceDirectories += baseDirectory.value / ".jvm/src/main/scala" ,
     Compile / unmanagedResourceDirectories += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -710,13 +706,14 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => Seq(
-        "-Xsource:2.13",
+      case (_, "2.12.14") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
@@ -751,12 +748,15 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.5") => Seq(
-        "-Xlint:_,-eta-sam,-multiarg-infix,-byname-implicit",
+      case (_, "2.13.6") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
+        "-Vimplicits",
+        "-Vtype-diffs",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
@@ -792,14 +792,10 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.12.13",
-      "2.13.5"
+      "2.13.6",
+      "2.12.14"
     ),
     scalaVersion := crossScalaVersions.value.head,
-    coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => false
-      case (_, _) => coverageEnabled.value
-    } },
     organization := "io.7mind.izumi",
     Compile / unmanagedSourceDirectories += baseDirectory.value / ".jvm/src/main/scala" ,
     Compile / unmanagedResourceDirectories += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -814,13 +810,14 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => Seq(
-        "-Xsource:2.13",
+      case (_, "2.12.14") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
@@ -855,12 +852,15 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.5") => Seq(
-        "-Xlint:_,-eta-sam,-multiarg-infix,-byname-implicit",
+      case (_, "2.13.6") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
+        "-Vimplicits",
+        "-Vtype-diffs",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
@@ -896,14 +896,10 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.12.13",
-      "2.13.5"
+      "2.13.6",
+      "2.12.14"
     ),
     scalaVersion := crossScalaVersions.value.head,
-    coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => false
-      case (_, _) => coverageEnabled.value
-    } },
     organization := "io.7mind.izumi",
     Compile / unmanagedSourceDirectories += baseDirectory.value / ".jvm/src/main/scala" ,
     Compile / unmanagedResourceDirectories += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -918,13 +914,14 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => Seq(
-        "-Xsource:2.13",
+      case (_, "2.12.14") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
@@ -959,12 +956,15 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.5") => Seq(
-        "-Xlint:_,-eta-sam,-multiarg-infix,-byname-implicit",
+      case (_, "2.13.6") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
+        "-Vimplicits",
+        "-Vtype-diffs",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
@@ -1009,14 +1009,10 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.12.13",
-      "2.13.5"
+      "2.13.6",
+      "2.12.14"
     ),
     scalaVersion := crossScalaVersions.value.head,
-    coverageEnabled := { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => false
-      case (_, _) => coverageEnabled.value
-    } },
     organization := "io.7mind.izumi",
     Compile / unmanagedSourceDirectories += baseDirectory.value / ".jvm/src/main/scala" ,
     Compile / unmanagedResourceDirectories += baseDirectory.value / ".jvm/src/main/resources" ,
@@ -1031,13 +1027,14 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.13") => Seq(
-        "-Xsource:2.13",
+      case (_, "2.12.14") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Xlint:adapted-args",
@@ -1072,12 +1069,15 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.5") => Seq(
-        "-Xlint:_,-eta-sam,-multiarg-infix,-byname-implicit",
+      case (_, "2.13.6") => Seq(
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders",
+        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
-        "-Wconf:msg=kind-projector:silent",
+        "-Vimplicits",
+        "-Vtype-diffs",
         "-Ybackend-parallelism",
         math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wdead-code",
@@ -1119,8 +1119,8 @@ lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
   .settings(
     publish / skip := true,
     crossScalaVersions := Seq(
-      "2.12.13",
-      "2.13.5"
+      "2.13.6",
+      "2.12.14"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
@@ -1143,8 +1143,8 @@ lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"
   .settings(
     publish / skip := true,
     crossScalaVersions := Seq(
-      "2.12.13",
-      "2.13.5"
+      "2.13.6",
+      "2.12.14"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
@@ -1166,8 +1166,8 @@ lazy val `idealingua-v1-jvm` = (project in file(".agg/.agg-jvm"))
   .settings(
     publish / skip := true,
     crossScalaVersions := Seq(
-      "2.12.13",
-      "2.13.5"
+      "2.13.6",
+      "2.12.14"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
@@ -1210,7 +1210,7 @@ lazy val `idealingua-v1` = (project in file("."))
       s"-Xmacro-settings:git-head-commit=${com.typesafe.sbt.SbtGit.GitKeys.gitHeadCommit.value.getOrElse("")}"
     ),
     crossScalaVersions := Nil,
-    scalaVersion := "2.12.13",
+    scalaVersion := "2.13.6",
     ThisBuild / organization := "io.7mind.izumi",
     sonatypeProfileName := "io.7mind",
     sonatypeSessionName := s"[sbt-sonatype] ${name.value} ${version.value} ${java.util.UUID.randomUUID}",

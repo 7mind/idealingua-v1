@@ -11,7 +11,6 @@ import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 
-import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 import Codecs._
@@ -45,7 +44,7 @@ class ManifestReader(log: CompilerLog, shutdown: Shutdown, patch: Json, lang: ID
     }
   }
 
-  private def readManifest[T <: BuildManifest : ClassTag : Decoder : Encoder](default: T): T = {
+  private def readManifest[T <: BuildManifest : Decoder : Encoder](default: T): T = {
     val defaultJson = default.asJson.deepMerge(patch)
     val defaultMfFile = Paths.get("manifests", s"${lang.toString.toLowerCase}.json").toFile
 

@@ -1,4 +1,4 @@
-import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.76`
+import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.77`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
 
@@ -70,7 +70,6 @@ object Idealingua {
        fundamentals_platform,
        fundamentals_functional,
      )
-    // final val collection_compat = Library("org.scala-lang.modules", "scala-collection-compat", V.collection_compat, LibraryType.Auto)
     final val scalatest = Library("org.scalatest", "scalatest", V.scalatest, LibraryType.Auto) in Scope.Test.all
 
     final val cats_core = Library("org.typelevel", "cats-core", V.cats, LibraryType.Auto)
@@ -129,8 +128,8 @@ object Idealingua {
   import Deps._
 
   // DON'T REMOVE, these variables are read from CI build (build.sh)
-  final val scala212 = ScalaVersion("2.12.13")
-  final val scala213 = ScalaVersion("2.13.5")
+  final val scala212 = ScalaVersion("2.12.14")
+  final val scala213 = ScalaVersion("2.13.6")
 
   object Groups {
     final val fundamentals = Set(Group("fundamentals"))
@@ -140,18 +139,12 @@ object Idealingua {
 
   object Targets {
     // switch order to use 2.13 in IDEA
-    val targetScala = Seq(scala212, scala213)
-//    val targetScala = Seq(scala213, scala212)
+//    val targetScala = Seq(scala212, scala213)
+    val targetScala = Seq(scala213, scala212)
     private val jvmPlatform = PlatformEnv(
       platform = Platform.Jvm,
       language = targetScala,
-      settings = Seq(
-        // disable scoverage on 2.12 for now due to incompatibility with 2.12.13
-        "coverageEnabled" := Seq(
-          SettingKey(Some(scala212), None) := false,
-          SettingKey.Default := "coverageEnabled.value".raw,
-        )
-      ),
+      settings = Seq.empty,
     )
     private val jsPlatform = PlatformEnv(
       platform = Platform.Js,

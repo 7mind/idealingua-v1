@@ -14,7 +14,7 @@ final case class ServiceContext(ctx: STContext, svc: Service) {
 
   object F {
     val t = t"Or"
-    val p = tparam"Or[_, _]"
+    val p = tparam"Or[?, ?]"
   }
 
   object Ctx {

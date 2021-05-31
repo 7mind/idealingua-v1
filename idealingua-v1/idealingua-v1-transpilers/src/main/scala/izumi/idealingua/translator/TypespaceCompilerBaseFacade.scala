@@ -22,15 +22,14 @@ class TypespaceCompilerBaseFacade(options: UntypedCompilerOptions) {
 }
 
 object TypespaceCompilerBaseFacade {
-  def descriptor(language: IDLLanguage): TranslatorDescriptor[_] = descriptorsMap(language)
+  def descriptor(language: IDLLanguage): TranslatorDescriptor[?] = descriptorsMap(language)
 
-  val descriptors: Seq[TranslatorDescriptor[_]] = Seq(
+  val descriptors: Seq[TranslatorDescriptor[?]] = Seq(
     ScalaTranslatorDescriptor,
     GoTranslatorDescriptor,
     TypescriptTranslatorDescriptor,
     CSharpTranslatorDescriptor,
   )
 
-  private def descriptorsMap: Map[IDLLanguage, TranslatorDescriptor[_]] = descriptors.map(d => d.language -> d).toMap
+  private def descriptorsMap: Map[IDLLanguage, TranslatorDescriptor[?]] = descriptors.map(d => d.language -> d).toMap
 }
-
