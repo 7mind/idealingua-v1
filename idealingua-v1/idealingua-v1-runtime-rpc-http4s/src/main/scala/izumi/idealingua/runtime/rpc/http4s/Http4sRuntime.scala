@@ -17,8 +17,8 @@ class Http4sRuntime[
 (
   override val clientExecutionContext: ExecutionContext
 )(implicit
-  C: ConcurrentEffect[_BiIO[Throwable, ?]]
-, T: Timer[_BiIO[Throwable, ?]]
+  C: ConcurrentEffect[_BiIO[Throwable, _]]
+, T: Timer[_BiIO[Throwable, _]]
 ) extends Http4sContext {
 
   override type BiIO[+E, +V] = _BiIO[E, V]

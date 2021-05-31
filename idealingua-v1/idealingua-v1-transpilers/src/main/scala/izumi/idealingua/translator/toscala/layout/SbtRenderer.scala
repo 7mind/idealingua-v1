@@ -8,7 +8,7 @@ class SbtRenderer {
     val parts = pair._2 match {
       case SbtDslOp.Append(v, scope) =>
         v match {
-          case s: Seq[_] =>
+          case s: Seq[?] =>
             Seq(key, renderScope(scope), "++=", renderValue(s))
           case o =>
             Seq(key, renderScope(scope), "+=", renderValue(o))
@@ -36,7 +36,7 @@ class SbtRenderer {
         b.toString
       case v: Number =>
         v.toString
-      case o: Option[_] =>
+      case o: Option[?] =>
         o match {
           case Some(value) =>
             s"Some(${renderValue(value)})"
@@ -47,7 +47,7 @@ class SbtRenderer {
         s"url(${renderValue(u.url)})"
       case l: BuildManifest.License =>
         s"${renderValue(l.name)} -> ${renderValue(l.url)}"
-      case s: Seq[_] =>
+      case s: Seq[?] =>
         s.map(renderValue).mkString("Seq(\n  ", ",\n  ", ")")
       case r: RawExpr =>
         r.e.trim

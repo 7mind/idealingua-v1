@@ -7,25 +7,25 @@ import fastparse._
 trait ParserTestTools {
   val ctx = IDLParserContext(FSPath.Name("ParserTestTools.domain"))
 
-  def assertParsesInto[T](p: P[_] => P[T], src: String, expected: T): Unit = {
+  def assertParsesInto[T](p: P[?] => P[T], src: String, expected: T): Unit = {
     assert(assertParses(p, src) == expected)
   }
 
-  def assertParses[T](p: P[_] => P[T], str: String): T = {
+  def assertParses[T](p: P[?] => P[T], str: String): T = {
     assertParseableCompletely(p, str)
     assertParseable(p, str)
   }
 
-  protected def ended[T](pp: P[_], p: P[_] => P[T]): P[T] = {
-    implicit val ppp: P[_] = pp
+  protected def ended[T](pp: P[?], p: P[?] => P[T]): P[T] = {
+    implicit val ppp: P[?] = pp
     P(p(pp) ~ End)
   }
 
-  def assertParseableCompletely[T](p: P[_] => P[T], str: String): T = {
+  def assertParseableCompletely[T](p: P[?] => P[T], str: String): T = {
     assertParseable(ended(_, p), str)
   }
 
-  def assertParseable[T](p: P[_] => P[T], str: String): T = {
+  def assertParseable[T](p: P[?] => P[T], str: String): T = {
     (parse(str, p): @unchecked) match {
       case Parsed.Success(v, index) =>
         assert(index == str.length, s"Seems like value wasn't parsed completely: $v")
