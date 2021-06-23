@@ -25,6 +25,7 @@ class CompilerTest extends AnyWordSpec {
       }
 
       assert(compilesScala(s"$id-plain", loadDefs(), ScalaProjectLayout.PLAIN, useDockerForLocalScalaTest))
+      assert(compilesScala(s"$id-plain-nested", loadDefs("/defs/nested/test"), ScalaProjectLayout.PLAIN, useDockerForLocalScalaTest))
       assert(compilesScala(s"$id-plain-nonportable", loadDefs("/defs/scala"), ScalaProjectLayout.PLAIN, useDockerForLocalScalaTest))
     }
 
@@ -45,12 +46,14 @@ class CompilerTest extends AnyWordSpec {
       // TODO: once we switch to published runtime there may be an issue with this test same as with sbt one
       require("tsc", "npm", "yarn")
       assert(compilesTypeScript(s"$id-yarn", loadDefs(), TypeScriptProjectLayout.YARN))
+      assert(compilesTypeScript(s"$id-yarn-nested", loadDefs("/defs/nested/test"), TypeScriptProjectLayout.YARN))
     }
 
     "be able to compile into golang" in {
       require("go")
       assert(compilesGolang(s"$id-repository", loadDefs(), GoProjectLayout.REPOSITORY))
       assert(compilesGolang(s"$id-plain", loadDefs(), GoProjectLayout.PLAIN))
+      assert(compilesGolang(s"$id-plain-nested", loadDefs("/defs/nested/test"), GoProjectLayout.PLAIN))
     }
 
     "be able to compile into csharp" in {
@@ -63,7 +66,9 @@ class CompilerTest extends AnyWordSpec {
       assert(compilesCSharp(s"$id-nuget", loadDefs(), CSharpProjectLayout.NUGET))
     }
 
-
+    "be able to compile into protobuf" in {
+      assert(compilesProtobuf(s"$id-plain", loadDefs()))
+    }
   }
 
   private def require(tools: String*) = {

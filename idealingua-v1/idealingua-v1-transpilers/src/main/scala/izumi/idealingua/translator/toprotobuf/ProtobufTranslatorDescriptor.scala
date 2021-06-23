@@ -5,10 +5,9 @@ import izumi.idealingua.model.publishing.manifests.ProtobufBuildManifest
 import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.model.typespace.verification.VerificationRule
 import izumi.idealingua.model.typespace.verification.rules.ReservedKeywordRule
-import izumi.idealingua.translator
 import izumi.idealingua.translator.CompilerOptions.ProtobufTranslatorOptions
-import izumi.idealingua.translator.{CompilerOptions, IDLLanguage, TranslationLayouter, Translator, TranslatorDescriptor, TranslatorExtension, UntypedCompilerOptions}
 import izumi.idealingua.translator.toprotobuf.layout.ProtobufLayouter
+import izumi.idealingua.translator.*
 
 object ProtobufTranslatorDescriptor extends TranslatorDescriptor[ProtobufTranslatorOptions] {
   override def defaultManifest: BuildManifest = ProtobufBuildManifest.example
@@ -29,45 +28,28 @@ object ProtobufTranslatorDescriptor extends TranslatorDescriptor[ProtobufTransla
 
   // https://scala-lang.org/files/archive/spec/2.12/01-lexical-syntax.html
   val keywords: Set[String] = Set(
-    "abstract",
-    "case",
-    "catch",
-    "class",
-    "def",
-    "do",
-    "else",
-    "extends",
-    "false",
-    "final",
-    "finally",
-    "for",
-    "forSome",
-    "if",
-    "implicit",
+    "message",
+    "service",
+    "oneof",
+    "enum",
+    "reserved",
     "import",
-    "lazy",
-    "macro",
-    "match",
-    "new",
-    "null",
-    "object",
-    "override",
-    "package",
-    "private",
-    "protected",
-    "return",
-    "sealed",
-    "super",
-    "this",
-    "throw",
-    "trait",
-    "try",
-    "true",
-    "type",
-    "val",
-    "var",
-    "while",
-    "with",
-    "yield",
+    "required",
+    "repeated",
+    "double",
+    "float",
+    "int32",
+    "int64",
+    "uint32",
+    "uint64",
+    "sint32",
+    "sint64",
+    "fixed32",
+    "fixed64",
+    "sfixed32",
+    "sfixed64",
+    "bool",
+    "string",
+    "bytes",
   )
 }

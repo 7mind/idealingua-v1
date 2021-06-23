@@ -1,14 +1,14 @@
 package izumi.idealingua.compiler
 
 import izumi.idealingua.model.publishing.BuildManifest.{Common, License, MFUrl, ManifestDependency}
-import izumi.idealingua.model.publishing.manifests._
+import izumi.idealingua.model.publishing.manifests.*
 import izumi.idealingua.model.publishing.{ProjectNamingRule, ProjectVersion, Publisher}
 
 trait Codecs {
 
-  import _root_.io.circe._
+  import _root_.io.circe.*
   import _root_.io.circe.generic.extras.semiauto
-  import _root_.io.circe.generic.semiauto._
+  import _root_.io.circe.generic.semiauto.*
 
   implicit def decMFUrl: Decoder[MFUrl] = deriveDecoder
 
@@ -25,7 +25,7 @@ trait Codecs {
 
   //
   implicit def decScalaProjectLayout: Decoder[ScalaProjectLayout] = semiauto.deriveEnumerationDecoder
-  
+
   implicit def decSbtOptions: Decoder[SbtOptions] = deriveDecoder
 
   implicit def decScalaBuildManifest: Decoder[ScalaBuildManifest] = deriveDecoder
@@ -33,22 +33,24 @@ trait Codecs {
   implicit def decTs: Decoder[TypeScriptBuildManifest] = deriveDecoder
 
   implicit def decTypeScriptProjectLayout: Decoder[TypeScriptProjectLayout] = semiauto.deriveEnumerationDecoder
-  
+
   implicit def decYarnOptions: Decoder[YarnOptions] = deriveDecoder
-  
+
   implicit def decGo: Decoder[GoLangBuildManifest] = deriveDecoder
-  
+
   implicit def decGoProjectLayout: Decoder[GoProjectLayout] = semiauto.deriveEnumerationDecoder
-  
-  implicit def decGoRepositoryOptions: Decoder[GoRepositoryOptions] = deriveDecoder  
-  
+
+  implicit def decGoRepositoryOptions: Decoder[GoRepositoryOptions] = deriveDecoder
+
   implicit def decCs: Decoder[CSharpBuildManifest] = deriveDecoder
+
+  implicit def decProtobuf: Decoder[ProtobufBuildManifest] = deriveDecoder
 
   implicit def decCSharpProjectLayout: Decoder[CSharpProjectLayout] = semiauto.deriveEnumerationDecoder
 
-  implicit def decNugetOptions: Decoder[NugetOptions] = deriveDecoder  
+  implicit def decNugetOptions: Decoder[NugetOptions] = deriveDecoder
   //
-  
+
   implicit def encMFUrl: Encoder[MFUrl] = deriveEncoder
 
   implicit def encLicense: Encoder[License] = deriveEncoder
@@ -86,6 +88,8 @@ trait Codecs {
   implicit def encCSharpProjectLayout: Encoder[CSharpProjectLayout] = semiauto.deriveEnumerationEncoder
 
   implicit def encNugetOptions: Encoder[NugetOptions] = deriveEncoder
+
+  implicit def encProtobuf: Encoder[ProtobufBuildManifest] = deriveEncoder
   //
 
   implicit def decProjectVersion: Decoder[ProjectVersion] = deriveDecoder
