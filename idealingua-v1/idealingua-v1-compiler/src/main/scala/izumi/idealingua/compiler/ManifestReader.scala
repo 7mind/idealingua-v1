@@ -7,11 +7,11 @@ import izumi.idealingua.model.publishing.BuildManifest
 import izumi.idealingua.model.publishing.manifests.{CSharpBuildManifest, GoLangBuildManifest, ProtobufBuildManifest, ScalaBuildManifest, TypeScriptBuildManifest}
 import izumi.idealingua.translator.IDLLanguage
 import io.circe.parser.parse
-import io.circe.syntax.*
+import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 
 import scala.util.{Failure, Success, Try}
-import Codecs.*
+import Codecs._
 
 class ManifestWriter() {
   def write(mf: BuildManifest): String = {

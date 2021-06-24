@@ -1,15 +1,15 @@
 package izumi.idealingua.compiler
 
 import izumi.idealingua.model.publishing.BuildManifest.{Common, License, MFUrl, ManifestDependency}
-import izumi.idealingua.model.publishing.manifests.*
+import izumi.idealingua.model.publishing.manifests._
 import izumi.idealingua.model.publishing.manifests.ProtobufBuildManifest.ProtobufRepositoryOptions
 import izumi.idealingua.model.publishing.{ProjectNamingRule, ProjectVersion, Publisher}
 
 trait Codecs {
 
-  import _root_.io.circe.*
+  import _root_.io.circe._
   import _root_.io.circe.generic.extras.semiauto
-  import _root_.io.circe.generic.semiauto.*
+  import _root_.io.circe.generic.semiauto._
 
   implicit def decMFUrl: Decoder[MFUrl] = deriveDecoder
 

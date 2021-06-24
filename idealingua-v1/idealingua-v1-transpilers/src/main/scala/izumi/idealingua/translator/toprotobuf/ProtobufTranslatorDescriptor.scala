@@ -7,7 +7,7 @@ import izumi.idealingua.model.typespace.verification.VerificationRule
 import izumi.idealingua.model.typespace.verification.rules.ReservedKeywordRule
 import izumi.idealingua.translator.CompilerOptions.ProtobufTranslatorOptions
 import izumi.idealingua.translator.toprotobuf.layout.ProtobufLayouter
-import izumi.idealingua.translator.*
+import izumi.idealingua.translator._
 
 object ProtobufTranslatorDescriptor extends TranslatorDescriptor[ProtobufTranslatorOptions] {
   override def defaultManifest: BuildManifest = ProtobufBuildManifest.example

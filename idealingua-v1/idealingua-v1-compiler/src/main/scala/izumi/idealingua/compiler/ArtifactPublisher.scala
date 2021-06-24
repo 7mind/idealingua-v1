@@ -5,10 +5,10 @@ import izumi.idealingua.model.publishing.BuildManifest
 import izumi.idealingua.model.publishing.manifests.{GoLangBuildManifest, ProtobufBuildManifest}
 import izumi.idealingua.translator.IDLLanguage
 
-import java.nio.file.*
+import java.nio.file._
 import java.time.ZonedDateTime
-import scala.jdk.CollectionConverters.*
-import scala.sys.process.*
+import scala.jdk.CollectionConverters._
+import scala.sys.process._
 import scala.util.Try
 
 class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, manifest: BuildManifest) {
