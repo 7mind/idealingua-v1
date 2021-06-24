@@ -8,8 +8,9 @@ import izumi.idealingua.translator.toprotobuf.types.ProtobufTypeConverter
 class PBTContext(
                   val typespace: Typespace
                   , extensions: Seq[ProtobufTranslatorExtension]
+                  , options: Map[String, String]
                 ) {
-  final val modules = new ModuleTools()
+  final val modules = new ModuleTools(options)
   final val conv = new ProtobufTypeConverter(typespace.domain.id)
   final val ext = {
     new ProtobufTranslatorExtensions(this, extensions)

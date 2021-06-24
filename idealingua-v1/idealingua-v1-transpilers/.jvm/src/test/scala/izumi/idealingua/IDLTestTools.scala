@@ -31,6 +31,7 @@ import java.lang.management.ManagementFactory
 import java.nio.charset.StandardCharsets
 import java.nio.file.*
 import scala.sys.process.*
+import scala.util.Try
 
 @ExposedTestScope
 final case class CompilerOutput(targetDir: Path, allFiles: Seq[Path]) {
@@ -65,11 +66,8 @@ object IDLTestTools {
 
   def makeResolver(base: String): ModelResolver = {
     val last = base.split('/').last
-    val rules = if (last == "any") {
-      TypespaceCompilerBaseFacade.descriptors.flatMap(_.rules)
-    } else {
-      TypespaceCompilerBaseFacade.descriptor(IDLLanguage.parse(last)).rules
-    }
+    val rules = Try(TypespaceCompilerBaseFacade.descriptor(IDLLanguage.parse(last)).rules)
+      .getOrElse(TypespaceCompilerBaseFacade.descriptors.flatMap(_.rules))
     new ModelResolver(rules)
   }
 
@@ -269,8 +267,8 @@ object IDLTestTools {
     exitCodeBuild == 0 && exitCodeTest == 0
   }
 
-  def compilesProtobuf(id: String, domains: Seq[LoadedDomain.Success], extensions: Seq[ProtobufTranslatorExtension] = ProtobufTranslator.defaultExtensions): Boolean = {
-    val manifest = ProtobufBuildManifest.example
+  def compilesProtobuf(id: String, domains: Seq[LoadedDomain.Success], options: Map[String, String], extensions: Seq[ProtobufTranslatorExtension] = ProtobufTranslator.defaultExtensions): Boolean = {
+    val manifest = ProtobufBuildManifest.example.copy(options = options)
     val out = compiles(id, domains, CompilerOptions(IDLLanguage.Protobuf, extensions, manifest))
     val outDir = out.absoluteTargetDir
 

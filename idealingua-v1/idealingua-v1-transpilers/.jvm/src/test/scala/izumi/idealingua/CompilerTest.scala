@@ -67,7 +67,7 @@ class CompilerTest extends AnyWordSpec {
     }
 
     "be able to compile into protobuf" in {
-      assert(compilesProtobuf(s"$id-plain", loadDefs()))
+      assert(compilesProtobuf(s"$id-plain", loadDefs(), Map("optimize_for" -> "CODE_SIZE")))
     }
   }
 

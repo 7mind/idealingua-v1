@@ -1,17 +1,15 @@
 package izumi.idealingua.compiler
 
-import java.nio.file._
-import java.time.ZonedDateTime
-
 import izumi.fundamentals.platform.files.IzFiles
 import izumi.idealingua.model.publishing.BuildManifest
-import izumi.idealingua.model.publishing.manifests.GoLangBuildManifest
+import izumi.idealingua.model.publishing.manifests.{GoLangBuildManifest, ProtobufBuildManifest}
 import izumi.idealingua.translator.IDLLanguage
 
-import scala.sys.process._
+import java.nio.file.*
+import java.time.ZonedDateTime
+import scala.jdk.CollectionConverters.*
+import scala.sys.process.*
 import scala.util.Try
-import scala.jdk.CollectionConverters._
-
 
 class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, manifest: BuildManifest) {
   private val log: CompilerLog = CompilerLog.Default
@@ -21,6 +19,7 @@ class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, 
     case (c: TypescriptCredentials, IDLLanguage.Typescript, _) => publishTypescript(targetDir, c)
     case (c: GoCredentials, IDLLanguage.Go, m: GoLangBuildManifest) => publishGo(targetDir, c, m)
     case (c: CsharpCredentials, IDLLanguage.CSharp, _) => publishCsharp(targetDir, c)
+    case (c: ProtobufCredentials, IDLLanguage.Protobuf, m: ProtobufBuildManifest) => publishProtobuf(targetDir, c, m)
     case (c, l, _) if c.lang != l =>
       Left(new IllegalArgumentException("Language and credentials type didn't match. " +
         s"Got credentials for $l, expect for ${c.lang}"))
@@ -45,12 +44,12 @@ class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, 
       s"""credentials += Credentials(Path("${sbtCredsFile.toAbsolutePath.toString}").asFile)""",
       "\n",
       s"""
-        |publishTo in ThisBuild := {
-        |  if (isSnapshot.value)
-        |    Some("snapshots" at "${creds.sbtSnapshotsRepo}")
-        |  else
-        |    Some("releases"  at "${creds.sbtReleasesRepo}")
-        |}
+         |publishTo in ThisBuild := {
+         |  if (isSnapshot.value)
+         |    Some("snapshots" at "${creds.sbtSnapshotsRepo}")
+         |  else
+         |    Some("releases"  at "${creds.sbtReleasesRepo}")
+         |}
       """.stripMargin
     )
 
@@ -222,6 +221,77 @@ class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, 
     ).lineStream.foreach(log.log)
     Process(
       "git push --tags -f", targetDir.resolve(creds.gitRepoName).toFile
+    ).lineStream.foreach(log.log)
+  }.toEither
+
+
+  private def publishProtobuf(targetDir: Path, creds: ProtobufCredentials, manifest: ProtobufBuildManifest): Either[Throwable, Unit] = Try {
+    log.log("Publishing Protobuf sources to github repo")
+    // copy all files to tmp
+    val sources = Files.list(targetDir).iterator().asScala.toList
+    val sourcesDir = targetDir.resolve("src_tmp")
+    val repoDir = targetDir.resolve(creds.gitRepoName)
+
+    IzFiles.recreateDir(sourcesDir)
+    sources.foreach { src => Files.move(src, sourcesDir.resolve(src.getFileName)) }
+
+    log.log("Seting up Git")
+    val pubKey = targetDir.resolve("protobuf-key.pub")
+    Files.write(pubKey, Seq(creds.gitPubKey).asJava)
+
+    Process(Seq("git", "config", "--global", "--replace-all", "user.name", creds.gitUser)).lineStream.foreach(log.log)
+    Process(Seq("git", "config", "--global", "--replace-all", "user.email", creds.gitEmail)).lineStream.foreach(println)
+    Process(Seq("git", "config", "--global", "--replace-all", "core.sshCommand", s"ssh -i ${pubKey.toAbsolutePath.toString} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no")).lineStream.foreach(println)
+
+    Process(
+      "git config --global --list", targetDir.toFile
+    ).lineStream.foreach(log.log)
+
+    // clone repo
+    Process(
+      s"git clone ${creds.gitRepoUrl}", targetDir.toFile
+    ).lineStream.foreach(log.log)
+
+    // cleanup repo
+    Files.list(repoDir).iterator().asScala
+      .filter(_.getFileName.toString.charAt(0) != '.')
+      .foreach { path => IzFiles.removeDir(path) }
+
+    // move everything from tmp to repo
+    Files.list(sourcesDir).iterator().asScala.foreach { srcDir =>
+      Files.move(srcDir, repoDir.resolve(srcDir.getFileName.toString))
+    }
+
+    // add def files
+    Files.write(repoDir.resolve(".timestamp"), Seq(
+      ZonedDateTime.now().toString
+    ).asJava)
+    Files.write(repoDir.resolve("README.md"), Seq(
+      s"# ${creds.gitRepoName}",
+      s"Auto-generated protobuf sources, ${manifest.common.version.toString}"
+    ).asJava)
+
+    // commit repo
+    Process(
+      "git add .", repoDir.toFile
+    ).lineStream.foreach(log.log)
+
+    log.log(s"Git commit: 'protobuf-sources-update,version=${manifest.common.version}'")
+    Process(
+      s"""git commit --no-edit -am 'protobuf-sources-update,version=${manifest.common.version}'""", repoDir.toFile
+    ).lineStream.foreach(log.log)
+
+    log.log(s"Setting git tag: v${manifest.common.version.toString}")
+    Process(
+      s"git tag -f v${manifest.common.version.toString}", repoDir.toFile
+    ).lineStream.foreach(log.log)
+
+    log.log("Git push")
+    Process(
+      "git push --all -f", repoDir.toFile
+    ).lineStream.foreach(log.log)
+    Process(
+      "git push --tags -f", repoDir.toFile
     ).lineStream.foreach(log.log)
   }.toEither
 }

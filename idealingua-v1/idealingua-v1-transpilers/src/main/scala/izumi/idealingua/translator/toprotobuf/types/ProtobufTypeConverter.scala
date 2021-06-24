@@ -115,15 +115,9 @@ class ProtobufTypeConverter(domain: DomainId) {
         ProtobufType(Seq.empty, "repeated int32")
 
       case Primitive.TUUID =>
-        ProtobufType(Seq.empty, "string")
-
-      //todo: add uuid proto
-      //      case Primitive.TUUID =>
-      //        ProtobufType(Seq("idealingua", "protobuf", "uuid.proto"), "timestamp")
-
+        ProtobufType(Seq("idl", "types"), "PUUID")
       case Primitive.TTsTz | Primitive.TTsU | Primitive.TTs | Primitive.TTime | Primitive.TDate =>
-//        ProtobufType(Seq("google", "protobuf", "timestamp.proto"), "timestamp")
-        ProtobufType(Seq.empty, "string")
+        ProtobufType(Seq("idl", "types"), "PTimestamp")
     }
   }
 }

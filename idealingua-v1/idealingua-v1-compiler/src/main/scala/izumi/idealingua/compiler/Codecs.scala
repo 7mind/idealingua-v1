@@ -2,6 +2,7 @@ package izumi.idealingua.compiler
 
 import izumi.idealingua.model.publishing.BuildManifest.{Common, License, MFUrl, ManifestDependency}
 import izumi.idealingua.model.publishing.manifests.*
+import izumi.idealingua.model.publishing.manifests.ProtobufBuildManifest.ProtobufRepositoryOptions
 import izumi.idealingua.model.publishing.{ProjectNamingRule, ProjectVersion, Publisher}
 
 trait Codecs {
@@ -43,6 +44,8 @@ trait Codecs {
   implicit def decGoRepositoryOptions: Decoder[GoRepositoryOptions] = deriveDecoder
 
   implicit def decCs: Decoder[CSharpBuildManifest] = deriveDecoder
+
+  implicit def decProtobufRepo: Decoder[ProtobufRepositoryOptions] = deriveDecoder
 
   implicit def decProtobuf: Decoder[ProtobufBuildManifest] = deriveDecoder
 
@@ -88,6 +91,8 @@ trait Codecs {
   implicit def encCSharpProjectLayout: Encoder[CSharpProjectLayout] = semiauto.deriveEnumerationEncoder
 
   implicit def encNugetOptions: Encoder[NugetOptions] = deriveEncoder
+
+  implicit def encProtobufRepo: Encoder[ProtobufRepositoryOptions] = deriveEncoder
 
   implicit def encProtobuf: Encoder[ProtobufBuildManifest] = deriveEncoder
   //

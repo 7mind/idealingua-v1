@@ -19,7 +19,7 @@ object GoProjectLayout {
 case class GoRepositoryOptions(
                                 dependencies: List[ManifestDependency],
                                 repository: String,
-                       )
+                              )
 
 object GoRepositoryOptions {
   def example: GoRepositoryOptions = GoRepositoryOptions(

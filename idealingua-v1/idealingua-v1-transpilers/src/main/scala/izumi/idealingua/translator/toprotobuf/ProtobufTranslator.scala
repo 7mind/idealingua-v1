@@ -1,11 +1,10 @@
 package izumi.idealingua.translator.toprotobuf
 
-import izumi.idealingua.model.il.ast.typed.TypeDef.*
-import izumi.idealingua.model.il.ast.typed.{Buzzer, Service, TypeDef}
-import izumi.idealingua.model.output.Module
+import izumi.idealingua.model.il.ast.typed.TypeDef
+import izumi.idealingua.model.il.ast.typed.TypeDef._
 import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.model.typespace.Typespace
-import izumi.idealingua.translator.CompilerOptions.*
+import izumi.idealingua.translator.CompilerOptions._
 import izumi.idealingua.translator.toprotobuf.extensions.ProtobufTranslatorExtension
 import izumi.idealingua.translator.toprotobuf.products.RenderableCogenProduct
 import izumi.idealingua.translator.{Translated, Translator}
@@ -18,7 +17,7 @@ object ProtobufTranslator {
 
 class ProtobufTranslator(ts: Typespace, options: ProtobufTranslatorOptions)
   extends Translator {
-  protected val ctx: PBTContext = new PBTContext(ts, options.extensions)
+  protected val ctx: PBTContext = new PBTContext(ts, options.extensions, options.manifest.options)
 
   def translate(): Translated = {
     val cogenTypes = translateDefinitions(ctx.typespace.domain.types)

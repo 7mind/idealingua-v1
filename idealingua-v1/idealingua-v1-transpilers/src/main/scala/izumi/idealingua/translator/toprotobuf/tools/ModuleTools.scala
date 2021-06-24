@@ -5,7 +5,7 @@ import izumi.idealingua.model.common.DomainId
 import izumi.idealingua.model.output.{Module, ModuleId}
 import izumi.idealingua.translator.toprotobuf.products.RenderableCogenProduct
 
-class ModuleTools() {
+class ModuleTools(configuredOptions: Map[String, String]) {
 
   def toSource(id: DomainId, moduleId: ModuleId, products: Seq[RenderableCogenProduct]): Seq[Module] = {
     products match {
@@ -21,13 +21,21 @@ class ModuleTools() {
   }
 
   def withPackage(pkg: idealingua.model.common.Package, preamble: String, code: String): String = {
-    val content = if (pkg.isEmpty) {
+    val options = if(configuredOptions.nonEmpty) {
+      configuredOptions.map {
+        case (k, v) =>
+          s"option $k = $v;"
+      }.mkString("\n")
+    } else {
+      ""
+    }
+    val merged = List(preamble, options, code).filter(_.nonEmpty).mkString("\n\n")
+    if (pkg.isEmpty) {
       s"""syntax = "proto2";
          |
          |// Auto-generated, any modifications may be overwritten in the future.
-         |$preamble
          |
-         |$code
+         |$merged
          |""".stripMargin
     } else {
       s"""syntax = "proto2";
@@ -36,12 +44,9 @@ class ModuleTools() {
          |
          |package ${pkg.mkString(".")};
          |
-         |$preamble
-         |
-         |$code
+         |$merged
        """.stripMargin
     }
-    content
   }
 
   def toModuleId(domain: DomainId): ModuleId = {
