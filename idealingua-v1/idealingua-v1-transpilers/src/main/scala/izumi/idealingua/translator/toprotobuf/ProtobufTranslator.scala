@@ -7,6 +7,7 @@ import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.CompilerOptions.*
 import izumi.idealingua.translator.toprotobuf.extensions.ProtobufTranslatorExtension
+import izumi.idealingua.translator.toprotobuf.products.RenderableCogenProduct
 import izumi.idealingua.translator.{Translated, Translator}
 
 
@@ -20,34 +21,16 @@ class ProtobufTranslator(ts: Typespace, options: ProtobufTranslatorOptions)
   protected val ctx: PBTContext = new PBTContext(ts, options.extensions)
 
   def translate(): Translated = {
-    val modules = Seq(
-      translateDefinitions(ctx.typespace.domain.types)
-      , ctx.typespace.domain.services.flatMap(translateService)
-      , ctx.typespace.domain.buzzers.flatMap(translateBuzzer)
-    ).flatten
+    val cogenTypes = translateDefinitions(ctx.typespace.domain.types)
+    val cogenServices = ctx.typespace.domain.services.map(ctx.serviceRenderer.defns)
+    val cogen = cogenTypes ++ cogenServices
+    val modules = ctx.modules.toSource(ctx.typespace.domain.id, ctx.modules.toModuleId(ctx.typespace.domain.id), cogen)
     Translated(ts, modules)
   }
 
-  protected def translateBuzzer(definition: Buzzer): Seq[Module] = {
-    //    ctx.modules.toSource(
-    //      definition.id.domain
-    //      , ctx.modules.toModuleId(definition.id)
-    //      , ctx.serviceRenderer.renderService(definition.asService)
-    //    )
-    Seq.empty
-  }
-
-  protected def translateService(definition: Service): Seq[Module] = {
-    ctx.modules.toSource(
-      definition.id.domain
-      , ctx.modules.toModuleId(definition.id)
-      , List(ctx.serviceRenderer.defns(definition))
-    )
-  }
-
-  protected def translateDefinitions(definitions: Seq[TypeDef]): Seq[Module] = {
+  protected def translateDefinitions(definitions: Seq[TypeDef]): Seq[RenderableCogenProduct] = {
     checkEnumScopes(definitions)
-    val defns = definitions.map {
+    definitions.map {
       case i: Interface =>
         ctx.interfaceRenderer.defns(i)
       case d: DTO =>
@@ -61,8 +44,6 @@ class ProtobufTranslator(ts: Typespace, options: ProtobufTranslatorOptions)
       case a: Alias =>
         ctx.aliasRenderer.defns(a)
     }
-
-    ctx.modules.toSource(ctx.typespace.domain.id, ctx.modules.toModuleId(ctx.typespace.domain.id), defns)
   }
 
   private def checkEnumScopes(definitions: Seq[TypeDef]): Unit = {

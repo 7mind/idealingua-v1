@@ -375,7 +375,6 @@ object IDLTestTools {
 
       System.err.flush()
       System.err.println(s"Process failed for $cname: exitCode=$exitCode in $duration ${duration.readable}")
-      System.err.println(s"Process failed for $cname: exitCode=$exitCode in $duration ${duration.readable}")
       System.err.flush()
       System.err.println(
         s"""

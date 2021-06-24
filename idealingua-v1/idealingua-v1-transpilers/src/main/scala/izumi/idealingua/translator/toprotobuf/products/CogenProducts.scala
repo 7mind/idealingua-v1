@@ -9,7 +9,8 @@ object CogenProducts {
     private lazy val cogenMessages: List[RenderableCogenProduct] = methods.flatMap(cogenMethodMessages)
 
     override def preamble: List[String] = {
-      cogenMessages.flatMap(_.preamble)
+      val self = ProtobufType.importFromPackage(domain.toPackage)
+      (cogenMessages.flatMap(_.preamble).toSet -- self).toList
     }
 
     override def render: List[String] = {
@@ -104,7 +105,6 @@ object CogenProducts {
         member =>
           s"\t$member = ${sorted(member)};"
       }.mkString("\n")
-      println(enumsRendered)
       List(
         s"""
            |enum ${self.name} {
