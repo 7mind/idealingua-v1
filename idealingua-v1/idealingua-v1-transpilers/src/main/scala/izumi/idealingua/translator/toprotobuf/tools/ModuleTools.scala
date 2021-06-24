@@ -1,9 +1,8 @@
 package izumi.idealingua.translator.toprotobuf.tools
 
 import izumi.idealingua
-import izumi.idealingua.model.common.TypeId.{BuzzerId, ServiceId}
-import izumi.idealingua.model.common.{DomainId, TypeId}
-import izumi.idealingua.model.il.ast.typed.TypeDef
+import izumi.idealingua.model.common.DomainId
+import izumi.idealingua.model.common.TypeId.ServiceId
 import izumi.idealingua.model.output.{Module, ModuleId}
 import izumi.idealingua.translator.toprotobuf.products.RenderableCogenProduct
 
@@ -48,5 +47,9 @@ class ModuleTools() {
 
   def toModuleId(domain: DomainId): ModuleId = {
     ModuleId(domain.pkg, s"${domain.id}.proto")
+  }
+
+  def toModuleId(serviceId: ServiceId): ModuleId = {
+    ModuleId(serviceId.domain.toPackage, s"${serviceId.name}.proto")
   }
 }

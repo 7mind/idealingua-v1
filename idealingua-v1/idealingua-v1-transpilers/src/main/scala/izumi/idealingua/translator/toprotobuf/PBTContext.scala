@@ -21,5 +21,5 @@ class PBTContext(
   final val adtRenderer = new AdtRenderer(this)
   final val identifierRenderer = new IdentifierRenderer(this)
   final val aliasRenderer = new AliasRenderer(this)
-  //  final val serviceRenderer = new ServiceRenderer(this)
+  final val serviceRenderer = new ServiceRenderer(this)
 }

@@ -1,6 +1,7 @@
 package izumi.idealingua.translator.toprotobuf.extensions
 
-import izumi.idealingua.model.il.ast.typed.TypeDef.{Adt, Alias, DTO, Enumeration, Interface, Identifier}
+import izumi.idealingua.model.il.ast.typed.Service
+import izumi.idealingua.model.il.ast.typed.TypeDef.{Adt, Alias, DTO, Enumeration, Identifier, Interface}
 import izumi.idealingua.translator.TranslatorExtension
 import izumi.idealingua.translator.toprotobuf.PBTContext
 import izumi.idealingua.translator.toprotobuf.products.CogenProducts
@@ -35,6 +36,11 @@ trait ProtobufTranslatorExtension extends TranslatorExtension {
 
   def handleAdt(ctx: PBTContext, adt: Adt, product: CogenProducts.ADT): CogenProducts.ADT = {
     discard(ctx, adt, manifest)
+    product
+  }
+
+  def handleService(ctx: PBTContext, service: Service, product: CogenProducts.Service): CogenProducts.Service = {
+    discard(ctx, service, manifest)
     product
   }
 }

@@ -1,8 +1,75 @@
 package izumi.idealingua.translator.toprotobuf.products
 
-import izumi.idealingua.translator.toprotobuf.types.{ProtobufAdtMember, ProtobufField, ProtobufType}
+import izumi.idealingua.model.common.DomainId
+import izumi.idealingua.translator.toprotobuf.types.{ProtobufAdtMember, ProtobufField, ProtobufMethod, ProtobufType}
 
 object CogenProducts {
+
+  final case class Service(domain: DomainId, name: String, methods: List[ProtobufMethod]) extends RenderableCogenProduct {
+    private lazy val cogenMessages: List[RenderableCogenProduct] = methods.flatMap(cogenMethodMessages)
+
+    override def preamble: List[String] = {
+      cogenMessages.flatMap(_.preamble)
+    }
+
+    override def render: List[String] = {
+      val methodsRendered = methods.map {
+        method =>
+          val inputType = methodInputType(method)
+          val outputType = methodOutputType(method)
+          s"\trpc ${method.name}(${inputType.fullName}) returns (${outputType.fullName});"
+      }.mkString("\n")
+      cogenMessages.flatMap(_.render) ++ List(
+        s"""
+           |service $name {
+           |$methodsRendered
+           |}
+           |""".stripMargin
+      )
+    }
+
+    private[this] def methodInputType(method: ProtobufMethod) = {
+      ProtobufType(Seq.empty, s"$name${method.name.capitalize}Input")
+    }
+
+    private[this] def methodOutputType(method: ProtobufMethod) = {
+      ProtobufType(Seq.empty, s"$name${method.name.capitalize}Output")
+    }
+
+
+    private[this] def cogenMethodMessages(method: ProtobufMethod): Seq[RenderableCogenProduct] = {
+      def cogenNonAlternativeOutputs(tpe: ProtobufType, outputs: ProtobufMethod.NonAlternativeOutput): RenderableCogenProduct = {
+        outputs match {
+          case ProtobufMethod.Void => Message(tpe, Nil)
+          case ProtobufMethod.ADT(members) => ADT(tpe, members)
+          case ProtobufMethod.Single(singleTpe) => Message(tpe, List(ProtobufField("single", singleTpe)))
+          case ProtobufMethod.Structure(fields) => Message(tpe, fields)
+        }
+      }
+
+      val inputType = methodInputType(method)
+      val outputType = methodOutputType(method)
+      val input = Message(inputType, method.inputs)
+      val output = method.output match {
+        case na: ProtobufMethod.NonAlternativeOutput => List(cogenNonAlternativeOutputs(outputType, na))
+        case ProtobufMethod.Alternative(successOut, failureOut) =>
+          val successType = ProtobufType(Seq.empty, s"$name${method.name.capitalize}OutputSuccess")
+          val failureType = ProtobufType(Seq.empty, s"$name${method.name.capitalize}OutputFailure")
+          List(
+            ADT(
+              outputType,
+              List(
+                ProtobufAdtMember(Some("success"), successType),
+                ProtobufAdtMember(Some("failure"), failureType),
+              )
+            ),
+            cogenNonAlternativeOutputs(successType, successOut),
+            cogenNonAlternativeOutputs(failureType, failureOut),
+          )
+      }
+      input :: output
+    }
+  }
 
   final case class ADT(self: ProtobufType, alternatives: List[ProtobufAdtMember]) extends RenderableCogenProduct {
     override def preamble: List[String] = {
@@ -33,10 +100,11 @@ object CogenProducts {
 
     override def render: List[String] = {
       val sorted = members.sorted.zipWithIndex.toMap
-      val enumsRendered = sorted.map {
-        case (str, idx) =>
-          s"\t$str = $idx;"
+      val enumsRendered = members.map {
+        member =>
+          s"\t$member = ${sorted(member)};"
       }.mkString("\n")
+      println(enumsRendered)
       List(
         s"""
            |enum ${self.name} {

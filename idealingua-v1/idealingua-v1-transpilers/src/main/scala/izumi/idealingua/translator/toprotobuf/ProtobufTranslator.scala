@@ -38,12 +38,11 @@ class ProtobufTranslator(ts: Typespace, options: ProtobufTranslatorOptions)
   }
 
   protected def translateService(definition: Service): Seq[Module] = {
-    //    ctx.modules.toSource(
-    //      definition.id.domain
-    //      , ctx.modules.toModuleId(definition.id)
-    //      , ctx.serviceRenderer.renderService(definition)
-    //    )
-    Seq.empty
+    ctx.modules.toSource(
+      definition.id.domain
+      , ctx.modules.toModuleId(definition.id)
+      , List(ctx.serviceRenderer.defns(definition))
+    )
   }
 
   protected def translateDefinitions(definitions: Seq[TypeDef]): Seq[Module] = {
@@ -66,7 +65,7 @@ class ProtobufTranslator(ts: Typespace, options: ProtobufTranslatorOptions)
     ctx.modules.toSource(ctx.typespace.domain.id, ctx.modules.toModuleId(ctx.typespace.domain.id), defns)
   }
 
-  private def checkEnumScopes(definitions: Seq[TypeDef]) = {
+  private def checkEnumScopes(definitions: Seq[TypeDef]): Unit = {
     val m = definitions.collect { case i: Enumeration => i }.map {
       e =>
         e.id.name -> e.members.map(_.value).toSet

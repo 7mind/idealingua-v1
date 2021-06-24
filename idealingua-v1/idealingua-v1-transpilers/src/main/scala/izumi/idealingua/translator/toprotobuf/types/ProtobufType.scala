@@ -12,10 +12,16 @@ final case class ProtobufType(pkg: Package, name: String, args: List[ProtobufTyp
   }
 
   def imports: Set[String] = {
+    ProtobufType.importFromPackage(pkg) ++ args.flatMap(_.imports)
+  }
+}
+
+object ProtobufType {
+  def importFromPackage(pkg: Package): Set[String] = {
     if (pkg.nonEmpty) {
       Set(s"""import "${pkg.mkString("/")}.proto";""")
     } else {
       Set.empty
-    } ++ args.flatMap(_.imports)
+    }
   }
 }

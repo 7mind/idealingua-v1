@@ -1,9 +1,25 @@
 package izumi.idealingua.translator.toprotobuf.types
 
-import izumi.idealingua.model.common.{DomainId, Generic, Primitive, PrimitiveId, TypeId}
+import izumi.idealingua.model.common.{DomainId, Generic, Primitive, TypeId}
+import izumi.idealingua.model.il.ast.typed
 import izumi.idealingua.model.problems.IDLException
 
 class ProtobufTypeConverter(domain: DomainId) {
+
+  def toProtobuf(fields: typed.IdTuple)(implicit dummyImplicit: DummyImplicit): List[ProtobufField] = {
+    fields.map {
+      field =>
+        ProtobufField(field.name, toProtobuf(field.typeId))
+    }
+  }
+
+  def toProtobuf(fields: typed.Tuple): List[ProtobufField] = {
+    fields.map {
+      field =>
+        ProtobufField(field.name, toProtobuf(field.typeId))
+    }
+  }
+
   def toProtobuf(id: TypeId): ProtobufType = {
     id match {
       case t: Generic =>
