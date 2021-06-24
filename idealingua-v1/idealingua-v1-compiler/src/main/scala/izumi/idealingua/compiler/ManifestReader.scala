@@ -2,17 +2,15 @@ package izumi.idealingua.compiler
 
 import java.io.File
 import java.nio.file.Paths
-
 import izumi.fundamentals.platform.files.IzFiles
 import izumi.idealingua.model.publishing.BuildManifest
-import izumi.idealingua.model.publishing.manifests.{CSharpBuildManifest, GoLangBuildManifest, ScalaBuildManifest, TypeScriptBuildManifest}
+import izumi.idealingua.model.publishing.manifests.{CSharpBuildManifest, GoLangBuildManifest, ProtobufBuildManifest, ScalaBuildManifest, TypeScriptBuildManifest}
 import izumi.idealingua.translator.IDLLanguage
 import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 
 import scala.util.{Failure, Success, Try}
-
 import Codecs._
 
 class ManifestWriter() {
@@ -41,6 +39,8 @@ class ManifestReader(log: CompilerLog, shutdown: Shutdown, patch: Json, lang: ID
         readManifest(GoLangBuildManifest.example)
       case IDLLanguage.CSharp =>
         readManifest(CSharpBuildManifest.example)
+      case IDLLanguage.Protobuf =>
+        readManifest(ProtobufBuildManifest.example)
     }
   }
 

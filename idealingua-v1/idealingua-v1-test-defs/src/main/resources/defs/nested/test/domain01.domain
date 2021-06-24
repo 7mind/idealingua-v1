@@ -1,0 +1,19 @@
+domain izumi.test.domain01
+
+data NestedGenerics {
+    nested: list[list[str]]
+}
+
+data NestedGenerics2 {
+    nested: opt[list[str]]
+}
+
+enum GoAliasEnumTest {
+    Val1
+    Val2
+}
+
+
+mixin AllTypes {
+  enumMap : map[GoAliasEnumTest, str]
+}
