@@ -88,7 +88,7 @@ mixin AllTypes {
   list    : list[AllTypes]
   another : lst[AllTypes]
   selfMap : map[str, AllTypes]
-  enumMap : map[GoAliasEnumTest, str]
+  enumMap : map[str, GoAliasEnumTest]
   option  : opt[AllTypes]
   selfSet : set[AllTypes]
 
@@ -206,9 +206,6 @@ service UserService {
 */
 
 
-data NestedGenerics {
-    nested: list[list[str]]
-}
 
 mixin CommonFailure {
     code: i32
@@ -222,10 +219,6 @@ id IDForDomain2 {
     a: i32
 }
 
-data NestedGenerics2 {
-    nested: opt[list[str]]
-}
-
 data NestedClass {
     c: opt[NestedClass]
 }
@@ -234,7 +227,7 @@ service OptionalService {
   /** method doc
     */
   @MethodMemberAnno(a=1)
-  def optionalMethod(a: opt[NestedGenerics2], b: opt[i32], c: opt[NestedClass]) => i32
+  def optionalMethod(a: opt[NestedClass], b: opt[i32], c: opt[NestedClass]) => i32
 }
 
 id ImportAppId {

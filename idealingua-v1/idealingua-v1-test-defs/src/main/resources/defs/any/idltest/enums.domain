@@ -8,11 +8,11 @@ enum TestEnum {
 }
 
 data KVEnumGeneric {
-  test: map[TestEnum, TestEnum]
+  test: map[str, TestEnum]
 }
 
 data EnumHolder {
     en: TestEnum
 }
 
-enum ShortSyntaxEnum = Element1 | Element2
+enum ShortSyntaxEnum = Element11 | Element22

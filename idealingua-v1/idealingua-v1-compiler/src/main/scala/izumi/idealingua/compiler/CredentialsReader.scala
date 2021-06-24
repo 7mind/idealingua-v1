@@ -17,6 +17,7 @@ case class ScalaCredentials(sbtRealm: String, sbtHost: String, sbtUser: String, 
 case class TypescriptCredentials(npmRepo: String, npmUser: String, npmPassword: String, npmEmail: String) extends LangCredentials(IDLLanguage.Typescript)
 case class GoCredentials(gitUser: String, gitEmail: String, gitRepoUrl: String, gitRepoName: String, gitPubKey: String) extends LangCredentials(IDLLanguage.Go)
 case class CsharpCredentials(nugetRepo: String, nugetUser: String, nugetPassword: String) extends LangCredentials(IDLLanguage.CSharp)
+case class ProtobufCredentials(gitUser: String, gitEmail: String, gitRepoUrl: String, gitRepoName: String, gitPubKey: String) extends LangCredentials(IDLLanguage.Protobuf)
 
 class CredentialsReader(lang: IDLLanguage, file: File) {
   def read(overrides: Json): Either[Throwable, Credentials] = lang match {
@@ -24,6 +25,7 @@ class CredentialsReader(lang: IDLLanguage, file: File) {
     case IDLLanguage.Typescript => read[TypescriptCredentials](file, overrides)
     case IDLLanguage.Go => read[GoCredentials](file, overrides)
     case IDLLanguage.CSharp => read[CsharpCredentials](file, overrides)
+    case IDLLanguage.Protobuf => read[ProtobufCredentials](file, overrides)
   }
 
   def read[T <: Credentials](file: File, overrides: Json)(implicit d: io.circe.Decoder[T]): Either[Throwable, Credentials] = for {

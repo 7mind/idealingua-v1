@@ -19,6 +19,8 @@ import izumi.idealingua.translator.tocsharp.extensions.CSharpTranslatorExtension
 import izumi.idealingua.translator.tocsharp.layout.CSharpNamingConvention
 import izumi.idealingua.translator.togolang.GoLangTranslator
 import izumi.idealingua.translator.togolang.extensions.GoLangTranslatorExtension
+import izumi.idealingua.translator.toprotobuf.ProtobufTranslator
+import izumi.idealingua.translator.toprotobuf.extensions.ProtobufTranslatorExtension
 import izumi.idealingua.translator.toscala.ScalaTranslator
 import izumi.idealingua.translator.toscala.extensions.ScalaTranslatorExtension
 import izumi.idealingua.translator.totypescript.TypeScriptTranslator
@@ -29,6 +31,7 @@ import java.lang.management.ManagementFactory
 import java.nio.charset.StandardCharsets
 import java.nio.file._
 import scala.sys.process._
+import scala.util.Try
 
 @ExposedTestScope
 final case class CompilerOutput(targetDir: Path, allFiles: Seq[Path]) {
@@ -45,6 +48,7 @@ final case class CompilerOutput(targetDir: Path, allFiles: Seq[Path]) {
 @ExposedTestScope
 object IDLTestTools {
   def hasDocker: Boolean = IzFiles.haveExecutables("docker")
+
   def isCI: Boolean = MacroParameters.sbtIsInsideCI().contains(true)
 
   def loadDefs(): Seq[LoadedDomain.Success] = loadDefs("/defs/any")
@@ -62,11 +66,8 @@ object IDLTestTools {
 
   def makeResolver(base: String): ModelResolver = {
     val last = base.split('/').last
-    val rules = if (last == "any") {
-      TypespaceCompilerBaseFacade.descriptors.flatMap(_.rules)
-    } else {
-      TypespaceCompilerBaseFacade.descriptor(IDLLanguage.parse(last)).rules
-    }
+    val rules = Try(TypespaceCompilerBaseFacade.descriptor(IDLLanguage.parse(last)).rules)
+      .getOrElse(TypespaceCompilerBaseFacade.descriptors.flatMap(_.rules))
     new ModelResolver(rules)
   }
 
@@ -264,6 +265,26 @@ object IDLTestTools {
     val exitCodeTest = run(goSrc, cmdTest, env, "go-test")
 
     exitCodeBuild == 0 && exitCodeTest == 0
+  }
+
+  def compilesProtobuf(id: String, domains: Seq[LoadedDomain.Success], options: Map[String, String], extensions: Seq[ProtobufTranslatorExtension] = ProtobufTranslator.defaultExtensions): Boolean = {
+    val manifest = ProtobufBuildManifest.example.copy(options = options)
+    val out = compiles(id, domains, CompilerOptions(IDLLanguage.Protobuf, extensions, manifest))
+    val outDir = out.absoluteTargetDir
+
+    val tmp = outDir.getParent.resolve("phase1-compiler-tmp")
+    tmp.toFile.mkdirs()
+    Files.move(outDir, tmp.resolve("src"))
+    Files.move(tmp, outDir)
+
+    val protoSrc = out.absoluteTargetDir.resolve("src")
+    val jOut = out.absoluteTargetDir.resolve("java_output")
+    jOut.toFile.mkdirs()
+
+    val cmdBuild = Seq("protoc", s"--java_out=$jOut", "$(find ./ -iname \"*.proto\")")
+    val exitCodeBuild = run(protoSrc, cmdBuild, Map.empty, "proto-build")
+
+    exitCodeBuild == 0
   }
 
   private def compiles[E <: TranslatorExtension, M <: BuildManifest](id: String, domains: Seq[LoadedDomain.Success], options: CompilerOptions[E, M]): CompilerOutput = {

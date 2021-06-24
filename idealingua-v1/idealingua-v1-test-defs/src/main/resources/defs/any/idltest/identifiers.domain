@@ -36,6 +36,6 @@ id ComplexID {
 }
 
 data KVIDGeneric {
-  test: map[BucketID, BucketID]
+  test: map[str, BucketID]
 }
 
