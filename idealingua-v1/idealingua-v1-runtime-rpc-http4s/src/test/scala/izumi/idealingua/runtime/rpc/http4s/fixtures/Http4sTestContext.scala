@@ -1,20 +1,21 @@
 package izumi.idealingua.runtime.rpc.http4s.fixtures
 
-import java.net.URI
-import java.util.concurrent.atomic.AtomicReference
-
 import cats.data.{Kleisli, OptionT}
+import com.comcast.ip4s.IpLiteralSyntax
+import io.circe.Json
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.network.IzSockets
 import izumi.idealingua.runtime.rpc.http4s._
 import izumi.idealingua.runtime.rpc.{IRTMuxRequest, IRTMuxResponse, RpcPacket}
 import izumi.r2.idealingua.test.generated.GreeterServiceClientWrapped
-import io.circe.Json
 import org.http4s.headers.Authorization
 import org.http4s.server.AuthMiddleware
-import org.http4s.{BasicCredentials, Credentials, Headers, Request, Uri}
+import org.http4s._
 import zio.Task
 import zio.interop.catz._
+
+import java.net.URI
+import java.util.concurrent.atomic.AtomicReference
 
 object Http4sTestContext {
   //
@@ -35,7 +36,7 @@ object Http4sTestContext {
   final val authUser: Kleisli[OptionT[MonoIO, _], Request[MonoIO], DummyRequestContext] =
     Kleisli {
       request: Request[MonoIO] =>
-        val context = DummyRequestContext(request.remoteAddr.getOrElse("0.0.0.0"), request.headers.get(Authorization).map(_.credentials))
+        val context = DummyRequestContext(request.remoteAddr.getOrElse(ipv4"0.0.0.0"), request.headers.get[Authorization].map(_.credentials))
         OptionT.liftF(Task(context))
     }
 
@@ -126,7 +127,7 @@ object Http4sTestContext {
       }
 
       override protected def transformRequest(request: Request[MonoIO]): Request[MonoIO] = {
-        request.withHeaders(Headers.of(creds.get(): _*))
+        request.withHeaders(Headers(creds.get()))
       }
     }
 
@@ -144,7 +145,7 @@ object Http4sTestContext {
       override protected def transformRequest(request: RpcPacket): RpcPacket = {
         Option(creds.get()) match {
           case Some(value) =>
-            val update = value.map(h => (h.name.value, h.value)).toMap
+            val update = value.values.map(h => (h.name.toString, h.value)).toMap
             request.copy(headers = Some(request.headers.getOrElse(Map.empty) ++ update))
           case None =>
             request
