@@ -118,11 +118,12 @@ class HttpServer[C <: Http4sContext](
                 .collect { case Some(v) => WebSocketFrame.Text(v) }
           }
           val enqueueSink = q.enqueue
-          WebSocketBuilder[MonoIO].build(
-            send = dequeueStream.merge(context.outStream).merge(context.pingStream),
-            receive = enqueueSink,
-            onClose = handleWsClose(context)
-          )
+          WebSocketBuilder[MonoIO]
+            .copy(onClose = handleWsClose(context))
+            .build(
+              send = dequeueStream.merge(context.outStream).merge(context.pingStream),
+              receive = enqueueSink,
+            )
       }
     } yield response
   }

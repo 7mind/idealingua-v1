@@ -6,7 +6,7 @@ import org.http4s.headers.Authorization
 import org.http4s.{BasicCredentials, Header}
 
 trait TestDispatcher {
-  val creds = new AtomicReference[Seq[Header]](Seq.empty)
+  val creds = new AtomicReference[Seq[Header.ToRaw]](Seq.empty)
 
   def setupCredentials(login: String, password: String): Unit = {
     creds.set(Seq(Authorization(BasicCredentials(login, password))))
@@ -16,9 +16,3 @@ trait TestDispatcher {
     creds.set(Seq.empty)
   }
 }
-
-
-
-
-
-
