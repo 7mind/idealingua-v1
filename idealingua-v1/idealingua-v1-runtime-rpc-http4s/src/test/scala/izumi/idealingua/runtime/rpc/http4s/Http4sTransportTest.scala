@@ -6,7 +6,7 @@ import izumi.idealingua.runtime.rpc._
 import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceMethods}
 import org.http4s._
 import org.http4s.server.Router
-import org.http4s.server.blaze._
+import org.http4s.blaze.server._
 import org.scalatest.wordspec.AnyWordSpec
 import zio.Task
 import zio.interop.catz._

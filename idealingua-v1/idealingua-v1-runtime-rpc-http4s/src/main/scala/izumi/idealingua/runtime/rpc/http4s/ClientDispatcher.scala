@@ -8,7 +8,7 @@ import fs2.Stream
 import io.circe
 import io.circe.parser.parse
 import org.http4s._
-import org.http4s.client.blaze._
+import org.http4s.blaze.client._
 
 class ClientDispatcher[C <: Http4sContext]
 (
