@@ -1,4 +1,4 @@
-import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.77`
+import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.78`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
 
@@ -50,9 +50,6 @@ object Idealingua {
   val settings = GlobalSettings(
     groupId = "io.7mind.izumi",
     sbtVersion = None,
-    scalaJsVersion = PV.scala_js_version,
-    crossProjectVersion = PV.crossproject_version,
-    bundlerVersion = Some(PV.scalajs_bundler_version),
   )
 
   object Deps {
