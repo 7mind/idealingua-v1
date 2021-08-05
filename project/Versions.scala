@@ -4,7 +4,7 @@ object V {
   val scalatest = "3.2.9"
   val http4s = "0.22.1"
 
-  val scalameta = "4.4.25"
+  val scalameta = "4.4.26"
   val fastparse = "2.3.2"
 
   val scala_xml = "2.0.1"
