@@ -16,5 +16,5 @@ object V {
   val slf4j = "1.7.30"
   val typesafe_config = "1.4.1"
 
-  val kind_projector = "0.13.0"
+  val kind_projector = "0.13.1"
 }
