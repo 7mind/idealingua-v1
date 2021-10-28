@@ -25,8 +25,9 @@ object YarnOptions {
     projectNaming = ProjectNamingRule.example,
     dependencies = List(
       ManifestDependency("moment", "^2.29.1"),
+      ManifestDependency("websocket", "^1.0.32"),
       ManifestDependency("@types/node", "^14.14.6"),
-      ManifestDependency("@types/websocket", "1.0.1"),
+      ManifestDependency("@types/websocket", "^1.0.1"),
     ),
     devDependencies = List(
       ManifestDependency("typescript", "4.0.5"),
