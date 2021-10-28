@@ -206,6 +206,9 @@ service UserService {
 */
 
 
+data TsuData {
+    since: tsu
+}
 
 mixin CommonFailure {
     code: i32
