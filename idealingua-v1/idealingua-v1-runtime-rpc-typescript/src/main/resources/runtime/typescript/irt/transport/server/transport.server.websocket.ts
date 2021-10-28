@@ -1,6 +1,6 @@
 
 import * as http from 'http';
-import { server as wsServer, request as wsRequest, connection as wsConnection, Message } from 'websocket';
+import { server as wsServer, request as wsRequest, connection as wsConnection, IMessage } from 'websocket';
 import { Dispatcher, ServiceDispatcher } from '../../dispatcher';
 import { Logger, LogLevel } from '../../logger';
 import { TransportHandlers } from "./transport.server";
@@ -47,7 +47,7 @@ export class WebSocketServerGeneric<C, D> {
 
             this._connections.push(connection);
 
-            connection.on('message', (message: Message) => {
+            connection.on('message', (message: IMessage) => {
                 if (message.type !== 'utf8' || !message.utf8Data) {
                     this._logger.logf(LogLevel.Warning, 'Non textual format is not supported. ', message);
                     return;
