@@ -72,9 +72,9 @@ object CSharpImports {
     Quirks.discard(forTest)
     t match {
       case Primitive.TTime => return Seq("System")
-      case Primitive.TTs => return Seq("System", "IRT", "System.Globalization")
+      case Primitive.TTs   => return Seq("System", "IRT", "System.Globalization")
       case Primitive.TTsTz => return Seq("System", "IRT", "System.Globalization")
-      case Primitive.TTsU => return Seq("System", "IRT", "System.Globalization")
+      case Primitive.TTsU  => return Seq("System", "IRT", "System.Globalization")
       case Primitive.TDate => return Seq("System")
       case Primitive.TUUID => return Seq("System")
       case Primitive.TBLOB => ???
