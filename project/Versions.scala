@@ -10,9 +10,6 @@ object V {
 
   val scala_xml = "2.0.1"
 
-  // scala-steward
-  val sbtgen = "0.0.79"
-
   // java-only dependencies below
   // java, we need it bcs http4s ws client isn't ready yet
   val asynchttpclient = "2.12.3"
