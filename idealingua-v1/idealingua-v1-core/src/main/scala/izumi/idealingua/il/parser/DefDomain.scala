@@ -13,9 +13,9 @@ class DefDomain(context: IDLParserContext)
 
   import context._
 
-  def domainBlock[_: P]: P[DomainId] = P(kw.domain ~/ domainId)
+  def domainBlock[$: P]: P[DomainId] = P(kw.domain ~/ domainId)
 
-  def importBlock[_: P]: P[Import] = kw(kw.`import`, domainId ~ ("." ~ inline ~ enclosed(defStructure.imports(sep.sepStruct) ~ sepStruct.?)).?)
+  def importBlock[$: P]: P[Import] = kw(kw.`import`, domainId ~ ("." ~ inline ~ enclosed(defStructure.imports(sep.sepStruct) ~ sepStruct.?)).?)
     .map {
       case (id, names) =>
         names match {
@@ -26,10 +26,8 @@ class DefDomain(context: IDLParserContext)
         }
     }
 
-  def decl[_: P]: P[DomainHeader] = P(metaAgg.withMeta(domainBlock ~ any ~ importBlock.rep(sep = any))).map {
+  def decl[$: P]: P[DomainHeader] = P(metaAgg.withMeta(domainBlock ~ any ~ importBlock.rep(sep = any))).map {
     case (meta, (id, imports)) =>
       DomainHeader(id, imports, meta)
   }
 }
-
-
