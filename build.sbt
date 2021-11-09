@@ -21,7 +21,7 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.13.6",
+      "2.13.7",
       "2.12.15"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -80,7 +80,7 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.6") => Seq(
+      case (_, "2.13.7") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -128,7 +128,7 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.13.6",
+      "2.13.7",
       "2.12.15"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -187,7 +187,7 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.6") => Seq(
+      case (_, "2.13.7") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -240,7 +240,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.13.6",
+      "2.13.7",
       "2.12.15"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -299,7 +299,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.6") => Seq(
+      case (_, "2.13.7") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -353,7 +353,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.13.6",
+      "2.13.7",
       "2.12.15"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -412,7 +412,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.6") => Seq(
+      case (_, "2.13.7") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -470,7 +470,7 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.13.6",
+      "2.13.7",
       "2.12.15"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -530,7 +530,7 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.6") => Seq(
+      case (_, "2.13.7") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -578,7 +578,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.13.6",
+      "2.13.7",
       "2.12.15"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -637,7 +637,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.6") => Seq(
+      case (_, "2.13.7") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -680,7 +680,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.13.6",
+      "2.13.7",
       "2.12.15"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -739,7 +739,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.6") => Seq(
+      case (_, "2.13.7") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -782,7 +782,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.13.6",
+      "2.13.7",
       "2.12.15"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -841,7 +841,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.6") => Seq(
+      case (_, "2.13.7") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -884,7 +884,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.13.6",
+      "2.13.7",
       "2.12.15"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -943,7 +943,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.6") => Seq(
+      case (_, "2.13.7") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -995,7 +995,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.13.6",
+      "2.13.7",
       "2.12.15"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -1054,7 +1054,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.6") => Seq(
+      case (_, "2.13.7") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
@@ -1103,7 +1103,7 @@ lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
   .settings(
     publish / skip := true,
     crossScalaVersions := Seq(
-      "2.13.6",
+      "2.13.7",
       "2.12.15"
     ),
     scalaVersion := crossScalaVersions.value.head
@@ -1127,7 +1127,7 @@ lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"
   .settings(
     publish / skip := true,
     crossScalaVersions := Seq(
-      "2.13.6",
+      "2.13.7",
       "2.12.15"
     ),
     scalaVersion := crossScalaVersions.value.head
@@ -1150,7 +1150,7 @@ lazy val `idealingua-v1-jvm` = (project in file(".agg/.agg-jvm"))
   .settings(
     publish / skip := true,
     crossScalaVersions := Seq(
-      "2.13.6",
+      "2.13.7",
       "2.12.15"
     ),
     scalaVersion := crossScalaVersions.value.head
