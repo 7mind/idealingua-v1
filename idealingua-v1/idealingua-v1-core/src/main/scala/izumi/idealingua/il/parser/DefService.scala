@@ -12,9 +12,9 @@ class DefService(context: IDLParserContext) {
   import sep._
 
   // other method kinds should be added here
-  def methods[_: P]: P[Seq[RawMethod]] = P(defSignature.method(kw.defm).rep(sep = any))
+  def methods[$: P]: P[Seq[RawMethod]] = P(defSignature.method(kw.defm).rep(sep = any))
 
-  def serviceBlock[_: P]: P[RawTopLevelDefn.TLDService] = P(metaAgg.cblock(kw.service, methods))
+  def serviceBlock[$: P]: P[RawTopLevelDefn.TLDService] = P(metaAgg.cblock(kw.service, methods))
     .map {
       case (c, i, v) => RawService(i.toServiceId, v.toList, c)
     }

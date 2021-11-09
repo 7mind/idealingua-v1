@@ -10,7 +10,7 @@ class DefParsers(context: IDLParserContext) {
   import izumi.idealingua.il.parser.structure.sep._
   import context._
 
-  protected[parser] def modelDef[_: P]: P[ParsedModel] = P(any ~ defMember.anyMember.rep(sep = any) ~ any ~ End)
+  protected[parser] def modelDef[$: P]: P[ParsedModel] = P(any ~ defMember.anyMember.rep(sep = any) ~ any ~ End)
     .map {
       defs =>
         val tlds = defs.collect {case ModelMember.MMTopLevelDefn(defn) => defn}
@@ -19,7 +19,7 @@ class DefParsers(context: IDLParserContext) {
         ParsedModel(tlds, inclusions)
     }
 
-  protected[parser] def fullDomainDef[_: P]: P[ParsedDomain] = P(Start ~ any ~ defDomain.decl ~ modelDef).map {
+  protected[parser] def fullDomainDef[$: P]: P[ParsedDomain] = P(Start ~ any ~ defDomain.decl ~ modelDef).map {
     case (decl, defs) =>
       ParsedDomain(decl, defs)
   }

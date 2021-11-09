@@ -15,34 +15,34 @@ class DefConst(context: IDLParserContext) extends Identifiers {
   import DefConst._
   import context._
 
-  def defAnno[_: P]: P[RawAnno] = P(defPositions.positioned("@" ~ idShort ~ "(" ~ inline ~ constantsNoDoc ~ inline ~ ")"))
+  def defAnno[$: P]: P[RawAnno] = P(defPositions.positioned("@" ~ idShort ~ "(" ~ inline ~ constantsNoDoc ~ inline ~ ")"))
     .map {
       case (pos, (id, value)) =>
         defns.RawAnno(id.name, value, pos)
     }
 
-  def defAnnos[_: P]: P[Seq[RawAnno]] = P(defAnno.rep(min = 1, sep = any) ~ NLC ~ inline).?.map(_.toSeq.flatten)
+  def defAnnos[$: P]: P[Seq[RawAnno]] = P(defAnno.rep(min = 1, sep = any) ~ NLC ~ inline).?.map(_.toSeq.flatten)
 
-  def constBlock[_: P]: P[TLDConsts] = kw(kw.consts, inline ~ enclosedConsts)
+  def constBlock[$: P]: P[TLDConsts] = kw(kw.consts, inline ~ enclosedConsts)
     .map {
       v => TLDConsts(RawConstBlock(v.toList))
     }
 
-  def constValue[_: P]: P[Aux] = P(("(" ~ inline ~ anyValue ~ inline ~ ")") | anyValue)
+  def constValue[$: P]: P[Aux] = P(("(" ~ inline ~ anyValue ~ inline ~ ")") | anyValue)
 
-  private def const[_: P]: P[RawConst] = P(metaAgg.withMeta(constNoDoc)).map {
+  private def const[$: P]: P[RawConst] = P(metaAgg.withMeta(constNoDoc)).map {
     case (meta, constVal) =>
       constVal.copy(meta = RawConstMeta(meta.doc, meta.position))
   }
 
-  private def enclosedConsts[_: P]: P[Seq[RawConst]] = structure.aggregates.enclosed(constants)
+  private def enclosedConsts[$: P]: P[Seq[RawConst]] = structure.aggregates.enclosed(constants)
 
-  private def constants[_: P]: P[Seq[RawConst]] = P(const.rep(sep = sepStruct) ~ sepStruct.?)
+  private def constants[$: P]: P[Seq[RawConst]] = P(const.rep(sep = sepStruct) ~ sepStruct.?)
 
-  private def constantsNoDoc[_: P]: P[RawVal.CMap] = P(constNoDoc.rep(min = 0, sep = sepStruct) ~ sepStruct.?)
+  private def constantsNoDoc[$: P]: P[RawVal.CMap] = P(constNoDoc.rep(min = 0, sep = sepStruct) ~ sepStruct.?)
     .map(v => RawVal.CMap(v.map(c => (c.id.name, c.const)).toMap))
 
-  private def constNoDoc[_: P]: P[RawConst] = P(defPositions.positioned(idShort ~ (inline ~ ":" ~ inline ~ idGeneric).? ~ inline ~ "=" ~ inline ~ constValue))
+  private def constNoDoc[$: P]: P[RawConst] = P(defPositions.positioned(idShort ~ (inline ~ ":" ~ inline ~ idGeneric).? ~ inline ~ "=" ~ inline ~ constValue))
     .map {
       case (pos, (name, tpe, value: Aux.ObjAux)) =>
         tpe match {
@@ -96,9 +96,9 @@ class DefConst(context: IDLParserContext) extends Identifiers {
     }
 
 
-  private def justValue[_: P]: P[Aux] = P(literal | objdef | listdef)
+  private def justValue[$: P]: P[Aux] = P(literal | objdef | listdef)
 
-  private def typedValue[_: P]: P[Aux] = (idGeneric ~ inline ~ "(" ~ inline ~ justValue ~ inline ~ ")").map {
+  private def typedValue[$: P]: P[Aux] = (idGeneric ~ inline ~ "(" ~ inline ~ justValue ~ inline ~ ")").map {
     case (id, agg) =>
       agg match {
         case Aux.Just(value) =>
@@ -118,10 +118,10 @@ class DefConst(context: IDLParserContext) extends Identifiers {
   }
 
 
-  private def anyValue[_: P]: P[Aux] = P(typedValue | justValue)
+  private def anyValue[$: P]: P[Aux] = P(typedValue | justValue)
 
 
-  private def literal[_: P]: P[Aux.Just] = {
+  private def literal[$: P]: P[Aux.Just] = {
     import Literals.Literals._
     NoCut(P(
       ("-".? ~ Float).!.map(_.toDouble).map(RawVal.CFloat) |
@@ -137,14 +137,14 @@ class DefConst(context: IDLParserContext) extends Identifiers {
     )).map(Aux.Just)
   }
 
-  private def objdef[_: P]: P[Aux.ObjAux] = enclosedConsts.map {
+  private def objdef[$: P]: P[Aux.ObjAux] = enclosedConsts.map {
     v =>
       Aux.ObjAux(RawVal.CMap(v.map(rc => rc.id.name -> rc.const).toMap))
   }
 
-  private def listElements[_: P]: P[Seq[Aux]] = P(constValue.rep(sep = sep.sepStruct) ~ sep.sepStruct.?)
+  private def listElements[$: P]: P[Seq[Aux]] = P(constValue.rep(sep = sep.sepStruct) ~ sep.sepStruct.?)
 
-  private def listdef[_: P]: P[Aux.ListAux] = {
+  private def listdef[$: P]: P[Aux.ListAux] = {
     structure.aggregates.enclosedB(listElements)
       .map {
         v =>

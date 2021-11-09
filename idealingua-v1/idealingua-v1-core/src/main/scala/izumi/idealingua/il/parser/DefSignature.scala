@@ -11,28 +11,28 @@ class DefSignature(context: IDLParserContext) {
   import context._
   import sep._
 
-  def sigSep[_: P]: P[Unit] = P("=>" | "->" | ":" | "⇒")
+  def sigSep[$: P]: P[Unit] = P("=>" | "->" | ":" | "⇒")
 
-  def errSep[_: P]: P[Unit] = P("!!" | "?!" | "⥃" | "↬" | "or")
+  def errSep[$: P]: P[Unit] = P("!!" | "?!" | "⥃" | "↬" | "or")
 
 
-  def baseSignature[_: P](keyword: => P[Unit]): P[(String, RawSimpleStructure)] = P(
+  def baseSignature[$: P](keyword: => P[Unit]): P[(String, RawSimpleStructure)] = P(
     keyword ~ inline ~
       ids.symbol ~ any ~
       defStructure.inlineStruct
   )
 
-  def void[_: P]: P[Output.Void] = P("(" ~ inline ~ ")").map(_ => RawMethod.Output.Void())
+  def void[$: P]: P[Output.Void] = P("(" ~ inline ~ ")").map(_ => RawMethod.Output.Void())
 
-  def adt[_: P]: P[Output.Algebraic] = defStructure.adtOut.map(v => RawMethod.Output.Algebraic(v.alternatives))
+  def adt[$: P]: P[Output.Algebraic] = defStructure.adtOut.map(v => RawMethod.Output.Algebraic(v.alternatives))
 
-  def struct[_: P]: P[Output.Struct] = defStructure.inlineStruct.map(v => RawMethod.Output.Struct(v))
+  def struct[$: P]: P[Output.Struct] = defStructure.inlineStruct.map(v => RawMethod.Output.Struct(v))
 
-  def singular[_: P]: P[Output.Singular] = ids.idGeneric.map(v => RawMethod.Output.Singular(v))
+  def singular[$: P]: P[Output.Singular] = ids.idGeneric.map(v => RawMethod.Output.Singular(v))
 
-  def output[_: P]: P[Output.NonAlternativeOutput] = P(adt | struct | singular | void)
+  def output[$: P]: P[Output.NonAlternativeOutput] = P(adt | struct | singular | void)
 
-  def allOutputs[_: P]: P[Output] = P((any ~ sigSep ~ any ~ output ~ (any ~ errSep ~ any ~ output).?).?).map {
+  def allOutputs[$: P]: P[Output] = P((any ~ sigSep ~ any ~ output ~ (any ~ errSep ~ any ~ output).?).?).map {
     case None =>
       RawMethod.Output.Void()
     case Some((outGood, None)) =>
@@ -41,14 +41,14 @@ class DefSignature(context: IDLParserContext) {
       RawMethod.Output.Alternative(outGood, outBad)
   }
 
-  def signature[_: P](keyword: => P[Unit]): P[(RawNodeMeta, String, RawSimpleStructure, Output)] = P(
+  def signature[$: P](keyword: => P[Unit]): P[(RawNodeMeta, String, RawSimpleStructure, Output)] = P(
     metaAgg.withMeta(baseSignature(keyword) ~ allOutputs).map {
       case (meta, (id, input, output)) =>
         (meta, id, input, output)
     }
   )
 
-  def method[_: P](keyword: => P[Unit]): P[RawMethod.RPCMethod] = P(defSignature.signature(keyword)).map {
+  def method[$: P](keyword: => P[Unit]): P[RawMethod.RPCMethod] = P(defSignature.signature(keyword)).map {
     case (meta, id, in, out) =>
       RawMethod.RPCMethod(id, RawMethod.Signature(in, out), meta)
   }
