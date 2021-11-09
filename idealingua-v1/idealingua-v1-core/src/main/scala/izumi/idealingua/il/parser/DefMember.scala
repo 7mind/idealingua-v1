@@ -11,10 +11,10 @@ class DefMember(context: IDLParserContext) extends Aggregates {
 
   import context._
 
-  def inclusion[_: P]: P[Inclusion] = kw(kw.include, sym.String)
+  def inclusion[$: P]: P[Inclusion] = kw(kw.include, sym.String)
     .map(v => Inclusion(v))
 
-  def baseTypeMember[_: P]: P[TLDBaseType] = P(
+  def baseTypeMember[$: P]: P[TLDBaseType] = P(
     defStructure.enumBlock |
       defStructure.adtBlock |
       defStructure.aliasBlock |
@@ -24,26 +24,25 @@ class DefMember(context: IDLParserContext) extends Aggregates {
   )
     .map(TLDBaseType)
 
-  def typeMember[_: P]: P[RawTopLevelDefn.TypeDefn] = P(
+  def typeMember[$: P]: P[RawTopLevelDefn.TypeDefn] = P(
     defStructure.foreignBlock |
       defStructure.cloneBlock |
       defStructure.declaredBlock
   )
 
-  def otherMember[_: P]: P[RawTopLevelDefn] = P(
+  def otherMember[$: P]: P[RawTopLevelDefn] = P(
     defService.serviceBlock |
       defBuzzer.buzzerBlock |
       defStreams.streamsBlock |
       defConst.constBlock
   )
 
-  def topLevelDefn[_: P]: P[ModelMember] = P(
+  def topLevelDefn[$: P]: P[ModelMember] = P(
     baseTypeMember |
       typeMember |
       otherMember
   ).map(ModelMember.MMTopLevelDefn)
 
-  def anyMember[_: P]: P[ModelMember] = P(topLevelDefn | inclusion.map(ModelMember.MMInclusion))
+  def anyMember[$: P]: P[ModelMember] = P(topLevelDefn | inclusion.map(ModelMember.MMInclusion))
 
 }
-

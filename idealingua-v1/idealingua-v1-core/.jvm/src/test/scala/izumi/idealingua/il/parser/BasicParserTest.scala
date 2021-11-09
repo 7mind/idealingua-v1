@@ -210,7 +210,7 @@ class BasicParserTest
     }
 
     "parse service definition" in {
-      def defm[_: P]: P[RawMethod.RPCMethod] = defSignature.method(kw.defm)
+      def defm[$: P]: P[RawMethod.RPCMethod] = defSignature.method(kw.defm)
 
       assertParses(defm(_), "def greetAlgebraicOut(firstName: str, secondName: str) => ( SuccessData | ErrorData )")
       assertParseableCompletely(defService.methods(_),
