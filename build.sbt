@@ -42,7 +42,6 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
       case (_, "2.12.15") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
@@ -84,7 +83,6 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
       case (_, "2.13.6") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
@@ -151,7 +149,6 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
       case (_, "2.12.15") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
@@ -193,7 +190,6 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
       case (_, "2.13.6") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
@@ -265,7 +261,6 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
       case (_, "2.12.15") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
@@ -307,7 +302,6 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
       case (_, "2.13.6") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
@@ -380,7 +374,6 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
       case (_, "2.12.15") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
@@ -422,7 +415,6 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
       case (_, "2.13.6") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
@@ -500,7 +492,6 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
       case (_, "2.12.15") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
@@ -542,7 +533,6 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
       case (_, "2.13.6") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
@@ -609,7 +599,6 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
       case (_, "2.12.15") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
@@ -651,7 +640,6 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
       case (_, "2.13.6") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
@@ -713,7 +701,6 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
       case (_, "2.12.15") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
@@ -755,7 +742,6 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
       case (_, "2.13.6") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
@@ -817,7 +803,6 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
       case (_, "2.12.15") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
@@ -859,7 +844,6 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
       case (_, "2.13.6") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
@@ -921,7 +905,6 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
       case (_, "2.12.15") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
@@ -963,7 +946,6 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
       case (_, "2.13.6") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
@@ -1034,7 +1016,6 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
       case (_, "2.12.15") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         "-Ypartial-unification",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
@@ -1076,7 +1057,6 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
       case (_, "2.13.6") => Seq(
         "-Xsource:3",
         "-P:kind-projector:underscore-placeholders",
-        "-Wconf:msg=package.object.inheritance:silent",
         if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
         "-Wconf:cat=optimizer:warning",
         "-Wconf:cat=other-match-analysis:error",
@@ -1234,7 +1214,7 @@ lazy val `idealingua-v1` = (project in file("."))
     ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git")),
     ThisBuild / scalacOptions += """-Xmacro-settings:scalatest-version=VExpr(V.scalatest)""",
     ThisBuild / scalacOptions += s"-Xmacro-settings:is-ci=${insideCI.value}",
-    libraryDependencies += "io.7mind.izumi.sbt" % "sbtgen_2.13" % V.sbtgen % Provided
+    libraryDependencies += "io.7mind.izumi.sbt" % "sbtgen_2.13" % "0.0.83" % Provided
   )
   .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
