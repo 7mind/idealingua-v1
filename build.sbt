@@ -1233,7 +1233,8 @@ lazy val `idealingua-v1` = (project in file("."))
             ),
     ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git")),
     ThisBuild / scalacOptions += """-Xmacro-settings:scalatest-version=VExpr(V.scalatest)""",
-    ThisBuild / scalacOptions += s"-Xmacro-settings:is-ci=${insideCI.value}"
+    ThisBuild / scalacOptions += s"-Xmacro-settings:is-ci=${insideCI.value}",
+    libraryDependencies += "io.7mind.izumi.sbt" % "sbtgen_2.13" % V.sbtgen % Provided
   )
   .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
