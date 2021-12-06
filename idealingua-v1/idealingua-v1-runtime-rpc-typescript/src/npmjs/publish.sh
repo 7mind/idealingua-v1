@@ -1,4 +1,6 @@
-#!/bin/bash -xe
+#!/usr/bin/env bash
+
+set -ex
 
 export THISDIR="$( cd "$(dirname "$0")" ; pwd -P )"
 
