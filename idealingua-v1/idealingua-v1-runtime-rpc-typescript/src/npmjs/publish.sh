@@ -5,7 +5,7 @@ set -ex
 export THISDIR="$( cd "$(dirname "$0")" ; pwd -P )"
 
 pkgFile='package.json'
-pkgName='@izumi-framework/izumi-runtime-typescript'
+pkgName=$(cat package.json | node -pe 'JSON.parse(fs.readFileSync(0)).name')
 pkgPath='dist'
 
 pushd .
@@ -17,7 +17,7 @@ npm install
 tsc -p ./tsconfig.json
 tsc -p ./tsconfig.es.json
 
-node -p "JSON.stringify({...require('./package.json'), name: '${pkgName}'}, null, 2)" > ${pkgPath}/package.json
+cp package.json dist/
 node -p "JSON.stringify({...require('./package.json'), name: '${pkgName}-es'}, null, 2)" > ${pkgPath}-es/package.json
 
 npm install json
