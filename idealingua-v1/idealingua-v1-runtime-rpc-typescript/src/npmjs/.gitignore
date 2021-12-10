@@ -1,4 +1,5 @@
 dist
+dist-es
 node_modules
 package-lock.json
 irt

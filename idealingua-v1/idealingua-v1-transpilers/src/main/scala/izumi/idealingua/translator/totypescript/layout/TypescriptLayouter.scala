@@ -69,8 +69,8 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
       json"""
             {
                 "compilerOptions": {
-                  "module": "esnext",
-                  "target": "esnext",
+                  "module": "commonjs",
+                  "target": "es5",
                   "lib": ["es6", "dom"],
                   "sourceMap": true,
                   "allowJs": false,
