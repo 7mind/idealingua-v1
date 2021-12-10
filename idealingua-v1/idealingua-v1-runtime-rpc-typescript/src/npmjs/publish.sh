@@ -4,12 +4,12 @@ set -ex
 
 export THISDIR="$( cd "$(dirname "$0")" ; pwd -P )"
 
+pushd .
+cd $THISDIR
+
 pkgFile='package.json'
 pkgName=$(cat package.json | node -pe 'JSON.parse(fs.readFileSync(0)).name')
 pkgPath='dist'
-
-pushd .
-cd $THISDIR
 
 cp -R ../main/resources/runtime/typescript/irt .
 npm install
