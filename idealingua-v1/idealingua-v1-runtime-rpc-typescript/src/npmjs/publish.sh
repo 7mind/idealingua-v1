@@ -18,7 +18,7 @@ tsc -p ./tsconfig.json
 tsc -p ./tsconfig.es.json
 
 cp package.json dist/
-node -p "JSON.stringify({...require('./package.json'), name: '${pkgName}-es'}, null, 2)" > ${pkgPath}-es/package.json
+node -p "JSON.stringify({...require(path.resolve(__dirname, 'package.json')), name: '${pkgName}-es'}, null, 2)" > ${pkgPath}-es/package.json
 
 npm install json
 ./node_modules/json/lib/json.js -I -f dist/package.json -e "this.version=\"${IZUMI_VERSION}\""
