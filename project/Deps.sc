@@ -167,6 +167,27 @@ object Idealingua {
       Seq(assemblyPluginJs, assemblyPluginJvm),
     )
 
+    implicit class VersionOptionExt(version: Option[Version]) {
+      def asString = {
+
+        version match {
+          case Some(v: Version.VConst) => v.value
+          case Some(v: Version.VExpr) => v.value
+          case _ => ???
+        }
+      }
+    }
+
+    implicit class VersionExt(version: Version) {
+      def asString = {
+
+        version match {
+          case v: Version.VConst => v.value
+          case v: Version.VExpr => v.value
+        }
+      }
+    }
+
     object root {
       final val id = ArtifactId("idealingua-v1")
       final val plugins = Plugins(
@@ -204,7 +225,11 @@ object Idealingua {
           Developer(id = "7mind", name = "Septimal Mind", url = url("https://github.com/7mind"), email = "team@7mind.io"),
         )""".raw,
         "scmInfo" in SettingScope.Build := """Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git"))""".raw,
-        "scalacOptions" in SettingScope.Build += s"""${"\"" * 3}-Xmacro-settings:scalatest-version=${V.scalatest}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalatest-version=$${${V.scalatest.asString}}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += s"""${"\"" * 3}-Xmacro-settings:scalajs-version=${Idealingua.settings.scalaJsVersion.asString}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += s"""${"\"" * 3}-Xmacro-settings:bundler-version=${Idealingua.settings.bundlerVersion.asString}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += s"""${"\"" * 3}-Xmacro-settings:sbt-js-version=${Idealingua.settings.sbtJsDependenciesVersion.asString}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += s"""${"\"" * 3}-Xmacro-settings:crossproject-version=${Idealingua.settings.crossProjectVersion.asString}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += """s"-Xmacro-settings:is-ci=${insideCI.value}"""".raw,
 
         // scala-steward workaround

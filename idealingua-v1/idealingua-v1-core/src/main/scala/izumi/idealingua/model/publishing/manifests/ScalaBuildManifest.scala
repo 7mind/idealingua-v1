@@ -12,12 +12,14 @@ case class ScalaBuildManifest(
 
 case class SbtOptions(
                        projectNaming: ProjectNamingRule,
+                       enableScalaJs: Boolean
                      )
 
 object SbtOptions {
   def example: SbtOptions = {
     SbtOptions(
       projectNaming = ProjectNamingRule.example,
+      enableScalaJs = true,
     )
   }
 }
