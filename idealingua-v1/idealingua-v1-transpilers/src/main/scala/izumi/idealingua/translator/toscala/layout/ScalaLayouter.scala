@@ -1,11 +1,12 @@
 package izumi.idealingua.translator.toscala.layout
 
+import izumi.fundamentals.platform.build.MacroParameters
 import izumi.idealingua.`macro`.ProjectAttributeMacro
 import izumi.idealingua.model.common.DomainId
 import izumi.idealingua.model.output.{Module, ModuleId}
 import izumi.idealingua.model.publishing.manifests.ScalaProjectLayout
 import izumi.idealingua.translator.CompilerOptions.ScalaTranslatorOptions
-import izumi.idealingua.translator._
+import izumi.idealingua.translator.*
 
 case class RawExpr(e: String)
 
@@ -15,6 +16,16 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
   private val idlcGroupId = ProjectAttributeMacro.extractSbtProjectGroupId().getOrElse("UNSET-GROUP-ID")
 
   override def layout(outputs: Seq[Translated]): Layouted = {
+    def project(id: String) = {
+      if (options.manifest.sbt.enableScalaJs) {
+        s"""(crossProject(JVMPlatform, JSPlatform).crossType(CrossType.Pure).in(file("$id")))"""
+
+      } else {
+        s"""(project in file("$id"))"""
+      }
+
+    }
+
     val modules = options.manifest.layout match {
       case ScalaProjectLayout.PLAIN =>
         withRuntime(options, outputs)
@@ -55,7 +66,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
                 ""
               }
 
-              s"""lazy val `$id` = (project in file("$id"))$depends"""
+              s"""lazy val `$id` = ${project(id)}$depends"""
           }
 
         val bundleId = naming.bundleId
@@ -63,7 +74,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
         val agg =
           s"""
-             |lazy val `$rootId` = (project in file("."))
+             |lazy val `$rootId` = ${project(".")}
              |  .aggregate(
              |    ${(projIds ++ Seq(bundleId)).map(id => s"`$id`").mkString(",\n    ")}
              |  )
@@ -78,7 +89,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
         val bundle =
           s"""
-             |lazy val `$bundleId` = (project in file("$bundleId"))$depends
+             |lazy val `$bundleId` = ${project(bundleId)}$depends
          """.stripMargin
 
         import SbtDslOp._
@@ -112,7 +123,22 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
         val content = keys ++ projDefs ++ Seq(bundle, agg)
 
         val sbtModules = Seq(
-          ExtendedModule.RuntimeModule(Module(ModuleId(Seq.empty, "build.sbt"), content.map(_.trim).mkString("\n\n")))
+          ExtendedModule.RuntimeModule(Module(ModuleId(Seq.empty, "build.sbt"), content.map(_.trim).mkString("\n\n"))),
+          ExtendedModule.RuntimeModule(Module(ModuleId(Seq("project"), "plugins.sbt"),
+            s"""
+              |// https://www.scala-js.org/
+              |addSbtPlugin("org.scala-js" % "sbt-scalajs" % "${MacroParameters.macroSetting("scalajs-version").getOrElse("undefined-version")}")
+              |
+              |// https://github.com/portable-scala/sbt-crossproject
+              |addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "${MacroParameters.macroSetting("crossproject-version").getOrElse("undefined-version")}")
+              |
+              |// https://scalacenter.github.io/scalajs-bundler/
+              |addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "${MacroParameters.macroSetting("bundler-version").getOrElse("undefined-version")}")
+              |
+              |// https://github.com/scala-js/jsdependencies
+              |addSbtPlugin("org.scala-js" % "sbt-jsdependencies" % "${MacroParameters.macroSetting("sbt-js-version").getOrElse("undefined-version")}")
+              |
+              |""".stripMargin)),
         )
 
         projectModules ++ runtimeModules ++ sbtModules
