@@ -344,7 +344,8 @@ object IDLTestTools {
   protected def run(workDir: Path, cmd: Seq[String], env: Map[String, String], cname: String): Int = {
     val cmdscript = workDir.getParent.resolve(s"$cname.sh").toAbsolutePath
     val commands = Seq(
-      "#!/bin/bash -xe",
+      "#!/usr/bin/env bash",
+      "set -xe",
       s"cd ${workDir.toAbsolutePath}",
     ) ++ env.map(kv => s"export ${kv._1}=${kv._2}") ++ Seq("env") ++ Seq(cmd.mkString("", " \\\n  ", "\n"))
 
@@ -356,7 +357,7 @@ object IDLTestTools {
     val Timed(exitCode, duration) = Timed {
       val logger = ProcessLogger(log)
       try {
-        Process(Seq("/bin/bash", cmdscript.toString), Some(workDir.toFile), env.toSeq: _*)
+        Process(Seq("/bin/sh", cmdscript.toString), Some(workDir.toFile), env.toSeq: _*)
           .run(logger)
           .exitValue()
       } finally {
