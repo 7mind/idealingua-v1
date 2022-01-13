@@ -98,14 +98,27 @@ class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, 
       targetDir.toFile
     ).lineStream.foreach(log.log)
 
-    log.log("Yarn building")
+    log.log("Yarn building ES5")
     Process(
       "yarn build",
       targetDir.toFile
     ).lineStream.foreach(log.log)
 
+    log.log("Yarn building ESNext")
+    Process(
+      "yarn build-es",
+      targetDir.toFile
+    ).lineStream.foreach(log.log)
+
     Files.list(targetDir.resolve("dist")).filter(_.toFile.isDirectory).iterator().asScala.foreach { module =>
       val cmd = s"npm publish --force --registry ${creds.npmRepo} ${module.toAbsolutePath.toString}"
+      log.log(s"Publish ${module.getFileName}. Cmd: `$cmd`")
+      Files.copy(packagesDir.resolve(s"${module.getFileName}/package.json"), module.resolve("package.json"))
+      Process(cmd, targetDir.toFile).lineStream.foreach(log.log)
+    }
+
+    Files.list(targetDir.resolve("dist-es")).filter(_.toFile.isDirectory).iterator().asScala.foreach { module =>
+      val cmd = s"npm publish --force --registry ${creds.npmRepo} ${module.toAbsolutePath.toString}-es"
       log.log(s"Publish ${module.getFileName}. Cmd: `$cmd`")
       Files.copy(packagesDir.resolve(s"${module.getFileName}/package.json"), module.resolve("package.json"))
       Process(cmd, targetDir.toFile).lineStream.foreach(log.log)

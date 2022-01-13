@@ -132,6 +132,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
                 "compileOnSave": false
               }
           """.toString()
+
     val packageJson = generatePackage(mf, None, "root")
     val rootJson =
       json"""{
@@ -140,7 +141,8 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
               "packages": [${s"packages/${mf.yarn.scope}/*"}]
             },
             "scripts": {
-              "build": "tsc"
+              "build": "tsc -p tsconfig.json",
+              "build-es": "tsc -p tsconfig.es.json"
             }
           }"""
     val fullRootJson = packageJson.deepMerge(rootJson)
@@ -148,6 +150,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
     Seq(
       Module(ModuleId(Seq.empty, "package.json"), fullRootJson.toString()),
       Module(ModuleId(Seq.empty, "tsconfig.json"), tsconfig),
+      Module(ModuleId(Seq.empty, "tsconfig.es.json"), tsconfigEs),
     ).map(ExtendedModule.RuntimeModule)
   }
 
