@@ -99,6 +99,39 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
               }
           """.toString()
 
+    val tsconfigEs =
+      json"""
+            {
+                "compilerOptions": {
+                  "module": "esnext",
+                  "target": "esnext",
+                  "lib": ["es6", "dom"],
+                  "sourceMap": true,
+                  "allowJs": false,
+                  "moduleResolution": "node",
+                  "rootDirs": [$rootDir],
+                  "outDir": "dist",
+                  "declaration": true,
+                  "baseUrl": ".",
+                  "paths": {
+                    "*": [
+                      ${s"$rootDir/*"},
+                      "node_modules/*"
+                    ]
+                  },
+                  "forceConsistentCasingInFileNames": true,
+                  "noImplicitReturns": true,
+                  "noImplicitThis": true,
+                  "noImplicitAny": true,
+                  "strictNullChecks": false,
+                  "suppressImplicitAnyIndexErrors": true,
+                  "experimentalDecorators": true,
+                  "removeComments": true,
+                 "preserveConstEnums": true
+                },
+                "compileOnSave": false
+              }
+          """.toString()
     val packageJson = generatePackage(mf, None, "root")
     val rootJson =
       json"""{
