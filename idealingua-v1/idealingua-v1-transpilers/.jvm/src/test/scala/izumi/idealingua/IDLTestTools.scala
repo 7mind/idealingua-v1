@@ -308,7 +308,7 @@ object IDLTestTools {
     IzFiles.refreshSymlink(targetDir.resolve(stablePrefix), runDir)
 
     val products = new TypespaceCompilerFSFacade(domains)
-      .compile(compilerDir, UntypedCompilerOptions(options.language, options.extensions, options.manifest, options.withBundledRuntime))
+      .compile(compilerDir, UntypedCompilerOptions(options.language, options.extensions, None, options.manifest, options.withBundledRuntime))
       .compilationProducts
     assert(products.paths.toSet.size == products.paths.size)
 
