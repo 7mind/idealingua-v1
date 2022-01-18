@@ -142,7 +142,7 @@ object CommandlineIDLCompiler {
 
   private def runCompiler(target: Path, loaded: Timed[UnresolvedDomains], option: UntypedCompilerOptions): Unit = {
     val langId = option.language.toString
-    val itarget = target.resolve(langId)
+    val itarget = option.target.getOrElse(target.resolve(langId))
     log.log(s"Preparing typespace for $langId")
     val toCompile = Timed {
       val rules = TypespaceCompilerBaseFacade.descriptor(option.language).rules
@@ -181,11 +181,11 @@ object CommandlineIDLCompiler {
     val exts = getExt(lang, lopt.extensions)
 
     val manifest = readManifest(conf, env, lopt, lang)
-    UntypedCompilerOptions(lang, exts, manifest, lopt.withRuntime)
+    UntypedCompilerOptions(lang, exts, lopt.target, manifest, lopt.withRuntime, zipOutput = lopt.zip)
   }
 
   private def readManifest(conf: IDLCArgs, env: Map[String, String], lopt: LanguageOpts, lang: IDLLanguage): BuildManifest = {
-    val default = Paths.get("version.json")
+    val default = conf.root.resolve("version.json")
 
     val overlay = conf.versionOverlay.map(loadVersionOverlay(lang)) match {
       case Some(value) =>
@@ -211,7 +211,7 @@ object CommandlineIDLCompiler {
     val globalOverridesJson = toJson(conf.overrides)
     val patch = overlayJson.deepMerge(globalOverridesJson).deepMerge(envJson).deepMerge(languageOverridesJson)
 
-    val reader = new ManifestReader(log, shutdown, patch, lang, lopt.manifest)
+    val reader = new ManifestReader(conf, log, shutdown, patch, lang, lopt.manifest)
     val manifest = reader.read()
     manifest
   }

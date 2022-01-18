@@ -9,10 +9,12 @@ import izumi.idealingua.translator.toprotobuf.extensions.ProtobufTranslatorExten
 import izumi.idealingua.translator.toscala.extensions.ScalaTranslatorExtension
 import izumi.idealingua.translator.totypescript.extensions.TypeScriptTranslatorExtension
 
+import java.nio.file.Path
 import scala.reflect.ClassTag
 
 case class ProvidedRuntime(modules: Seq[Module]) {
   def isEmpty: Boolean = modules.isEmpty
+
   def maybe: Option[ProvidedRuntime] = {
     if (isEmpty) {
       None
@@ -20,6 +22,7 @@ case class ProvidedRuntime(modules: Seq[Module]) {
       Some(this)
     }
   }
+
   def ++(other: ProvidedRuntime): ProvidedRuntime = {
     ProvidedRuntime(modules ++ other.modules)
   }
@@ -73,9 +76,11 @@ final case class UntypedCompilerOptions
 (
   language: IDLLanguage
   , extensions: Seq[TranslatorExtension]
+  , target: Option[Path]
   , manifest: BuildManifest
   , withBundledRuntime: Boolean = true
   , providedRuntime: Option[ProvidedRuntime] = None
+  , zipOutput: Boolean = true
 ) extends AbstractCompilerOptions[TranslatorExtension, BuildManifest] {
   override def toString: String = {
     val rtRepr = Option(withBundledRuntime).filter(_ == true).map(_ => "+rtb").getOrElse("-rtb")

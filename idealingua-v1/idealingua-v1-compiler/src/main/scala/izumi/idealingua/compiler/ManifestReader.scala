@@ -1,17 +1,16 @@
 package izumi.idealingua.compiler
 
-import java.io.File
-import java.nio.file.Paths
-import izumi.fundamentals.platform.files.IzFiles
-import izumi.idealingua.model.publishing.BuildManifest
-import izumi.idealingua.model.publishing.manifests.{CSharpBuildManifest, GoLangBuildManifest, ProtobufBuildManifest, ScalaBuildManifest, TypeScriptBuildManifest}
-import izumi.idealingua.translator.IDLLanguage
 import io.circe.parser.parse
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Decoder, Encoder, Json}
+import izumi.fundamentals.platform.files.IzFiles
+import izumi.idealingua.compiler.Codecs.*
+import izumi.idealingua.model.publishing.BuildManifest
+import izumi.idealingua.model.publishing.manifests.*
+import izumi.idealingua.translator.IDLLanguage
 
+import java.io.File
 import scala.util.{Failure, Success, Try}
-import Codecs._
 
 class ManifestWriter() {
   def write(mf: BuildManifest): String = {
@@ -28,7 +27,7 @@ class ManifestWriter() {
   }
 }
 
-class ManifestReader(log: CompilerLog, shutdown: Shutdown, patch: Json, lang: IDLLanguage, file: Option[File]) {
+class ManifestReader(conf: IDLCArgs, log: CompilerLog, shutdown: Shutdown, patch: Json, lang: IDLLanguage, file: Option[File]) {
   def read(): BuildManifest = {
     lang match {
       case IDLLanguage.Scala =>
@@ -46,7 +45,7 @@ class ManifestReader(log: CompilerLog, shutdown: Shutdown, patch: Json, lang: ID
 
   private def readManifest[T <: BuildManifest : Decoder : Encoder](default: T): T = {
     val defaultJson = default.asJson.deepMerge(patch)
-    val defaultMfFile = Paths.get("manifests", s"${lang.toString.toLowerCase}.json").toFile
+    val defaultMfFile = conf.root.resolve(s"manifests/${lang.toString.toLowerCase}.json").toFile
 
     val mf = file match {
       case Some(path) if path.toString == "@" =>

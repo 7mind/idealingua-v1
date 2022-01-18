@@ -10,6 +10,8 @@ import izumi.fundamentals.platform.cli.{CLIParserImpl, ParserFailureHandler}
 case class LanguageOpts(
                          id: String,
                          withRuntime: Boolean,
+                         zip: Boolean,
+                         target: Option[Path],
                          manifest: Option[File],
                          credentials: Option[File],
                          extensions: List[String],
@@ -18,6 +20,7 @@ case class LanguageOpts(
 
 
 case class IDLCArgs(
+                     root: Path,
                      source: Path,
                      overlay: Path,
                      target: Path,
@@ -30,7 +33,8 @@ case class IDLCArgs(
 
 object IDLCArgs {
   def default: IDLCArgs = IDLCArgs(
-    Paths.get("source")
+    Paths.get(".")
+    , Paths.get("source")
     , Paths.get("overlay")
     , Paths.get("target")
     , List.empty
@@ -40,6 +44,7 @@ object IDLCArgs {
   )
 
   object P extends ParserDef {
+    final val rootDir = arg("root", "r", "root directory", "<path>")
     final val sourceDir = arg("source", "s", "source directory", "<path>")
     final val targetDir = arg("target", "t", "target directory", "<path>")
     final val overlayDir = arg("overlay", "o", "overlay directory", "<path>")
@@ -51,10 +56,12 @@ object IDLCArgs {
   }
 
   object LP extends ParserDef {
+    final val target = arg("target", "t", "lang target directory", "<path>")
     final val manifest = arg("manifest", "m", "manifest file", "<path>")
     final val credentials = arg("credentials", "cr", "credentials file", "<path>")
     final val extensionSpec = arg("extensions", "e", "extensions spec", "{* | -AnyvalExtension;-CirceDerivationTranslatorExtension}")
     final val noRuntime = flag("disable-runtime", "nr", "don't include builtin runtime")
+    final val noZip = flag("disable-zip", "nz", "don't zip outputs")
     final val define = arg("define", "d", "define value", "const.name=value")
   }
 
@@ -88,10 +95,11 @@ object IDLCArgs {
     }
 
     val parameters = parsed.globalParameters
-    val src = parameters.findValue(P.sourceDir).asPath.getOrElse(Paths.get("./source"))
-    val target = parameters.findValue(P.targetDir).asPath.getOrElse(Paths.get("./target"))
+    val root = parameters.findValue(P.rootDir).asPath.getOrElse(Paths.get("."))
+    val src = parameters.findValue(P.sourceDir).asPath.getOrElse(root.resolve("source"))
+    val target = parameters.findValue(P.targetDir).asPath.getOrElse(root.resolve("target"))
     assert(src.toFile.getCanonicalPath != target.toFile.getCanonicalPath)
-    val overlay = parameters.findValue(P.overlayDir).asPath.getOrElse(Paths.get("./overlay"))
+    val overlay = parameters.findValue(P.overlayDir).asPath.getOrElse(root.resolve("overlay"))
     val overlayVersion = parameters.findValue(P.overlayVersionFile).asPath
     val publish = parameters.hasFlag(P.publish)
     val defines = parseDefs(parameters)
@@ -102,6 +110,8 @@ object IDLCArgs {
       role =>
         val parameters = role.roleParameters
         val runtime = parameters.hasNoFlag(LP.noRuntime)
+        val zip = parameters.hasNoFlag(LP.noZip)
+        val target = parameters.findValue(LP.target).asPath
         val manifest = parameters.findValue(LP.manifest).asFile
         val credentials = parameters.findValue(LP.credentials).asFile
         val defines = parseDefs(parameters)
@@ -110,14 +120,17 @@ object IDLCArgs {
         LanguageOpts(
           id = role.role,
           withRuntime = runtime,
+          target = target,
           manifest = manifest,
           credentials = credentials,
           extensions = extensions,
-          overrides = defines
+          overrides = defines,
+          zip = zip,
         )
     }
 
     IDLCArgs(
+      root,
       src,
       overlay,
       target,
