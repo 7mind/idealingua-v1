@@ -40,19 +40,23 @@ class TypespaceCompilerFSFacade(toCompile: Seq[LoadedDomain.Success]) {
     val result = IDLCompilationResult(target, files)
 
 
-    // pack output
-    import IzZip._
+    if (options.zipOutput) {
+      // pack output
+      import IzZip._
 
-    val ztarget = target
-      .getParent
-      .resolve(s"${options.language.toString}.zip")
+      val ztarget = target
+        .getParent
+        .resolve(s"${options.language.toString}.zip")
 
-    val toPack = result.paths.map(p => ZE(result.target.relativize(p).toString, p))
-    val grouped = toPack.groupBy(_.name.toLowerCase)
-    verifySanity(grouped)
-    zip(ztarget, grouped.values.map(_.head))
+      val toPack = result.paths.map(p => ZE(result.target.relativize(p).toString, p))
+      val grouped = toPack.groupBy(_.name.toLowerCase)
+      verifySanity(grouped)
+      zip(ztarget, grouped.values.map(_.head))
 
-    TypespaceCompilerFSFacade.Result(result, ztarget)
+      TypespaceCompilerFSFacade.Result(result, Some(ztarget))
+    } else {
+      TypespaceCompilerFSFacade.Result(result, None)
+    }
   }
 
 
@@ -97,7 +101,7 @@ object TypespaceCompilerFSFacade {
 
   case class Result(
                      compilationProducts: IDLCompilationResult
-                     , zippedOutput: Path
+                     , zippedOutput: Option[Path]
                    )
 
 
