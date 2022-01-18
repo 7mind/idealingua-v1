@@ -1,4 +1,4 @@
-import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.88`
+import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.89`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
 
@@ -203,7 +203,7 @@ object Idealingua {
         "scalaVersion" := "crossScalaVersions.value.head".raw,
       )
 
-      final val rootSettings = Defaults.SharedOptions ++ Seq(
+      final val rootSettings = Seq(Defaults.SbtMetaRootOptions) ++ Seq(
         "crossScalaVersions" := "Nil".raw,
         "scalaVersion" := Targets.targetScala.head.value,
         "organization" in SettingScope.Build := "io.7mind.izumi",
@@ -238,7 +238,7 @@ object Idealingua {
         "libraryDependencies" += s""""io.7mind.izumi.sbt" % "sbtgen_2.13" % "${Version.SbtGen.value}" % Provided""".raw,
       )
 
-      final val sharedSettings = Defaults.SbtMetaOptions ++ Seq(
+      final val sharedSettings = Defaults.SbtMetaSharedOptions ++ Seq(
         "testOptions" in SettingScope.Test += """Tests.Argument("-oDF")""".raw,
         //"testOptions" in (SettingScope.Test, Platform.Jvm) ++= s"""Seq(Tests.Argument("-u"), Tests.Argument(s"$${target.value}/junit-xml-$${scalaVersion.value}"))""".raw,
         "scalacOptions" ++= Seq(
