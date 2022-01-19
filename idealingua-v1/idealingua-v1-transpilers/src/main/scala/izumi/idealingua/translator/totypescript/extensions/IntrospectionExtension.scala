@@ -31,6 +31,7 @@ object IntrospectionExtension extends TypeScriptTranslatorExtension {
     case Primitive.TDate => "{intro: IntrospectorTypes.Date}"
     case Primitive.TTs => "{intro: IntrospectorTypes.Tsl}"
     case Primitive.TTsTz => "{intro: IntrospectorTypes.Tsz}"
+    case Primitive.TTsO => "{intro: IntrospectorTypes.Tso}"
     case Primitive.TTsU => "{intro: IntrospectorTypes.Tsu}"
     case g: Generic => g match {
       case gm: Generic.TMap => s"{intro: IntrospectorTypes.Map, key: ${unwindType(gm.keyType)}, value: ${unwindType(gm.valueType)}} as IIntrospectorMapType"

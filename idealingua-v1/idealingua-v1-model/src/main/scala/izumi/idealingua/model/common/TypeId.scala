@@ -187,6 +187,13 @@ object Primitive {
   }
 
   /**
+    * Date, Time and Offset
+    */
+  case object TTsO extends Primitive with TimeTypeId {
+    override def aliases: List[TypeName] = List("tso", "datetimeo", "dto")
+  }
+
+  /**
     * Date, Time and Timezone, but Timezone is always set to UTC
     */
   case object TTsU extends Primitive with TimeTypeId {
@@ -246,6 +253,7 @@ object Primitive {
     , TDate
     , TTsTz
     , TTsU
+    , TTsO
     , TTs
     , TBLOB
     ,
@@ -316,5 +324,3 @@ object Generic {
     .flatMap(tpe => tpe.aliases.map(a => a -> tpe))
     .toMap
 }
-
-

@@ -1,13 +1,13 @@
 package izumi.idealingua.translator.tocsharp
 
 import izumi.fundamentals.platform.language.Quirks
-import izumi.idealingua.model.common.TypeId._
-import izumi.idealingua.model.common.{Generic, Package, Primitive, TypeId}
-import izumi.idealingua.model.problems.IDLException
+import izumi.idealingua.model.common.TypeId.*
+import izumi.idealingua.model.common.{Generic, Package, Primitive, PrimitiveId, ScalarId, StructureId, TypeId}
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.{Algebraic, Alternative, Singular, Struct, Void}
 import izumi.idealingua.model.il.ast.typed.DefMethod.RPCMethod
-import izumi.idealingua.model.il.ast.typed.TypeDef._
+import izumi.idealingua.model.il.ast.typed.TypeDef.*
 import izumi.idealingua.model.il.ast.typed.{Buzzer, DefMethod, Service, TypeDef}
+import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.tocsharp.types.CSharpType
 
@@ -75,8 +75,11 @@ object CSharpImports {
       case Primitive.TTs   => return Seq("System", "IRT", "System.Globalization")
       case Primitive.TTsTz => return Seq("System", "IRT", "System.Globalization")
       case Primitive.TTsU  => return Seq("System", "IRT", "System.Globalization")
+      case Primitive.TTsO  => return Seq("System", "IRT", "System.Globalization")
       case Primitive.TDate => return Seq("System")
       case Primitive.TUUID => return Seq("System")
+      case Primitive.TFloat =>
+      case Primitive.TDouble =>
       case Primitive.TBLOB => ???
       case g: Generic => g match {
         case _: Generic.TOption => return Seq("System")
@@ -84,8 +87,11 @@ object CSharpImports {
         case _: Generic.TList => return Seq("System.Collections", "System.Collections.Generic")
         case _: Generic.TSet => return Seq("System.Collections", "System.Collections.Generic")
       }
-      case _: Primitive => return Seq.empty
-      case _ =>
+      case _: PrimitiveId =>
+      case _: StructureId =>
+      case _: ScalarId =>
+      case _: AdtId =>
+      case _: AliasId =>
     }
 
     if (t.path.toPackage.isEmpty) {

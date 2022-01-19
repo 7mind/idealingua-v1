@@ -1,13 +1,13 @@
 package izumi.idealingua.translator.tocsharp.extensions
 
 import izumi.fundamentals.platform.language.Quirks.discard
-import izumi.fundamentals.platform.strings.IzString._
-import izumi.idealingua.model.common.TypeId._
-import izumi.idealingua.model.common.{Generic, Primitive, TypeId}
+import izumi.fundamentals.platform.strings.IzString.*
+import izumi.idealingua.model.common.TypeId.*
+import izumi.idealingua.model.common.{Generic, Primitive, TimeTypeId, TypeId}
 import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.{Alternative, Singular}
-import izumi.idealingua.model.il.ast.typed.TypeDef._
+import izumi.idealingua.model.il.ast.typed.TypeDef.*
 import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.tocsharp.types.{CSharpClass, CSharpField, CSharpType}
 import izumi.idealingua.translator.tocsharp.{CSTContext, CSharpImports}
@@ -171,6 +171,7 @@ object JsonNetExtension extends CSharpTranslatorExtension {
               case Primitive.TDate => s"""writer.WriteValue($src.ToString("yyyy-MM-dd"));"""
               case Primitive.TTs => s"""writer.WriteValue($src.ToString(JsonNetTimeFormats.TslDefault, CultureInfo.InvariantCulture));"""
               case Primitive.TTsTz => s"""writer.WriteValue($src.ToString($src.Kind == DateTimeKind.Utc ? JsonNetTimeFormats.TsuDefault : JsonNetTimeFormats.TszDefault, CultureInfo.InvariantCulture));"""
+              case Primitive.TTsO => s"""writer.WriteValue($src.ToString($src.Kind == DateTimeKind.Utc ? JsonNetTimeFormats.TsuDefault : JsonNetTimeFormats.TsoDefault, CultureInfo.InvariantCulture));"""
               case Primitive.TTsU => s"""writer.WriteValue($src.ToUniversalTime().ToString(JsonNetTimeFormats.TsuDefault, CultureInfo.InvariantCulture));"""
             }
 
@@ -210,11 +211,7 @@ object JsonNetExtension extends CSharpTranslatorExtension {
       case Primitive.TFloat => false
       case Primitive.TDouble => false
       case Primitive.TUUID => false
-      case Primitive.TTime => false
-      case Primitive.TDate => false
-      case Primitive.TTs => false
-      case Primitive.TTsTz => false
-      case Primitive.TTsU => false
+      case _: TimeTypeId => false
       case Primitive.TBLOB => ???
     }
     case c => c match {
@@ -323,6 +320,7 @@ object JsonNetExtension extends CSharpTranslatorExtension {
         case Primitive.TDate => s"DateTime.Parse($src.Value<string>())"
         case Primitive.TTs => s"DateTime.ParseExact($src.Value<string>(), JsonNetTimeFormats.Tsl, CultureInfo.InvariantCulture, DateTimeStyles.None)"
         case Primitive.TTsTz => s"DateTime.ParseExact($src.Value<string>(), JsonNetTimeFormats.Tsz, CultureInfo.InvariantCulture, DateTimeStyles.None)"
+        case Primitive.TTsO => s"DateTime.ParseExact($src.Value<string>(), JsonNetTimeFormats.Tso, CultureInfo.InvariantCulture, DateTimeStyles.None)"
         case Primitive.TTsU => s"DateTime.ParseExact($src.Value<string>(), JsonNetTimeFormats.Tsu, CultureInfo.InvariantCulture, DateTimeStyles.None)"
       }
       case _ => t.id match {

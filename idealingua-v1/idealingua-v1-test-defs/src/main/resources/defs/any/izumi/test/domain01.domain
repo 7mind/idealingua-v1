@@ -77,6 +77,7 @@ mixin AllTypes {
   ts      : tsz
   tslocal : tsl
   tsuni   : tsu
+  tsofs   : tso
   time    : time
   date    : date
 
@@ -208,6 +209,10 @@ service UserService {
 
 data TsuData {
     since: tsu
+}
+
+data TsoData {
+    since: tso
 }
 
 mixin CommonFailure {

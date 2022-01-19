@@ -55,7 +55,7 @@ namespace IRT.Marshaller {
             if (to == typeof(WebSocketRequestMessageJson) || to == typeof(WebSocketResponseMessageJson)) {
                 return JsonConvert.DeserializeObject<O>(data, webSocketConverters);
             }
-            
+
             return JsonConvert.DeserializeObject<O>(data, settings);
         }
 
@@ -81,7 +81,7 @@ namespace IRT.Marshaller {
                 throw new Exception("Should not be used for Reading, workaround only for writing.");
             }
         }
-        
+
         private class WebSocketMessageBase_JsonNetConverter: JsonNetConverter<WebSocketMessageBase> {
             public override void WriteJson(JsonWriter writer, WebSocketMessageBase holder, JsonSerializer serializer) {
                 throw new Exception("WebSocketMessageBase should never be serialized.");
@@ -90,34 +90,34 @@ namespace IRT.Marshaller {
             public override WebSocketMessageBase ReadJson(JsonReader reader, System.Type objectType, WebSocketMessageBase existingValue, bool hasExistingValue, JsonSerializer serializer) {
                 var json = JObject.Load(reader);
                 var kind = json["kind"].Value<string>();
-                
+
                 var res = hasExistingValue ? existingValue : new WebSocketMessageBase(kind);
                 res.Kind = kind;
                 return res;
             }
         }
-        
+
         private class WebSocketFailureMessage_JsonNetConverter: JsonNetConverter<WebSocketFailureMessage> {
             public override void WriteJson(JsonWriter writer, WebSocketFailureMessage holder, JsonSerializer serializer) {
                 writer.WriteStartObject();
                 // Kind
                 writer.WritePropertyName("kind");
                 writer.WriteValue(holder.Kind);
-                
+
                 // Cause
                 writer.WritePropertyName("cause");
                 writer.WriteValue(holder.Cause);
-                
+
                 // Data
                 writer.WritePropertyName("data");
                 writer.WriteValue(holder.Data);
-                
+
                 writer.WriteEndObject();
             }
 
             public override WebSocketFailureMessage ReadJson(JsonReader reader, System.Type objectType, WebSocketFailureMessage existingValue, bool hasExistingValue, JsonSerializer serializer) {
                 var json = JObject.Load(reader);
-                
+
                 var kind = json["kind"].Value<string>();
                 var res = hasExistingValue ? existingValue : new WebSocketFailureMessage();
                 res.Kind = kind;
@@ -133,29 +133,29 @@ namespace IRT.Marshaller {
                 // Kind
                 writer.WritePropertyName("kind");
                 writer.WriteValue(holder.Kind);
-                
+
                 // ID
                 writer.WritePropertyName("id");
                 writer.WriteValue(holder.ID);
-                
+
                 // Service
                 if (!string.IsNullOrEmpty(holder.Service)) {
                     writer.WritePropertyName("service");
                     writer.WriteValue(holder.Service);
                 }
-                
+
                 // Method
                 if (!string.IsNullOrEmpty(holder.Method)) {
                     writer.WritePropertyName("method");
                     writer.WriteValue(holder.Method);
                 }
-                
+
                 // Headers
                 if (holder.Headers != null && holder.Headers.Count > 0) {
                     writer.WritePropertyName("headers");
                     writer.WriteValue(holder.Headers);
                 }
-                
+
                 // Data
                 if (!string.IsNullOrEmpty(holder.Data)) {
                     writer.WritePropertyName("data");
@@ -167,7 +167,7 @@ namespace IRT.Marshaller {
 
             public override WebSocketRequestMessageJson ReadJson(JsonReader reader, System.Type objectType, WebSocketRequestMessageJson existingValue, bool hasExistingValue, JsonSerializer serializer) {
                 var json = JObject.Load(reader);
-                
+
                 var kind = json["kind"].Value<string>();
 
                 var res = hasExistingValue ? existingValue : new WebSocketRequestMessageJson(kind);
@@ -184,18 +184,18 @@ namespace IRT.Marshaller {
                 return res;
             }
         }
-        
+
         private class WebSocketResponseMessage_JsonNetConverter: JsonNetConverter<WebSocketResponseMessageJson> {
             public override void WriteJson(JsonWriter writer, WebSocketResponseMessageJson holder, JsonSerializer serializer) {
                 writer.WriteStartObject();
                 // Kind
                 writer.WritePropertyName("kind");
                 writer.WriteValue(holder.Kind);
-                
+
                 // Ref
                 writer.WritePropertyName("ref");
                 writer.WriteValue(holder.Ref);
-                
+
                 // Data
                 if (!string.IsNullOrEmpty(holder.Data)) {
                     writer.WritePropertyName("data");
@@ -207,7 +207,7 @@ namespace IRT.Marshaller {
             public override WebSocketResponseMessageJson ReadJson(JsonReader reader, System.Type objectType, WebSocketResponseMessageJson existingValue, bool hasExistingValue, JsonSerializer serializer) {
                 var json = JObject.Load(reader);
                 var kind = json["kind"].Value<string>();
-                
+
                 var res = hasExistingValue ? existingValue : new WebSocketResponseMessageJson(kind);
                 res.Kind = kind;
                 res.Ref = json["ref"].Value<string>();
@@ -221,7 +221,7 @@ namespace IRT.Marshaller {
                     if (reader.Value != null) {
                         if (reader.TokenType == JsonToken.PropertyName) {
                             Console.WriteLine("Found: " + reader.Value);
-                            
+
                             switch (reader.Value) {
                                 case "ref": res.Ref = reader.ReadAsString();
                                     break;
@@ -306,6 +306,8 @@ namespace IRT.Marshaller {
 
         public static readonly string TsuDefault = "yyyy-MM-ddTHH:mm:ss.fffZ";
         public static readonly string[] Tsu = JsonNetTimeFormats.Tsz;
+        public static readonly string TsoDefault = JsonNetTimeFormats.TszDefault;
+        public static readonly string[] Tso = JsonNetTimeFormats.Tsz;
     }
 
     class JsonNetDateConverter : IsoDateTimeConverter {
