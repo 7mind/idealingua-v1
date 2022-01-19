@@ -9,10 +9,9 @@ trait IDLIdentifier extends Any {
 }
 
 object IDLIdentifier {
-  // TODO: we may need to use a better escaping
-  def escape(s: String): String = URLEncoder.encode(s, "UTF-8")
+  def escape(s: String): String = Escaping.escape(s)
 
-  def unescape(s: String): String = URLDecoder.decode(s, "UTF-8")
+  def unescape(s: String): String = Escaping.unescape(s)
 
   def parsePart[T](v: String, clazz: Class[T]): T = {
     val ret = clazz match {
