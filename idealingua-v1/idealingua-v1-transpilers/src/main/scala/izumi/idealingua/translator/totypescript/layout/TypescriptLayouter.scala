@@ -110,7 +110,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
                   "allowJs": false,
                   "moduleResolution": "node",
                   "rootDirs": [$rootDir],
-                  "outDir": "dist",
+                  "outDir": "dist-es",
                   "declaration": true,
                   "baseUrl": ".",
                   "paths": {
