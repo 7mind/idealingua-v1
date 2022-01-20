@@ -1,25 +1,24 @@
 package izumi.idealingua.compiler
 
-import java.nio.file._
-import java.time.{ZoneId, ZonedDateTime}
-
 import com.typesafe.config.ConfigFactory
 import io.circe
 import io.circe.parser.parse
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 import izumi.fundamentals.platform.files.IzFiles
-import izumi.fundamentals.platform.language.Quirks._
+import izumi.fundamentals.platform.language.Quirks.*
 import izumi.fundamentals.platform.resources.{IzArtifactMaterializer, IzResourcesDirty}
-import izumi.fundamentals.platform.strings.IzString._
+import izumi.fundamentals.platform.strings.IzString.*
 import izumi.fundamentals.platform.time.Timed
-import izumi.idealingua.compiler.Codecs._
+import izumi.idealingua.compiler.Codecs.*
 import izumi.idealingua.il.loader.{LocalModelLoaderContext, ModelResolver}
 import izumi.idealingua.model.loader.UnresolvedDomains
 import izumi.idealingua.model.publishing.{BuildManifest, ProjectVersion}
-import izumi.idealingua.translator._
+import izumi.idealingua.translator.*
 
-import scala.jdk.CollectionConverters._
+import java.nio.file.*
+import java.time.{ZoneId, ZonedDateTime}
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 object CommandlineIDLCompiler {
@@ -217,7 +216,7 @@ object CommandlineIDLCompiler {
   }
 
   private def loadVersionOverlay(lang: IDLLanguage)(path: Path): Either[circe.Error, Json] = {
-    import io.circe.literal._
+    import io.circe.literal.*
 
     for {
       parsed <- parse(IzFiles.readString(path.toFile))
@@ -232,11 +231,18 @@ object CommandlineIDLCompiler {
   }
 
   private def toJson(env: Map[String, String]) = {
-    valToJson(ConfigFactory.parseMap(env.asJava).root().unwrapped())
+    val updatedEnv = env.view.mapValues {
+      v => io.circe.parser.parse(v) match {
+        case Right(b) if b.isBoolean => b.asBoolean.get
+        case Right(s) if s.isString => s.asString.get
+        case _ => v
+      }
+    }.toMap
+    valToJson(ConfigFactory.parseMap(updatedEnv.asJava).root().unwrapped())
   }
 
   private def valToJson(v: AnyRef): Json = {
-    import io.circe.syntax._
+    import io.circe.syntax.*
 
     (v: @unchecked) match {
       case m: java.util.HashMap[?, ?] =>
@@ -250,6 +256,8 @@ object CommandlineIDLCompiler {
       case s: String =>
         s.asJson
 
+      case b: java.lang.Boolean =>
+        b.asJson
     }
   }
 
