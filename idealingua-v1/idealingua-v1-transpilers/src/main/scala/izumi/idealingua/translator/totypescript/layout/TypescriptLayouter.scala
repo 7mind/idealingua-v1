@@ -21,7 +21,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
 
     val withLayout = if (options.manifest.layout == TypeScriptProjectLayout.YARN) {
       val inSubdir = modules
-      val inRtSubdir = addPrefix(rt ++ Seq(ExtendedModule.RuntimeModule(buildIRTPackageModule())), Seq(options.manifest.yarn.scope))
+      val inRtSubdir = addPrefix(rt ++ buildIRTPackageModule(), Seq(options.manifest.yarn.scope))
       val inBundleSubdir = buildBundlePackageModules(outputs)
 
       addPrefix(inSubdir ++ inRtSubdir ++ inBundleSubdir, Seq("packages")) ++
@@ -38,10 +38,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
     val ts = translated.typespace
     val modules = translated.modules ++ (
       if (options.manifest.layout == TypeScriptProjectLayout.YARN)
-        List(
-          buildIndexModule(ts),
-          buildPackageModule(ts),
-        )
+        buildIndexModule(ts) :: buildPackageModule(ts).toList
       else
         List(buildIndexModule(ts))
       )
@@ -161,38 +158,48 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
     ModuleId(path, id.name)
   }
 
+  private def esPostfix(name: String) = s"$name-es"
 
-  private def buildPackageModule(ts: Typespace): Module = {
-    val allDeps = ts.domain.meta.directImports
-      .map {
-        i =>
-          ManifestDependency(naming.toScopedId(i.id.toPackage), mfVersion)
-      } :+ ManifestDependency(naming.irtDependency, mfVersion)
 
+  private def buildPackageModule(ts: Typespace): Seq[Module] = {
+    val allDeps = ts.domain.meta.directImports.map(i => ManifestDependency(naming.toScopedId(i.id.toPackage), mfVersion)) :+
+      ManifestDependency(naming.irtDependency, mfVersion)
+    val allDepsEs = ts.domain.meta.directImports.map(i => ManifestDependency(esPostfix(naming.toScopedId(i.id.toPackage)), mfVersion)) :+
+      ManifestDependency(esPostfix(naming.irtDependency), mfVersion)
 
     val name = naming.toScopedId(ts.domain.id.toPackage)
+    val nameEs = esPostfix(name)
 
     val mf = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDeps))
+    val mfEs = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDepsEs))
     val content = generatePackage(mf, Some("index"), name)
-    Module(ModuleId(ts.domain.id.toPackage, "package.json"), content.toString())
+    val contentEs = generatePackage(mfEs, Some("index"), nameEs)
+    Seq(
+      Module(ModuleId(ts.domain.id.toPackage, "package.json"), content.toString()),
+      Module(ModuleId(ts.domain.id.toPackage, "package.es.json"), contentEs.toString()),
+    )
   }
 
-
-  private def buildIRTPackageModule(): Module = {
+  private def buildIRTPackageModule(): Seq[ExtendedModule.RuntimeModule] = {
     val content = generatePackage(options.manifest, Some("index"), naming.irtDependency)
-    Module(ModuleId(Seq("irt"), "package.json"), content.toString())
+    val contentEs = generatePackage(options.manifest, Some("index"), esPostfix(naming.irtDependency))
+    Seq(
+      ExtendedModule.RuntimeModule(Module(ModuleId(Seq("irt"), "package.json"), content.toString())),
+      ExtendedModule.RuntimeModule(Module(ModuleId(Seq("irt"), "package.es.json"), contentEs.toString())),
+    )
   }
 
   private def buildBundlePackageModules(translated: Seq[Translated]): Seq[ExtendedModule.RuntimeModule] = {
-    val allDeps = translated.map {
-      ts =>
-        ManifestDependency(naming.toScopedId(ts.typespace.domain.id.toPackage), mfVersion)
-    }
+    val allDeps = translated.map(ts => ManifestDependency(naming.toScopedId(ts.typespace.domain.id.toPackage), mfVersion))
+    val allDepsEs = translated.map(ts => ManifestDependency(esPostfix(naming.toScopedId(ts.typespace.domain.id.toPackage)), mfVersion))
 
     val mf = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDeps))
+    val mfEs = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDepsEs))
     val content = generatePackage(mf, None, naming.bundleId)
+    val contentEs = generatePackage(mfEs, None, esPostfix(naming.bundleId))
     Seq(
       ExtendedModule.RuntimeModule(Module(ModuleId(Seq(naming.bundleId), "package.json"), content.toString())),
+      ExtendedModule.RuntimeModule(Module(ModuleId(Seq(naming.bundleId), "package.es.json"), contentEs.toString())),
       ExtendedModule.RuntimeModule(Module(ModuleId(Seq(naming.bundleId), "empty.ts"), "")),
     )
   }

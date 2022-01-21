@@ -100,17 +100,17 @@ class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, 
     log.log("Yarn building ESNext")
     Process("yarn build-es", processDir).lineStream.foreach(log.log)
 
-    def publishToNpm(dir: Path): Unit = {
+    def publishToNpm(dir: Path, packageFileName: String): Unit = {
       Files.list(dir).filter(_.toFile.isDirectory).iterator().asScala.foreach { module =>
         val cmd = s"npm publish --force --registry ${creds.npmRepo} ${module.toAbsolutePath.toString}"
         log.log(s"Publish ${module.getFileName}. Cmd: `$cmd`")
-        Files.copy(packagesDir.resolve(s"${module.getFileName}/package.json"), module.resolve("package.json"))
+        Files.copy(packagesDir.resolve(s"${module.getFileName}/$packageFileName"), module.resolve("package.json"))
         Process(cmd, processDir).lineStream.foreach(log.log)
       }
     }
 
-    publishToNpm(targetDir.resolve("dist"))
-    publishToNpm(targetDir.resolve("dist-es"))
+    publishToNpm(targetDir.resolve("dist"), "package.json")
+    publishToNpm(targetDir.resolve("dist-es"), "package.es.json")
   }.toEither
 
   private def publishCsharp(targetDir: Path, creds: CsharpCredentials): Either[Throwable, Unit] = Try {
