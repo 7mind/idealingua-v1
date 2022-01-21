@@ -9,22 +9,22 @@ class SbtRenderer {
       case SbtDslOp.Append(v, scope) =>
         v match {
           case s: Seq[?] =>
-            Seq(key, renderScope(scope), "++=", renderValue(s))
+            Seq(renderScope(scope, key), "++=", renderValue(s))
           case o =>
-            Seq(key, renderScope(scope), "+=", renderValue(o))
+            Seq(renderScope(scope, key), "+=", renderValue(o))
         }
       case SbtDslOp.Assign(v, scope) =>
-        Seq(key, renderScope(scope), ":=", renderValue(v))
+        Seq(renderScope(scope, key), ":=", renderValue(v))
     }
     parts.mkString(" ")
   }
 
-  def renderScope(scope: Scope): String = {
+  def renderScope(scope: Scope, key: String): String = {
     scope match {
       case Scope.ThisBuild =>
-        "in ThisBuild"
+        s"ThisBuild / $key"
       case Scope.Project =>
-        ""
+        key
     }
   }
 

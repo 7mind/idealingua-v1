@@ -12,7 +12,8 @@ case class ScalaBuildManifest(
 
 case class SbtOptions(
                        projectNaming: ProjectNamingRule,
-                       enableScalaJs: Boolean
+                       enableScalaJs: Boolean,
+                       scalaVersion: Option[String],
                      )
 
 object SbtOptions {
@@ -20,6 +21,7 @@ object SbtOptions {
     SbtOptions(
       projectNaming = ProjectNamingRule.example,
       enableScalaJs = true,
+      scalaVersion = None,
     )
   }
 }

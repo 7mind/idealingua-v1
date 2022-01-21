@@ -39,12 +39,12 @@ class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, 
     val credsLines = Seq(
       "\n",
       // TODO: Gigahorse apears to be cause of `Too many follow-up requests: 21` exception during publishing
-      "updateOptions in ThisBuild := updateOptions.value.withGigahorse(false)",
+      "ThisBuild / updateOptions := updateOptions.value.withGigahorse(false)",
       "\n",
       s"""credentials += Credentials(Path("${sbtCredsFile.toAbsolutePath.toString}").asFile)""",
       "\n",
       s"""
-         |publishTo in ThisBuild := {
+         |ThisBuild / publishTo := {
          |  if (isSnapshot.value)
          |    Some("snapshots" at "${creds.sbtSnapshotsRepo}")
          |  else
@@ -75,54 +75,42 @@ class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, 
     val credsFile = Paths.get(System.getProperty("user.home")).resolve("~/.npmrc")
     val repoName = creds.npmRepo.replaceAll("http://", "").replaceAll("https://", "")
     val scope = packagesDir.getFileName
+    val processDir = targetDir.toFile
 
     log.log(s"Writing credentials in ${credsFile.toAbsolutePath.getFileName}")
+    val scriptLines = List(
+      Seq("echo", s"Setting NPM registry for scope $scope to $repoName using user & _password method..."),
+      Seq("npm", "config", "set", s"$scope:registry", s"${creds.npmRepo}"),
+      Seq("npm", "config", "set", s"//$repoName:email", s"${creds.npmEmail}"),
+      Seq("npm", "config", "set", s"//$repoName:always-auth", "true"),
+      Seq("npm", "config", "set", s"//$repoName:username", s"${creds.npmUser}"),
+      Seq("npm", "config", "set", s"//$repoName:_password", (Seq("echo", "-n", s"${creds.npmPassword}") #| Seq("openssl", "base64")).!!),
+    )
 
-    val scriptLines =
-      List(
-        Seq("echo", s"Setting NPM registry for scope $scope to $repoName using user & _password method..."),
-        Seq("npm", "config", "set", s"$scope:registry", s"${creds.npmRepo}"),
-        Seq("npm", "config", "set", s"//$repoName:email", s"${creds.npmEmail}"),
-        Seq("npm", "config", "set", s"//$repoName:always-auth", "true"),
-        Seq("npm", "config", "set", s"//$repoName:username", s"${creds.npmUser}"),
-        Seq("npm", "config", "set", s"//$repoName:_password", (Seq("echo", "-n", s"${creds.npmPassword}") #| Seq("openssl", "base64")).!!),
-      )
-
-    scriptLines.foreach(s => Process(s, targetDir.toFile).lineStream.foreach(log.log))
+    scriptLines.foreach(s => Process(s, processDir).lineStream.foreach(log.log))
 
     log.log("Publishing NPM packages")
 
     log.log("Yarn installing")
-    Process(
-      "yarn install",
-      targetDir.toFile
-    ).lineStream.foreach(log.log)
+    Process("yarn install", processDir).lineStream.foreach(log.log)
 
     log.log("Yarn building ES5")
-    Process(
-      "yarn build",
-      targetDir.toFile
-    ).lineStream.foreach(log.log)
+    Process("yarn build", processDir).lineStream.foreach(log.log)
 
     log.log("Yarn building ESNext")
-    Process(
-      "yarn build-es",
-      targetDir.toFile
-    ).lineStream.foreach(log.log)
+    Process("yarn build-es", processDir).lineStream.foreach(log.log)
 
-    Files.list(targetDir.resolve("dist")).filter(_.toFile.isDirectory).iterator().asScala.foreach { module =>
-      val cmd = s"npm publish --force --registry ${creds.npmRepo} ${module.toAbsolutePath.toString}"
-      log.log(s"Publish ${module.getFileName}. Cmd: `$cmd`")
-      Files.copy(packagesDir.resolve(s"${module.getFileName}/package.json"), module.resolve("package.json"))
-      Process(cmd, targetDir.toFile).lineStream.foreach(log.log)
+    def publishToNpm(dir: Path): Unit = {
+      Files.list(dir).filter(_.toFile.isDirectory).iterator().asScala.foreach { module =>
+        val cmd = s"npm publish --force --registry ${creds.npmRepo} ${module.toAbsolutePath.toString}"
+        log.log(s"Publish ${module.getFileName}. Cmd: `$cmd`")
+        Files.copy(packagesDir.resolve(s"${module.getFileName}/package.json"), module.resolve("package.json"))
+        Process(cmd, processDir).lineStream.foreach(log.log)
+      }
     }
 
-    Files.list(targetDir.resolve("dist-es")).filter(_.toFile.isDirectory).iterator().asScala.foreach { module =>
-      val cmd = s"npm publish --force --registry ${creds.npmRepo} ${module.toAbsolutePath.toString}-es"
-      log.log(s"Publish ${module.getFileName}. Cmd: `$cmd`")
-      Files.copy(packagesDir.resolve(s"${module.getFileName}/package.json"), module.resolve("package.json"))
-      Process(cmd, targetDir.toFile).lineStream.foreach(log.log)
-    }
+    publishToNpm(targetDir.resolve("dist"))
+    publishToNpm(targetDir.resolve("dist-es"))
   }.toEither
 
   private def publishCsharp(targetDir: Path, creds: CsharpCredentials): Either[Throwable, Unit] = Try {
