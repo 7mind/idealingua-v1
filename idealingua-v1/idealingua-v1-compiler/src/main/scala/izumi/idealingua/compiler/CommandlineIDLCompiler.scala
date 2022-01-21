@@ -231,13 +231,13 @@ object CommandlineIDLCompiler {
   }
 
   private def toJson(env: Map[String, String]) = {
-    val updatedEnv = env.view.mapValues {
-      v => io.circe.parser.parse(v) match {
-        case Right(b) if b.isBoolean => b.asBoolean.get
-        case Right(s) if s.isString => s.asString.get
-        case _ => v
+    val updatedEnv = env.map {
+      case (k, v) => io.circe.parser.parse(v) match {
+        case Right(b) if b.isBoolean => k -> b.asBoolean.get
+        case Right(s) if s.isString => k -> s.asString.get
+        case _ => k -> v
       }
-    }.toMap
+    }
     valToJson(ConfigFactory.parseMap(updatedEnv.asJava).root().unwrapped())
   }
 
