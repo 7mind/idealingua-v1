@@ -124,7 +124,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
         val sbtScalaVersionModule = options.manifest.sbt.scalaVersion.map{
           v =>
-            Seq(ExtendedModule.RuntimeModule(Module(ModuleId(Seq.empty, "scalaVersion.sbt"), s"scalaVersion in Global := \"$v\"")))
+            Seq(ExtendedModule.RuntimeModule(Module(ModuleId(Seq.empty, "scalaVersion.sbt"), s"""scalaVersion in Global := "$v"""")))
         }.getOrElse(Seq.empty)
 
         val sbtModules = Seq(
