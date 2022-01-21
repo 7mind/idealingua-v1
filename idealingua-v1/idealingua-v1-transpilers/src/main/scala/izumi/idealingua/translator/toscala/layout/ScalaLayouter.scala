@@ -122,6 +122,11 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
         val content = keys ++ projDefs ++ Seq(bundle, agg)
 
+        val sbtScalaVersionModule = options.manifest.sbt.scalaVersion.map{
+          v =>
+            Seq(ExtendedModule.RuntimeModule(Module(ModuleId(Seq.empty, "scalaVersion.sbt"), s"""scalaVersion in Global := "$v"""")))
+        }.getOrElse(Seq.empty)
+
         val sbtModules = Seq(
           ExtendedModule.RuntimeModule(Module(ModuleId(Seq.empty, "build.sbt"), content.map(_.trim).mkString("\n\n"))),
           ExtendedModule.RuntimeModule(Module(ModuleId(Seq("project"), "plugins.sbt"),
@@ -141,7 +146,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
               |""".stripMargin)),
         )
 
-        projectModules ++ runtimeModules ++ sbtModules
+        projectModules ++ runtimeModules ++ sbtModules ++ sbtScalaVersionModule
     }
     Layouted(modules)
   }
