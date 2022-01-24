@@ -30,7 +30,7 @@ object YarnOptions {
       ManifestDependency("@types/websocket", "^1.0.1"),
     ),
     devDependencies = List(
-      ManifestDependency("typescript", "^4.5.4"),
+      ManifestDependency("typescript", "^4.5.5"),
     ),
     scope = "@TestScope",
   )
