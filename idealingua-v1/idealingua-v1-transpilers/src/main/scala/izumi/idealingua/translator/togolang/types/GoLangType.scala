@@ -1,12 +1,11 @@
 package izumi.idealingua.translator.togolang.types
 
 import izumi.fundamentals.platform.language.Quirks
-import izumi.idealingua.model.common.TypeId._
-import izumi.idealingua.model.common.{Generic, Primitive, TypeId}
+import izumi.idealingua.model.common.TypeId.*
+import izumi.idealingua.model.common.*
+import izumi.idealingua.model.il.ast.typed.TypeDef.{Alias, Enumeration}
 import izumi.idealingua.model.problems.IDLException
-import izumi.idealingua.model.il.ast.typed.TypeDef.Alias
 import izumi.idealingua.model.typespace.Typespace
-import izumi.idealingua.model.il.ast.typed.TypeDef.Enumeration
 
 final case class GoLangType (
                         id: TypeId,
@@ -80,15 +79,7 @@ final case class GoLangType (
   }
 
   def isPolymorph(id: TypeId): Boolean = id match {
-    case p: Primitive => p match {
-//      case Primitive.TUUID => true
-      case Primitive.TTsU => true
-      case Primitive.TTs => true
-      case Primitive.TTsTz => true
-      case Primitive.TDate => true
-      case Primitive.TTime => true
-      case _ => false
-    }
+    case _: TimeTypeId => true
     case _: DTOId => true
     case _: IdentifierId => true
     case _: AdtId => true
@@ -101,7 +92,7 @@ final case class GoLangType (
       case gs: Generic.TSet => isPolymorph(gs.valueType)
       case gm: Generic.TMap => isPolymorph(gm.valueType)
     }
-    case _ => false
+    case _: PrimitiveId | Primitive.TDouble | Primitive.TFloat => false
   }
 
   protected def renderPrimitiveType(primitive: Primitive, serialized: Boolean = false): String = primitive match {
@@ -126,6 +117,7 @@ final case class GoLangType (
     case Primitive.TDate => if (serialized) "string" else "time.Time"
     case Primitive.TTs => if (serialized) "string" else "time.Time"
     case Primitive.TTsTz => if (serialized) "string" else "time.Time"
+    case Primitive.TTsO => if (serialized) "string" else "time.Time"
     case Primitive.TTsU => if (serialized) "string" else "time.Time"
   }
 
@@ -269,6 +261,7 @@ final case class GoLangType (
     case Primitive.TDate => "\"0000-00-00\""
     case Primitive.TTs => "\"0000-00-00T00:00:00.00000\""
     case Primitive.TTsTz => "\"0000-00-00T00:00:00.00000+10:00[Australia/Sydney]\""
+    case Primitive.TTsO => "\"0000-00-00T00:00:00.00000+10:00\""
     case Primitive.TTsU => "\"0000-00-00T00:00:00.00000Z[UTC]\""
     case g: Generic => g match {
       case gm: Generic.TMap => s"map[${GoLangType(gm.keyType, im, ts).renderType(forMap = true)}]${GoLangType(gm.valueType, im, ts).renderType()}{}"
@@ -278,9 +271,8 @@ final case class GoLangType (
     }
     case al: AliasId => GoLangType(ts(al).asInstanceOf[Alias].target, im, ts).defaultValue()
     case e: EnumId => ts(e).asInstanceOf[Enumeration].members.head.value
-    case _: IdentifierId | _: DTOId => "nil"
+    case _: IdentifierId | _: DTOId | _: AdtId => "nil"
     case _: InterfaceId => "nil"
-    case _ => "nil"
   }
 
   def testValue(): String = id match {
@@ -302,6 +294,7 @@ final case class GoLangType (
     case Primitive.TDate => "time.Now()" // "\"2010-12-01\""
     case Primitive.TTs => "time.Now()" // "\"2010-12-01T15:10:10.10001\""
     case Primitive.TTsTz => "time.Now()" // "\"2010-12-01T15:10:10.10001+10:00[Australia/Sydney]\""
+    case Primitive.TTsO => "time.Now()" // "\"2010-12-01T15:10:10.10001+10:00[Australia/Sydney]\""
     case Primitive.TTsU => "time.Now()" // "\"2010-12-01T15:10:10.10001Z[UTC]\""
     case g: Generic => g match {
       case gm: Generic.TMap => s"map[${GoLangType(gm.keyType, im, ts).renderType(forMap = true)}]${GoLangType(gm.valueType, im, ts).renderType()}{}"
@@ -317,16 +310,17 @@ final case class GoLangType (
     case _: IdentifierId | _: DTOId | _: EnumId => s"${im.withImport(id)}NewTest${id.name}()"
     case i: InterfaceId => s"${im.withImport(id)}NewTest${i.name + ts.tools.implId(i).name}()"
     case ad: AdtId => s"${im.withImport(id)}NewTest${ad.name}()"
-    case _ => "nil"
   }
 
   def testValuePackage(): List[String] = id match {
-    case Primitive.TTime | Primitive.TDate | Primitive.TTsTz | Primitive.TTs | Primitive.TTsU => List("time")
+    case Primitive.TTime | Primitive.TDate | Primitive.TTsTz | Primitive.TTs | Primitive.TTsO | Primitive.TTsU =>
+      List("time")
       // TODO For testing we might want to import from other packages...
 //    case al: AliasId => GoLangType(ts(al).asInstanceOf[Alias].target, im, ts).testValuePackage()
 //    case _: IdentifierId | _: DTOId | _: EnumId => s"NewTest${id.name}()"
 //    case i: InterfaceId => s"NewTest${i.name + ts.implId(i).name}()"
-    case _ => List.empty
+    case _: StructureId | _: AdtId | _: AliasId | _: EnumId | _: IdentifierId | _: Generic | _: PrimitiveId | Primitive.TFloat | Primitive.TDouble =>
+      List.empty
   }
 }
 

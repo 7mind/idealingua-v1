@@ -1,10 +1,10 @@
 package izumi.idealingua.translator.togolang.types
 
-import izumi.fundamentals.platform.strings.IzString._
-import izumi.idealingua.model.common.TypeId._
-import izumi.idealingua.model.common.{Generic, Primitive, TypeId}
-import izumi.idealingua.model.problems.IDLException
+import izumi.fundamentals.platform.strings.IzString.*
+import izumi.idealingua.model.common.TypeId.*
+import izumi.idealingua.model.common.*
 import izumi.idealingua.model.il.ast.typed.TypeDef.Alias
+import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.model.typespace.Typespace
 
 final case class GoLangField(
@@ -52,6 +52,14 @@ final case class GoLangField(
          """.stripMargin
         else
           s"""$dest := irt.WriteDate($src)""".stripMargin
+
+      case Primitive.TTsO =>
+        if (forOption)
+          s"""_$dest := irt.WriteOffsetDateTime($src)
+             |$dest = &_$dest
+           """.stripMargin
+        else
+          s"""$dest := irt.WriteOffsetDateTime($src)""".stripMargin
 
       case Primitive.TTsU =>
         if (forOption)
@@ -106,9 +114,11 @@ final case class GoLangField(
            |$dest ${if(forOption) "" else ":"}= ${if(forOption) "&" else ""}_$dest
          """.stripMargin
 
-      case al: AliasId => renderPolymorphSerialized(ts.dealias(al), dest, srcOriginal, forOption)
+      case al: AliasId =>
+        renderPolymorphSerialized(ts.dealias(al), dest, srcOriginal, forOption)
 
-      case _ => throw new IDLException(s"Should not get into renderPolymorphSerialized ${id.name} dest: $dest src: $srcOriginal")
+      case _: StructureId | _: PrimitiveId | Primitive.TFloat | Primitive.TDouble | _: EnumId | _: IdentifierId | _: Generic =>
+        throw new IDLException(s"Should not get into renderPolymorphSerialized ${id.name} dest: $dest src: $srcOriginal")
     }
   }
 
@@ -120,8 +130,8 @@ final case class GoLangField(
       case _: InterfaceId | _: AdtId | _: IdentifierId | _: DTOId | _: EnumId =>
         renderPolymorphSerialized(id, dest, src)
 
-      case Primitive.TDate | Primitive.TTime | Primitive.TTsTz | Primitive.TTs | Primitive.TTsU =>
-          renderPolymorphSerialized(id, dest, src)
+      case _: TimeTypeId =>
+        renderPolymorphSerialized(id, dest, src)
 
       case g: Generic => g match {
         case go: Generic.TOption =>
@@ -135,7 +145,7 @@ final case class GoLangField(
              |}
            """.stripMargin
 
-        case _: Generic.TList | _: Generic.TSet => {
+        case _: Generic.TList | _: Generic.TSet =>
           val vt = g match {
             case gl: Generic.TList => gl.valueType
             case gs: Generic.TSet => gs.valueType
@@ -158,9 +168,8 @@ final case class GoLangField(
                |}
                |$dest := $tempVal
                  """.stripMargin
-        }
 
-        case gm: Generic.TMap => {
+        case gm: Generic.TMap =>
           val vt = GoLangType(gm.valueType, im, ts)
           val tempVal = s"_$dest"
 
@@ -180,10 +189,10 @@ final case class GoLangField(
                |}
                |$dest := $tempVal
                  """.stripMargin
-        }
       }
 
-      case _ => throw new IDLException("Should never get into renderPolymorphSerializedVar with other types... " + id.name + " " + id.getClass().getName())
+      case _: StructureId | Primitive.TBLOB | Primitive.TBool | Primitive.TDouble | Primitive.TFloat | Primitive.TInt16 | Primitive.TInt32 | Primitive.TInt64 | Primitive.TInt8 | Primitive.TString | Primitive.TTsO | Primitive.TUInt16 | Primitive.TUInt32 | Primitive.TUInt64 | Primitive.TUInt8 | Primitive.TUUID =>
+        throw new IDLException("Should never get into renderPolymorphSerializedVar with other types... " + id.name + " " + id.getClass.getName)
     }
   }
 
@@ -193,19 +202,18 @@ final case class GoLangField(
 
   def renderSerializedVar(): String = {
     tp.id match {
-      case Primitive.TTsTz => renderMemberName(true) + "AsString()"
-      case Primitive.TTs => renderMemberName(true) + "AsString()"
-      case Primitive.TTsU => renderMemberName(true) + "AsString()"
-      case Primitive.TDate => renderMemberName(true) + "AsString()"
-      case Primitive.TTime => renderMemberName(true) + "AsString()"
+      case _: TimeTypeId =>
+        renderMemberName(true) + "AsString()"
       case g: Generic => g match {
         case go: Generic.TOption => go.valueType match {
-          case Primitive.TTsTz | Primitive.TTs | Primitive.TTsU | Primitive.TDate | Primitive.TTime => renderMemberName(true) + "AsString()"
+          case _: TimeTypeId =>
+            renderMemberName(true) + "AsString()"
           case _ => renderMemberName(false)
         }
         case _ => renderMemberName(false)
       }
-      case _ => renderMemberName(false)
+      case _: StructureId | _: ScalarId | _: AdtId | _: AliasId =>
+        renderMemberName(false)
     }
   }
 
@@ -226,13 +234,14 @@ final case class GoLangField(
     case Primitive.TDate => toDateField()
     case Primitive.TTs => toTimeStampField(local = true)
     case Primitive.TTsTz => toTimeStampField(local = false)
+    case Primitive.TTsO => toTimeStampField(local = false)
     case Primitive.TTsU => toTimeStampField(local = false, utc = true)
     case g: Generic => g match {
       case go: Generic.TOption => go.valueType match {
         case Primitive.TTime => toTimeField(optional = true)
         case Primitive.TDate => toDateField(optional = true)
         case Primitive.TTs => toTimeStampField(local = true, optional = true)
-        case Primitive.TTsTz => toTimeStampField(local = false, optional = true)
+        case Primitive.TTsO => toTimeStampField(local = false, optional = true)
         case Primitive.TTsU => toTimeStampField(local = false, optional = true, utc = true)
         case _ => toGenericField()
       }
@@ -379,6 +388,13 @@ final case class GoLangField(
            |}
          """.stripMargin
 
+      case Primitive.TTsO =>
+        s"""$dest, err := irt.ReadOffsetDateTime($src)
+           |if err != nil {
+           |    return err
+           |}
+         """.stripMargin
+
       case Primitive.TTsU =>
         s"""$dest, err := irt.ReadUTCDateTime($src)
            |if err != nil {
@@ -518,13 +534,13 @@ final case class GoLangField(
                  """.stripMargin
             }
           }
-        case Primitive.TTsTz | Primitive.TTs | Primitive.TTsU | Primitive.TTime | Primitive.TDate =>
+        case _: TimeTypeId =>
           s"""if err := $struct.Set${renderMemberName(true)}FromString(${if (optional) "*" else ""}$variable); err != nil {
              |    return err
              |}
            """.stripMargin
 
-        case _ => assignVar
+        case _: StructureId | _: ScalarId => assignVar
       }
     } else {
       val res = id match {

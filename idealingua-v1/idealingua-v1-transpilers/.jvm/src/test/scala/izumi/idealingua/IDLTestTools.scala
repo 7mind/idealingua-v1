@@ -89,14 +89,15 @@ object IDLTestTools {
     val manifest = mf.copy(layout = ScalaProjectLayout.SBT, sbt = mf.sbt.copy(projectNaming = mf.sbt.projectNaming.copy(dropFQNSegments = Some(1))))
     val out = compiles(id, domains, CompilerOptions(IDLLanguage.Scala, extensions, manifest))
     val classpath: String = IzJvm.safeClasspath()
+    val safeClasspath = s"\"$classpath\""
 
     val cmd = layout match {
       case ScalaProjectLayout.PLAIN =>
         // it's hard to map volumes on CI agent bcs our build runs in docker but all the mounts happens on the docker host
         if (useDockerForLocalTest && hasDocker && !isCI) {
-          dockerRun(out, classpath, scala213 = true)
+          dockerRun(out, safeClasspath, scala213 = true)
         } else {
-          directRun(out, classpath)
+          directRun(out, safeClasspath)
         }
 
       case ScalaProjectLayout.SBT =>

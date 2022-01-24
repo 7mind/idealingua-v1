@@ -1,15 +1,14 @@
 package izumi.idealingua.translator.toscala.types
 
-import java.time.{LocalDate, LocalDateTime, LocalTime, ZonedDateTime}
+import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetDateTime, ZonedDateTime}
 import java.util.UUID
-
 import izumi.idealingua.model
 import izumi.idealingua.model.JavaType
-import izumi.idealingua.model.common.{DomainId, _}
+import izumi.idealingua.model.common.{DomainId, *}
 import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.model.typespace.structures.{PlainStruct, Struct}
 
-import scala.meta._
+import scala.meta.*
 import scala.reflect.{ClassTag, classTag}
 
 
@@ -129,6 +128,8 @@ class ScalaTypeConverter(domain: DomainId) {
       JavaType.get[UUID]
     case Primitive.TTsTz =>
       JavaType.get[ZonedDateTime]
+    case Primitive.TTsO =>
+      JavaType.get[OffsetDateTime]
     case Primitive.TTsU =>
       JavaType.get[ZonedDateTime]
     case Primitive.TTs =>

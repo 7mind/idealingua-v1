@@ -32,6 +32,7 @@ class TypeScriptTypeConverter() {
       case Primitive.TDate => "Date.parse(" + value + ")"
       case Primitive.TTs => "Date.parse(" + value + ")"
       case Primitive.TTsTz => "Date.parse(" + value + ")"
+      case Primitive.TTsO => "Date.parse(" + value + ")"
       case Primitive.TTsU => "Date.parse(" + value + ")"
       case id: IdentifierId => s"new ${id.name}($value)"
       case en: EnumId => s"${en.name}[$value]"
@@ -72,6 +73,7 @@ class TypeScriptTypeConverter() {
     case Primitive.TDate => name + "AsString"
     case Primitive.TTs => name + "AsString"
     case Primitive.TTsTz => name + "AsString"
+    case Primitive.TTsO => name + "AsString"
     case Primitive.TTsU => name + "AsString"
     case o: Generic.TOption => deserializeName(name, o.valueType)
     case _ => name
@@ -97,6 +99,7 @@ class TypeScriptTypeConverter() {
       case Primitive.TDate => variable
       case Primitive.TTs => variable
       case Primitive.TTsTz => variable
+      case Primitive.TTsO => variable
       case Primitive.TTsU => variable
       case g: Generic => deserializeGenericType(variable, g, ts, asAny)
       case _ => deserializeCustomType(variable, target, ts, asAny)
@@ -182,6 +185,7 @@ class TypeScriptTypeConverter() {
     case Primitive.TDate => if (forSerialized) "string" else "Date"
     case Primitive.TTs => if (forSerialized) "string" else "Date"
     case Primitive.TTsTz => if (forSerialized) "string" else "Date"
+    case Primitive.TTsO => if (forSerialized) "string" else "Date"
     case Primitive.TTsU => if (forSerialized) "string" else "Date"
   }
 
@@ -227,6 +231,7 @@ class TypeScriptTypeConverter() {
     case Primitive.TDate => if(nonMember) s"Formatter.writeDate($name)" else s"${name}AsString";
     case Primitive.TTs => if(nonMember) s"Formatter.writeLocalDateTime($name)" else s"${name}AsString";
     case Primitive.TTsTz => if(nonMember) s"Formatter.writeZoneDateTime($name)" else s"${name}AsString";
+    case Primitive.TTsO => if(nonMember) s"Formatter.writeOffsetDateTime($name)" else s"${name}AsString";
     case Primitive.TTsU => if(nonMember) s"Formatter.writeUTCDateTime($name)" else s"${name}AsString";
   }
 
@@ -274,6 +279,7 @@ class TypeScriptTypeConverter() {
     case Primitive.TDate => toDateField(name, optional)
     case Primitive.TTs => toDateTimeField(name, local = true, optional)
     case Primitive.TTsTz => toDateTimeField(name, local = false, optional)
+    case Primitive.TTsO => toDateTimeField(name, local = false, optional)
     case Primitive.TTsU => toDateTimeField(name, local = false, optional, utc = true)
     case _ =>
       s"""public get ${safeName(name)}(): ${toNativeType(id, ts)}${if (optional) " | undefined" else ""} {
@@ -317,6 +323,7 @@ class TypeScriptTypeConverter() {
     case Primitive.TDate => toPrivateMember(name, "Date")
     case Primitive.TTs => toPrivateMember(name, "Date")
     case Primitive.TTsTz => toPrivateMember(name, "Date")
+    case Primitive.TTsO => toPrivateMember(name, "Date")
     case Primitive.TTsU => toPrivateMember(name, "Date")
     case _ => toPrivateMember(name, toNativeType(id, ts))
   }

@@ -86,6 +86,7 @@ object TypeScriptImports {
       }
       case p: Primitive => p match {
         case Primitive.TTs => return Seq(s"import { Formatter } from '${scopeRoot}irt';")
+        case Primitive.TTsO => return Seq(s"import { Formatter } from '${scopeRoot}irt';")
         case Primitive.TTsU => return Seq(s"import { Formatter } from '${scopeRoot}irt';")
         case Primitive.TTsTz => return Seq(s"import { Formatter } from '${scopeRoot}irt';")
         case Primitive.TTime => return Seq(s"import { Formatter } from '${scopeRoot}irt';")

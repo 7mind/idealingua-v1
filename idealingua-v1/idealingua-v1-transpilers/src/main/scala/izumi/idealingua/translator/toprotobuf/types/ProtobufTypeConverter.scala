@@ -1,6 +1,6 @@
 package izumi.idealingua.translator.toprotobuf.types
 
-import izumi.idealingua.model.common.{DomainId, Generic, Primitive, TypeId}
+import izumi.idealingua.model.common.{DomainId, Generic, Primitive, PrimitiveId, TimeTypeId, TypeId}
 import izumi.idealingua.model.il.ast.typed
 import izumi.idealingua.model.problems.IDLException
 
@@ -53,10 +53,10 @@ class ProtobufTypeConverter(domain: DomainId) {
           case Primitive.TUUID =>
             throw new IDLException(s"[$domain] Protobuf does not support UUIDs as map key parameters. Parameter: ${t.path}#${t.name}")
 
-          case Primitive.TTsTz | Primitive.TTsU | Primitive.TTs | Primitive.TTime | Primitive.TDate =>
+          case _: TimeTypeId =>
             throw new IDLException(s"[$domain] Protobuf does not support Time units as map key parameters. Parameter: ${t.path}#${t.name}")
 
-          case _ =>
+          case _: PrimitiveId =>
         }
 
       case _ =>
@@ -116,7 +116,7 @@ class ProtobufTypeConverter(domain: DomainId) {
 
       case Primitive.TUUID =>
         ProtobufType(Seq("idl", "types"), "PUUID")
-      case Primitive.TTsTz | Primitive.TTsU | Primitive.TTs | Primitive.TTime | Primitive.TDate =>
+      case Primitive.TTsTz | Primitive.TTsO | Primitive.TTsU | Primitive.TTs | Primitive.TTime | Primitive.TDate =>
         ProtobufType(Seq("idl", "types"), "PTimestamp")
     }
   }

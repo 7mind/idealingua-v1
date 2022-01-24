@@ -75,4 +75,12 @@ export class Formatter {
     public static writeUTCDateTime(value: Date): string {
         return moment(value).utc().format('YYYY-MM-DDTHH:mm:ss.SSSZ');
     }
+
+    public static readOffsetDateTime(value: string): Date {
+        return Formatter.readDateTime(value, false);
+    }
+
+    public static writeOffsetDateTime(value: Date): string {
+        return moment(value).format('YYYY-MM-DDTHH:mm:ss.SSSZ');
+    }
 }

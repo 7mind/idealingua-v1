@@ -43,6 +43,7 @@ final case class CSharpType (
       case Primitive.TDate => false
       case Primitive.TTs => false
       case Primitive.TTsTz => false
+      case Primitive.TTsO => false
       case Primitive.TTsU => false
       case Primitive.TBLOB => ???
     }
@@ -81,6 +82,7 @@ final case class CSharpType (
       case Primitive.TDate => true
       case Primitive.TTs => true
       case Primitive.TTsTz => true
+      case Primitive.TTsO => true
       case Primitive.TTsU => true
       case Primitive.TBLOB => true
     }
@@ -119,6 +121,7 @@ final case class CSharpType (
       case Primitive.TDate => "0"
       case Primitive.TTs => "0"
       case Primitive.TTsTz => "0"
+      case Primitive.TTsO => "0"
       case Primitive.TTsU => "0"
       case Primitive.TBLOB => "null"
     }
@@ -157,6 +160,7 @@ final case class CSharpType (
       case Primitive.TDate => None
       case Primitive.TTs => None
       case Primitive.TTsTz => None
+      case Primitive.TTsO => None
       case Primitive.TTsU => None
       case Primitive.TBLOB => None
     }
@@ -198,6 +202,7 @@ final case class CSharpType (
         case Primitive.TDate => s"""System.DateTime.Parse(string.Format("{0:D4}-{1:D2}-{2:D2}", ${1984 + rnd.nextInt(20)}, ${1 + rnd.nextInt(12)}, ${1 + rnd.nextInt(28)}))"""
         case Primitive.TTs => s"""System.DateTime.ParseExact(string.Format("{0:D4}-{1:D2}-{2:D2}T{3:D2}:{4:D2}:{5:D2}.{6:D3}", ${1984 + rnd.nextInt(20)}, ${1 + rnd.nextInt(12)}, ${1 + rnd.nextInt(28)}, ${rnd.nextInt(24)}, ${rnd.nextInt(60)}, ${rnd.nextInt(60)}, ${100 + rnd.nextInt(100)}), JsonNetTimeFormats.Tsl, CultureInfo.InvariantCulture, DateTimeStyles.None)"""
         case Primitive.TTsTz => s"""System.DateTime.ParseExact(string.Format("{0:D4}-{1:D2}-{2:D2}T{3:D2}:{4:D2}:{5:D2}.{6:D3}+10:00", ${1984 + rnd.nextInt(20)}, ${1 + rnd.nextInt(12)}, ${1 + rnd.nextInt(28)}, ${rnd.nextInt(24)}, ${rnd.nextInt(60)}, ${rnd.nextInt(60)}, ${100 + rnd.nextInt(100)}), JsonNetTimeFormats.Tsz, CultureInfo.InvariantCulture, DateTimeStyles.None)"""
+        case Primitive.TTsO => s"""System.DateTime.ParseExact(string.Format("{0:D4}-{1:D2}-{2:D2}T{3:D2}:{4:D2}:{5:D2}.{6:D3}+10:00", ${1984 + rnd.nextInt(20)}, ${1 + rnd.nextInt(12)}, ${1 + rnd.nextInt(28)}, ${rnd.nextInt(24)}, ${rnd.nextInt(60)}, ${rnd.nextInt(60)}, ${100 + rnd.nextInt(100)}), JsonNetTimeFormats.Tsz, CultureInfo.InvariantCulture, DateTimeStyles.None)"""
         case Primitive.TTsU => s"""System.DateTime.ParseExact(string.Format("{0:D4}-{1:D2}-{2:D2}T{3:D2}:{4:D2}:{5:D2}.{6:D3}Z", ${1984 + rnd.nextInt(20)}, ${1 + rnd.nextInt(12)}, ${1 + rnd.nextInt(28)}, ${rnd.nextInt(24)}, ${rnd.nextInt(60)}, ${rnd.nextInt(60)}, ${100 + rnd.nextInt(100)}), JsonNetTimeFormats.Tsu, CultureInfo.InvariantCulture, DateTimeStyles.None)"""
       }
       case _ => id match {
@@ -341,6 +346,7 @@ final case class CSharpType (
     case Primitive.TDate => "DateTime" // Could be Date
     case Primitive.TTs => "DateTime"
     case Primitive.TTsTz => "DateTime"
+    case Primitive.TTsO => "DateTime"
     case Primitive.TTsU => "DateTime"
   }
 

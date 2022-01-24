@@ -32,6 +32,7 @@ export enum IntrospectorTypes {
     Tsz,
     Tsl,
     Tsu,
+    Tso,
     Time,
     Date
 }

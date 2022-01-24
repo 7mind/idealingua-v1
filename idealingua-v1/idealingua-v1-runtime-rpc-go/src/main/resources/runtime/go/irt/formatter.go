@@ -120,3 +120,11 @@ func ReadUTCDateTime(value string) (time.Time, error) {
 func WriteUTCDateTime(value time.Time) string {
 	return value.UTC().Format("2006-01-02T15:04:05.000Z")
 }
+
+func ReadOffsetDateTime(value string) (time.Time, error) {
+	return ReadDateTime(value, false)
+}
+
+func WriteOffsetDateTime(value time.Time) string {
+	return value.Format("2006-01-02T15:04:05.000-07:00")
+}
