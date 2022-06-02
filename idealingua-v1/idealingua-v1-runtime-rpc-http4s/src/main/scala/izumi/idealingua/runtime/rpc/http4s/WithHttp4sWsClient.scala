@@ -68,9 +68,12 @@ class ClientWsDispatcher[C <: Http4sContext]
     import scala.jdk.CollectionConverters._
     connection.synchronized {
       if (connection.get() == null) {
-        connection.set(wsc.prepareGet(baseUri.toString)
-          .execute(new WebSocketUpgradeHandler(List(listener).asJava))
-          .get())
+        connection.set {
+          val res = wsc.prepareGet(baseUri.toString)
+            .execute(new WebSocketUpgradeHandler(List(listener).asJava))
+            .get()
+          res
+        }
       }
     }
     connection.get().sendTextFrame(out).discard()

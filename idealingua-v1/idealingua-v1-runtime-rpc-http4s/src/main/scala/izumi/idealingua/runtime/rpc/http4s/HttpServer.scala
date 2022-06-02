@@ -2,23 +2,24 @@ package izumi.idealingua.runtime.rpc.http4s
 
 import java.time.ZonedDateTime
 import java.util.concurrent.RejectedExecutionException
-import _root_.io.circe.parser._
+import _root_.io.circe.parser.*
 import izumi.functional.bio.IO2
 import izumi.functional.bio.Exit
 import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
-import izumi.fundamentals.platform.language.Quirks._
+import izumi.fundamentals.platform.language.Quirks.*
 import izumi.fundamentals.platform.time.IzTime
 import izumi.idealingua.runtime.rpc
-import izumi.idealingua.runtime.rpc.{IRTClientMultiplexor, RPCPacketKind, _}
+import izumi.idealingua.runtime.rpc.{IRTClientMultiplexor, RPCPacketKind, *}
 import izumi.logstage.api.IzLogger
 import io.circe
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Json, Printer}
-import org.http4s._
+import org.http4s.*
 import org.http4s.server.AuthMiddleware
 import org.http4s.server.websocket.WebSocketBuilder
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.{Binary, Close, Pong, Text}
+import fs2.Stream
 
 class HttpServer[C <: Http4sContext](
   val c: C#IMPL[C],
@@ -111,18 +112,17 @@ class HttpServer[C <: Http4sContext](
       _ <- F.sync(logger.debug(s"${context -> null}: Websocket client connected"))
       response <- context.queue.flatMap[Throwable, Response[MonoIO]] {
         q =>
-          val dequeueStream = q.dequeue.through {
+          val dequeueStream = Stream.fromQueueUnterminated(q).through {
             stream =>
               stream
                 .evalMap(handleWsMessage(context))
                 .collect { case Some(v) => WebSocketFrame.Text(v) }
           }
-          val enqueueSink = q.enqueue
           WebSocketBuilder[MonoIO]
             .copy(onClose = handleWsClose(context))
             .build(
               send = dequeueStream.merge(context.outStream).merge(context.pingStream),
-              receive = enqueueSink,
+              receive = _.enqueueUnterminated(q),
             )
       }
     } yield response

@@ -97,10 +97,10 @@ trait CirceTranslatorExtensionBase extends ScalaTranslatorExtension {
     product.copy(companionBase = product.companionBase.prependBase(init), more = product.more :+ boilerplate.defn)
   }
 
-  override def handleEnum(ctx: STContext, enum: Enumeration, product: CogenProduct.EnumProduct): CogenProduct.EnumProduct = {
+  override def handleEnum(ctx: STContext, enumeration: Enumeration, product: CogenProduct.EnumProduct): CogenProduct.EnumProduct = {
     import ctx.conv._
-    val boilerplate = withParseable(ctx, enum.id)
-    val init = toScala(enum.id).sibling(boilerplate.name).init()
+    val boilerplate = withParseable(ctx, enumeration.id)
+    val init = toScala(enumeration.id).sibling(boilerplate.name).init()
     product.copy(companionBase = product.companionBase.prependBase(init), more = product.more :+ boilerplate.defn)
   }
 

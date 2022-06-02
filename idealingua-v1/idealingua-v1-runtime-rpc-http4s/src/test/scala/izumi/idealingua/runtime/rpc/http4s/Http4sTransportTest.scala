@@ -12,8 +12,6 @@ import zio.Task
 import zio.interop.catz._
 import zio.interop.catz.implicits._
 
-import scala.concurrent.ExecutionContext
-
 class Http4sTransportTest extends AnyWordSpec {
 
   import fixtures._
@@ -93,7 +91,7 @@ class Http4sTransportTest extends AnyWordSpec {
   def withServer(f: => Unit): Unit = {
     import org.http4s.implicits._
     val router = Router("/" -> ioService.service).orNotFound
-    val io = BlazeServerBuilder[rt.MonoIO](ExecutionContext.global)
+    val io = BlazeServerBuilder[rt.MonoIO]
       .bindHttp(port, host)
       .withWebSockets(true)
       .withHttpApp(router)

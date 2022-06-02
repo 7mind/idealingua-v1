@@ -39,7 +39,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
               .map(m => ExtendedModule.DomainModule(did, m))
         }
 
-        val rtid = DomainId(idlcGroupId.split('.'), "irt")
+        val rtid = DomainId(idlcGroupId.split('.').toIndexedSeq, "irt")
 
         val runtimeModules = asSbtModule(toRuntimeModules(options).map(_.module), rtid)
           .map(m => ExtendedModule.RuntimeModule(m))
@@ -162,4 +162,3 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
 
 }
-

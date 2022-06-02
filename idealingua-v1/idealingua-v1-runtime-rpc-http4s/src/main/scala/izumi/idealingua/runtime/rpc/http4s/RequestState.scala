@@ -80,5 +80,5 @@ class RequestState[F[+ _, + _]: IO2: Temporal2] {
               F.pure(Some(value)): F[Unit, Some[RawResponse]]
           }
       }
-      .retryOrElse(timeout, F.pure(None))
+      .retryOrElse(timeout, _ => F.pure(None))
 }

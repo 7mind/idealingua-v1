@@ -6,7 +6,6 @@ import izumi.fundamentals.collections.IzCollections._
 
 import scala.meta._
 
-
 class CompositeStructure(ctx: STContext, val fields: ScalaStruct) {
   val t: ScalaType = ctx.conv.toScala(fields.id)
 

@@ -32,7 +32,7 @@ class EnumRenderer(ctx: STContext) {
 
     val qqEnum = q""" sealed trait ${t.typeName} extends ${rt.enumEl.init()} {} """
     val qqEnumCompanion =
-      q"""object ${t.termName} extends ${rt.enum.init()} {
+      q"""object ${t.termName} extends ${rt.idlEnum.init()} {
             type Element = ${t.typeFull}
 
             override def all: Seq[${t.typeFull}] = Seq(..${members.map(_._1)})
