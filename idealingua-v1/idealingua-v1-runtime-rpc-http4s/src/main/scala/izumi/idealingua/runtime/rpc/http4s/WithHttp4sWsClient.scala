@@ -179,13 +179,13 @@ class ClientWsDispatcher[C <: Http4sContext]
       .encode(request)
       .flatMap {
         encoded =>
-          val wrapped = F.sync(RpcPacket.rpcRequestRndId(request.method, encoded))
-
-          F.bracket(wrapped) {
+          F.bracket(
+            acquire = F.sync(RpcPacket.rpcRequestRndId(request.method, encoded))
+          )(release = {
             id =>
               logger.trace(s"${request.method -> "method"}, ${id -> "id"}: cleaning request state")
               F.sync(requestState.forget(id.id.get))
-          } {
+          }) {
             w =>
               val pid = w.id.get // guaranteed to be present
 
