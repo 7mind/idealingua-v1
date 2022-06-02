@@ -56,7 +56,6 @@ object CyclicUsageRule extends VerificationRule {
 
           case _: Alias => Set.empty
 
-          // skip adt check, it will be verified in top level
           case adt: Adt =>
             val membersCycles = adt.alternatives.filterNot(_.typeId.isInstanceOf[Builtin]).map(_.typeId).map(tpe => extractTypeCycles(ts.apply(tpe)))
             val issues = membersCycles.filter(_.nonEmpty)
