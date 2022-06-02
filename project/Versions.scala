@@ -15,7 +15,7 @@ object V {
   val asynchttpclient = "2.12.3"
 
   val slf4j = "1.7.30"
-  val typesafe_config = "1.4.1"
+  val typesafe_config = "1.4.2"
 
   val kind_projector = "0.13.2"
 }
