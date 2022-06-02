@@ -1,23 +1,23 @@
 package izumi.idealingua.model.typespace.verification.rules
 
 import izumi.idealingua.model.common.{Builtin, TypeId}
-import izumi.idealingua.model.il.ast.typed.TypeDef
-import izumi.idealingua.model.il.ast.typed.TypeDef._
+import izumi.idealingua.model.il.ast.typed.TypeDef.*
+import izumi.idealingua.model.il.ast.typed.{Field, TypeDef}
 import izumi.idealingua.model.problems.IDLDiagnostics
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.model.problems.TypespaceError.CyclicUsage
+import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.model.typespace.verification.VerificationRule
 
 import scala.collection.mutable
 
 object CyclicUsageRule extends VerificationRule {
   override def verify(ts: Typespace): IDLDiagnostics = IDLDiagnostics {
+    val verifier = new Queries(ts)
     ts.domain.types.flatMap {
       t =>
-        val (allFields, foundCycles) = new Queries(ts).allFieldsOf(t)
-
-        if (allFields.contains(t.id)) {
-          Seq(CyclicUsage(t.id, foundCycles))
+        val cycles = verifier.verify(t)
+        if (cycles.nonEmpty) {
+          Seq(CyclicUsage(t.id, cycles))
         } else {
           Seq.empty
         }
@@ -25,48 +25,56 @@ object CyclicUsageRule extends VerificationRule {
   }
 
   class Queries(ts: Typespace) {
-    def allFieldsOf(t: TypeDef): (Set[TypeId], Set[TypeId]) = {
-      val allFields = mutable.Set.empty[TypeId]
-      val foundCycles = mutable.Set.empty[TypeId]
-      extractAllFields(t, allFields, foundCycles)
-      (allFields.toSet, foundCycles.toSet)
-    }
+    def verify(toVerify: TypeDef): Set[TypeId] = {
+      val verified = mutable.Set.empty[TypeId]
 
-    private def extractAllFields(definition: TypeDef, deps: mutable.Set[TypeId], foundCycles: mutable.Set[TypeId]): Unit = {
-      def checkField(i: TypeId): Unit = {
-        val alreadyThere = deps.contains(i)
-        if (!alreadyThere) {
-          deps += i
-          extractAllFields(ts.apply(i), deps, foundCycles)
-        } else {
-          foundCycles += i
+      def extractTypeCycles(definition: TypeDef, ignoreFields: Set[Field] = Set.empty): Set[TypeId] = {
+        def extractFieldCycles(name: String, typeId: TypeId): Set[TypeId] = {
+          if (toVerify.id == typeId) {
+            Set(definition.id)
+          } else if (ignoreFields.exists(f => f.typeId == typeId && f.name == name) || verified.contains(typeId)) {
+            Set.empty
+          } else {
+            extractTypeCycles(ts.apply(typeId))
+          }
+        }
+
+        verified.add(definition.id)
+
+        definition match {
+          case id: Identifier =>
+            id.fields.filterNot(_.typeId.isInstanceOf[Builtin]).flatMap(f => extractFieldCycles(f.name, f.typeId)).toSet
+
+          case structure: WithStructure =>
+            val removedFields = structure.struct.removedFields.toSet
+            val fields = structure.struct.fields.filterNot(_.typeId.isInstanceOf[Builtin]).flatMap(f => extractFieldCycles(f.name, f.typeId)).toSet
+            val interfaceFields = structure.struct.superclasses.interfaces.flatMap(t => extractTypeCycles(ts.apply(t), removedFields)).toSet
+            val conceptsFields = structure.struct.superclasses.concepts.flatMap(t => extractTypeCycles(ts.apply(t), removedFields)).toSet
+            fields ++ interfaceFields ++ conceptsFields
+
+          case _: Enumeration => Set.empty
+
+          case _: Alias => Set.empty
+
+          case adt: Adt =>
+            val membersCycles = adt.alternatives.filterNot(_.typeId.isInstanceOf[Builtin]).map(_.typeId).map(tpe => extractTypeCycles(ts.apply(tpe)))
+            val issues = membersCycles.filter(_.nonEmpty)
+            if (membersCycles.size == issues.size) {
+              issues.toSet.flatten
+            } else {
+              Set.empty
+            }
         }
       }
 
-      definition match {
-        case _: Enumeration =>
+      toVerify match {
+        case structure: WithStructure => extractTypeCycles(structure)
+        case i: Identifier => extractTypeCycles(i)
+        case adt: Adt => extractTypeCycles(adt)
+        case _: Alias => Set.empty
+        case _: Enumeration => Set.empty
 
-        case d: Interface =>
-          d.struct.fields.filterNot(_.typeId.isInstanceOf[Builtin]).map(_.typeId).foreach(checkField)
-          d.struct.superclasses.interfaces.foreach(i => extractAllFields(ts.apply(i), deps, foundCycles))
-          d.struct.superclasses.concepts.foreach(c => extractAllFields(ts.apply(c), deps, foundCycles))
-
-        case d: DTO =>
-          d.struct.fields.filterNot(_.typeId.isInstanceOf[Builtin]).map(_.typeId).foreach(checkField)
-          d.struct.superclasses.interfaces.foreach(i => extractAllFields(ts.apply(i), deps, foundCycles))
-          d.struct.superclasses.concepts.foreach(c => extractAllFields(ts.apply(c), deps, foundCycles))
-
-        case d: Identifier =>
-          d.fields.map(_.typeId).filterNot(_.isInstanceOf[Builtin]).foreach(checkField)
-
-        case d: Adt =>
-          d.alternatives.map(_.typeId).filterNot(_.isInstanceOf[Builtin]).foreach(checkField)
-
-        case _: Alias =>
       }
     }
-
   }
-
-
 }
