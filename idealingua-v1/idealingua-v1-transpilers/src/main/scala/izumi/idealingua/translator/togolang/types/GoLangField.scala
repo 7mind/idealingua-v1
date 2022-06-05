@@ -28,7 +28,7 @@ final case class GoLangField(
 
     val res = if (reserved.contains(name)) s"m${name.capitalize}" else name
     if (lower)
-      Character.toLowerCase(res.charAt(0)) + res.substring(1)
+      s"${Character.toLowerCase(res.charAt(0))}${res.substring(1)}"
     else
       res.capitalize
   }

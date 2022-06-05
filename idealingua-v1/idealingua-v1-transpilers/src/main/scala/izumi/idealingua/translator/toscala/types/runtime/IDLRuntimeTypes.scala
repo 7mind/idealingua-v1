@@ -15,7 +15,7 @@ object IDLRuntimeTypes {
 
   final val generated = model.conv.toScala[IDLGeneratedType]
 
-  final val enum = model.conv.toScala[IDLEnum]
+  final val idlEnum = model.conv.toScala[IDLEnum]
   final val enumEl = model.conv.toScala[IDLEnumElement]
 
   final val tIDLIdentifier = model.conv.toScala[IDLIdentifier]

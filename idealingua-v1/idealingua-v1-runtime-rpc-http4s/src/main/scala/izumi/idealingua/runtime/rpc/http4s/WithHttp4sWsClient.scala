@@ -7,14 +7,15 @@ import izumi.functional.bio.IO2
 import izumi.functional.bio.Exit
 import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
 import izumi.idealingua.runtime.rpc
-import izumi.idealingua.runtime.rpc._
+import izumi.idealingua.runtime.rpc.*
 import izumi.logstage.api.IzLogger
 import io.circe.Printer
 import io.circe.parser.parse
-import io.circe.syntax._
+import io.circe.syntax.*
 import org.asynchttpclient.netty.ws.NettyWebSocket
 import org.asynchttpclient.ws.{WebSocket, WebSocketListener, WebSocketUpgradeHandler}
-import izumi.fundamentals.platform.language.Quirks._
+import izumi.fundamentals.platform.language.Quirks.*
+import izumi.idealingua.runtime.rpc.http4s.ClientWsDispatcher.WebSocketConnectionFailedException
 
 case class PacketInfo(method: IRTMethodId, packetId: RpcPacketId)
 
@@ -68,9 +69,15 @@ class ClientWsDispatcher[C <: Http4sContext]
     import scala.jdk.CollectionConverters._
     connection.synchronized {
       if (connection.get() == null) {
-        connection.set(wsc.prepareGet(baseUri.toString)
-          .execute(new WebSocketUpgradeHandler(List(listener).asJava))
-          .get())
+        connection.set {
+          val res = wsc.prepareGet(baseUri.toString)
+            .execute(new WebSocketUpgradeHandler(List(listener).asJava))
+            .get()
+          if (res == null) {
+            throw new WebSocketConnectionFailedException()
+          }
+          res
+        }
       }
     }
     connection.get().sendTextFrame(out).discard()
@@ -176,13 +183,13 @@ class ClientWsDispatcher[C <: Http4sContext]
       .encode(request)
       .flatMap {
         encoded =>
-          val wrapped = F.sync(RpcPacket.rpcRequestRndId(request.method, encoded))
-
-          F.bracket(wrapped) {
+          F.bracket(
+            acquire = F.sync(RpcPacket.rpcRequestRndId(request.method, encoded))
+          )(release = {
             id =>
               logger.trace(s"${request.method -> "method"}, ${id -> "id"}: cleaning request state")
               F.sync(requestState.forget(id.id.get))
-          } {
+          }) {
             w =>
               val pid = w.id.get // guaranteed to be present
 
@@ -214,4 +221,8 @@ class ClientWsDispatcher[C <: Http4sContext]
   }
 
   protected def transformRequest(request: RpcPacket): RpcPacket = request
+}
+
+object ClientWsDispatcher {
+  final class WebSocketConnectionFailedException extends RuntimeException
 }
