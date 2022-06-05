@@ -1,25 +1,25 @@
 package izumi.idealingua.runtime.rpc.http4s
 
-import java.time.ZonedDateTime
-import java.util.concurrent.RejectedExecutionException
 import _root_.io.circe.parser.*
-import izumi.functional.bio.IO2
-import izumi.functional.bio.Exit
-import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
-import izumi.fundamentals.platform.language.Quirks.*
-import izumi.fundamentals.platform.time.IzTime
-import izumi.idealingua.runtime.rpc
-import izumi.idealingua.runtime.rpc.{IRTClientMultiplexor, RPCPacketKind, *}
-import izumi.logstage.api.IzLogger
+import fs2.Stream
 import io.circe
 import io.circe.syntax.*
 import io.circe.{Json, Printer}
+import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
+import izumi.functional.bio.{Exit, IO2}
+import izumi.fundamentals.platform.language.Quirks.*
+import izumi.fundamentals.platform.time.IzTime
+import izumi.idealingua.runtime.rpc
+import izumi.idealingua.runtime.rpc.*
+import izumi.logstage.api.IzLogger
 import org.http4s.*
 import org.http4s.server.AuthMiddleware
-import org.http4s.server.websocket.WebSocketBuilder
+import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.{Binary, Close, Pong, Text}
-import fs2.Stream
+
+import java.time.ZonedDateTime
+import java.util.concurrent.RejectedExecutionException
 
 class HttpServer[C <: Http4sContext](
   val c: C#IMPL[C],
@@ -33,8 +33,8 @@ class HttpServer[C <: Http4sContext](
   printer: Printer
 ) {
 
-  import c._
-  import c.dsl._
+  import c.*
+  import c.dsl.*
 
   protected def loggingMiddle(service: HttpRoutes[MonoIO]): HttpRoutes[MonoIO] = cats.data.Kleisli {
     req: Request[MonoIO] =>
@@ -59,15 +59,15 @@ class HttpServer[C <: Http4sContext](
       }
   }
 
-  def service: HttpRoutes[MonoIO] = {
-    val svc = AuthedRoutes.of(handler())
+  def service(ws: WebSocketBuilder2[MonoIO]): HttpRoutes[MonoIO] = {
+    val svc = AuthedRoutes.of(handler(ws))
     val aservice: HttpRoutes[MonoIO] = contextProvider(svc)
     loggingMiddle(aservice)
   }
 
-  protected def handler(): PartialFunction[AuthedRequest[MonoIO, RequestContext], MonoIO[Response[MonoIO]]] = {
+  protected def handler(ws: WebSocketBuilder2[MonoIO]): PartialFunction[AuthedRequest[MonoIO, RequestContext], MonoIO[Response[MonoIO]]] = {
     case request @ GET -> Root / "ws" as ctx =>
-      val result = setupWs(request, ctx)
+      val result = setupWs(request, ctx, ws)
       result
 
     case request @ GET -> Root / service / method as ctx =>
@@ -95,7 +95,7 @@ class HttpServer[C <: Http4sContext](
 
   protected def onWsClosed(): MonoIO[Unit] = F.unit
 
-  protected def setupWs(request: AuthedRequest[MonoIO, RequestContext], initialContext: RequestContext): MonoIO[Response[MonoIO]] = {
+  protected def setupWs(request: AuthedRequest[MonoIO, RequestContext], initialContext: RequestContext, ws: WebSocketBuilder2[MonoIO]): MonoIO[Response[MonoIO]] = {
     val context = new WebsocketClientContextImpl[C](c, request, initialContext, listeners, wsSessionStorage, logger) {
       override def onWsSessionOpened(): C#MonoIO[Unit] = {
         onWsOpened() *> super.onWsSessionOpened()
@@ -118,8 +118,7 @@ class HttpServer[C <: Http4sContext](
                 .evalMap(handleWsMessage(context))
                 .collect { case Some(v) => WebSocketFrame.Text(v) }
           }
-          WebSocketBuilder[MonoIO]
-            .copy(onClose = handleWsClose(context))
+          ws.withOnClose(onClose = handleWsClose(context))
             .build(
               send = dequeueStream.merge(context.outStream).merge(context.pingStream),
               receive = _.enqueueUnterminated(q),

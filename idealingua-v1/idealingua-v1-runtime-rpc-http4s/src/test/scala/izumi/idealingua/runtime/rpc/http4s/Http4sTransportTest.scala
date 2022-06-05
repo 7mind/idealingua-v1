@@ -1,22 +1,22 @@
 package izumi.idealingua.runtime.rpc.http4s
 
-import izumi.fundamentals.platform.language.Quirks._
 import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
-import izumi.idealingua.runtime.rpc._
+import izumi.fundamentals.platform.language.Quirks.*
+import izumi.idealingua.runtime.rpc.*
 import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceMethods}
-import org.http4s._
+import org.http4s.*
+import org.http4s.blaze.server.*
 import org.http4s.server.Router
-import org.http4s.blaze.server._
 import org.scalatest.wordspec.AnyWordSpec
 import zio.Task
-import zio.interop.catz._
-import zio.interop.catz.implicits._
+import zio.interop.catz.*
+import zio.interop.catz.implicits.*
 
 class Http4sTransportTest extends AnyWordSpec {
 
-  import fixtures._
-  import Http4sTestContext._
-  import RT._
+  import fixtures.*
+  import Http4sTestContext.*
+  import RT.*
 
   "Http4s transport" should {
     "support http" in {
@@ -86,15 +86,13 @@ class Http4sTransportTest extends AnyWordSpec {
         ()
       }
     }
+
   }
 
   def withServer(f: => Unit): Unit = {
-    import org.http4s.implicits._
-    val router = Router("/" -> ioService.service).orNotFound
     val io = BlazeServerBuilder[rt.MonoIO]
       .bindHttp(port, host)
-      .withWebSockets(true)
-      .withHttpApp(router)
+      .withHttpWebSocketApp(ws => Router("/" -> ioService.service(ws)).orNotFound)
       .stream
       .evalMap(_ => Task(f))
       .compile.drain

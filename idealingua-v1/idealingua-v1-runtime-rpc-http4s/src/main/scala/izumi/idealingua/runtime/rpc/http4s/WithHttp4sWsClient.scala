@@ -7,14 +7,15 @@ import izumi.functional.bio.IO2
 import izumi.functional.bio.Exit
 import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
 import izumi.idealingua.runtime.rpc
-import izumi.idealingua.runtime.rpc._
+import izumi.idealingua.runtime.rpc.*
 import izumi.logstage.api.IzLogger
 import io.circe.Printer
 import io.circe.parser.parse
-import io.circe.syntax._
+import io.circe.syntax.*
 import org.asynchttpclient.netty.ws.NettyWebSocket
 import org.asynchttpclient.ws.{WebSocket, WebSocketListener, WebSocketUpgradeHandler}
-import izumi.fundamentals.platform.language.Quirks._
+import izumi.fundamentals.platform.language.Quirks.*
+import izumi.idealingua.runtime.rpc.http4s.ClientWsDispatcher.WebSocketConnectionFailedException
 
 case class PacketInfo(method: IRTMethodId, packetId: RpcPacketId)
 
@@ -72,6 +73,9 @@ class ClientWsDispatcher[C <: Http4sContext]
           val res = wsc.prepareGet(baseUri.toString)
             .execute(new WebSocketUpgradeHandler(List(listener).asJava))
             .get()
+          if (res == null) {
+            throw new WebSocketConnectionFailedException()
+          }
           res
         }
       }
@@ -217,4 +221,8 @@ class ClientWsDispatcher[C <: Http4sContext]
   }
 
   protected def transformRequest(request: RpcPacket): RpcPacket = request
+}
+
+object ClientWsDispatcher {
+  final class WebSocketConnectionFailedException extends RuntimeException
 }
