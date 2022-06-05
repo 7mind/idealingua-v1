@@ -70,7 +70,7 @@ class ScalaTypeConverter(domain: DomainId) {
 
   def toScala(clazz: Class[?]): ScalaType = {
     val parts = clazz.getName.split('.')
-    val javaType = JavaType(parts.init, parts.last)
+    val javaType = JavaType(parts.init.toIndexedSeq, parts.last)
     toScala(javaType)
   }
 

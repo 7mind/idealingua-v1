@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedDeque, TimeUnit, TimeoutException}
 
-import fs2.concurrent.Queue
+import cats.effect.std.Queue
 import io.circe.Json
 import io.circe.syntax._
 import izumi.functional.bio.Applicative2

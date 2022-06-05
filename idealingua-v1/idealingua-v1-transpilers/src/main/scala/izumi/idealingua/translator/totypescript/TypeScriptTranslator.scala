@@ -260,12 +260,12 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
     alternatives.exists(al => al.typeId.isInstanceOf[DTOId])
   }
 
-  protected def renderAlternative(method: String, alternative: DefMethod.Output.Alternative, export: Boolean = true): String = {
+  protected def renderAlternative(method: String, alternative: DefMethod.Output.Alternative, exported: Boolean = true): String = {
     val leftTypeName = renderServiceMethodAlternativeOutput(method, alternative, success = false)
 
     val left = alternative.failure match {
       case al: Algebraic => renderAdtImpl(leftTypeName, al.alternatives)
-      case st: Struct => renderServiceMethodInModel(leftTypeName, "OutgoingData", st.struct, export = true)
+      case st: Struct => renderServiceMethodInModel(leftTypeName, "OutgoingData", st.struct, exported = true)
       case _ => ""
     }
 
@@ -287,7 +287,7 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
 
     val right = alternative.success match {
       case al: Algebraic => renderAdtImpl(rightTypeName, al.alternatives)
-      case st: Struct => renderServiceMethodInModel(rightTypeName, "OutgoingData", st.struct, export = true)
+      case st: Struct => renderServiceMethodInModel(rightTypeName, "OutgoingData", st.struct, exported = true)
       case _ => ""
     }
 
@@ -310,10 +310,10 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
     // TODO Replace any in Serialized type with the actual types
     s"""$left
        |$right
-       |${if (export) "export " else ""}type $name = Either<$leftTypeName, $rightTypeName>;
-       |${if (export) "export " else ""}type ${name}Serialized = {[key in 'Success' | 'Failure']?: any};
+       |${if (exported) "export " else ""}type $name = Either<$leftTypeName, $rightTypeName>;
+       |${if (exported) "export " else ""}type ${name}Serialized = {[key in 'Success' | 'Failure']?: any};
        |
-       |${if (export) "export " else ""}class ${name}Helpers {
+       |${if (exported) "export " else ""}class ${name}Helpers {
        |    public static serialize(either: $name): ${name}Serialized {
        |        return either.isRight() ? {
        |            'Success': $rightTypeSerialize
@@ -335,13 +335,13 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
      """.stripMargin
   }
 
-  protected def renderAdtImpl(name: String, alternatives: List[AdtMember], export: Boolean = true): String = {
+  protected def renderAdtImpl(name: String, alternatives: List[AdtMember], exported: Boolean = true): String = {
     val hasInterfaces = alternatives.count(al => al.typeId.isInstanceOf[InterfaceId]) > 0
 
-    s"""${if (export) "export " else ""}type $name = ${alternatives.map(alt => conv.toNativeType(alt.typeId, typespace)).mkString(" | ")};
-       |${if (export) "export " else ""}type ${name}Serialized = ${alternatives.map(alt => conv.toNativeType(alt.typeId, typespace, forSerialized = true)).mkString(" | ")}
+    s"""${if (exported) "export " else ""}type $name = ${alternatives.map(alt => conv.toNativeType(alt.typeId, typespace)).mkString(" | ")};
+       |${if (exported) "export " else ""}type ${name}Serialized = ${alternatives.map(alt => conv.toNativeType(alt.typeId, typespace, forSerialized = true)).mkString(" | ")}
        |
-       |${if (export) "export " else ""}class ${name}Helpers {
+       |${if (exported) "export " else ""}class ${name}Helpers {
        |    public static isInstanceOf(o: any): boolean {
        |        if (!o['getClassName'] || typeof o['getClassName'] !== 'function') {
        |            return false;
@@ -732,14 +732,14 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
   }
 
   protected def renderServiceMethodOutModel(name: String, implements: String, out: DefMethod.Output): String = out match {
-    case st: Struct => renderServiceMethodInModel(name, implements, st.struct, export = true)
-    case al: Algebraic => renderAdtImpl(name, al.alternatives, export = false)
-    case at: Alternative => renderAlternative(name, at, export = false)
+    case st: Struct => renderServiceMethodInModel(name, implements, st.struct, exported = true)
+    case al: Algebraic => renderAdtImpl(name, al.alternatives, exported = false)
+    case at: Alternative => renderAlternative(name, at, exported = false)
     case _ => ""
   }
 
-  protected def renderServiceMethodInModel(name: String, implements: String, structure: SimpleStructure, export: Boolean): String = {
-    s"""${if (export) "export " else ""}class $name implements $implements {
+  protected def renderServiceMethodInModel(name: String, implements: String, structure: SimpleStructure, exported: Boolean): String = {
+    s"""${if (exported) "export " else ""}class $name implements $implements {
        |${structure.fields.map(f => conv.toFieldMember(f, ts)).mkString("\n").shift(4)}
        |${structure.fields.map(f => conv.toFieldMethods(f, ts)).mkString("\n").shift(4)}
        |    constructor(data: ${name}Serialized = undefined) {
@@ -757,7 +757,7 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
        |    }
        |}
        |
-       |${if (export) "export " else ""}interface ${name}Serialized {
+       |${if (exported) "export " else ""}interface ${name}Serialized {
        |${structure.fields.map(f => s"${conv.toNativeTypeName(f.name, f.typeId)}: ${conv.toNativeType(f.typeId, ts, forSerialized = true)};").mkString("\n").shift(4)}
        |}
      """.stripMargin
@@ -765,7 +765,7 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
 
   protected def renderRPCMethodModels(method: DefMethod): String = method match {
     case m: DefMethod.RPCMethod =>
-      s"""${renderServiceMethodInModel(s"In${m.name.capitalize}", "IncomingData", m.signature.input, export = false)}
+      s"""${renderServiceMethodInModel(s"In${m.name.capitalize}", "IncomingData", m.signature.input, exported = false)}
          |${renderServiceMethodOutModel(s"Out${m.name.capitalize}", "OutgoingData", m.signature.output)}
        """.stripMargin
 

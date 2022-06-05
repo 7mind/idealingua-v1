@@ -42,8 +42,8 @@ trait ScalaTranslatorExtension extends TranslatorExtension {
     product
   }
 
-  def handleEnum(ctx: STContext, enum: Enumeration, product: EnumProduct): EnumProduct = {
-    discard(ctx, enum)
+  def handleEnum(ctx: STContext, enumeration: Enumeration, product: EnumProduct): EnumProduct = {
+    discard(ctx, enumeration)
     product
   }
 
@@ -54,5 +54,3 @@ trait ScalaTranslatorExtension extends TranslatorExtension {
 
 
 }
-
-

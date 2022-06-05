@@ -19,7 +19,7 @@ object Pkg {
   def of[T: ClassTag]: Pkg = {
     val className = classTag[T].runtimeClass.getName
     val classPkgParts = className.split('.').init
-    Pkg(classPkgParts)
+    Pkg(classPkgParts.toIndexedSeq)
   }
 
   def language: Pkg = Pkg(Seq("scala", "language"))

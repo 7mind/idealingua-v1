@@ -203,7 +203,7 @@ object Idealingua {
         "scalaVersion" := "crossScalaVersions.value.head".raw,
       )
 
-      final val rootSettings = Seq(Defaults.SbtMetaRootOptions) ++ Seq(
+      final val rootSettings = Seq(Defaults.SbtMetaRootOptions) ++ Defaults.RootOptions ++ Seq(
         "crossScalaVersions" := "Nil".raw,
         "scalaVersion" := Targets.targetScala.head.value,
         "organization" in SettingScope.Build := "io.7mind.izumi",

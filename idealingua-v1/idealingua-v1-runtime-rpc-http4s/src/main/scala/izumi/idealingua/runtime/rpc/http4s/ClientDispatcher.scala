@@ -37,7 +37,7 @@ class ClientDispatcher[C <: Http4sContext]
   }
 
   protected def runRequest[T](handler: Response[MonoIO] => MonoIO[T], req: Request[MonoIO]): BiIO[Throwable, T] = {
-    val clientBuilder = blazeClientBuilder(BlazeClientBuilder[MonoIO](c.clientExecutionContext))
+    val clientBuilder = blazeClientBuilder(BlazeClientBuilder[MonoIO].withExecutionContext(c.clientExecutionContext))
     clientBuilder.resource.use {
       _.run(req).use(handler)
     }

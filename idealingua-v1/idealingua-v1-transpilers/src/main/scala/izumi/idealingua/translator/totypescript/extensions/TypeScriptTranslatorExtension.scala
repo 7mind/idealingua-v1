@@ -19,8 +19,8 @@ trait TypeScriptTranslatorExtension extends TranslatorExtension {
     product
   }
 
-  def handleEnum(ctx: TSTContext, enum: TypeDef.Enumeration, product: EnumProduct): EnumProduct = {
-    discard(ctx, enum, manifest)
+  def handleEnum(ctx: TSTContext, enumeration: TypeDef.Enumeration, product: EnumProduct): EnumProduct = {
+    discard(ctx, enumeration, manifest)
     product
   }
 
@@ -34,5 +34,3 @@ trait TypeScriptTranslatorExtension extends TranslatorExtension {
     product
   }
 }
-
-

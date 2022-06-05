@@ -71,15 +71,15 @@ object IntrospectionExtension extends TypeScriptTranslatorExtension {
     }
   }
 
-  override def handleEnum(ctx: TSTContext, enum: TypeDef.Enumeration, product: EnumProduct): EnumProduct = {
+  override def handleEnum(ctx: TSTContext, enumeration: TypeDef.Enumeration, product: EnumProduct): EnumProduct = {
 //    implicit val ts: Typespace = ctx.typespace
-    val pkg = enum.id.path.toPackage.mkString(".")
-    val short = enum.id.name
+    val pkg = enumeration.id.path.toPackage.mkString(".")
+    val short = enumeration.id.name
     val full = pkg + "." + short
     val extension =
       s"""
          |// Introspector registration
-         |import { Introspector, IntrospectorTypes, IIntrospectorEnumObject } from '${irtImportPath(ctx, enum.id)}';
+         |import { Introspector, IntrospectorTypes, IIntrospectorEnumObject } from '${irtImportPath(ctx, enumeration.id)}';
          |Introspector.register('$full', {
          |        full: '$full',
          |        short: '$short',
