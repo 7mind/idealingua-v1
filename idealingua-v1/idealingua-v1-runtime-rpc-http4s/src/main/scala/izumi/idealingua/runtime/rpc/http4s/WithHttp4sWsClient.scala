@@ -109,7 +109,7 @@ class ClientWsDispatcher[C <: Http4sContext]
       case Termination(cause, _, trace) =>
         logger.error(s"Failed to process request, termination: $cause $trace")
 
-      case Interruption(error, trace) =>
+      case Interruption(error, _, trace) =>
         logger.error(s"Request processing was interrupted: $error $trace")
     }
   }
@@ -138,8 +138,8 @@ class ClientWsDispatcher[C <: Http4sContext]
             case Exit.Error(exception, trace) =>
               logger.error(s"${packetInfo -> null}: WS processing failed, $exception $trace")
               F.pure(Some(rpc.RpcPacket.buzzerFail(Some(id), exception.getMessage)))
-            case Exit.Interruption(exception, trace) =>
-              logger.error(s"${packetInfo -> null}: WS processing interrupted, $exception $trace")
+            case Exit.Interruption(exception, allExceptions, trace) =>
+              logger.error(s"${packetInfo -> null}: WS processing interrupted, $exception $allExceptions $trace")
               F.pure(Some(rpc.RpcPacket.buzzerFail(Some(id), exception.getMessage)))
           }
           maybeEncoded <- F(maybePacket.map(r => printer.print(r.asJson)))

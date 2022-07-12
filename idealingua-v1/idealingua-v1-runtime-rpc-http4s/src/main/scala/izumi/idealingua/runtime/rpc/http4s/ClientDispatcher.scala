@@ -74,7 +74,7 @@ class ClientDispatcher[C <: Http4sContext]
               logger.info(s"${input.method -> "method"}: decoder failed on $body: $f $trace")
               F.fail(new IRTUnparseableDataException(s"${input.method}: decoder failed on body=$body: f=$f trace=$trace", Option(f)))
 
-            case Exit.Interruption(error, trace) =>
+            case Exit.Interruption(error, _, trace) =>
               logger.info(s"${input.method -> "method"}: decoder interrupted on $body: $error $trace")
               F.fail(new IRTUnparseableDataException(s"${input.method}: decoder interrupted on body=$body: error=$error trace=$trace", Option(error)))
           }

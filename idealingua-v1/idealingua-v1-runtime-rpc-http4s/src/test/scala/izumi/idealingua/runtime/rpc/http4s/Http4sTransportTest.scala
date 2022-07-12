@@ -112,7 +112,7 @@ class Http4sTransportTest extends AnyWordSpec {
         fail(s"Unexpected success: $value")
       case Termination(exception, _, _) =>
         fail("Unexpected failure", exception)
-      case Interruption(value, _) =>
+      case Interruption(value, _, _) =>
         fail(s"Interrupted: $value")
     }
   }
