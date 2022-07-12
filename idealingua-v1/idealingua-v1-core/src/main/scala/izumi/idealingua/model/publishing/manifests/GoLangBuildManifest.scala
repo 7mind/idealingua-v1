@@ -23,7 +23,7 @@ case class GoRepositoryOptions(
 
 object GoRepositoryOptions {
   def example: GoRepositoryOptions = GoRepositoryOptions(
-    dependencies = List(ManifestDependency("github.com/gorilla/websocket", "")),
+    dependencies = List(ManifestDependency("github.com/gorilla/websocket", "78cf1bc733a927f673fd1988a25256b425552a8a")),
     repository = "github.com/TestCompany/TestRepo",
   )
 }
