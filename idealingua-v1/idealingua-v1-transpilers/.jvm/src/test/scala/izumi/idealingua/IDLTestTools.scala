@@ -249,7 +249,10 @@ object IDLTestTools {
     Files.move(outDir, tmp.resolve("src"))
     Files.move(tmp, outDir)
 
-    val env = Map("GOPATH" -> out.absoluteTargetDir.toString)
+    val env = Map(
+      "GOPATH" -> out.absoluteTargetDir.toString,
+      "GO111MODULE" -> "off"
+    )
     val goSrc = out.absoluteTargetDir.resolve("src")
     if (manifest.repository.dependencies.nonEmpty) {
       manifest.repository.dependencies.foreach(md => {
@@ -337,7 +340,7 @@ object IDLTestTools {
       .filter(f => f.isDirectory && f.getName.startsWith(stablePrefix) && !f.getName.startsWith(vmPrefix))
       .foreach {
         f =>
-          Quirks.discard(IzFiles.removeDir(f.toPath))
+          Quirks.discard(Try(IzFiles.removeDir(f.toPath)))
       }
   }
 

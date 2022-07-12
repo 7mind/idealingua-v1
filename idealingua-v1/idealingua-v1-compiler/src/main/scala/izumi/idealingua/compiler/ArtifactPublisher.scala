@@ -147,19 +147,22 @@ class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, 
   private def publishGo(targetDir: Path, creds: GoCredentials, manifest: GoLangBuildManifest): Either[Throwable, Unit] = Try {
     log.log("Prepare to package GoLang sources")
 
-    val env = "GOPATH" -> s"${targetDir.toAbsolutePath.toString}"
+    val env = Seq(
+      "GOPATH" -> s"${targetDir.toAbsolutePath.toString}",
+      "GO111MODULE" -> "off",
+    )
     IzFiles.recreateDir(targetDir.resolve("src"))
 
     Files.move(targetDir.resolve("github.com"), targetDir.resolve("src/github.com"), StandardCopyOption.REPLACE_EXISTING)
 
     Process(
-      "go get github.com/gorilla/websocket", targetDir.toFile, env
+      "go get github.com/gorilla/websocket", targetDir.toFile, env*
     ).lineStream.foreach(log.log)
 
     if (manifest.enableTesting) {
       log.log("Testing")
       Process(
-        "go test ./...", targetDir.resolve("src").toFile, env
+        "go test ./...", targetDir.resolve("src").toFile, env*
       ).lineStream.foreach(log.log)
       log.log("Testing - OK")
     } else {
