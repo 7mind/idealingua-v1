@@ -162,7 +162,7 @@ class HttpServer[C <: Http4sContext](
       case Termination(cause, _, _) =>
         Some(handleWsError(context, List(cause), None, "termination"))
 
-      case Interruption(cause, _)=>
+      case Interruption(cause, _, _)=>
         Some(handleWsError(context, List(cause), None, "interruption"))
     }
   }
@@ -180,7 +180,7 @@ class HttpServer[C <: Http4sContext](
         case Exit.Error(exception, trace) =>
           logger.error(s"${context -> null}: WS processing failed, $message, $exception $trace")
           F.pure(Some(rpc.RpcPacket.rpcFail(unmarshalled.id, exception.getMessage)))
-        case Exit.Interruption(exception, trace) =>
+        case Exit.Interruption(exception, _, trace) =>
           logger.error(s"${context -> null}: WS processing interrupted, $message, $exception $trace")
           F.pure(Some(rpc.RpcPacket.rpcFail(unmarshalled.id, exception.getMessage)))
       }
@@ -295,7 +295,7 @@ class HttpServer[C <: Http4sContext](
         logger.error(s"${context -> null}: Execution failed, termination, $method, ${context.request}, $cause, $trace")
         dsl.InternalServerError()
 
-      case Interruption(cause, trace) =>
+      case Interruption(cause, _, trace) =>
         logger.info(s"${context -> null}: Unexpected interruption while handling $method: $cause $trace")
         dsl.InternalServerError()
     }
