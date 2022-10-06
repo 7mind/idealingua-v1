@@ -40,7 +40,7 @@ final case class CSharpClass (
          """.stripMargin
 
       val ctors = if (withCTORs.isEmpty) "" else
-        s"""private static Dictionary<string, Func<object>> types = new Dictionary<string, Type>();
+        s"""private static Dictionary<string, Type> types = new Dictionary<string, Type>();
            |public static void Register(string id, Type tpe) {
            |    $name.types[id] = tpe;
            |}
