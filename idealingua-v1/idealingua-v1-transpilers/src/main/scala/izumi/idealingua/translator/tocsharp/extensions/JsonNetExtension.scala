@@ -278,10 +278,12 @@ object JsonNetExtension extends CSharpTranslatorExtension {
 
         case o: Generic.TOption =>
           val ot = CSharpType(o.valueType)
+          val proxySrc = dst + "Raw"
           Some(
             s"""${i.renderType(true)} $dst = null;
-               |if ($src != null && $src.Type != JTokenType.Null) {
-               |${(if (propertyNeedsPrepare(o.valueType)) prepareReadPropertyValue(src, dst, ot, createDst = false, currentDomain).get else s"$dst = ${readPropertyValue(src, ot, currentDomain)};").shift(4)}
+               |var $proxySrc = $src;
+               |if ($proxySrc != null && $proxySrc.Type != JTokenType.Null) {
+               |${(if (propertyNeedsPrepare(o.valueType)) prepareReadPropertyValue(proxySrc, dst, ot, createDst = false, currentDomain).get else s"$dst = ${readPropertyValue(proxySrc, ot, currentDomain)};").shift(4)}
                |}
              """.stripMargin)
 
