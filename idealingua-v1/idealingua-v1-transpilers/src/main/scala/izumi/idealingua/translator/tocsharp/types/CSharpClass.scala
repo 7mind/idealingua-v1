@@ -40,22 +40,21 @@ final case class CSharpClass (
          """.stripMargin
 
       val ctors = if (withCTORs.isEmpty) "" else
-        s"""private static Dictionary<string, Func<object>> __ctors = new Dictionary<string, Func<object>>();
-           |public static void Register(string id, System.Func<object> ctor) {
-           |    $name.__ctors[id] = ctor;
+        s"""private static Dictionary<string, Func<object>> types = new Dictionary<string, Type>();
+           |public static void Register(string id, Type tpe) {
+           |    $name.types[id] = tpe;
            |}
            |
            |public static void Unregister(string id) {
-           |    $name.__ctors.Remove(id);
+           |    $name.types.Remove(id);
            |}
            |
-           |public static object CreateInstance(string id) {
-           |    Func<object> ctor;
-           |    if (!$name.__ctors.TryGetValue(id, out ctor)) {
+           |public static Type GetType(string id) {
+           |    if (!$name.types.TryGetValue(id, out var tpe)) {
            |        throw new Exception("Unknown class name: " + id + " for interface ${withCTORs.get}.");
            |    }
            |
-           |    return ctor();
+           |    return tpe;
            |}
            |
            |static $name() {
@@ -77,7 +76,7 @@ final case class CSharpClass (
            |            if (type.IsAssignableFrom(tp) && !tp.IsInterface) {
            |                var rttiID = tp.GetField("RTTI_FULLCLASSNAME");
            |                if (rttiID != null) {
-           |                    $name.Register((string)rttiID.GetValue(null), () => Activator.CreateInstance(tp));
+           |                    $name.Register((string)rttiID.GetValue(null), tp);
            |                }
            |            }
            |        }
