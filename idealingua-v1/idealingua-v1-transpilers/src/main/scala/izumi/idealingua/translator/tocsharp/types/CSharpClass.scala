@@ -40,8 +40,8 @@ final case class CSharpClass (
          """.stripMargin
 
       val ctors = if (withCTORs.isEmpty) "" else
-        s"""private static Dictionary<string, Type> types = new Dictionary<string, Type>();
-           |public static void Register(string id, Type tpe) {
+        s"""private static Dictionary<string, System.Type> types = new Dictionary<string, System.Type>();
+           |public static void Register(string id, System.Type tpe) {
            |    $name.types[id] = tpe;
            |}
            |
@@ -49,7 +49,7 @@ final case class CSharpClass (
            |    $name.types.Remove(id);
            |}
            |
-           |public static Type GetType(string id) {
+           |public static System.Type GetType(string id) {
            |    if (!$name.types.TryGetValue(id, out var tpe)) {
            |        throw new Exception("Unknown class name: " + id + " for interface ${withCTORs.get}.");
            |    }

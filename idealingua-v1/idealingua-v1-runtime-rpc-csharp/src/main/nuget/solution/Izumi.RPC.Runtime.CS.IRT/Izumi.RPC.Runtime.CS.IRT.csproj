@@ -15,9 +15,14 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
+
+  <ItemGroup>
+    <Reference Include="netstandard" Version="2.0.0.0" Culture="neutral", PublicKeyToken="cc7b13ffcd2ddd51" />
+  <ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Web" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.102.0" />
     <PackageReference Include="NUnit" Version="3.11.0" />
     <PackageReference Include="Unity3D.UnityEngine" Version="2018.1.6-f1" />
     <PackageReference Include="Unity3D.UnityEngine.Networking" Version="2018.1.6-f1" />
