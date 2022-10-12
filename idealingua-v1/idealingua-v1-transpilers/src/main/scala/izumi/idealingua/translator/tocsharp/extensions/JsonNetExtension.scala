@@ -361,8 +361,8 @@ object JsonNetExtension extends CSharpTranslatorExtension {
        |    public override ${id.id.name} ReadJson(JsonReader reader, System.Type objectType, ${id.id.name} existingValue, bool hasExistingValue, JsonSerializer serializer) {
        |        var json = JObject.Load(reader);
        |        var kv = json.Properties().First();
-       |        var tpe = $eidName.GetType(kv.Name);
-       |        var res = serializer.Deserialize(kv.Value.CreateReader(), tpe);
+       |        var v_tpe = $eidName.GetType(kv.Name);
+       |        var res = serializer.Deserialize(kv.Value.CreateReader(), v_tpe);
        |        return (${id.id.name})res;
        |    }
        |}
