@@ -87,13 +87,13 @@ namespace IRT.Marshaller {
 
         public abstract void WriteJson(JsonWriter writer, T value, JsonSerializer serializer);
 
-        public sealed override object ReadJson(JsonReader reader, Type objectType, object existingValue,
+        public sealed override object ReadJson(JsonReader reader, System.Type objectType, object existingValue,
             JsonSerializer serializer)
         {
             return ReadJson(reader, objectType, default(T), false, serializer);
         }
 
-        public abstract T ReadJson(JsonReader reader, Type objectType, T existingValue, bool hasExistingValue,
+        public abstract T ReadJson(JsonReader reader, System.Type objectType, T existingValue, bool hasExistingValue,
             JsonSerializer serializer);
 
         public sealed override bool CanConvert(Type objectType)
