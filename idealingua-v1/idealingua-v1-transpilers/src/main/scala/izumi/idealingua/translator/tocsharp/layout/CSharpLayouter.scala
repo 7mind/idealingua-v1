@@ -362,6 +362,10 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
         </ItemGroup>
 
         <ItemGroup>
+          <Reference Include="netstandard" Version="2.0.0.0" Culture="neutral" PublicKeyToken="cc7b13ffcd2ddd51" />
+        </ItemGroup>
+
+        <ItemGroup>
           <Reference Include="System.Web" />
         </ItemGroup>
 

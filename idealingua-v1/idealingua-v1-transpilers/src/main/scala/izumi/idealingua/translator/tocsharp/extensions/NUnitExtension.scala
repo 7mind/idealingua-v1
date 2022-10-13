@@ -1,7 +1,7 @@
 package izumi.idealingua.translator.tocsharp.extensions
 
-import izumi.fundamentals.platform.strings.IzString._
-import izumi.idealingua.model.common.TypeId.InterfaceId
+import izumi.fundamentals.platform.strings.IzString.*
+import izumi.idealingua.model.common.StructureId
 import izumi.idealingua.model.il.ast.typed.TypeDef.{Adt, DTO, Enumeration, Identifier}
 import izumi.idealingua.model.output.Module
 import izumi.idealingua.model.typespace.Typespace
@@ -14,40 +14,40 @@ object NUnitExtension extends CSharpTranslatorExtension {
     val name = id.id.name
     val testMember = id.members.head.value
     val code =
-        s"""public static class ${name}TestHelper {
-           |    public static $name Create() {
-           |        return $name.$testMember;
-           |    }
-           |}
-           |
-           |[TestFixture]
-           |public class ${name}_ShouldSerialize {
-           |    IJsonMarshaller marshaller;
-           |    public ${name}_ShouldSerialize() {
-           |        marshaller = new JsonNetMarshaller();
-           |    }
-           |
-           |    [Test]
-           |    public void Serialize() {
-           |        var v = ${name}TestHelper.Create();
-           |        var json = marshaller.Marshal<$name>(v);
-           |        Assert.AreEqual("\\"$testMember\\"", json);
-           |    }
-           |
-           |    [Test]
-           |    public void Deserialize() {
-           |        var v = marshaller.Unmarshal<$name>("\\"$testMember\\"");
-           |        Assert.AreEqual(v, $name.$testMember);
-           |    }
-           |
-           |    [Test]
-           |    public void SerializeDeserialize() {
-           |        var v1 = ${name}TestHelper.Create();
-           |        var json = marshaller.Marshal<$name>(v1);
-           |        var v2 = marshaller.Unmarshal<$name>(json);
-           |        Assert.AreEqual(v1, v2);
-           |    }
-           |}
+      s"""public static class ${name}TestHelper {
+         |    public static $name Create() {
+         |        return $name.$testMember;
+         |    }
+         |}
+         |
+         |[TestFixture]
+         |public class ${name}_ShouldSerialize {
+         |    IJsonMarshaller marshaller;
+         |    public ${name}_ShouldSerialize() {
+         |        marshaller = new JsonNetMarshaller();
+         |    }
+         |
+         |    [Test]
+         |    public void Serialize() {
+         |        var v = ${name}TestHelper.Create();
+         |        var json = marshaller.Marshal<$name>(v);
+         |        Assert.AreEqual("\\"$testMember\\"", json);
+         |    }
+         |
+         |    [Test]
+         |    public void Deserialize() {
+         |        var v = marshaller.Unmarshal<$name>("\\"$testMember\\"");
+         |        Assert.AreEqual(v, $name.$testMember);
+         |    }
+         |
+         |    [Test]
+         |    public void SerializeDeserialize() {
+         |        var v1 = ${name}TestHelper.Create();
+         |        var json = marshaller.Marshal<$name>(v1);
+         |        var v2 = marshaller.Unmarshal<$name>(json);
+         |        Assert.AreEqual(v1, v2);
+         |    }
+         |}
          """.stripMargin
 
     val header =
@@ -100,11 +100,12 @@ object NUnitExtension extends CSharpTranslatorExtension {
   override def postEmitModules(ctx: CSTContext, i: Adt)(implicit im: CSharpImports, ts: Typespace): Seq[Module] = {
     val name = i.id.name
     val adt = i.alternatives.head
-    val testValue =
-      if (adt.typeId.isInstanceOf[InterfaceId])
-        s"new ${CSharpType(adt.typeId).renderType(true)}Struct()"
-    else
-      s"${CSharpType(adt.typeId).renderType(true)}TestHelper.Create()"
+    val testValue = adt.typeId match {
+      case _: StructureId =>
+        CSharpType(adt.typeId).getRandomValue(3)
+      case _ =>
+        s"${CSharpType(adt.typeId).renderType(true)}TestHelper.Create()"
+    }
 
     val code =
       s"""public static class ${name}TestHelper {
@@ -184,14 +185,14 @@ object NUnitExtension extends CSharpTranslatorExtension {
 
     val header =
       """using IRT;
-         |using IRT.Marshaller;
-         |using System;
-         |using System.Globalization;
-         |using System.Collections;
-         |using System.Collections.Generic;
-         |using NUnit.Framework;
+        |using IRT.Marshaller;
+        |using System;
+        |using System.Globalization;
+        |using System.Collections;
+        |using System.Collections.Generic;
+        |using NUnit.Framework;
        """.stripMargin
-    ctx.modules.toTestSource(i.id.path.domain, ctx.modules.toTestModuleId(i.id, if(implIface.isDefined) Some(implIface.get.name) else None), header, code)
+    ctx.modules.toTestSource(i.id.path.domain, ctx.modules.toTestModuleId(i.id, if (implIface.isDefined) Some(implIface.get.name) else None), header, code)
   }
 }
 

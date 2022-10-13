@@ -278,10 +278,12 @@ object JsonNetExtension extends CSharpTranslatorExtension {
 
         case o: Generic.TOption =>
           val ot = CSharpType(o.valueType)
+          val proxySrc = dst + "Raw"
           Some(
             s"""${i.renderType(true)} $dst = null;
-               |if ($src != null && $src.Type != JTokenType.Null) {
-               |${(if (propertyNeedsPrepare(o.valueType)) prepareReadPropertyValue(src, dst, ot, createDst = false, currentDomain).get else s"$dst = ${readPropertyValue(src, ot, currentDomain)};").shift(4)}
+               |var $proxySrc = $src;
+               |if ($proxySrc != null && $proxySrc.Type != JTokenType.Null) {
+               |${(if (propertyNeedsPrepare(o.valueType)) prepareReadPropertyValue(proxySrc, dst, ot, createDst = false, currentDomain).get else s"$dst = ${readPropertyValue(proxySrc, ot, currentDomain)};").shift(4)}
                |}
              """.stripMargin)
 
@@ -359,8 +361,8 @@ object JsonNetExtension extends CSharpTranslatorExtension {
        |    public override ${id.id.name} ReadJson(JsonReader reader, System.Type objectType, ${id.id.name} existingValue, bool hasExistingValue, JsonSerializer serializer) {
        |        var json = JObject.Load(reader);
        |        var kv = json.Properties().First();
-       |        var res = $eidName.CreateInstance(kv.Name);
-       |        serializer.Populate(kv.Value.CreateReader(), res);
+       |        var v_tpe = $eidName.GetType(kv.Name);
+       |        var res = serializer.Deserialize(kv.Value.CreateReader(), v_tpe);
        |        return (${id.id.name})res;
        |    }
        |}
