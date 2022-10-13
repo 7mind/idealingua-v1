@@ -22,7 +22,7 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
   .settings(
     crossScalaVersions := Seq(
       "2.13.8",
-      "2.12.15"
+      "2.12.17"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -43,7 +43,7 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.15") => Seq(
+      case (_, "2.12.17") => Seq(
         "-target:jvm-1.8",
         "-explaintypes",
         "-Xsource:3",
@@ -137,7 +137,7 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
   .settings(
     crossScalaVersions := Seq(
       "2.13.8",
-      "2.12.15"
+      "2.12.17"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -158,7 +158,7 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.15") => Seq(
+      case (_, "2.12.17") => Seq(
         "-target:jvm-1.8",
         "-explaintypes",
         "-Xsource:3",
@@ -257,7 +257,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
   .settings(
     crossScalaVersions := Seq(
       "2.13.8",
-      "2.12.15"
+      "2.12.17"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -278,7 +278,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.15") => Seq(
+      case (_, "2.12.17") => Seq(
         "-target:jvm-1.8",
         "-explaintypes",
         "-Xsource:3",
@@ -378,7 +378,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
   .settings(
     crossScalaVersions := Seq(
       "2.13.8",
-      "2.12.15"
+      "2.12.17"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -399,7 +399,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.15") => Seq(
+      case (_, "2.12.17") => Seq(
         "-target:jvm-1.8",
         "-explaintypes",
         "-Xsource:3",
@@ -503,7 +503,7 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
   .settings(
     crossScalaVersions := Seq(
       "2.13.8",
-      "2.12.15"
+      "2.12.17"
     ),
     scalaVersion := crossScalaVersions.value.head,
     Test / fork := true,
@@ -525,7 +525,7 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.15") => Seq(
+      case (_, "2.12.17") => Seq(
         "-target:jvm-1.8",
         "-explaintypes",
         "-Xsource:3",
@@ -619,7 +619,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
   .settings(
     crossScalaVersions := Seq(
       "2.13.8",
-      "2.12.15"
+      "2.12.17"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -640,7 +640,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.15") => Seq(
+      case (_, "2.12.17") => Seq(
         "-target:jvm-1.8",
         "-explaintypes",
         "-Xsource:3",
@@ -729,7 +729,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
   .settings(
     crossScalaVersions := Seq(
       "2.13.8",
-      "2.12.15"
+      "2.12.17"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -750,7 +750,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.15") => Seq(
+      case (_, "2.12.17") => Seq(
         "-target:jvm-1.8",
         "-explaintypes",
         "-Xsource:3",
@@ -839,7 +839,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
   .settings(
     crossScalaVersions := Seq(
       "2.13.8",
-      "2.12.15"
+      "2.12.17"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -860,7 +860,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.15") => Seq(
+      case (_, "2.12.17") => Seq(
         "-target:jvm-1.8",
         "-explaintypes",
         "-Xsource:3",
@@ -949,7 +949,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
   .settings(
     crossScalaVersions := Seq(
       "2.13.8",
-      "2.12.15"
+      "2.12.17"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -970,7 +970,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.15") => Seq(
+      case (_, "2.12.17") => Seq(
         "-target:jvm-1.8",
         "-explaintypes",
         "-Xsource:3",
@@ -1068,7 +1068,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
   .settings(
     crossScalaVersions := Seq(
       "2.13.8",
-      "2.12.15"
+      "2.12.17"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -1089,7 +1089,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     ),
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.15") => Seq(
+      case (_, "2.12.17") => Seq(
         "-target:jvm-1.8",
         "-explaintypes",
         "-Xsource:3",
@@ -1184,7 +1184,7 @@ lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
     publish / skip := true,
     crossScalaVersions := Seq(
       "2.13.8",
-      "2.12.15"
+      "2.12.17"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
@@ -1208,7 +1208,7 @@ lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"
     publish / skip := true,
     crossScalaVersions := Seq(
       "2.13.8",
-      "2.12.15"
+      "2.12.17"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
@@ -1231,7 +1231,7 @@ lazy val `idealingua-v1-jvm` = (project in file(".agg/.agg-jvm"))
     publish / skip := true,
     crossScalaVersions := Seq(
       "2.13.8",
-      "2.12.15"
+      "2.12.17"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
@@ -1292,12 +1292,13 @@ lazy val `idealingua-v1` = (project in file("."))
             ),
     ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git")),
     ThisBuild / scalacOptions += s"""-Xmacro-settings:scalatest-version=${V.scalatest}""",
-    ThisBuild / scalacOptions += """-Xmacro-settings:scalajs-version=1.8.0""",
+    ThisBuild / scalacOptions += """-Xmacro-settings:scalajs-version=1.10.1""",
     ThisBuild / scalacOptions += """-Xmacro-settings:bundler-version=0.20.0""",
     ThisBuild / scalacOptions += """-Xmacro-settings:sbt-js-version=1.0.2""",
-    ThisBuild / scalacOptions += """-Xmacro-settings:crossproject-version=1.1.0""",
+    ThisBuild / scalacOptions += """-Xmacro-settings:crossproject-version=1.2.0""",
     ThisBuild / scalacOptions += s"-Xmacro-settings:is-ci=${insideCI.value}",
-    libraryDependencies += "io.7mind.izumi.sbt" % "sbtgen_2.13" % "0.0.89" % Provided
+    libraryDependencies += "io.7mind.izumi.sbt" % "sbtgen_2.13" % "0.0.96" % Provided,
+    ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
   )
   .enablePlugins(IzumiPlugin)
   .disablePlugins(AssemblyPlugin)
