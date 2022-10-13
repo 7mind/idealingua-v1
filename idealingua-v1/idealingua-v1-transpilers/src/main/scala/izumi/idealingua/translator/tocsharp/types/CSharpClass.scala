@@ -40,17 +40,17 @@ final case class CSharpClass (
          """.stripMargin
 
       val ctors = if (withCTORs.isEmpty) "" else
-        s"""private static Dictionary<string, System.Type> types = new Dictionary<string, System.Type>();
+        s"""private static Dictionary<string, System.Type> __types = new Dictionary<string, System.Type>();
            |public static void Register(string id, System.Type tpe) {
-           |    $name.types[id] = tpe;
+           |    $name.__types[id] = tpe;
            |}
            |
            |public static void Unregister(string id) {
-           |    $name.types.Remove(id);
+           |    $name.__types.Remove(id);
            |}
            |
            |public static System.Type GetType(string id) {
-           |    if (!$name.types.TryGetValue(id, out var tpe)) {
+           |    if (!$name.__types.TryGetValue(id, out var tpe)) {
            |        throw new Exception("Unknown class name: " + id + " for interface ${withCTORs.get}.");
            |    }
            |
