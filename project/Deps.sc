@@ -1,4 +1,4 @@
-import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.89`
+import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.96`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
 
@@ -203,7 +203,7 @@ object Idealingua {
         "scalaVersion" := "crossScalaVersions.value.head".raw,
       )
 
-      final val rootSettings = Seq(Defaults.SbtMetaRootOptions) ++ Defaults.RootOptions ++ Seq(
+      final val rootSettings = Defaults.SbtMetaRootOptions ++ Defaults.RootOptions ++ Seq(
         "crossScalaVersions" := "Nil".raw,
         "scalaVersion" := Targets.targetScala.head.value,
         "organization" in SettingScope.Build := "io.7mind.izumi",
@@ -236,6 +236,11 @@ object Idealingua {
         // add sbtgen version to sbt build to allow scala-steward to find it and update it in .sc files
         // https://github.com/scala-steward-org/scala-steward/issues/696#issuecomment-545800968
         "libraryDependencies" += s""""io.7mind.izumi.sbt" % "sbtgen_2.13" % "${Version.SbtGen.value}" % Provided""".raw,
+
+        // Ignore scala-xml version conflict between scoverage where `coursier` requires scala-xml v2
+        // and scoverage requires scala-xml v1 on Scala 2.12,
+        // introduced when updating scoverage to 2.0.7 https://github.com/7mind/idealingua-v1/pull/373/
+        "libraryDependencySchemes" in SettingScope.Build += """"org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always""".raw
       )
 
       final val sharedSettings = Defaults.SbtMetaSharedOptions ++ Seq(
