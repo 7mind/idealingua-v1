@@ -1273,7 +1273,7 @@ lazy val `idealingua-v1` = (project in file("."))
       "-XDignore.symbol.file"
     ),
     crossScalaVersions := Nil,
-    scalaVersion := "2.13.8",
+    scalaVersion := "2.13.10",
     ThisBuild / organization := "io.7mind.izumi",
     sonatypeProfileName := "io.7mind",
     sonatypeSessionName := s"[sbt-sonatype] ${name.value} ${version.value} ${java.util.UUID.randomUUID}",
