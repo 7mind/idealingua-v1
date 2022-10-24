@@ -145,7 +145,7 @@ object IntrospectionExtension extends TypeScriptTranslatorExtension {
     implicit val conv: TypeScriptTypeConverter = ctx.conv
 
     val short = dto.id.name
-    val fields = ts.structure.structure(dto.id).all.groupBy(_.field.name).map(_._2.head.field)
+    val fields = ts.structure.structure(dto.id).all.distinctBy(_.field.name).map(_.field)
 
     val extension =
       s"""

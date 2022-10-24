@@ -157,7 +157,7 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
   protected def renderDto(i: DTO): RenderableCogenProduct = {
     val imports = TypeScriptImports(ts, i, i.id.path.toPackage, manifest = options.manifest)
     val fields = typespace.structure.structure(i).all
-    val distinctFields = fields.groupBy(_.field.name).map(_._2.head.field)
+    val distinctFields = fields.distinctBy(_.field.name).map(_.field)
 
     val implementsInterfaces =
       if (i.struct.superclasses.interfaces.nonEmpty) {
@@ -173,7 +173,7 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
         ""
       }
 
-    val uniqueInterfaces = ts.inheritance.parentsInherited(i.id).groupBy(_.name).map(_._2.head)
+    val uniqueInterfaces = ts.inheritance.parentsInherited(i.id).distinctBy(_.name)
     val dto =
       s"""export class ${i.id.name} $implementsInterfaces {
          |${renderRuntimeNames(i.id).shift(4)}
@@ -497,7 +497,7 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
       }
 
     val fields = typespace.structure.structure(i)
-    val distinctFields = fields.all.groupBy(_.field.name).map(_._2.head.field)
+    val distinctFields = fields.all.distinctBy(_.field.name).map(_.field)
     val implId = typespace.tools.implId(i.id)
     val eid = i.id.name + implId.name
 
@@ -517,7 +517,7 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
          |}
        """.stripMargin
 
-    val uniqueInterfaces = ts.inheritance.parentsInherited(i.id).groupBy(_.name).map(_._2.head)
+    val uniqueInterfaces = ts.inheritance.parentsInherited(i.id).distinctBy(_.name)
     val companion =
       s"""export class $eid implements ${i.id.name} {
          |${renderRuntimeNames(implId, eid).shift(4)}

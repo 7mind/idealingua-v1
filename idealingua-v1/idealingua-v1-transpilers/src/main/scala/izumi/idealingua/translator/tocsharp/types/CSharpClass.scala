@@ -1,8 +1,8 @@
 package izumi.idealingua.translator.tocsharp.types
 
-import izumi.fundamentals.platform.strings.IzString._
+import izumi.fundamentals.platform.strings.IzString.*
 import izumi.idealingua.model.common.TypeId
-import izumi.idealingua.model.common.TypeId._
+import izumi.idealingua.model.common.TypeId.*
 import izumi.idealingua.model.il.ast.typed.SimpleStructure
 import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.model.typespace.structures.Struct
@@ -138,13 +138,19 @@ object CSharpClass {
             name: String,
             st: Struct,
             implements: List[InterfaceId])
-           (implicit im: CSharpImports, ts: Typespace): CSharpClass =
-    new CSharpClass(id, name, st.all.groupBy(_.field.name)
-      .map(f =>
+           (implicit im: CSharpImports, ts: Typespace): CSharpClass = {
+    val names = st.all.map(_.field.name).distinct
+    val fields = names.map {
+      fieldName =>
+        val group = st.all.filter(_.field.name == fieldName)
         CSharpField(
-          if (f._2.head.defn.variance.nonEmpty) f._2.head.defn.variance.last else f._2.head.field, name,
-          if (f._2.length > 1) f._2.map(ef => ef.defn.definedBy.name) else Seq.empty)).toSeq,
-      st.superclasses.interfaces ++ implements)
+          field = if (group.head.defn.variance.nonEmpty) group.head.defn.variance.last else group.head.field,
+          structName = name,
+          by = if (group.length > 1) group.map(ef => ef.defn.definedBy.name) else Seq.empty
+        )
+    }
+    new CSharpClass(id, name, fields, st.superclasses.interfaces ++ implements)
+  }
 
   def apply(id: TypeId,
             st: SimpleStructure)
