@@ -257,13 +257,13 @@ class CSharpTranslator(ts: Typespace, options: CSharpTranslatorOptions) extends 
     val name = i.id.name
     // Alternative way using reflection for From method:
     // return ($name)Enum.Parse(typeof($name), value);
-    val decl =
+    val decl: String =
     s"""// $name Enumeration
        |public enum $name {
        |${i.members.map(_.value).map(m => s"$m${if (m == i.members.last.value) "" else ","}").mkString("\n").shift(4)}
        |}
        |
-         |public static class ${name}Helpers {
+       |public static class ${name}Helpers {
        |    public static $name From(string value) {
        |        switch (value) {
        |${i.members.map(_.value).map(m => s"""case \"$m\": return $name.$m;""").mkString("\n").shift(12)}
@@ -272,28 +272,28 @@ class CSharpTranslator(ts: Typespace, options: CSharpTranslatorOptions) extends 
        |        }
        |    }
        |
-         |    public static bool IsValid(string value) {
+       |    public static bool IsValid(string value) {
        |        return Enum.IsDefined(typeof($name), value);
        |    }
        |
-         |    // The elements in the array are still changeable, please use with care.
+       |    // The elements in the array are still changeable, please use with care.
        |    private static readonly $name[] all = new $name[] {
        |${i.members.map(_.value).map(m => s"$name.$m${if (m == i.members.last.value) "" else ","}").mkString("\n").shift(8)}
        |    };
        |
-         |    public static $name[] GetAll() {
+       |    public static $name[] GetAll() {
        |        return ${name}Helpers.all;
        |    }
        |
-         |    // Extensions
+       |    // Extensions
        |
-         |    public static string ToString(this $name e) {
+       |    public static string ToString(this $name e) {
        |        return Enum.GetName(typeof($name), e);
        |    }
        |}
        |
-           |${ext.postModelEmit(ctx, i)}
-         """.stripMargin
+       |${ext.postModelEmit(ctx, i)}
+       |""".stripMargin
 
     EnumProduct(
       decl,

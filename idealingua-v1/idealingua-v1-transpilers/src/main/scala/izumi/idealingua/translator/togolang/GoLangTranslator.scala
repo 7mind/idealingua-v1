@@ -1,5 +1,6 @@
 package izumi.idealingua.translator.togolang
 
+import izumi.fundamentals.collections.IzCollections._
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.strings.IzString._
 import izumi.idealingua.model.common.TypeId.{DTOId, _}
@@ -81,7 +82,7 @@ class GoLangTranslator(ts: Typespace, options: GoTranslatorOptions) extends Tran
       return ""
     }
 
-    val uniqueInterfaces = interfaces.groupBy(_.name).map(_._2.head)
+    val uniqueInterfaces = interfaces.distinctBy(_.name)
 
     s"""${uniqueInterfaces.map(sc => renderRegistrationCtor(sc, structName, imports)).mkString("\n")}
        |
@@ -95,7 +96,7 @@ class GoLangTranslator(ts: Typespace, options: GoTranslatorOptions) extends Tran
   protected def renderDto(i: DTO): RenderableCogenProduct = {
     val imports = GoLangImports(i, i.id.path.toPackage, ts, manifest = options.manifest)
     val fields = typespace.structure.structure(i).all.map(f => if (f.defn.variance.nonEmpty) f.defn.variance.last else f.field)
-    val distinctFields = fields.groupBy(_.name).map(_._2.head)
+    val distinctFields = fields.distinctBy(_.name)
 
     val struct = GoLangStruct(
       i.id.name,
@@ -789,7 +790,7 @@ class GoLangTranslator(ts: Typespace, options: GoTranslatorOptions) extends Tran
     val imports = GoLangImports(i, i.id.path.toPackage, ts, manifest = options.manifest)
 
     val fields = typespace.structure.structure(i).all.map(f => if (f.defn.variance.nonEmpty) f.defn.variance.last else f.field)
-    val distinctFields = fields.groupBy(_.name).map(_._2.head)
+    val distinctFields = fields.distinctBy(_.name)
 
     val implId = typespace.tools.implId(i.id)
     val eid = i.id.name + typespace.tools.implId(i.id).name

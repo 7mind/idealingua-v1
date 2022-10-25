@@ -1,5 +1,6 @@
 package izumi.idealingua.translator.totypescript.extensions
 
+import izumi.fundamentals.collections.IzCollections._
 import izumi.fundamentals.platform.strings.IzString._
 import izumi.idealingua.model.common.TypeId._
 import izumi.idealingua.model.common.{Generic, Primitive, TypeId}
@@ -145,7 +146,7 @@ object IntrospectionExtension extends TypeScriptTranslatorExtension {
     implicit val conv: TypeScriptTypeConverter = ctx.conv
 
     val short = dto.id.name
-    val fields = ts.structure.structure(dto.id).all.groupBy(_.field.name).map(_._2.head.field)
+    val fields = ts.structure.structure(dto.id).all.distinctBy(_.field.name).map(_.field)
 
     val extension =
       s"""
