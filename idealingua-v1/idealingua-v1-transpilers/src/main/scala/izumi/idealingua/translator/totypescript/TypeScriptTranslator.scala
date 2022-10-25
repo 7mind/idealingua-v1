@@ -1,5 +1,6 @@
 package izumi.idealingua.translator.totypescript
 
+import izumi.fundamentals.collections.IzCollections._
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.strings.IzString._
 import izumi.idealingua.model.common.TypeId._

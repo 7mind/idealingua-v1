@@ -1,5 +1,6 @@
 package izumi.idealingua.translator.totypescript.extensions
 
+import izumi.fundamentals.collections.IzCollections._
 import izumi.fundamentals.platform.strings.IzString._
 import izumi.idealingua.model.common.TypeId._
 import izumi.idealingua.model.common.{Generic, Primitive, TypeId}
