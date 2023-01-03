@@ -75,7 +75,12 @@ jobs:
             ~/.cache/coursier
             /usr/local/bin/cs
           key: ${{ runner.os }}-scala
-      - name: Publish Microsite
+      - name: Publish alien artifacts
+        env:
+          OPENSSL_IV: ${{ secrets.OPENSSL_IV }}
+          OPENSSL_KEY: ${{ secrets.OPENSSL_KEY }}
+          TOKEN_NUGET: ${{ secrets.TOKEN_NUGET }}
+          TOKEN_NPM: ${{ secrets.TOKEN_NPM }}
         run: |
           bash .build.sh 2.12 secrets publishIDL
   publish-artifacts:
