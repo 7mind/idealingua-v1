@@ -120,7 +120,6 @@ function secrets {
     if [[ "$CI_PULL_REQUEST" == "false"  ]] ; then
         openssl aes-256-cbc -K ${OPENSSL_KEY} -iv ${OPENSSL_IV} -in secrets.tar.enc -out secrets.tar -d
         tar xvf secrets.tar
-        ln -s .secrets/local.sbt local.sbt
     fi
 }
 
