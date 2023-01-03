@@ -1,0 +1,141 @@
+name: Build
+
+on:
+  push:
+    branches: [ "develop" ]
+    tags: [ "v**" ]
+  pull_request:
+    branches: [ "develop" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ '11' ]
+        scala: [ '2.12', '2.13']
+    steps:
+      - uses: actions/checkout@v3
+      - uses: rlespinasse/github-slug-action@v4
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'microsoft'
+          java-version: ${{ matrix.java }}
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.cache/coursier
+            /usr/local/bin/cs
+          key: ${{ runner.os }}-scala
+      - name: Install Coursier
+        run: |
+          if [[ ! -f /usr/local/bin/cs ]]; then
+            sudo curl -Lo /usr/local/bin/cs  https://git.io/coursier-cli-linux
+            sudo chmod +x /usr/local/bin/cs
+          fi
+      - name: Build and Test
+        run: |
+          bash sbtgen.sc --js
+          bash .build.sh ${{ matrix.scala }} coverage
+      - uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.TOKEN_CODECOV }} # not required for public repos
+          verbose: true # optional (default = false)
+          fail_ci_if_error: true
+          files: cobertura.xml
+  test-site:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ '17' ]
+        scala: [ '2.13']
+    steps:
+      - uses: actions/checkout@v3
+      - uses: rlespinasse/github-slug-action@v4
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'microsoft'
+          java-version: ${{ matrix.java }}
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.cache/coursier
+            /usr/local/bin/cs
+          key: ${{ runner.os }}-scala
+      - name: Build Microsite
+        run: |
+          bash sbtgen.sc --js 
+          bash .build.sh ${{ matrix.scala }} site-test
+  checksecret:
+    runs-on: ubuntu-latest
+    outputs:
+      HAVE_SECRETS: ${{ steps.checksecret_job.outputs.HAVE_SECRETS }}
+    steps:
+      - id: checksecret_job
+        env:
+          OPENSSL_IV: ${{ secrets.OPENSSL_IV }}
+          OPENSSL_KEY: ${{ secrets.OPENSSL_KEY }}
+        run: |
+          echo "HAVE_SECRETS=${{ env.OPENSSL_IV != '' && env.OPENSSL_KEY != '' }}" >> $GITHUB_OUTPUT
+  publish-alien:
+    runs-on: ubuntu-latest
+    needs: [ 'checksecret' ]
+    if: needs.checksecret.outputs.HAVE_SECRETS == 'true'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: rlespinasse/github-slug-action@v4
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'microsoft'
+          java-version: ${{ matrix.java }}
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.cache/coursier
+            /usr/local/bin/cs
+          key: ${{ runner.os }}-scala
+      - name: Publish Microsite
+        run: |
+          bash .build.sh 2.12 secrets publishIDL
+  publish-artifacts:
+    runs-on: ubuntu-latest
+    needs: [ 'build', 'checksecret' ]
+    if: needs.checksecret.outputs.HAVE_SECRETS == 'true'
+    strategy:
+      matrix:
+        java: [ '11' ]
+        scala: [ '2.12', '2.13']
+    steps:
+      - uses: actions/checkout@v3
+      - uses: rlespinasse/github-slug-action@v4
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'microsoft'
+          java-version: ${{ matrix.java }}
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.cache/coursier
+            /usr/local/bin/cs
+          key: ${{ runner.os }}-scala
+      - name: Install Coursier
+        run: |
+          if [[ ! -f /usr/local/bin/cs ]]; then
+            sudo curl -Lo /usr/local/bin/cs  https://git.io/coursier-cli-linux
+            sudo chmod +x /usr/local/bin/cs
+          fi
+      - name: Build and Publish to Sonatype
+        env:
+          OPENSSL_IV: ${{ secrets.OPENSSL_IV }}
+          OPENSSL_KEY: ${{ secrets.OPENSSL_KEY }}
+        run: |
+          bash sbtgen.sc --js
+          bash .build.sh ${{ matrix.scala }} secrets publishScala
