@@ -18,7 +18,7 @@ rm $NUSPEC
 
 for TRG in $(find . -name '*.nupkg' -type f -print)
 do
-    dotnet nuget push $TRG -k $NUGET_TOKEN --source https://www.nuget.org || exit 1
+    dotnet nuget push $TRG -k $NUGET_TOKEN --source https://api.nuget.org/v3/index.json || exit 1
 done
 
 popd
