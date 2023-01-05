@@ -87,7 +87,7 @@ function init {
     export CI=true
     export CI_BRANCH=${GITHUB_REF_NAME}
     export CI_TAG=`git describe --contains | grep v | grep -v '~' | head -n 1 || true`
-    export CI_BUILD_NUMBER=${GITHUB_RUN_ATTEMPT}
+    export CI_BUILD_NUMBER="${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}.${GITHUB_RUN_ID}"
     export CI_COMMIT=${GITHUB_SHA}
 
     export NPM_TOKEN=${TOKEN_NPM}
