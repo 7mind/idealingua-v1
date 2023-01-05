@@ -348,6 +348,9 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
         <ContentTargetFolders>contentFiles</ContentTargetFolders>
         <!--GenerateAssemblyInfo>false</GenerateAssemblyInfo-->
         <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+        <PublishRepositoryUrl>false</PublishRepositoryUrl>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
       </PropertyGroup>
         <ItemGroup>
