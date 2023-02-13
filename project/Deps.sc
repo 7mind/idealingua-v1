@@ -198,6 +198,7 @@ object Idealingua {
       )
       final val settings = Seq(
         "libraryDependencySchemes" in SettingScope.Build += s""""io.circe" %% "circe-core" % VersionScheme.Always""".raw,
+        "libraryDependencySchemes" in SettingScope.Build += s""""io.circe" %% "circe-core_sjs1" % VersionScheme.Always""".raw,
       )
 
       final val sharedAggSettings = Seq(

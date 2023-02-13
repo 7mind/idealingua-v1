@@ -11,6 +11,8 @@ disablePlugins(AssemblyPlugin)
 
 ThisBuild / libraryDependencySchemes += "io.circe" %% "circe-core" % VersionScheme.Always
 
+ThisBuild / libraryDependencySchemes += "io.circe" %% "circe-core_sjs1" % VersionScheme.Always
+
 lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-model"))
   .settings(
     libraryDependencies ++= Seq(
