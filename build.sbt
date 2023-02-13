@@ -9,8 +9,6 @@ enablePlugins(SbtgenVerificationPlugin)
 
 disablePlugins(AssemblyPlugin)
 
-ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
-
 ThisBuild / libraryDependencySchemes += "io.circe" %% "circe-core" % VersionScheme.Always
 
 lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-model"))

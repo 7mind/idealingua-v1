@@ -197,7 +197,6 @@ object Idealingua {
         disabled = Seq(Plugin("AssemblyPlugin")),
       )
       final val settings = Seq(
-        "libraryDependencySchemes" in SettingScope.Build += """"org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always""".raw,
         "libraryDependencySchemes" in SettingScope.Build += s""""io.circe" %% "circe-core" % VersionScheme.Always""".raw,
       )
 
