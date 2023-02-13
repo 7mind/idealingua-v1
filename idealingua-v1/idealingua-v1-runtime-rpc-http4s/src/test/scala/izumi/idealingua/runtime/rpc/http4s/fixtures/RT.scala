@@ -28,7 +28,7 @@ object RT {
     TracingConfig.enabled,
   )
   implicit val runtime: Runtime[Any] = Runtime((), platform)
-  implicit val IO2R: UnsafeRun2[zio.IO] = UnsafeRun2.createZIO(platform)
+  implicit val IO2R: UnsafeRun2[zio.IO] = UnsafeRun2.createZIO[Any](platform, ())
   final val rt = new Http4sRuntime[zio.IO, DummyRequestContext, DummyRequestContext, String, Unit, Unit](global)
 
   private def makeLogger(): IzLogger = {
