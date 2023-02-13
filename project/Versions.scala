@@ -18,4 +18,6 @@ object V {
   val typesafe_config = "1.4.2"
 
   val kind_projector = "0.13.2"
+
+  val circe_derivation = "0.13.0-M5"
 }

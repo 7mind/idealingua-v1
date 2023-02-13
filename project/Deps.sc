@@ -1,4 +1,4 @@
-import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.96`
+import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.97`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
 
@@ -15,6 +15,7 @@ object Idealingua {
     val cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version")
     val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
     val circe = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version")
+    val circe_derivation = Version.VExpr("V.circe_derivation")
     val jawn = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.org_typelevel_jawn_parser_version")
     val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
     val zio_interop_cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version")
@@ -55,20 +56,20 @@ object Idealingua {
   )
 
   object Deps {
-     final val fundamentals_collections = Library("io.7mind.izumi", "fundamentals-collections", V.izumi, LibraryType.Auto)
-     final val fundamentals_platform = Library("io.7mind.izumi", "fundamentals-platform", V.izumi, LibraryType.Auto)
-     final val fundamentals_functional = Library("io.7mind.izumi", "fundamentals-functional", V.izumi, LibraryType.Auto)
-     final val fundamentals_reflection = Library("io.7mind.izumi", "fundamentals-reflection", V.izumi, LibraryType.Auto)
-     final val fundamentals_json_circe = Library("io.7mind.izumi", "fundamentals-json-circe", V.izumi, LibraryType.Auto)
-     final val fundamentals_bio = Library("io.7mind.izumi", "fundamentals-bio", V.izumi, LibraryType.Auto)
-     final val logstage_core = Library("io.7mind.izumi", "logstage-core", V.izumi, LibraryType.Auto)
-     final val logstage_adapter_slf4j = Library("io.7mind.izumi", "logstage-adapter-slf4j", V.izumi, LibraryType.Auto)
+    final val fundamentals_collections = Library("io.7mind.izumi", "fundamentals-collections", V.izumi, LibraryType.Auto)
+    final val fundamentals_platform = Library("io.7mind.izumi", "fundamentals-platform", V.izumi, LibraryType.Auto)
+    final val fundamentals_functional = Library("io.7mind.izumi", "fundamentals-functional", V.izumi, LibraryType.Auto)
+    final val fundamentals_reflection = Library("io.7mind.izumi", "fundamentals-reflection", V.izumi, LibraryType.Auto)
+    final val fundamentals_json_circe = Library("io.7mind.izumi", "fundamentals-json-circe", V.izumi, LibraryType.Auto)
+    final val fundamentals_bio = Library("io.7mind.izumi", "fundamentals-bio", V.izumi, LibraryType.Auto)
+    final val logstage_core = Library("io.7mind.izumi", "logstage-core", V.izumi, LibraryType.Auto)
+    final val logstage_adapter_slf4j = Library("io.7mind.izumi", "logstage-adapter-slf4j", V.izumi, LibraryType.Auto)
 
-     final val fundamentals_basics = Seq(
-       fundamentals_collections,
-       fundamentals_platform,
-       fundamentals_functional,
-     )
+    final val fundamentals_basics = Seq(
+      fundamentals_collections,
+      fundamentals_platform,
+      fundamentals_functional,
+    )
     final val scalatest = Library("org.scalatest", "scalatest", V.scalatest, LibraryType.Auto) in Scope.Test.all
 
     final val cats_core = Library("org.typelevel", "cats-core", V.cats, LibraryType.Auto)
@@ -93,6 +94,7 @@ object Idealingua {
       Library("io.circe", "circe-parser", V.circe, LibraryType.Auto),
       Library("io.circe", "circe-literal", V.circe, LibraryType.Auto),
       Library("io.circe", "circe-generic-extras", V.circe, LibraryType.Auto),
+      Library("io.circe", "circe-derivation", V.circe_derivation, LibraryType.Auto),
       fundamentals_json_circe
     )
 
@@ -128,7 +130,7 @@ object Idealingua {
 
   // DON'T REMOVE, these variables are read from CI build (build.sh)
   final val scala212 = ScalaVersion("2.12.17")
-  final val scala213 = ScalaVersion("2.13.8")
+  final val scala213 = ScalaVersion("2.13.10")
 
   object Groups {
     final val fundamentals = Set(Group("fundamentals"))
@@ -150,7 +152,7 @@ object Idealingua {
       language = targetScala,
       settings = Seq(
         "coverageEnabled" := false,
-        "scalaJSLinkerConfig" in (SettingScope.Project, Platform.Js) := "{ scalaJSLinkerConfig.value.withModuleKind(ModuleKind.CommonJSModule) }".raw,
+        "scalaJSLinkerConfig" in(SettingScope.Project, Platform.Js) := "{ scalaJSLinkerConfig.value.withModuleKind(ModuleKind.CommonJSModule) }".raw,
       ),
     )
     final val cross = Seq(jvmPlatform, jsPlatform)
@@ -195,7 +197,8 @@ object Idealingua {
         disabled = Seq(Plugin("AssemblyPlugin")),
       )
       final val settings = Seq(
-        "libraryDependencySchemes" in SettingScope.Build := Seq(""""org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always""".raw)
+        "libraryDependencySchemes" in SettingScope.Build += s""""io.circe" %% "circe-core" % VersionScheme.Always""".raw,
+        "libraryDependencySchemes" in SettingScope.Build += s""""io.circe" %% "circe-core_sjs1" % VersionScheme.Always""".raw,
       )
 
       final val sharedAggSettings = Seq(
