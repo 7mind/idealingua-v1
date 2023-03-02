@@ -253,7 +253,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
       "org.typelevel" %% "cats-effect" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version,
       "io.circe" %% "circe-parser" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
       "io.circe" %% "circe-literal" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
-      "io.circe" %% "circe-generic-extras" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
+      "io.circe" %% "circe-generic-extras" % V.circe_generic_extras,
       "io.circe" %% "circe-derivation" % V.circe_derivation,
       "io.7mind.izumi" %% "fundamentals-json-circe" % Izumi.version,
       "dev.zio" %% "zio" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version % Test,
@@ -502,7 +502,7 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
       "io.7mind.izumi" %% "fundamentals-bio" % Izumi.version,
       "io.circe" %% "circe-parser" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
       "io.circe" %% "circe-literal" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
-      "io.circe" %% "circe-generic-extras" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
+      "io.circe" %% "circe-generic-extras" % V.circe_generic_extras,
       "io.circe" %% "circe-derivation" % V.circe_derivation,
       "io.7mind.izumi" %% "fundamentals-json-circe" % Izumi.version
     )

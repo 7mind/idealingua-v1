@@ -15,6 +15,7 @@ object Idealingua {
     val cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version")
     val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
     val circe = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version")
+    val circe_generic_extras = Version.VExpr("V.circe_generic_extras")
     val circe_derivation = Version.VExpr("V.circe_derivation")
     val jawn = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.org_typelevel_jawn_parser_version")
     val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
@@ -94,7 +95,7 @@ object Idealingua {
     final val circe_all = Seq(
       Library("io.circe", "circe-parser", V.circe, LibraryType.Auto),
       Library("io.circe", "circe-literal", V.circe, LibraryType.Auto),
-      Library("io.circe", "circe-generic-extras", V.circe, LibraryType.Auto),
+      Library("io.circe", "circe-generic-extras", V.circe_generic_extras, LibraryType.Auto),
       Library("io.circe", "circe-derivation", V.circe_derivation, LibraryType.Auto),
       fundamentals_json_circe
     )
