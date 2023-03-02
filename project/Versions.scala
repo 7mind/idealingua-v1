@@ -20,5 +20,6 @@ object V {
 
   val kind_projector = "0.13.2"
 
+  val circe_generic_extras = "0.14.3"
   val circe_derivation = "0.13.0-M5"
 }
