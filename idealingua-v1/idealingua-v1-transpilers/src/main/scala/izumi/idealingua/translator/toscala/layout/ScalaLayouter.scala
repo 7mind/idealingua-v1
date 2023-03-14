@@ -13,7 +13,7 @@ case class RawExpr(e: String)
 
 class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter {
   private val naming = new ScalaNamingConvention(options.manifest.sbt.projectNaming)
-  private val idlcGroupId = ProjectAttributeMacro.extractSbtProjectGroupId().getOrElse("UNSET-GROUP-ID")
+  private val idlcGroupId = MacroParameters.projectGroupId().getOrElse("UNSET-GROUP-ID")
 
   override def layout(outputs: Seq[Translated]): Layouted = {
     def project(id: String) = {

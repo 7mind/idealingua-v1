@@ -37,7 +37,7 @@ class HttpServer[C <: Http4sContext](
   import c.dsl.*
 
   protected def loggingMiddle(service: HttpRoutes[MonoIO]): HttpRoutes[MonoIO] = cats.data.Kleisli {
-    req: Request[MonoIO] =>
+    (req: Request[MonoIO]) =>
       logger.trace(s"${req.method.name -> "method"} ${req.pathInfo -> "path"}: initiated")
 
       try {
