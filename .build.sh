@@ -24,7 +24,6 @@ function csbt {
 
 function coverage {
   csbt clean coverage "'$VERSION_COMMAND test'" "'$VERSION_COMMAND coverageReport'" || exit 1
-  bash <(curl -s https://codecov.io/bash)
 }
 
 function publishIDL {
