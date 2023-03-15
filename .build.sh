@@ -130,7 +130,7 @@ case $i in
     ;;
 
     *)
-        echo "Unknown option"
+        echo "Unknown option: ${$i}"
         exit 1
     ;;
 esac
