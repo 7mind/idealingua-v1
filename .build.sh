@@ -7,6 +7,11 @@ set -xe
 # and https://github.com/sbt/sbt/pull/3995/files
 # TL;DR strict aggregation in sbt is broken; this is a workaround
 
+function scala3 {
+  echo "Using Scala 3..."
+  VERSION_COMMAND="++ $SCALA3"
+}
+
 function scala213 {
   echo "Using Scala 2.13..."
   VERSION_COMMAND="++ $SCALA213"
@@ -80,6 +85,7 @@ function init {
     export IZUMI_VERSION=$(cat version.sbt | sed -r 's/.*\"(.*)\".**/\1/' | sed -E "s/SNAPSHOT/build."${CI_BUILD_UNIQ_SUFFIX}"/")
     export SCALA212=$(cat project/Deps.sc | grep 'val scala212 ' |  sed -r 's/.*\"(.*)\".**/\1/')
     export SCALA213=$(cat project/Deps.sc | grep 'val scala213 ' |  sed -r 's/.*\"(.*)\".**/\1/')
+    export SCALA3=$(cat project/Deps.sc | grep 'val scala300 ' |  sed -r 's/.*\"(.*)\".**/\1/')
 
     printenv
 }
@@ -107,6 +113,10 @@ case $i in
 
     2.12)
         scala212
+    ;;
+
+    3*)
+        scala3
     ;;
 
     coverage)
