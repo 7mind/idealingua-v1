@@ -31,6 +31,8 @@ object Idealingua {
 
     val slf4j = Version.VExpr("V.slf4j")
     val typesafe_config = Version.VExpr("V.typesafe_config")
+
+    val scala_java_time = Version.VExpr("V.scala_java_time")
   }
 
   object PV {
@@ -130,6 +132,8 @@ object Idealingua {
     val http4s_all = (http4s_server ++ http4s_client)
 
     val asynchttpclient = Library("org.asynchttpclient", "async-http-client", V.asynchttpclient, LibraryType.Invariant)
+
+    val scala_java_time = Library("io.github.cquiroz", "scala-java-time", V.scala_java_time, LibraryType.Auto)
   }
 
   import Deps._
@@ -337,9 +341,10 @@ object Idealingua {
         name = Projects.idealingua.runtimeRpcScala,
         libs = Seq(
           scala_reflect,
-          jawn in Scope.Compile.js,
           Deps.fundamentals_bio in Scope.Compile.all,
-          Deps.fundamentals_platform in Scope.Compile.all
+          Deps.fundamentals_platform in Scope.Compile.all,
+          jawn in Scope.Compile.js,
+          scala_java_time in Scope.Test.js,
         ) ++
           cats_all.map(_ in Scope.Compile.all) ++
           circe_all ++
