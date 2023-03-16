@@ -9,8 +9,8 @@ import org.http4s.blaze.server.*
 import org.http4s.server.Router
 import org.scalatest.wordspec.AnyWordSpec
 import zio.Task
-import zio.interop.catz.*
-import zio.interop.catz.implicits.*
+import zio.interop.catz.asyncRuntimeInstance
+import zio.interop.catz.implicits.rts
 
 class Http4sTransportTest extends AnyWordSpec {
 

@@ -28,20 +28,20 @@ trait WsClientContextProvider[Ctx] {
   */
 class ClientWsDispatcher[C <: Http4sContext]
 (
-  val c: C#IMPL[C],
+  val c: Http4sContextImpl[C],
   protected val baseUri: URI,
-  protected val codec: IRTClientMultiplexor[C#BiIO],
-  protected val buzzerMuxer: IRTServerMultiplexor[C#BiIO, C#ClientContext],
-  protected val wsClientContextProvider: WsClientContextProvider[C#ClientContext],
+  protected val codec: IRTClientMultiplexor[GetBiIO[C]#l],
+  protected val buzzerMuxer: IRTServerMultiplexor[GetBiIO[C]#l, GetClientContext[C]],
+  protected val wsClientContextProvider: WsClientContextProvider[GetClientContext[C]],
   logger: IzLogger,
   printer: Printer,
-) extends IRTDispatcher[C#BiIO] with AutoCloseable {
+) extends IRTDispatcher[GetBiIO[C]#l] with AutoCloseable {
 
-  import c._
+  import c.*
 
   val requestState = new RequestState[BiIO]()
 
-  import org.asynchttpclient.Dsl._
+  import org.asynchttpclient.Dsl.*
 
   private val wsc = asyncHttpClient(config())
   private val listener = new WebSocketListener() {
@@ -66,7 +66,7 @@ class ClientWsDispatcher[C <: Http4sContext]
   private val connection = new AtomicReference[NettyWebSocket]()
 
   private def send(out: String): Unit = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     connection.synchronized {
       if (connection.get() == null) {
         connection.set {
@@ -171,7 +171,7 @@ class ClientWsDispatcher[C <: Http4sContext]
   }
 
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
   protected val timeout: FiniteDuration = 2.seconds
   protected val pollingInterval: FiniteDuration = 50.millis

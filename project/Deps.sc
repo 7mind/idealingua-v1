@@ -20,6 +20,7 @@ object Idealingua {
     val jawn = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.org_typelevel_jawn_parser_version")
     val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
     val zio_interop_cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version")
+    val izumi_reflect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_izumi_reflect_version")
 
     val http4s = Version.VExpr("V.http4s")
     val http4s_blaze = Version.VExpr("V.http4s_blaze")
@@ -84,9 +85,11 @@ object Idealingua {
 
     final val zio_core = Library("dev.zio", "zio", V.zio, LibraryType.Auto)
     final val zio_interop_cats = Library("dev.zio", "zio-interop-cats", V.zio_interop_cats, LibraryType.Auto)
+    final val izumi_reflect = Library("dev.zio", "izumi-reflect", V.izumi_reflect, LibraryType.Auto)
     final val zio_all = Seq(
       zio_core,
       zio_interop_cats,
+      izumi_reflect
     )
 
     final val typesafe_config = Library("com.typesafe", "config", V.typesafe_config, LibraryType.Invariant) in Scope.Compile.all

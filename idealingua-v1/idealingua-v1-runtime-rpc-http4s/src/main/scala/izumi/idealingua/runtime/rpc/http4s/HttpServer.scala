@@ -22,13 +22,13 @@ import java.time.ZonedDateTime
 import java.util.concurrent.RejectedExecutionException
 
 class HttpServer[C <: Http4sContext](
-  val c: C#IMPL[C],
-  val muxer: IRTServerMultiplexor[C#BiIO, C#RequestContext],
-  val codec: IRTClientMultiplexor[C#BiIO],
-  val contextProvider: AuthMiddleware[C#MonoIO, C#RequestContext],
-  val wsContextProvider: WsContextProvider[C#BiIO, C#RequestContext, C#ClientId],
-  val wsSessionStorage: WsSessionsStorage[C#BiIO, C#ClientId, C#RequestContext],
-  val listeners: Seq[WsSessionListener[C#BiIO, C#ClientId]],
+  val c: Http4sContextImpl[C],
+  val muxer: IRTServerMultiplexor[GetBiIO[C]#l, GetRequestContext[C]],
+  val codec: IRTClientMultiplexor[GetBiIO[C]#l],
+  val contextProvider: AuthMiddleware[GetMonoIO[C]#l, GetRequestContext[C]],
+  val wsContextProvider: WsContextProvider[GetBiIO[C]#l, GetRequestContext[C], GetClientId[C]],
+  val wsSessionStorage: WsSessionsStorage[GetBiIO[C]#l, GetClientId[C], GetRequestContext[C]],
+  val listeners: Seq[WsSessionListener[GetBiIO[C]#l, GetClientId[C]]],
   logger: IzLogger,
   printer: Printer
 ) {
@@ -82,14 +82,14 @@ class HttpServer[C <: Http4sContext](
       }
   }
 
-  protected def handleWsClose(context: WebsocketClientContext[C#BiIO, C#ClientId, C#RequestContext]): MonoIO[Unit] = {
+  protected def handleWsClose(context: WebsocketClientContext[BiIO, ClientId, RequestContext]): MonoIO[Unit] = {
     F.sync(logger.debug(s"${context -> null}: Websocket client disconnected")) *>
     context.finish()
   }
 
   protected def onWsOpened(): MonoIO[Unit] = F.unit
 
-  protected def onWsUpdate(maybeNewId: Option[C#ClientId], old: WsClientId[ClientId]): MonoIO[Unit] = F.sync {
+  protected def onWsUpdate(maybeNewId: Option[ClientId], old: WsClientId[ClientId]): MonoIO[Unit] = F.sync {
     (maybeNewId, old).forget
   }
 
@@ -97,13 +97,13 @@ class HttpServer[C <: Http4sContext](
 
   protected def setupWs(request: AuthedRequest[MonoIO, RequestContext], initialContext: RequestContext, ws: WebSocketBuilder2[MonoIO]): MonoIO[Response[MonoIO]] = {
     val context = new WebsocketClientContextImpl[C](c, request, initialContext, listeners, wsSessionStorage, logger) {
-      override def onWsSessionOpened(): C#MonoIO[Unit] = {
+      override def onWsSessionOpened(): MonoIO[Unit] = {
         onWsOpened() *> super.onWsSessionOpened()
       }
-      override def onWsClientIdUpdate(maybeNewId: Option[C#ClientId], oldId: WsClientId[C#ClientId]): C#MonoIO[Unit] = {
+      override def onWsClientIdUpdate(maybeNewId: Option[ClientId], oldId: WsClientId[ClientId]): MonoIO[Unit] = {
         onWsUpdate(maybeNewId, oldId) *> super.onWsClientIdUpdate(maybeNewId, oldId)
       }
-      override def onWsSessionClosed(): C#MonoIO[Unit] = {
+      override def onWsSessionClosed(): MonoIO[Unit] = {
         onWsClosed() *> super.onWsSessionClosed()
       }
     }
@@ -146,7 +146,7 @@ class HttpServer[C <: Http4sContext](
       F.pure(None)
   }
 
-  def onHeartbeat(requestTime: ZonedDateTime): C#MonoIO[Unit] = {
+  def onHeartbeat(requestTime: ZonedDateTime): MonoIO[Unit] = {
     requestTime.discard()
     F.unit
   }
@@ -251,7 +251,7 @@ class HttpServer[C <: Http4sContext](
     context: HttpRequestContext[MonoIO, RequestContext],
     method: IRTMethodId,
     result: Exit[Throwable, Option[Json]]
-  ): C#MonoIO[Response[MonoIO]] = {
+  ): MonoIO[Response[MonoIO]] = {
     result match {
       case Success(v) =>
         v match {
