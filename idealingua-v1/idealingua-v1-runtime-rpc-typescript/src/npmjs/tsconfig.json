@@ -27,6 +27,7 @@
     "noImplicitAny" : true,
     "strictNullChecks" : false,
     "suppressImplicitAnyIndexErrors" : true,
+    "ignoreDeprecations": "5.0",
     "experimentalDecorators" : true,
     "removeComments" : true,
     "preserveConstEnums" : true
