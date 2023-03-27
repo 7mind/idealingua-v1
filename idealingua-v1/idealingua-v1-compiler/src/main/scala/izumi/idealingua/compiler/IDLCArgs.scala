@@ -51,8 +51,6 @@ object IDLCArgs {
     final val overlayVersionFile = arg("overlay-version", "v", "version file", "<path>")
     final val define = arg("define", "d", "define value", "const.name=value")
     final val publish = flag("publish", "p", "build and publish generated code")
-
-
   }
 
   object LP extends ParserDef {
@@ -65,7 +63,7 @@ object IDLCArgs {
     final val define = arg("define", "d", "define value", "const.name=value")
   }
 
-  object IP extends ParserDef {}
+  object IP extends ParserDef
 
   def parseUnsafe(args: Array[String]): IDLCArgs = {
     val parsed = new CLIParserImpl().parse(args) match {
@@ -102,7 +100,7 @@ object IDLCArgs {
     val overlay = parameters.findValue(P.overlayDir).asPath.getOrElse(root.resolve("overlay"))
     val overlayVersion = parameters.findValue(P.overlayVersionFile).asPath
     val publish = parameters.hasFlag(P.publish)
-    val defines = parseDefs(parameters)
+    val defines = parseDefs(parameters, P.define)
 
     val internalRoles = Seq("init", "help")
 
@@ -114,7 +112,7 @@ object IDLCArgs {
         val target = parameters.findValue(LP.target).asPath
         val manifest = parameters.findValue(LP.manifest).asFile
         val credentials = parameters.findValue(LP.credentials).asFile
-        val defines = parseDefs(parameters)
+        val defines = parseDefs(parameters, LP.define)
         val extensions = parameters.findValue(LP.extensionSpec).map(_.value.split(',')).toList.flatten
 
         LanguageOpts(
@@ -142,8 +140,8 @@ object IDLCArgs {
     )
   }
 
-  private def parseDefs(parameters: RawEntrypointParams): Map[String, String] = {
-    parameters.findValues(LP.define).map {
+  private def parseDefs(parameters: RawEntrypointParams, argDef: ParserDef.ArgDef): Map[String, String] = {
+    parameters.findValues(argDef).map {
       v =>
         val parts = v.value.split('=')
         parts.head -> parts.tail.mkString("=")

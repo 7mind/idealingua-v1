@@ -20,7 +20,7 @@ trait CirceTranslatorExtensionBase extends ScalaTranslatorExtension {
 
   protected case class CirceTrait(name: String, defn: Defn.Trait)
 
-  protected def classDeriverImports: List[Import]
+  protected def classDeriverImports(scalaVersion: Option[String]): List[Import]
 
   private val circeRuntimePkg = runtime.Pkg.of[IRTTimeInstances]
 
@@ -253,16 +253,30 @@ trait CirceTranslatorExtensionBase extends ScalaTranslatorExtension {
           }
       """)
     } else {
+      // FIXME: Generate manual codec for Scala 3 AnyVals, since they're unsupported by circe deriver right now
+      if (AnyvalExtension.structCanBeAnyVal(ctx, sc.struct.fields) && ctx.sbtOptions.scalaVersion.exists(_.startsWith("3"))) {
+        val field = sc.struct.all.head
+        CirceTrait(
+          s"${name}Circe",
+          q"""trait ${Type.Name(s"${name}Circe")} extends $base {
+              import _root_.io.circe.{Encoder, Decoder}
+
+              implicit val ${Pat.Var(Term.Name(s"encode$name"))}: Encoder.AsObject[$tpe] = Encoder.forProduct1[$tpe, ${field.fieldType}](${field.field.field.name})((v: $tpe) => v.${field.name})
+              implicit val ${Pat.Var(Term.Name(s"decode$name"))}: Decoder[$tpe] = Decoder.forProduct1[$tpe, ${field.fieldType}](${field.field.field.name})((d: ${field.fieldType}) => new ${stype.typeName}(d))
+            }
+        """)
+      } else {
       CirceTrait(
         s"${name}Circe",
         q"""trait ${Type.Name(s"${name}Circe")} extends $base {
-            ..$classDeriverImports
+            ..${classDeriverImports(ctx.sbtOptions.scalaVersion)}
             import _root_.io.circe.{Encoder, Decoder}
 
             implicit val ${Pat.Var(Term.Name(s"encode$name"))}: Encoder.AsObject[$tpe] = deriveEncoder[$tpe]
             implicit val ${Pat.Var(Term.Name(s"decode$name"))}: Decoder[$tpe] = deriveDecoder[$tpe]
           }
       """)
+      }
     }
   }
 
@@ -273,7 +287,14 @@ trait CirceTranslatorExtensionBase extends ScalaTranslatorExtension {
   * Doesn't support sealed traits hierarchies
   */
 object CirceDerivationTranslatorExtension extends CirceTranslatorExtensionBase {
-  override protected val classDeriverImports: List[Import] = List(
-    q""" import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder} """
-  )
+  override protected def classDeriverImports(scalaVersion: Option[String]): List[Import] = {
+    if (scalaVersion.exists(_.startsWith("3"))) {
+      List(scala3Import)
+    } else {
+      List(scala2Import)
+    }
+  }
+
+  private[this] lazy val scala2Import = q""" import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder} """
+  private[this] lazy val scala3Import = q""" import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder} """
 }

@@ -1,5 +1,6 @@
 package izumi.idealingua.translator.toscala
 
+import izumi.idealingua.model.publishing.manifests.SbtOptions
 import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.toscala.extensions.{ScalaTranslatorExtension, ScalaTranslatorExtensions}
 import izumi.idealingua.translator.toscala.tools.{ModuleTools, ScalaTranslationTools}
@@ -9,6 +10,7 @@ import izumi.idealingua.translator.toscala.types.runtime.IDLRuntimeTypes
 class STContext(
                  val typespace: Typespace
                  , extensions: Seq[ScalaTranslatorExtension]
+                 , val sbtOptions: SbtOptions
                ) {
   final val conv = new ScalaTypeConverter(typespace.domain.id)
   final val rt: IDLRuntimeTypes.type = IDLRuntimeTypes

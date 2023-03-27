@@ -12,12 +12,12 @@ import org.http4s.blaze.client._
 
 class ClientDispatcher[C <: Http4sContext]
 (
-  val c: C#IMPL[C]
+  val c: Http4sContextImpl[C]
 , logger: IzLogger
 , printer: circe.Printer
 , baseUri: Uri
-, codec: IRTClientMultiplexor[C#BiIO]
-) extends IRTDispatcher[C#BiIO] {
+, codec: IRTClientMultiplexor[GetBiIO[C]#l]
+) extends IRTDispatcher[GetBiIO[C]#l] {
   import c._
 
   def dispatch(request: IRTMuxRequest): BiIO[Throwable, IRTMuxResponse] = {
@@ -58,7 +58,7 @@ class ClientDispatcher[C <: Http4sContext]
         body =>
           logger.trace(s"${input.method -> "method"}: Received response: $body")
           val decoded = for {
-            parsed <- c.F.fromEither(parse(body))
+            parsed <- F.fromEither(parse(body))
             product <- codec.decode(parsed, input.method)
           } yield {
             logger.trace(s"${input.method -> "method"}: decoded response: $product")

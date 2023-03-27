@@ -50,19 +50,19 @@ final case class ServiceMethodProduct(ctx: STContext, sp: ServiceContext, method
     val invoke = method.signature.output match {
       case DefMethod.Output.Singular(_) =>
         q"""def invoke(ctx: ${sp.Ctx.t}, input: Input): Just[Output] = {
-              assert(ctx != null && input != null)
+              assert(ctx.asInstanceOf[_root_.scala.AnyRef] != null && input.asInstanceOf[_root_.scala.AnyRef] != null)
             ${sp.IO2.n}.map(_service.$nameTerm(ctx, ..${Input.sigCall}))(v => new Output(v))
            }"""
 
       case DefMethod.Output.Void() =>
         q"""def invoke(ctx: ${sp.Ctx.t}, input: Input): Just[Output] = {
-              assert(ctx != null && input != null)
+              assert(ctx.asInstanceOf[_root_.scala.AnyRef] != null && input.asInstanceOf[_root_.scala.AnyRef] != null)
               ${sp.IO2.n}.map(_service.$nameTerm(ctx, ..${Input.sigCall}))(_ => new Output())
            }"""
 
       case DefMethod.Output.Algebraic(_) | DefMethod.Output.Struct(_) =>
         q"""def invoke(ctx: ${sp.Ctx.t}, input: Input): Just[Output] = {
-              assert(ctx != null && input != null)
+              assert(ctx.asInstanceOf[_root_.scala.AnyRef] != null && input.asInstanceOf[_root_.scala.AnyRef] != null)
               _service.$nameTerm(ctx, ..${Input.sigCall})
            }"""
 
@@ -99,7 +99,7 @@ final case class ServiceMethodProduct(ctx: STContext, sp: ServiceContext, method
       case DefMethod.Output.Singular(_) =>
         q"""def $nameTerm(..${Input.signature}): ${Output.outputType} = {
                ${sp.IO2.n}.redeem(_dispatcher
-                 .dispatch(IRTMuxRequest(IRTReqBody(new _M.$nameTerm.Input(..${Input.sigDirectCall})), _M.$nameTerm.id))
+                 .dispatch(IRTMuxRequest(IRTReqBody(new ${init"_M.$nameTerm.Input(..${Input.sigDirectCall})"}), _M.$nameTerm.id))
                )(
                   { err => ${sp.IO2.n}.terminate(err) },
                   {
@@ -112,7 +112,7 @@ final case class ServiceMethodProduct(ctx: STContext, sp: ServiceContext, method
       case DefMethod.Output.Void() =>
         q"""def $nameTerm(..${Input.signature}): ${Output.outputType} = {
                ${sp.IO2.n}.redeem(_dispatcher
-                 .dispatch(IRTMuxRequest(IRTReqBody(new _M.$nameTerm.Input(..${Input.sigDirectCall})), _M.$nameTerm.id))
+                 .dispatch(IRTMuxRequest(IRTReqBody(new ${init"_M.$nameTerm.Input(..${Input.sigDirectCall})"}), _M.$nameTerm.id))
                )(
                    { err => ${sp.IO2.n}.terminate(err) },
                    {
@@ -125,7 +125,7 @@ final case class ServiceMethodProduct(ctx: STContext, sp: ServiceContext, method
       case DefMethod.Output.Algebraic(_) | DefMethod.Output.Struct(_) =>
         q"""def $nameTerm(..${Input.signature}): ${Output.outputType} = {
             ${sp.IO2.n}.redeem(_dispatcher
-                 .dispatch(IRTMuxRequest(IRTReqBody(new _M.$nameTerm.Input(..${Input.sigDirectCall})), _M.$nameTerm.id))
+                 .dispatch(IRTMuxRequest(IRTReqBody(new ${init"_M.$nameTerm.Input(..${Input.sigDirectCall})"}), _M.$nameTerm.id))
                )(
                     { err => ${sp.IO2.n}.terminate(err) },
                     {
@@ -138,7 +138,7 @@ final case class ServiceMethodProduct(ctx: STContext, sp: ServiceContext, method
       case DefMethod.Output.Alternative(_, _) =>
         q"""def $nameTerm(..${Input.signature}): ${Output.outputType} = {
            ${sp.IO2.n}.redeem(_dispatcher
-                 .dispatch(IRTMuxRequest(IRTReqBody(new _M.$nameTerm.Input(..${Input.sigDirectCall})), _M.$nameTerm.id))
+                 .dispatch(IRTMuxRequest(IRTReqBody(new ${init"_M.$nameTerm.Input(..${Input.sigDirectCall})"}), _M.$nameTerm.id))
                )(
                     { err => ${sp.IO2.n}.terminate(err) },
                     {
