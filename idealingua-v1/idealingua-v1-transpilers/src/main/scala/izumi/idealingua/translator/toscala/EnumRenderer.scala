@@ -17,7 +17,7 @@ class EnumRenderer(ctx: STContext) {
       m =>
         val mt = t.within(m.value)
         val element =
-          q"""final case object ${mt.termName} extends ${t.init()} {
+          q"""case object ${mt.termName} extends ${t.init()} {
               override def toString: String = ${Lit.String(m.value)}
             }"""
 

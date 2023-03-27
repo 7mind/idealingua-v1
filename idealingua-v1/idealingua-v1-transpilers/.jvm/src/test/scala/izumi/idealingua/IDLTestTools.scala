@@ -116,7 +116,7 @@ object IDLTestTools {
     }
   }
 
-  private def dockerRun(out: CompilerOutput, classpath: String, scala213: Boolean) = {
+  private def dockerRun(out: CompilerOutput, classpath: String, scala213: Boolean): Seq[String] = {
     val v = classpath.split(':')
     val cp = virtualiseFs(v, "cp")
 

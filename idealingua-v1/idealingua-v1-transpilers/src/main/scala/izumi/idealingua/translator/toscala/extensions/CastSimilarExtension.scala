@@ -41,7 +41,7 @@ object CastSimilarExtension extends ScalaTranslatorExtension {
         q"""
              implicit object $name extends ${ctx.rt.Cast.parameterize(List(thisType.typeFull, targetType.typeFull)).init()} {
                override def convert(_value: ${thisType.typeFull}): ${targetType.typeFull} = {
-                  assert(_value != null)
+                  assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
                   ${targetType.termFull}(..$code)
                }
              }

@@ -27,9 +27,7 @@ object ScalaTranslator {
 
 class ScalaTranslator(ts: Typespace, options: ScalaTranslatorOptions)
   extends Translator {
-  protected val ctx: STContext = new STContext(ts, options.extensions)
-
-
+  protected val ctx: STContext = new STContext(ts, options.extensions, options.manifest.sbt)
 
   def translate(): Translated = {
     import izumi.fundamentals.collections.IzCollections._
@@ -103,8 +101,4 @@ class ScalaTranslator(ts: Typespace, options: ScalaTranslatorOptions)
     Seq(q"type ${ctx.conv.toScala(i.id).typeName} = ${ctx.conv.toScala(i.target).typeFull}")
   }
 
-
-
-
 }
-
