@@ -68,5 +68,12 @@ object ScalaTranslatorDescriptor extends TranslatorDescriptor[ScalaTranslatorOpt
     "while",
     "with",
     "yield",
+    // Scala 3 restricted keywords: https://docs.scala-lang.org/scala3/guides/migration/incompat-syntactic.html#restricted-keywords
+    "export",
+    "enum",
+    "given",
+    "then",
+    "=>>",
+    "?=>",
   )
 }

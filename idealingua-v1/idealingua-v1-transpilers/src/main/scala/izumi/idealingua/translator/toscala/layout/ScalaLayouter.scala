@@ -1,7 +1,6 @@
 package izumi.idealingua.translator.toscala.layout
 
 import izumi.fundamentals.platform.build.MacroParameters
-import izumi.idealingua.`macro`.ProjectAttributeMacro
 import izumi.idealingua.model.common.DomainId
 import izumi.idealingua.model.output.{Module, ModuleId}
 import izumi.idealingua.model.publishing.manifests.ScalaProjectLayout
@@ -10,10 +9,9 @@ import izumi.idealingua.translator.*
 
 case class RawExpr(e: String)
 
-
 class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter {
   private val naming = new ScalaNamingConvention(options.manifest.sbt.projectNaming)
-  private val idlcGroupId = ProjectAttributeMacro.extractSbtProjectGroupId().getOrElse("UNSET-GROUP-ID")
+  private val idlcGroupId = MacroParameters.projectGroupId().getOrElse("UNSET-GROUP-ID")
 
   override def layout(outputs: Seq[Translated]): Layouted = {
     def project(id: String) = {
@@ -99,9 +97,15 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
           Seq(
             RawExpr(s""" "$idlcGroupId" %% "idealingua-v1-runtime-rpc-scala" % "$idlVersion" """),
             RawExpr(s""" "$idlcGroupId" %% "idealingua-v1-model" % "$idlVersion" """),
-
           )
         ))
+        // Workaround for sbt error due to circe-core version 0.14+ being too far away from required by circe-derivation 0.13.0-M5
+        val circeDerivationWorkaround = Seq(
+          "libraryDependencySchemes" -> Append(Seq(
+            RawExpr(""""io.circe" %% "circe-core" % VersionScheme.Always"""),
+            RawExpr(""""io.circe" %% "circe-core_sjs1" % VersionScheme.Always"""),
+          ))
+        )
 
         val resolvers = if (idlVersion.endsWith("SNAPSHOT")) {
           Seq("resolvers" -> Append(RawExpr("Opts.resolver.sonatypeSnapshots")))
@@ -118,7 +122,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
         )
 
         val renderer = new SbtRenderer()
-        val keys = (metadata ++ resolvers ++ deps).map(renderer.renderOp)
+        val keys = (metadata ++ resolvers ++ deps ++ circeDerivationWorkaround).map(renderer.renderOp)
 
         val content = keys ++ projDefs ++ Seq(bundle, agg)
 
@@ -129,6 +133,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
         val sbtModules = Seq(
           ExtendedModule.RuntimeModule(Module(ModuleId(Seq.empty, "build.sbt"), content.map(_.trim).mkString("\n\n"))),
+          ExtendedModule.RuntimeModule(Module(ModuleId(Seq("project"), "build.properties"), s"sbt.version = ${options.manifest.sbt.sbtVersion.getOrElse(MacroParameters.sbtVersion().getOrElse("1.8.0"))}")),
           ExtendedModule.RuntimeModule(Module(ModuleId(Seq("project"), "plugins.sbt"),
             s"""
               |// https://www.scala-js.org/

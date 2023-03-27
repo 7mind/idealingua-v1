@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         java: [ '11' ]
-        scala: [ '2.12', '2.13']
+        scala: [ '2.12', '2.13', '3.2' ]
     steps:
       - uses: 7mind/github-env@main
         with:
@@ -68,7 +68,7 @@ jobs:
     strategy:
       matrix:
         java: [ '11' ]
-        scala: [ '2.12', '2.13']
+        scala: [ '2.12', '2.13', '3.2' ]
     steps:
       - uses: 7mind/github-env@main
         with:

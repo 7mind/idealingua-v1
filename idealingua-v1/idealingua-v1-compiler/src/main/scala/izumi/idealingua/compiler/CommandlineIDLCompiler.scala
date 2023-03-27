@@ -34,7 +34,6 @@ object CommandlineIDLCompiler {
 
     val conf = parseArgs(args)
 
-
     val results = Seq(
       initDir(conf),
       runCompilations(izumiVersion, conf),
@@ -49,7 +48,7 @@ object CommandlineIDLCompiler {
   private def runPublish(conf: IDLCArgs): Boolean = {
     if (conf.publish && conf.languages.nonEmpty) {
       conf.languages.foreach { lang =>
-        val manifest = toOption(conf, Map.empty)(lang).manifest
+        val manifest = toOptions(conf, Map.empty)(lang).manifest
         publishLangArtifacts(conf, lang, manifest) match {
           case Left(err) => throw err
           case _ => ()
@@ -103,10 +102,10 @@ object CommandlineIDLCompiler {
     }
   }
 
-  private def runCompilations(izumiVersion: String, conf: IDLCArgs) = {
+  private def runCompilations(izumiVersion: String, conf: IDLCArgs): Boolean = {
     if (conf.languages.nonEmpty) {
       log.log("Reading manifests...")
-      val toRun = conf.languages.map(toOption(conf, Map("common.izumiVersion" -> izumiVersion)))
+      val toRun = conf.languages.map(toOptions(conf, Map("common.izumiVersion" -> izumiVersion)))
       log.log("Going to compile:")
       log.log(toRun.niceList())
       log.log("")
@@ -136,7 +135,6 @@ object CommandlineIDLCompiler {
     } else {
       false
     }
-
   }
 
   private def runCompiler(target: Path, loaded: Timed[UnresolvedDomains], option: UntypedCompilerOptions): Unit = {
@@ -175,7 +173,7 @@ object CommandlineIDLCompiler {
     IDLCArgs.parseUnsafe(args)
   }
 
-  private def toOption(conf: IDLCArgs, env: Map[String, String])(lopt: LanguageOpts): UntypedCompilerOptions = {
+  private def toOptions(conf: IDLCArgs, env: Map[String, String])(lopt: LanguageOpts): UntypedCompilerOptions = {
     val lang = IDLLanguage.parse(lopt.id)
     val exts = getExt(lang, lopt.extensions)
 

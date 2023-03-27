@@ -37,39 +37,39 @@ object RPCPacketKind extends RPCPacketKindCirce {
 
   def parse(value: String): RPCPacketKind = all(value)
 
-  final case object Fail extends RPCPacketKind {
+  case object Fail extends RPCPacketKind {
     override def toString: String = "?:failure"
   }
 
-  final case object RpcRequest extends RPCPacketKind {
+  case object RpcRequest extends RPCPacketKind {
     override def toString: String = "rpc:request"
   }
 
-  final case object RpcResponse extends RPCPacketKind {
+  case object RpcResponse extends RPCPacketKind {
     override def toString: String = "rpc:response"
   }
 
-  final case object RpcFail extends RPCPacketKind {
+  case object RpcFail extends RPCPacketKind {
     override def toString: String = "rpc:failure"
   }
 
-  final case object BuzzRequest extends RPCPacketKind {
+  case object BuzzRequest extends RPCPacketKind {
     override def toString: String = "buzzer:request"
   }
 
-  final case object BuzzResponse extends RPCPacketKind {
+  case object BuzzResponse extends RPCPacketKind {
     override def toString: String = "buzzer:response"
   }
 
-  final case object BuzzFailure extends RPCPacketKind {
+  case object BuzzFailure extends RPCPacketKind {
     override def toString: String = "buzzer:failure"
   }
 
-  final case object S2CStream extends RPCPacketKind {
+  case object S2CStream extends RPCPacketKind {
     override def toString: String = "stream:s2c"
   }
 
-  final case object C2SStream extends RPCPacketKind {
+  case object C2SStream extends RPCPacketKind {
     override def toString: String = "stream:c2s"
   }
 

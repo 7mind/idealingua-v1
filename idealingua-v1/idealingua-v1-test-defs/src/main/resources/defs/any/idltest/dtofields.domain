@@ -26,6 +26,7 @@ data Point {
   + IntPair
   ownfield: str
   name: str
+  export: bool
 }
 
 mixin NullableContent {

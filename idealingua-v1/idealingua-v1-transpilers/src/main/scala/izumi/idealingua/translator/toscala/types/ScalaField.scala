@@ -11,7 +11,7 @@ object ScalaField {
   implicit class ScalaFieldsExt(fields: IterableOnce[ScalaField]) {
     def toParams: List[Term.Param] = fields.iterator.map(f => (f.name, f.fieldType)).toParams
 
-    def toNames: List[Term.Name] = fields.iterator.map(_.name).iterator.toList
+    def toNames: List[Term.Name] = fields.iterator.map(_.name).toList
   }
 
   implicit class NamedTypeExt(fields: IterableOnce[(Term.Name, Type)]) {

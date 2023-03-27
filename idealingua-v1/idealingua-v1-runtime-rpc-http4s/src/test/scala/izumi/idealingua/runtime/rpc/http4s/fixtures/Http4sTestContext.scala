@@ -1,7 +1,7 @@
 package izumi.idealingua.runtime.rpc.http4s.fixtures
 
 import cats.data.{Kleisli, OptionT}
-import com.comcast.ip4s.IpLiteralSyntax
+import com.comcast.ip4s._
 import io.circe.Json
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.network.IzSockets
@@ -35,7 +35,7 @@ object Http4sTestContext {
   //
   final val authUser: Kleisli[OptionT[MonoIO, _], Request[MonoIO], DummyRequestContext] =
     Kleisli {
-      request: Request[MonoIO] =>
+      (request: Request[MonoIO]) =>
         val context = DummyRequestContext(request.remoteAddr.getOrElse(ipv4"0.0.0.0"), request.headers.get[Authorization].map(_.credentials))
         OptionT.liftF(Task(context))
     }
@@ -105,8 +105,8 @@ object Http4sTestContext {
     }
   }
 
-  final val storage = new WsSessionsStorageImpl[rt.type](rt.self, RT.logger, demo.Server.codec)
-  final val ioService = new HttpServer[rt.type](
+  final val storage = new WsSessionsStorageImpl[rt.DECL](rt.self, RT.logger, demo.Server.codec)
+  final val ioService = new HttpServer[rt.DECL](
     rt.self,
     demo.Server.multiplexor,
     demo.Server.codec,
@@ -118,7 +118,7 @@ object Http4sTestContext {
     RT.printer,
   )
 
-  final def clientDispatcher(): ClientDispatcher[rt.type] with TestHttpDispatcher =
+  final def clientDispatcher(): ClientDispatcher[rt.DECL] with TestHttpDispatcher =
     new ClientDispatcher[rt.DECL](rt.self, RT.logger, RT.printer, baseUri, demo.Client.codec) with TestHttpDispatcher {
 
       override def sendRaw(request: IRTMuxRequest, body: Array[Byte]): BiIO[Throwable, IRTMuxResponse] = {
@@ -135,8 +135,8 @@ object Http4sTestContext {
     override def toContext(packet: RpcPacket): Unit = ()
   }
 
-  final def wsClientDispatcher(): ClientWsDispatcher[rt.type] with TestDispatcher =
-    new ClientWsDispatcher[rt.type](rt.self, wsUri, demo.Client.codec, demo.Client.buzzerMultiplexor, wsClientContextProvider, RT.logger, RT.printer)
+  final def wsClientDispatcher(): ClientWsDispatcher[rt.DECL] with TestDispatcher =
+    new ClientWsDispatcher[rt.DECL](rt.self, wsUri, demo.Client.codec, demo.Client.buzzerMultiplexor, wsClientContextProvider, RT.logger, RT.printer)
       with TestDispatcher {
 
       import scala.concurrent.duration._
