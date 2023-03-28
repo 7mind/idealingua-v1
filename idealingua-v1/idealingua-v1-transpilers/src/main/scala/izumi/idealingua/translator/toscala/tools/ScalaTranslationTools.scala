@@ -62,7 +62,7 @@ class ScalaTranslationTools(ctx: STContext) {
     val assertions = out.map {
       case (field, _, (name, _)) =>
         if (!ctx.typespace.dealias(field.sourceType).isInstanceOf[Builtin]) {
-          List(q"$name != null")
+          List(q"$name.asInstanceOf[_root_.scala.AnyRef] ne null")
         } else {
           List.empty
         }

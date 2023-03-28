@@ -88,6 +88,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
                   "noImplicitAny": true,
                   "strictNullChecks": false,
                   "suppressImplicitAnyIndexErrors": true,
+                  "ignoreDeprecations": "5.0",
                   "experimentalDecorators": true,
                   "removeComments": true,
                  "preserveConstEnums": true
@@ -122,6 +123,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
                   "noImplicitAny": true,
                   "strictNullChecks": false,
                   "suppressImplicitAnyIndexErrors": true,
+                  "ignoreDeprecations": "5.0",
                   "experimentalDecorators": true,
                   "removeComments": true,
                  "preserveConstEnums": true

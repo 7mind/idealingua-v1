@@ -13,7 +13,7 @@ import izumi.idealingua.translator.toscala.types.{ScalaStruct, StructContext}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.HashSet
-import scala.meta.*
+import scala.meta._
 
 object AnyvalExtension extends ScalaTranslatorExtension {
 
@@ -33,15 +33,20 @@ object AnyvalExtension extends ScalaTranslatorExtension {
     product.copy(defn = product.defn.prependBase(withAnyval(ctx, struct)))
   }
 
-  private def withAnyval(ctx: STContext,struct: PlainStruct): List[Init] = {
+  private def withAnyval(ctx: STContext, struct: PlainStruct): List[Init] = {
     doModify(ctx, "AnyVal", struct.all.size == 1)
   }
 
-  private def withAnyval(ctx: STContext,struct: Struct): List[Init] = {
-    doModify(ctx, "AnyVal", struct.isScalar && struct.all.forall(f => canBeAnyValField(ctx, f.field.typeId)))
+  private def withAnyval(ctx: STContext, struct: Struct): List[Init] = {
+    doModify(ctx, "AnyVal", structCanBeAnyVal(ctx, struct))
   }
 
-  private def withAny(ctx: STContext,struct: Struct): List[Init] = {
+  // FIXME: exposed to CirceTranslatorExtension for Scala 3 support
+  private[extensions] def structCanBeAnyVal(ctx: STContext, struct: Struct): Boolean = {
+    struct.isScalar && struct.all.forall(f => canBeAnyValField(ctx, f.field.typeId))
+  }
+
+  private def withAny(ctx: STContext, struct: Struct): List[Init] = {
     doModify(ctx, "Any", (struct.isScalar || struct.isEmpty) && struct.all.forall(f => canBeAnyValField(ctx, f.field.typeId)))
   }
 

@@ -16,10 +16,11 @@ object Idealingua {
     val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
     val circe = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version")
     val circe_generic_extras = Version.VExpr("V.circe_generic_extras")
-    val circe_derivation = Version.VExpr("V.circe_derivation")
+    val circe_derivation = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_derivation_version")
     val jawn = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.org_typelevel_jawn_parser_version")
     val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
     val zio_interop_cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version")
+    val izumi_reflect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_izumi_reflect_version")
 
     val http4s = Version.VExpr("V.http4s")
     val http4s_blaze = Version.VExpr("V.http4s_blaze")
@@ -30,6 +31,8 @@ object Idealingua {
 
     val slf4j = Version.VExpr("V.slf4j")
     val typesafe_config = Version.VExpr("V.typesafe_config")
+
+    val scala_java_time = Version.VExpr("V.scala_java_time")
   }
 
   object PV {
@@ -84,9 +87,11 @@ object Idealingua {
 
     final val zio_core = Library("dev.zio", "zio", V.zio, LibraryType.Auto)
     final val zio_interop_cats = Library("dev.zio", "zio-interop-cats", V.zio_interop_cats, LibraryType.Auto)
+    final val izumi_reflect = Library("dev.zio", "izumi-reflect", V.izumi_reflect, LibraryType.Auto)
     final val zio_all = Seq(
       zio_core,
       zio_interop_cats,
+      izumi_reflect
     )
 
     final val typesafe_config = Library("com.typesafe", "config", V.typesafe_config, LibraryType.Invariant) in Scope.Compile.all
@@ -94,15 +99,15 @@ object Idealingua {
     final val jawn = Library("org.typelevel", "jawn-parser", V.jawn, LibraryType.AutoJvm)
 
     final val circe_all = Seq(
-      Library("io.circe", "circe-parser", V.circe, LibraryType.Auto),
-      Library("io.circe", "circe-literal", V.circe, LibraryType.Auto),
-      Library("io.circe", "circe-generic-extras", V.circe_generic_extras, LibraryType.Auto),
-      Library("io.circe", "circe-derivation", V.circe_derivation, LibraryType.Auto),
-      fundamentals_json_circe
+      Library("io.circe", "circe-parser", V.circe, LibraryType.Auto) in Scope.Compile.all,
+      Library("io.circe", "circe-literal", V.circe, LibraryType.Auto) in Scope.Compile.all,
+      Library("io.circe", "circe-generic-extras", V.circe_generic_extras, LibraryType.Auto) in Scope.Compile.all.scalaVersion(ScalaVersionScope.AllScala2),
+      Library("io.circe", "circe-derivation", V.circe_derivation, LibraryType.Auto) in Scope.Compile.all.scalaVersion(ScalaVersionScope.AllScala2),
+      Library("io.circe", "circe-generic", V.circe, LibraryType.Auto) in Scope.Compile.all.scalaVersion(ScalaVersionScope.AllScala3),
     )
 
     final val scala_sbt = Library("org.scala-sbt", "sbt", Version.VExpr("sbtVersion.value"), LibraryType.Invariant)
-    final val scala_reflect = Library("org.scala-lang", "scala-reflect", Version.VExpr("scalaVersion.value"), LibraryType.Invariant)
+    final val scala_reflect = Library("org.scala-lang", "scala-reflect", Version.VExpr("scalaVersion.value"), LibraryType.Invariant) in Scope.Provided.all.scalaVersion(ScalaVersionScope.AllScala2)
     final val scala_xml = Library("org.scala-lang.modules", "scala-xml", V.scala_xml, LibraryType.Auto) in Scope.Compile.all
     final val scalameta = Library("org.scalameta", "scalameta", V.scalameta, LibraryType.Auto) in Scope.Compile.all
 
@@ -127,6 +132,8 @@ object Idealingua {
     val http4s_all = (http4s_server ++ http4s_client)
 
     val asynchttpclient = Library("org.asynchttpclient", "async-http-client", V.asynchttpclient, LibraryType.Invariant)
+
+    val scala_java_time = Library("io.github.cquiroz", "scala-java-time", V.scala_java_time, LibraryType.Auto)
   }
 
   import Deps._
@@ -134,6 +141,7 @@ object Idealingua {
   // DON'T REMOVE, these variables are read from CI build (build.sh)
   final val scala212 = ScalaVersion("2.12.17")
   final val scala213 = ScalaVersion("2.13.10")
+  final val scala300 = ScalaVersion("3.2.2")
 
   object Groups {
     final val fundamentals = Set(Group("fundamentals"))
@@ -144,22 +152,39 @@ object Idealingua {
   object Targets {
     // switch order to use 2.13 in IDEA
 //    val targetScala = Seq(scala212, scala213)
-    val targetScala = Seq(scala213, scala212)
-    private val jvmPlatform = PlatformEnv(
+    val targetScala2 = Seq(scala213, scala212)
+    val targetScala3 = Seq(scala300, scala213, scala212)
+    private val jvmPlatform2 = PlatformEnv(
       platform = Platform.Jvm,
-      language = targetScala,
+      language = targetScala2,
       settings = Seq.empty,
     )
-    private val jsPlatform = PlatformEnv(
+    private val jsPlatform2 = PlatformEnv(
       platform = Platform.Js,
-      language = targetScala,
+      language = targetScala2,
       settings = Seq(
         "coverageEnabled" := false,
         "scalaJSLinkerConfig" in(SettingScope.Project, Platform.Js) := "{ scalaJSLinkerConfig.value.withModuleKind(ModuleKind.CommonJSModule) }".raw,
       ),
     )
-    final val cross = Seq(jvmPlatform, jsPlatform)
-    final val jvm = Seq(jvmPlatform)
+    private val jvmPlatform3 = PlatformEnv(
+      platform = Platform.Jvm,
+      language = targetScala3,
+      settings = Seq.empty,
+    )
+    private val jsPlatform3 = PlatformEnv(
+      platform = Platform.Js,
+      language = targetScala3,
+      settings = Seq(
+        "coverageEnabled" := false,
+        "scalaJSLinkerConfig" in(SettingScope.Project, Platform.Js) := "{ scalaJSLinkerConfig.value.withModuleKind(ModuleKind.CommonJSModule) }".raw,
+      ),
+    )
+    final val cross2 = Seq(jvmPlatform2, jsPlatform2)
+    final val jvm2 = Seq(jvmPlatform2)
+
+    final val cross3 = Seq(jvmPlatform3, jsPlatform3)
+    final val jvm3 = Seq(jvmPlatform3)
   }
 
   final val assemblyPluginJvm = Plugin("AssemblyPlugin", Platform.Jvm)
@@ -205,13 +230,11 @@ object Idealingua {
       )
 
       final val sharedAggSettings = Seq(
-        "crossScalaVersions" := Targets.targetScala.map(_.value),
-        "scalaVersion" := "crossScalaVersions.value.head".raw,
+        "crossScalaVersions" := "Nil".raw,
       )
 
       final val rootSettings = Defaults.SbtMetaRootOptions ++ Defaults.RootOptions ++ Seq(
         "crossScalaVersions" := "Nil".raw,
-        "scalaVersion" := Targets.targetScala.head.value,
         "organization" in SettingScope.Build := "io.7mind.izumi",
         "sonatypeProfileName" := "io.7mind",
         "sonatypeSessionName" := """s"[sbt-sonatype] ${name.value} ${version.value} ${java.util.UUID.randomUUID}"""".raw,
@@ -249,12 +272,13 @@ object Idealingua {
         "libraryDependencySchemes" in SettingScope.Build += """"org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always""".raw
       )
 
-      final val sharedSettings = Defaults.SbtMetaSharedOptions ++ Seq(
+      final val sharedSettings = Defaults.SbtMetaSharedOptions ++ Defaults.CrossScalaPlusSources ++ Seq(
         "testOptions" in SettingScope.Test += """Tests.Argument("-oDF")""".raw,
         //"testOptions" in (SettingScope.Test, Platform.Jvm) ++= s"""Seq(Tests.Argument("-u"), Tests.Argument(s"$${target.value}/junit-xml-$${scalaVersion.value}"))""".raw,
         "scalacOptions" ++= Seq(
           SettingKey(Some(scala212), None) := Defaults.Scala212Options,
           SettingKey(Some(scala213), None) := Defaults.Scala213Options,
+          SettingKey(Some(scala300), None) := Defaults.Scala3Options,
           SettingKey.Default := Const.EmptySeq,
         ),
         "scalacOptions" ++= Seq(
@@ -299,41 +323,31 @@ object Idealingua {
     "fork" in(SettingScope.Test, Platform.Jvm) := true,
   )
 
-  final val crossScalaSources = Seq(
-    "unmanagedSourceDirectories" in SettingScope.Compile :=
-      """(unmanagedSourceDirectories in Compile).value.flatMap {
-        |  dir =>
-        |   Seq(dir, file(dir.getPath + (CrossVersion.partialVersion(scalaVersion.value) match {
-        |     case Some((2, 12)) => "_2.12"
-        |     case Some((2, 13)) => "_2.13"
-        |     case _             => "_3.0"
-        |   })))
-        |}""".stripMargin.raw,
-  )
-
-
   final lazy val idealingua = Aggregate(
     name = Projects.idealingua.id,
     artifacts = Seq(
       Artifact(
         name = Projects.idealingua.model,
-        libs = Seq(scala_reflect in Scope.Provided.all) ++ Deps.fundamentals_basics.map(_ in Scope.Compile.all),
+        libs = Seq(scala_reflect) ++ Deps.fundamentals_basics.map(_ in Scope.Compile.all),
         depends = Seq.empty,
       ),
       Artifact(
         name = Projects.idealingua.core,
         libs = Seq(fastparse) ++ Seq(Deps.fundamentals_reflection in Scope.Compile.all),
         depends = Seq(Projects.idealingua.model).map(_ in Scope.Compile.all),
+        platforms = Targets.cross2,
       ),
       Artifact(
         name = Projects.idealingua.runtimeRpcScala,
         libs = Seq(
-          scala_reflect in Scope.Provided.all,
+          scala_reflect,
+          Deps.fundamentals_bio in Scope.Compile.all,
+          Deps.fundamentals_platform in Scope.Compile.all,
           jawn in Scope.Compile.js,
-          Deps.fundamentals_bio in Scope.Compile.all
+          scala_java_time in Scope.Test.js,
         ) ++
           cats_all.map(_ in Scope.Compile.all) ++
-          circe_all.map(_ in Scope.Compile.all) ++
+          circe_all ++
           zio_all.map(_ in Scope.Test.all),
         depends = Seq.empty,
       ),
@@ -342,7 +356,7 @@ object Idealingua {
         libs = (http4s_all ++ Seq(asynchttpclient, Deps.logstage_core, Deps.logstage_adapter_slf4j)).map(_ in Scope.Compile.all),
         depends = Seq(Projects.idealingua.runtimeRpcScala).map(_ in Scope.Compile.all) ++
           Seq(Projects.idealingua.testDefs).map(_ in Scope.Test.jvm),
-        platforms = Targets.jvm,
+        platforms = Targets.jvm3,
       ),
       Artifact(
         name = Projects.idealingua.transpilers,
@@ -352,34 +366,42 @@ object Idealingua {
           Deps.fundamentals_bio in Scope.Compile.all,
           jawn in Scope.Compile.js,
         ) ++
-          circe_all.map(_ in Scope.Compile.all),
-        depends = Seq(Projects.idealingua.core, Projects.idealingua.runtimeRpcScala).map(_ in Scope.Compile.all) ++
-          Seq(Projects.idealingua.testDefs, Projects.idealingua.runtimeRpcTypescript, Projects.idealingua.runtimeRpcGo, Projects.idealingua.runtimeRpcCSharp).map(_ in Scope.Test.jvm),
-        settings = forkTests
+          circe_all,
+        depends = Seq(
+          Projects.idealingua.core,
+          Projects.idealingua.runtimeRpcScala
+        ).map(_ in Scope.Compile.all) ++
+          Seq(Projects.idealingua.testDefs,
+            Projects.idealingua.runtimeRpcTypescript,
+            Projects.idealingua.runtimeRpcGo,
+            Projects.idealingua.runtimeRpcCSharp
+          ).map(_ in Scope.Test.jvm),
+        settings = forkTests,
+        platforms = Targets.cross2,
       ),
       Artifact(
         name = Projects.idealingua.testDefs,
         libs = zio_all,
         depends = Seq(Projects.idealingua.runtimeRpcScala).map(_ in Scope.Compile.all),
-        platforms = Targets.jvm,
+        platforms = Targets.jvm3,
       ),
       Artifact(
         name = Projects.idealingua.runtimeRpcTypescript,
         libs = Seq.empty,
         depends = Seq.empty,
-        platforms = Targets.jvm,
+        platforms = Targets.jvm3,
       ),
       Artifact(
         name = Projects.idealingua.runtimeRpcGo,
         libs = Seq.empty,
         depends = Seq.empty,
-        platforms = Targets.jvm,
+        platforms = Targets.jvm3,
       ),
       Artifact(
         name = Projects.idealingua.runtimeRpcCSharp,
         libs = Seq.empty,
         depends = Seq.empty,
-        platforms = Targets.jvm,
+        platforms = Targets.jvm3,
       ),
       Artifact(
         name = Projects.idealingua.compiler,
@@ -392,7 +414,7 @@ object Idealingua {
           Projects.idealingua.runtimeRpcCSharp,
           Projects.idealingua.testDefs,
         ).map(_ in Scope.Compile.all),
-        platforms = Targets.jvm,
+        platforms = Targets.jvm2,
         plugins = Plugins(Seq(assemblyPluginJvm)),
         settings = Seq(
           "mainClass" in SettingScope.Raw("assembly") := """Some("izumi.idealingua.compiler.CommandlineIDLCompiler")""".raw,
@@ -414,7 +436,7 @@ object Idealingua {
     ),
     pathPrefix = Projects.idealingua.basePath,
     groups = Groups.idealingua,
-    defaultPlatforms = Targets.cross,
+    defaultPlatforms = Targets.cross3,
   )
 
   val izumi: Project = Project(
@@ -428,7 +450,7 @@ object Idealingua {
     rootSettings = Projects.root.rootSettings,
     imports = Seq.empty,
     globalLibs = Seq(
-      ScopedLibrary(projector, FullDependencyScope(Scope.Compile, Platform.All), compilerPlugin = true),
+      ScopedLibrary(projector, FullDependencyScope(Scope.Compile, Platform.All, ScalaVersionScope.AllScala2), compilerPlugin = true),
       scalatest,
     ),
     rootPlugins = Projects.root.plugins,

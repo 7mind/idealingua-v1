@@ -14,6 +14,7 @@ case class SbtOptions(
                        projectNaming: ProjectNamingRule,
                        enableScalaJs: Boolean,
                        scalaVersion: Option[String],
+                       sbtVersion: Option[String],
                      )
 
 object SbtOptions {
@@ -22,6 +23,7 @@ object SbtOptions {
       projectNaming = ProjectNamingRule.example,
       enableScalaJs = true,
       scalaVersion = None,
+      sbtVersion = None,
     )
   }
 }

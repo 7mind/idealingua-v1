@@ -66,35 +66,38 @@ trait WsContextProvider[F[+_, +_], Ctx, ClientId] {
   def handleEmptyBodyPacket(id: WsClientId[ClientId], initial: Ctx, packet: RpcPacket): F[Throwable, (Option[ClientId], F[Throwable, Option[RpcPacket]])]
 }
 
-class IdContextProvider[C <: Http4sContext](val c: C#IMPL[C]) extends WsContextProvider[C#BiIO, C#RequestContext, C#ClientId] {
+class IdContextProvider[C <: Http4sContext]
+(
+  val c: Http4sContextImpl[C]
+) extends WsContextProvider[GetBiIO[C]#l, GetRequestContext[C], GetClientId[C]] {
 
   import c._
 
   override def handleEmptyBodyPacket(
     id: WsClientId[ClientId],
-    initial: C#RequestContext,
+    initial: RequestContext,
     packet: RpcPacket
-  ): C#BiIO[Throwable, (Option[ClientId], C#BiIO[Throwable, Option[RpcPacket]])] = {
+  ): BiIO[Throwable, (Option[ClientId], BiIO[Throwable, Option[RpcPacket]])] = {
     Quirks.discard(id, initial, packet)
     F.pure((None, F.pure(None)))
   }
 
-  override def toContext(id: WsClientId[C#ClientId], initial: C#RequestContext, packet: RpcPacket): C#BiIO[Throwable, C#RequestContext] = {
+  override def toContext(id: WsClientId[ClientId], initial: RequestContext, packet: RpcPacket): BiIO[Throwable, RequestContext] = {
     Quirks.discard(packet, id)
     F.pure(initial)
   }
 
-  override def toId(initial: C#RequestContext, currentId: WsClientId[C#ClientId], packet: RpcPacket): C#BiIO[Throwable, Option[ClientId]] = {
+  override def toId(initial: RequestContext, currentId: WsClientId[ClientId], packet: RpcPacket): BiIO[Throwable, Option[ClientId]] = {
     Quirks.discard(initial, packet)
     F.pure(None)
   }
 }
 
 class WsSessionsStorageImpl[C <: Http4sContext](
-  val c: C#IMPL[C],
+  val c: Http4sContextImpl[C],
   logger: IzLogger,
-  codec: IRTClientMultiplexor[C#BiIO]
-) extends WsSessionsStorage[C#BiIO, C#ClientId, C#RequestContext] {
+  codec: IRTClientMultiplexor[GetBiIO[C]#l]
+) extends WsSessionsStorage[GetBiIO[C]#l, GetClientId[C], GetRequestContext[C]] {
 
   import c._
   import izumi.functional.bio.IO2
@@ -107,22 +110,22 @@ class WsSessionsStorageImpl[C <: Http4sContext](
 
   override def addClient(
     id: WsSessionId,
-    ctx: WebsocketClientContext[C#BiIO, C#ClientId, C#RequestContext]
-  ): C#BiIO[Throwable, WebsocketClientContext[C#BiIO, C#ClientId, C#RequestContext]] = F.sync {
+    ctx: WebsocketClientContext[BiIO, ClientId, RequestContext]
+  ): BiIO[Throwable, WebsocketClientContext[BiIO, ClientId, RequestContext]] = F.sync {
     logger.debug(s"Adding a client with session - $id")
     clients.put(id, ctx)
   }
 
-  override def deleteClient(id: WsSessionId): C#BiIO[Throwable, WebsocketClientContext[C#BiIO, C#ClientId, C#RequestContext]] = F.sync {
+  override def deleteClient(id: WsSessionId): BiIO[Throwable, WebsocketClientContext[BiIO, ClientId, RequestContext]] = F.sync {
     logger.debug(s"Deleting a client with session - $id")
     clients.remove(id)
   }
 
-  override def allClients(): C#BiIO[Throwable, Seq[WebsocketClientContext[C#BiIO, C#ClientId, C#RequestContext]]] = F.sync {
+  override def allClients(): BiIO[Throwable, Seq[WebsocketClientContext[BiIO, ClientId, RequestContext]]] = F.sync {
     clients.values().asScala.toSeq
   }
 
-  override def buzzersFor(clientId: ClientId): C#BiIO[Throwable, Option[IRTDispatcher[BiIO]]] = {
+  override def buzzersFor(clientId: ClientId): BiIO[Throwable, Option[IRTDispatcher[BiIO]]] = {
     allClients().map(_.find(_.id.id.contains(clientId))).map {
       buzzerClient =>
         logger.debug(s"Asked for buzzer for $clientId. Found: $buzzerClient")
@@ -163,13 +166,13 @@ class WsSessionsStorageImpl[C <: Http4sContext](
 }
 
 class WebsocketClientContextImpl[C <: Http4sContext](
-  val c: C#IMPL[C],
-  val initialRequest: AuthedRequest[C#MonoIO, C#RequestContext],
-  val initialContext: C#RequestContext,
-  listeners: Seq[WsSessionListener[C#BiIO, C#ClientId]],
-  wsSessionStorage: WsSessionsStorage[C#BiIO, C#ClientId, C#RequestContext],
+  val c: Http4sContextImpl[C],
+  val initialRequest: AuthedRequest[GetMonoIO[C]#l, GetRequestContext[C]],
+  val initialContext: GetRequestContext[C],
+  listeners: Seq[WsSessionListener[GetBiIO[C]#l, GetClientId[C]]],
+  wsSessionStorage: WsSessionsStorage[GetBiIO[C]#l, GetClientId[C], GetRequestContext[C]],
   logger: IzLogger
-) extends WebsocketClientContext[C#BiIO, C#ClientId, C#RequestContext] {
+) extends WebsocketClientContext[GetBiIO[C]#l, GetClientId[C], GetRequestContext[C]] {
 
   import c._
 
@@ -194,7 +197,7 @@ class WebsocketClientContextImpl[C <: Http4sContext](
     FiniteDuration(d.toNanos, TimeUnit.NANOSECONDS)
   }
 
-  def enqueue(method: IRTMethodId, data: Json): C#MonoIO[RpcPacketId] = F.sync {
+  def enqueue(method: IRTMethodId, data: Json): MonoIO[RpcPacketId] = F.sync {
     val request = RpcPacket.buzzerRequestRndId(method, data)
     val id = request.id.get
     logger.debug(s"Enqueue $request with $id to request state & send queue")
@@ -203,22 +206,22 @@ class WebsocketClientContextImpl[C <: Http4sContext](
     id
   }
 
-  def onWsSessionOpened(): C#MonoIO[Unit] = F.unit
+  def onWsSessionOpened(): MonoIO[Unit] = F.unit
 
-  def onWsClientIdUpdate(maybeNewId: Option[ClientId], oldId: WsClientId[ClientId]): C#MonoIO[Unit] = F.sync {
+  def onWsClientIdUpdate(maybeNewId: Option[ClientId], oldId: WsClientId[ClientId]): MonoIO[Unit] = F.sync {
     logger.debug(s"Id updated to $maybeNewId, was: ${oldId.id}")
   }
 
-  def onWsSessionClosed(): C#MonoIO[Unit] = F.sync {
+  def onWsSessionClosed(): MonoIO[Unit] = F.sync {
     logger.debug("Finish called. Clear request state")
   }
 
-  protected[http4s] def updateId(maybeNewId: Option[ClientId]): C#MonoIO[Unit] = {
+  protected[http4s] def updateId(maybeNewId: Option[ClientId]): MonoIO[Unit] = {
     val oldId = id
     maybeId.set(maybeNewId)
     val newId = id
 
-    def notifyListeners(): C#MonoIO[Unit] = {
+    def notifyListeners(): MonoIO[Unit] = {
       onWsClientIdUpdate(maybeNewId, oldId) *>
       F.traverse_(listeners) {
         listener =>
@@ -248,7 +251,7 @@ class WebsocketClientContextImpl[C <: Http4sContext](
   protected[http4s] val pingStream: fs2.Stream[MonoIO, WebSocketFrame] =
     fs2.Stream.awakeEvery[MonoIO](pingTimeout) >> fs2.Stream(Ping())
 
-  override def finish(): C#MonoIO[Unit] = {
+  override def finish(): MonoIO[Unit] = {
     onWsSessionClosed() *>
     wsSessionStorage.deleteClient(sessionId) *>
     F.traverse_(listeners) {
@@ -258,7 +261,7 @@ class WebsocketClientContextImpl[C <: Http4sContext](
     F.sync(requestState.clear())
   }
 
-  protected[http4s] def start(): C#MonoIO[Unit] = {
+  protected[http4s] def start(): MonoIO[Unit] = {
     wsSessionStorage.addClient(sessionId, this) *>
     onWsSessionOpened() *>
     F.traverse_(listeners) {

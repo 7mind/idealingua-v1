@@ -36,7 +36,7 @@ final class WithCirceTest extends AnyWordSpec {
     "WithCirce always uses IRTTimeInstances codecs, even when they're not in surrounding scope" in {
       final case class TimeCirce(zonedDateTime: ZonedDateTime)
       object TimeCirce {
-        implicit val codec: Codec.AsObject[TimeCirce] = circe.derivation.deriveCodec
+        implicit val codec: Codec.AsObject[TimeCirce] = circe.generic.semiauto.deriveCodec
       }
 
       final case class TimeIRT(zonedDateTime: ZonedDateTime)
@@ -88,9 +88,9 @@ object WithCirceTest {
   sealed trait Enum
   object Enum extends IRTWithCirce[Enum]
   case object Enum1 extends Enum {
-    implicit val codec: Codec.AsObject[Enum1.type] = circe.derivation.deriveCodec[Enum1.type]
+    implicit val codec: Codec.AsObject[Enum1.type] = circe.generic.semiauto.deriveCodec[Enum1.type]
   }
   case object Enum2 extends Enum {
-    implicit val codec: Codec.AsObject[Enum2.type] = circe.derivation.deriveCodec[Enum2.type]
+    implicit val codec: Codec.AsObject[Enum2.type] = circe.generic.semiauto.deriveCodec[Enum2.type]
   }
 }

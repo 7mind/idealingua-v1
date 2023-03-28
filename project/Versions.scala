@@ -6,8 +6,8 @@ object V {
   val http4s = "0.23.18"
   val http4s_blaze = "0.23.14"
 
-  val scalameta = "4.5.13"
-  val fastparse = "2.3.3"
+  val scalameta = "4.7.6" // Not available for Scala 3 yet
+  val fastparse = "2.3.3" // 3.0.0 is available for Scala 3
 
   val scala_xml = "2.1.0"
 
@@ -21,5 +21,6 @@ object V {
   val kind_projector = "0.13.2"
 
   val circe_generic_extras = "0.14.3"
-  val circe_derivation = "0.13.0-M5"
+
+  val scala_java_time = "2.4.0"
 }
