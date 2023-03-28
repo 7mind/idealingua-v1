@@ -12,13 +12,14 @@ import scala.meta.Tree
 import scala.meta.internal.prettyprinters.TreeSyntax
 
 class ModuleTools() {
-  def toSource(id: DomainId, moduleId: ModuleId, product: RenderableCogenProduct): Seq[Module] = {
+  def toSource(id: DomainId, moduleId: ModuleId, product: RenderableCogenProduct, scalaVersion: Option[String]): Seq[Module] = {
     product match {
       case p if p.isEmpty =>
         Seq.empty
 
       case _ =>
-        val code = (product.preamble +:  product.render.map(TreeSyntax[Tree](scala.meta.dialects.Scala30).apply(_).toString())).mkString("\n\n")
+        val dialect = if (scalaVersion.exists(_.startsWith("3"))) scala.meta.dialects.Scala30 else scala.meta.dialects.Scala213
+        val code = (product.preamble +:  product.render.map(TreeSyntax[Tree](dialect).apply(_).toString())).mkString("\n\n")
         val content: String = withPackage(id.toPackage, code)
         Seq(Module(moduleId, content))
     }
