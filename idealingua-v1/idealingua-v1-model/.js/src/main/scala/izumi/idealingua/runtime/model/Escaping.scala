@@ -1,7 +1,6 @@
 package izumi.idealingua.runtime.model
 
-import java.net.{URLDecoder, URLEncoder}
-import  scala.scalajs.js.URIUtils
+import scala.scalajs.js.URIUtils
 
 object Escaping {
   // TODO: we may need to use a better escaping

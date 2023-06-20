@@ -1,18 +1,18 @@
 package izumi.idealingua.runtime.rpc.http4s.fixtures
 
 import cats.data.{Kleisli, OptionT}
-import com.comcast.ip4s._
+import com.comcast.ip4s.*
 import io.circe.Json
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.network.IzSockets
-import izumi.idealingua.runtime.rpc.http4s._
+import izumi.idealingua.runtime.rpc.http4s.*
 import izumi.idealingua.runtime.rpc.{IRTMuxRequest, IRTMuxResponse, RpcPacket}
 import izumi.r2.idealingua.test.generated.GreeterServiceClientWrapped
 import org.http4s.headers.Authorization
 import org.http4s.server.AuthMiddleware
-import org.http4s._
-import zio.Task
-import zio.interop.catz._
+import org.http4s.*
+import zio.ZIO
+import zio.interop.catz.*
 
 import java.net.URI
 import java.util.concurrent.atomic.AtomicReference
@@ -37,7 +37,7 @@ object Http4sTestContext {
     Kleisli {
       (request: Request[MonoIO]) =>
         val context = DummyRequestContext(request.remoteAddr.getOrElse(ipv4"0.0.0.0"), request.headers.get[Authorization].map(_.credentials))
-        OptionT.liftF(Task(context))
+        OptionT.liftF(ZIO.attempt(context))
     }
 
   final val wsContextProvider = new WsContextProvider[BiIO, DummyRequestContext, String] {
@@ -66,7 +66,7 @@ object Http4sTestContext {
     }
 
     override def toId(initial:  DummyRequestContext, currentId:  WsClientId[String], packet:  RpcPacket): zio.IO[Throwable, Option[String]] = {
-      zio.IO.effect {
+      ZIO.attempt {
         packet.headers.getOrElse(Map.empty).get("Authorization")
           .map(Authorization.parse)
           .flatMap(_.toOption)
