@@ -8,9 +8,8 @@ import org.http4s.*
 import org.http4s.blaze.server.*
 import org.http4s.server.Router
 import org.scalatest.wordspec.AnyWordSpec
-import zio.Task
-import zio.interop.catz.asyncRuntimeInstance
-import zio.interop.catz.implicits.rts
+import zio.ZIO
+import zio.interop.catz.asyncInstance
 
 class Http4sTransportTest extends AnyWordSpec {
 
@@ -94,7 +93,7 @@ class Http4sTransportTest extends AnyWordSpec {
       .bindHttp(port, host)
       .withHttpWebSocketApp(ws => Router("/" -> ioService.service(ws)).orNotFound)
       .stream
-      .evalMap(_ => Task(f))
+      .evalMap(_ => ZIO.attempt(f))
       .compile.drain
 
     IO2R.unsafeRun(io)

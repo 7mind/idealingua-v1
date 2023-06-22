@@ -22,7 +22,8 @@ object GreeterRunnerExample {
     val invoked1 = multiplexor.doInvoke(json1, (), greeter.greet.signature.id)
     val invoked2 = multiplexor.doInvoke(json1, (), greeter.alternative.signature.id)
 
-    println(zio.Runtime.default.unsafeRunSync(invoked1))
-    println(zio.Runtime.default.unsafeRunSync(invoked2))
+    implicit val unsafe: Unsafe = Unsafe.unsafe(identity)
+    println(zio.Runtime.default.unsafe.run(invoked1).getOrThrowFiberFailure())
+    println(zio.Runtime.default.unsafe.run(invoked2).getOrThrowFiberFailure())
   }
 }
