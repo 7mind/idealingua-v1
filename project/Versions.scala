@@ -22,5 +22,5 @@ object V {
 
   val circe_generic_extras = "0.14.3"
 
-  val scala_java_time = "2.4.0"
+  val scala_java_time = "2.5.0"
 }
