@@ -1,4 +1,4 @@
-import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.97`
+import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.99`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
 
@@ -16,7 +16,7 @@ object Idealingua {
     val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
     val circe = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version")
     val circe_generic_extras = Version.VExpr("V.circe_generic_extras")
-    val circe_derivation = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_derivation_version")
+    val circe_derivation = Version.VExpr("V.circe_derivation")
     val jawn = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.org_typelevel_jawn_parser_version")
     val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
     val zio_interop_cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version")
@@ -66,7 +66,6 @@ object Idealingua {
     final val fundamentals_platform = Library("io.7mind.izumi", "fundamentals-platform", V.izumi, LibraryType.Auto)
     final val fundamentals_functional = Library("io.7mind.izumi", "fundamentals-functional", V.izumi, LibraryType.Auto)
     final val fundamentals_reflection = Library("io.7mind.izumi", "fundamentals-reflection", V.izumi, LibraryType.Auto)
-    final val fundamentals_json_circe = Library("io.7mind.izumi", "fundamentals-json-circe", V.izumi, LibraryType.Auto)
     final val fundamentals_bio = Library("io.7mind.izumi", "fundamentals-bio", V.izumi, LibraryType.Auto)
     final val logstage_core = Library("io.7mind.izumi", "logstage-core", V.izumi, LibraryType.Auto)
     final val logstage_adapter_slf4j = Library("io.7mind.izumi", "logstage-adapter-slf4j", V.izumi, LibraryType.Auto)
@@ -114,9 +113,6 @@ object Idealingua {
     final val projector = Library("org.typelevel", "kind-projector", V.kind_projector, LibraryType.Invariant)
       .more(LibSetting.Raw("cross CrossVersion.full"))
 
-    final val slf4j_api = Library("org.slf4j", "slf4j-api", V.slf4j, LibraryType.Invariant) in Scope.Compile.jvm
-    final val slf4j_simple = Library("org.slf4j", "slf4j-simple", V.slf4j, LibraryType.Invariant) in Scope.Test.jvm
-
     final val fastparse = Library("com.lihaoyi", "fastparse", V.fastparse, LibraryType.Auto) in Scope.Compile.all
 
     final val http4s_client = Seq(
@@ -146,7 +142,6 @@ object Idealingua {
   object Groups {
     final val fundamentals = Set(Group("fundamentals"))
     final val idealingua = Set(Group("idealingua"))
-    final val docs = Set(Group("docs"))
   }
 
   object Targets {
