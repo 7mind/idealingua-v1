@@ -1,12 +1,12 @@
 package izumi.idealingua.runtime.rpc.http4s
 
-import java.util.concurrent.ConcurrentHashMap
-
-import izumi.functional.bio.{IO2, Temporal2, F}
-import izumi.fundamentals.platform.language.Quirks._
-import izumi.idealingua.runtime.rpc._
 import io.circe.Json
+import izumi.functional.bio.retry.Scheduler2
+import izumi.functional.bio.{F, IO2, Temporal2}
+import izumi.fundamentals.platform.language.Quirks.*
+import izumi.idealingua.runtime.rpc.*
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.duration.FiniteDuration
 
 class RequestState[F[+ _, + _]: IO2: Temporal2] {
@@ -14,6 +14,8 @@ class RequestState[F[+ _, + _]: IO2: Temporal2] {
   // TODO: stale item cleanups
   protected val requests: ConcurrentHashMap[RpcPacketId, IRTMethodId] = new ConcurrentHashMap[RpcPacketId, IRTMethodId]()
   protected val responses: ConcurrentHashMap[RpcPacketId, RawResponse] = new ConcurrentHashMap[RpcPacketId, RawResponse]()
+
+  private val scheduler2: Scheduler2[F] = implicitly
 
   def methodOf(id: RpcPacketId): Option[IRTMethodId] = {
     Option(requests.get(id))
@@ -70,15 +72,15 @@ class RequestState[F[+ _, + _]: IO2: Temporal2] {
   }
 
   def poll(id: RpcPacketId, interval: FiniteDuration, timeout: FiniteDuration): F[Nothing, Option[RawResponse]] =
-    F.sleep(interval)
-      .flatMap {
+    scheduler2.retryOrElseUntil {
+      F.sleep(interval).flatMap {
         _ =>
           checkResponse(id) match {
             case None =>
               F.fail(())
             case Some(value) =>
-              F.pure(Some(value)): F[Unit, Some[RawResponse]]
+              F.pure(Some(value)): F[Unit, Option[RawResponse]]
           }
-      }
-      .retryOrElse(timeout, _ => F.pure(None))
+        }
+    }(timeout, _ => F.pure(None))
 }
