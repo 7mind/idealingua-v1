@@ -1,21 +1,22 @@
 package izumi.idealingua.runtime.rpc.http4s
 
-import java.net.URI
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicReference
-import izumi.functional.bio.IO2
-import izumi.functional.bio.Exit
-import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
-import izumi.idealingua.runtime.rpc
-import izumi.idealingua.runtime.rpc.*
-import izumi.logstage.api.IzLogger
 import io.circe.Printer
 import io.circe.parser.parse
 import io.circe.syntax.*
+import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
+import izumi.functional.bio.{Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
+import izumi.fundamentals.platform.language.Quirks.*
+import izumi.idealingua.runtime.rpc
+import izumi.idealingua.runtime.rpc.*
+import izumi.idealingua.runtime.rpc.http4s.ClientWsDispatcher.WebSocketConnectionFailedException
+import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, RequestState}
+import izumi.logstage.api.IzLogger
 import org.asynchttpclient.netty.ws.NettyWebSocket
 import org.asynchttpclient.ws.{WebSocket, WebSocketListener, WebSocketUpgradeHandler}
-import izumi.fundamentals.platform.language.Quirks.*
-import izumi.idealingua.runtime.rpc.http4s.ClientWsDispatcher.WebSocketConnectionFailedException
+
+import java.net.URI
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicReference
 
 case class PacketInfo(method: IRTMethodId, packetId: RpcPacketId)
 
@@ -26,20 +27,17 @@ trait WsClientContextProvider[Ctx] {
 /**
   * TODO: this is a naive client implementation, good for testing purposes but not mature enough for production usage
   */
-class ClientWsDispatcher[C <: Http4sContext]
-(
-  val c: Http4sContextImpl[C],
+class ClientWsDispatcher[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, RequestCtx](
   protected val baseUri: URI,
-  protected val codec: IRTClientMultiplexor[GetBiIO[C]#l],
-  protected val buzzerMuxer: IRTServerMultiplexor[GetBiIO[C]#l, GetClientContext[C]],
-  protected val wsClientContextProvider: WsClientContextProvider[GetClientContext[C]],
+  protected val codec: IRTClientMultiplexor[F],
+  protected val buzzerMuxer: IRTServerMultiplexor[F, RequestCtx],
+  protected val wsClientContextProvider: WsClientContextProvider[RequestCtx],
   logger: IzLogger,
   printer: Printer,
-) extends IRTDispatcher[GetBiIO[C]#l] with AutoCloseable {
+) extends IRTDispatcher[F]
+  with AutoCloseable {
 
-  import c.*
-
-  val requestState = new RequestState[BiIO]()
+  val requestState = new RequestState[F]()
 
   import org.asynchttpclient.Dsl.*
 
@@ -62,7 +60,6 @@ class ClientWsDispatcher[C <: Http4sContext]
     }
   }
 
-
   private val connection = new AtomicReference[NettyWebSocket]()
 
   private def send(out: String): Unit = {
@@ -70,7 +67,8 @@ class ClientWsDispatcher[C <: Http4sContext]
     connection.synchronized {
       if (connection.get() == null) {
         connection.set {
-          val res = wsc.prepareGet(baseUri.toString)
+          val res = wsc
+            .prepareGet(baseUri.toString)
             .execute(new WebSocketUpgradeHandler(List(listener).asJava))
             .get()
           if (res == null) {
@@ -91,15 +89,15 @@ class ClientWsDispatcher[C <: Http4sContext]
     logger.debug(s"Incoming WS message: $payload")
 
     val result = for {
-      parsed <- F.fromEither(parse(payload))
-      _ <- F.sync(logger.debug(s"parsed: $parsed"))
+      parsed  <- F.fromEither(parse(payload))
+      _       <- F.sync(logger.debug(s"parsed: $parsed"))
       decoded <- F.fromEither(parsed.as[RpcPacket])
-      v <- routeResponse(decoded)
+      v       <- routeResponse(decoded)
     } yield {
       v
     }
 
-    UnsafeRun2.unsafeRunAsync(result) {
+    UnsafeRun2[F].unsafeRunAsync(result) {
       case Success(PacketInfo(packetId, method)) =>
         logger.debug(s"Processed incoming packet $method: $packetId")
 
@@ -114,18 +112,18 @@ class ClientWsDispatcher[C <: Http4sContext]
     }
   }
 
-  protected def routeResponse(decoded: RpcPacket): BiIO[Throwable, PacketInfo] = {
+  protected def routeResponse(decoded: RpcPacket): F[Throwable, PacketInfo] = {
     decoded match {
       case RpcPacket(RPCPacketKind.RpcResponse, Some(data), _, ref, _, _, _) =>
         requestState.handleResponse(ref, data)
 
-      case p@RpcPacket(RPCPacketKind.BuzzRequest, Some(data), Some(id), _, Some(service), Some(method), _) =>
-        val methodId = IRTMethodId(IRTServiceId(service), IRTMethodName(method))
+      case p @ RpcPacket(RPCPacketKind.BuzzRequest, Some(data), Some(id), _, Some(service), Some(method), _) =>
+        val methodId   = IRTMethodId(IRTServiceId(service), IRTMethodName(method))
         val packetInfo = PacketInfo(methodId, id)
 
         val responsePkt = for {
           maybeResponse <- buzzerMuxer.doInvoke(data, wsClientContextProvider.toContext(p), methodId)
-          maybePacket <- F.pure(maybeResponse.map(r => RpcPacket.buzzerResponse(id, r)))
+          maybePacket   <- F.pure(maybeResponse.map(r => RpcPacket.buzzerResponse(id, r)))
         } yield {
           maybePacket
         }
@@ -142,8 +140,8 @@ class ClientWsDispatcher[C <: Http4sContext]
               logger.error(s"${packetInfo -> null}: WS processing interrupted, $exception $allExceptions $trace")
               F.pure(Some(rpc.RpcPacket.buzzerFail(Some(id), exception.getMessage)))
           }
-          maybeEncoded <- F(maybePacket.map(r => printer.print(r.asJson)))
-          _ <- F {
+          maybeEncoded <- F.sync(maybePacket.map(r => printer.print(r.asJson)))
+          _ <- F.sync {
             maybeEncoded match {
               case Some(response) =>
                 logger.debug(s"${method -> "method"}, ${id -> "id"}: Prepared buzzer $response")
@@ -156,7 +154,7 @@ class ClientWsDispatcher[C <: Http4sContext]
         }
 
       case RpcPacket(RPCPacketKind.RpcFail, data, _, Some(ref), _, _, _) =>
-        requestState.respond(ref, RawResponse.BadRawResponse())
+        requestState.respond(ref, RawResponse.BadRawResponse()) *>
         F.fail(new IRTGenericFailure(s"RPC failure for $ref: $data"))
 
       case RpcPacket(RPCPacketKind.RpcFail, data, _, None, _, _, _) =>
@@ -170,13 +168,11 @@ class ClientWsDispatcher[C <: Http4sContext]
     }
   }
 
-
   import scala.concurrent.duration.*
 
   protected val timeout: FiniteDuration = 2.seconds
-  protected val pollingInterval: FiniteDuration = 50.millis
 
-  def dispatch(request: IRTMuxRequest): BiIO[Throwable, IRTMuxResponse] = {
+  def dispatch(request: IRTMuxRequest): F[Throwable, IRTMuxResponse] = {
     logger.trace(s"${request.method -> "method"}: Going to perform $request")
 
     codec
@@ -193,29 +189,27 @@ class ClientWsDispatcher[C <: Http4sContext]
             w =>
               val pid = w.id.get // guaranteed to be present
 
-              F {
+              requestState.request(pid, request.method) *>
+              F.sync {
                 val out = printer.print(transformRequest(w).asJson)
                 logger.debug(s"${request.method -> "method"}, ${pid -> "id"}: Prepared request $encoded")
-                requestState.request(pid, request.method)
                 send(out)
                 pid
+              }.flatMap {
+                id =>
+                  requestState.awaitResponse(id, timeout).flatMap {
+                    case Some(value: RawResponse.GoodRawResponse) =>
+                      logger.debug(s"${request.method -> "method"}, $id: Have response: $value")
+                      codec.decode(value.data, value.method)
+
+                    case Some(value: RawResponse.BadRawResponse) =>
+                      logger.debug(s"${request.method -> "method"}, $id: Have response: $value")
+                      F.fail(new IRTGenericFailure(s"${request.method -> "method"}, $id: generic failure: $value"))
+
+                    case None =>
+                      F.fail(new TimeoutException(s"${request.method -> "method"}, $id: No response in $timeout"))
+                  }
               }
-                .flatMap {
-                  id =>
-                    requestState.poll(id, pollingInterval, timeout)
-                      .flatMap {
-                        case Some(value: RawResponse.GoodRawResponse) =>
-                          logger.debug(s"${request.method -> "method"}, $id: Have response: $value")
-                          codec.decode(value.data, value.method)
-
-                        case Some(value: RawResponse.BadRawResponse) =>
-                          logger.debug(s"${request.method -> "method"}, $id: Have response: $value")
-                          F.fail(new IRTGenericFailure(s"${request.method -> "method"}, $id: generic failure: $value"))
-
-                        case None =>
-                          F.fail(new TimeoutException(s"${request.method -> "method"}, $id: No response in $timeout"))
-                      }
-                }
           }
       }
   }
