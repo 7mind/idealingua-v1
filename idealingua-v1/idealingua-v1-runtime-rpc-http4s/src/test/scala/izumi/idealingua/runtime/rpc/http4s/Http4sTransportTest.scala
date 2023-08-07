@@ -8,8 +8,8 @@ import org.http4s.*
 import org.http4s.blaze.server.*
 import org.http4s.server.Router
 import org.scalatest.wordspec.AnyWordSpec
-import zio.ZIO
 import zio.interop.catz.asyncInstance
+import zio.{IO, ZIO}
 
 class Http4sTransportTest extends AnyWordSpec {
 
@@ -19,38 +19,37 @@ class Http4sTransportTest extends AnyWordSpec {
 
   "Http4s transport" should {
     "support http" in {
-        withServer {
-          val disp = clientDispatcher()
-          val greeterClient = new GreeterServiceClientWrapped(disp)
+      withServer {
+        val disp          = clientDispatcher()
+        val greeterClient = new GreeterServiceClientWrapped(disp)
 
-          disp.setupCredentials("user", "pass")
+        disp.setupCredentials("user", "pass")
 
-          assert(IO2R.unsafeRun(greeterClient.greet("John", "Smith")) == "Hi, John Smith!")
-          assert(IO2R.unsafeRun(greeterClient.alternative()) == "value")
+        assert(IO2R.unsafeRun(greeterClient.greet("John", "Smith")) == "Hi, John Smith!")
+        assert(IO2R.unsafeRun(greeterClient.alternative()) == "value")
 
-          checkBadBody("{}", disp)
-          checkBadBody("{unparseable", disp)
+        checkBadBody("{}", disp)
+        checkBadBody("{unparseable", disp)
 
-
-          disp.cancelCredentials()
-          IO2R.unsafeRunSync(greeterClient.alternative()) match {
-            case Termination(exception: IRTUnexpectedHttpStatus, _, _) =>
-              assert(exception.status == Status.Forbidden)
-            case o =>
-              fail(s"Expected IRTGenericFailure but got $o")
-          }
-
-          //
-          disp.setupCredentials("user", "badpass")
-          IO2R.unsafeRunSync(greeterClient.alternative()) match {
-            case Termination(exception: IRTUnexpectedHttpStatus, _, _) =>
-              assert(exception.status == Status.Unauthorized)
-            case o =>
-              fail(s"Expected IRTGenericFailure but got $o")
-          }
-
-          ()
+        disp.cancelCredentials()
+        IO2R.unsafeRunSync(greeterClient.alternative()) match {
+          case Termination(exception: IRTUnexpectedHttpStatus, _, _) =>
+            assert(exception.status == Status.Forbidden)
+          case o =>
+            fail(s"Expected IRTGenericFailure but got $o")
         }
+
+        //
+        disp.setupCredentials("user", "badpass")
+        IO2R.unsafeRunSync(greeterClient.alternative()) match {
+          case Termination(exception: IRTUnexpectedHttpStatus, _, _) =>
+            assert(exception.status == Status.Unauthorized)
+          case o =>
+            fail(s"Expected IRTGenericFailure but got $o")
+        }
+
+        ()
+      }
     }
 
     "support websockets" in {
@@ -64,7 +63,7 @@ class Http4sTransportTest extends AnyWordSpec {
         assert(IO2R.unsafeRun(greeterClient.greet("John", "Smith")) == "Hi, John Smith!")
         assert(IO2R.unsafeRun(greeterClient.alternative()) == "value")
 
-        IO2R.unsafeRunSync(ioService.wsSessionStorage.buzzersFor("user")) match {
+        IO2R.unsafeRunSync(ioService.wsSessionStorage.dispatcherForClient("user")) match {
           case Success(buzzers) =>
             buzzers.foreach {
               buzzer =>
@@ -89,7 +88,7 @@ class Http4sTransportTest extends AnyWordSpec {
   }
 
   def withServer(f: => Unit): Unit = {
-    val io = BlazeServerBuilder[rt.MonoIO]
+    val io = BlazeServerBuilder[IO[Throwable, _]]
       .bindHttp(port, host)
       .withHttpWebSocketApp(ws => Router("/" -> ioService.service(ws)).orNotFound)
       .stream
@@ -99,8 +98,8 @@ class Http4sTransportTest extends AnyWordSpec {
     IO2R.unsafeRun(io)
   }
 
-  def checkBadBody(body: String, disp: IRTDispatcher[rt.BiIO] with TestHttpDispatcher): Unit = {
-    val dummy = IRTMuxRequest(IRTReqBody((1, 2)), GreeterServiceMethods.greet.id)
+  def checkBadBody(body: String, disp: IRTDispatcher[IO] & TestHttpDispatcher): Unit = {
+    val dummy   = IRTMuxRequest(IRTReqBody((1, 2)), GreeterServiceMethods.greet.id)
     val badJson = IO2R.unsafeRunSync(disp.sendRaw(dummy, body.getBytes))
     badJson match {
       case Error(value: IRTUnexpectedHttpStatus, _) =>

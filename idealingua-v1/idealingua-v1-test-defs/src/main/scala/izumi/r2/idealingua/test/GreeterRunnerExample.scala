@@ -1,9 +1,9 @@
 package izumi.r2.idealingua.test
 
-import _root_.io.circe.syntax._
+import _root_.io.circe.syntax.*
 import izumi.idealingua.runtime.rpc.{ContextExtender, IRTServerMultiplexorImpl}
 import izumi.r2.idealingua.test.generated.GreeterServiceServerWrapped
-import zio._
+import zio.*
 
 object GreeterRunnerExample {
   def main(args: Array[String]): Unit = {

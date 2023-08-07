@@ -3,13 +3,13 @@ object V {
   // foundation
 
   val scalatest = "3.2.16"
-  val http4s = "0.23.18"
+  val http4s = "0.23.23"
   val http4s_blaze = "0.23.15"
 
-  val scalameta = "4.7.8" // Not available for Scala 3 yet
+  val scalameta = "4.8.7" // Not available for Scala 3 yet
   val fastparse = "3.0.2" // 3.0.0 is available for Scala 3
 
-  val scala_xml = "2.1.0"
+  val scala_xml = "2.2.0"
 
   val kind_projector = "0.13.2"
 
