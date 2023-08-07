@@ -9,7 +9,7 @@ object V {
   val scalameta = "4.8.7" // Not available for Scala 3 yet
   val fastparse = "2.3.3" // 3.0.0 is available for Scala 3
 
-  val scala_xml = "2.1.0"
+  val scala_xml = "2.2.0"
 
   val kind_projector = "0.13.2"
 
