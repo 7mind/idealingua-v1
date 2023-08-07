@@ -27,14 +27,14 @@ class RequestState[F[+_, +_]: IO2: Temporal2: Primitives2] {
     } yield promise
   }
 
-  def requestAndAwait(id: RpcPacketId, methodId: IRTMethodId, timeout: FiniteDuration): F[Throwable, Unit] = {
+  def requestAndAwait(id: RpcPacketId, methodId: IRTMethodId, timeout: FiniteDuration): F[Throwable, Option[RawResponse]] = {
     for {
       promise <- request(id, methodId)
       res     <- promise.await.timeout(timeout)
     } yield res
   }
 
-  def forget(id: RpcPacketId): Unit = {
+  def forget(id: RpcPacketId): F[Nothing, Unit] = F.sync {
     requests.remove(id)
     responses.remove(id).discard()
   }
@@ -45,11 +45,11 @@ class RequestState[F[+_, +_]: IO2: Temporal2: Primitives2] {
     responses.clear().discard()
   }
 
-  def respond(id: RpcPacketId, response: RawResponse): F[Throwable, Unit] = {
+  def responseWith(id: RpcPacketId, response: RawResponse): F[Throwable, Unit] = {
     F.sync(Option(responses.get(id))).flatMap {
       case Some(promise) => promise.succeed(response).void
       case None          => F.unit
-    } *> F.sync(forget(id))
+    } *> forget(id)
   }
 
   def handleResponse(maybePacketId: Option[RpcPacketId], data: Json): F[Throwable, PacketInfo] = {
@@ -63,7 +63,7 @@ class RequestState[F[+_, +_]: IO2: Temporal2: Primitives2] {
 
       method <- maybeMethod match {
         case Some(m @ PacketInfo(method, id)) =>
-          respond(id, RawResponse.GoodRawResponse(data, method)).as(m)
+          responseWith(id, RawResponse.GoodRawResponse(data, method)).as(m)
 
         case None =>
           F.fail(new IRTMissingHandlerException(s"Cannot handle response for async request $maybePacketId: no service handler", data))

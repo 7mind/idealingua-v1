@@ -154,7 +154,7 @@ class ClientWsDispatcher[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, Req
         }
 
       case RpcPacket(RPCPacketKind.RpcFail, data, _, Some(ref), _, _, _) =>
-        requestState.respond(ref, RawResponse.BadRawResponse()) *>
+        requestState.responseWith(ref, RawResponse.BadRawResponse()) *>
         F.fail(new IRTGenericFailure(s"RPC failure for $ref: $data"))
 
       case RpcPacket(RPCPacketKind.RpcFail, data, _, None, _, _, _) =>
@@ -184,7 +184,7 @@ class ClientWsDispatcher[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, Req
           )(release = {
             id =>
               logger.trace(s"${request.method -> "method"}, ${id -> "id"}: cleaning request state")
-              F.sync(requestState.forget(id.id.get))
+              requestState.forget(id.id.get)
           }) {
             w =>
               val pid = w.id.get // guaranteed to be present

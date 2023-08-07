@@ -3,7 +3,6 @@ package izumi.idealingua.runtime.rpc.http4s
 import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
 import izumi.fundamentals.platform.language.Quirks.*
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.ws.WsSessionId
 import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceMethods}
 import org.http4s.*
 import org.http4s.blaze.server.*
@@ -11,8 +10,6 @@ import org.http4s.server.Router
 import org.scalatest.wordspec.AnyWordSpec
 import zio.interop.catz.asyncInstance
 import zio.{IO, ZIO}
-
-import java.util.UUID
 
 class Http4sTransportTest extends AnyWordSpec {
 
@@ -65,8 +62,6 @@ class Http4sTransportTest extends AnyWordSpec {
 
         assert(IO2R.unsafeRun(greeterClient.greet("John", "Smith")) == "Hi, John Smith!")
         assert(IO2R.unsafeRun(greeterClient.alternative()) == "value")
-
-        ioService.wsSessionStorage.addClient(WsSessionId(UUID.randomUUID()), )
 
         IO2R.unsafeRunSync(ioService.wsSessionStorage.dispatcherForClient("user")) match {
           case Success(buzzers) =>

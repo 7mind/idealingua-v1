@@ -20,6 +20,8 @@ import java.net.URI
 import java.util.concurrent.atomic.AtomicReference
 
 object Http4sTestContext {
+  import RT.IO2R
+
   //
   final val addr    = IzSockets.temporaryServerAddress()
   final val port    = addr.getPort
@@ -122,7 +124,6 @@ object Http4sTestContext {
     Seq(WsSessionListener.empty[IO, String]),
     RT.dsl,
     RT.logger,
-    RT.izLogger,
     RT.printer,
   )
 
@@ -144,7 +145,6 @@ object Http4sTestContext {
   }
 
   final def wsClientDispatcher(): ClientWsDispatcher[IO, Unit] & TestDispatcher = {
-    import RT.IO2R
     new ClientWsDispatcher[IO, Unit](wsUri, demo.Client.codec, demo.Client.buzzerMultiplexor, wsClientContextProvider, RT.izLogger, RT.printer) with TestDispatcher {
 
       import scala.concurrent.duration.*

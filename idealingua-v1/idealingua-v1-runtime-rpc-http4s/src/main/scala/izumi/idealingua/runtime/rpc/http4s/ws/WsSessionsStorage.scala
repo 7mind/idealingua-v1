@@ -24,8 +24,7 @@ object WsSessionsStorage {
     codec: IRTClientMultiplexor[F],
   ) extends WsSessionsStorage[F, RequestContext, ClientId] {
 
-    protected val dispatchers = new ConcurrentHashMap[WsSessionId, WsClientDispatcher[F, RequestContext, ClientId]]()
-    protected val sessions    = new ConcurrentHashMap[WsSessionId, WsClientSession[F, RequestContext, ClientId]]()
+    protected val sessions = new ConcurrentHashMap[WsSessionId, WsClientSession[F, RequestContext, ClientId]]()
 
     override def addClient(ctx: WsClientSession[F, RequestContext, ClientId]): F[Throwable, WsClientSession[F, RequestContext, ClientId]] = {
       for {
@@ -36,12 +35,8 @@ object WsSessionsStorage {
 
     override def deleteClient(id: WsSessionId): F[Throwable, Option[WsClientSession[F, RequestContext, ClientId]]] = {
       for {
-        _ <- logger.debug(s"Deleting a client with session - $id")
-        res <- F.sync {
-          val ctx = Option(sessions.remove(id))
-          dispatchers.remove(id)
-          ctx
-        }
+        _   <- logger.debug(s"Deleting a client with session - $id")
+        res <- F.sync(Option(sessions.remove(id)))
       } yield res
     }
 
@@ -59,15 +54,7 @@ object WsSessionsStorage {
     }
 
     override def dispatcherForSession(id: WsSessionId, timeout: FiniteDuration): F[Throwable, Option[WsClientDispatcher[F, RequestContext, ClientId]]] = F.sync {
-      Option(
-        dispatchers.compute(
-          id,
-          {
-            case (_, null)       => Option(sessions.get(id)).map(WsClientDispatcher(_, codec, logger, timeout)).orNull
-            case (_, dispatcher) => dispatcher
-          },
-        )
-      )
+      Option(sessions.get(id)).map(WsClientDispatcher(_, codec, logger, timeout))
     }
   }
 
@@ -79,24 +66,20 @@ object WsSessionsStorage {
   ) extends IRTDispatcher[F] {
     override def dispatch(request: IRTMuxRequest): F[Throwable, IRTMuxResponse] = {
       for {
-        json <- codec.encode(request)
-        id   <- session.request(request.method, json)
-        response <- session.requestState.awaitResponse(id, timeout).guarantee {
-          logger.debug(s"WS Session: ${request.method -> "method"}, ${id -> "id"}: cleaning request state.") *>
-          F.sync(session.requestState.forget(id))
-        }
+        json     <- codec.encode(request)
+        response <- session.requestAndAwaitResponse(request.method, json, timeout)
         res <- response match {
           case Some(value: RawResponse.GoodRawResponse) =>
-            logger.debug(s"WS Session: ${request.method -> "method"}, $id: Have response: $value.") *>
+            logger.debug(s"WS Session: ${request.method -> "method"}: Have response: $value.") *>
             codec.decode(value.data, value.method)
 
           case Some(value: RawResponse.BadRawResponse) =>
-            logger.debug(s"WS Session: ${request.method -> "method"}, $id: Generic failure response: $value.") *>
-            F.fail(new IRTGenericFailure(s"${request.method -> "method"}, $id: generic failure: $value"))
+            logger.debug(s"WS Session: ${request.method -> "method"}: Generic failure response: $value.") *>
+            F.fail(new IRTGenericFailure(s"${request.method -> "method"}: generic failure: $value"))
 
           case None =>
-            logger.warn(s"WS Session: ${request.method -> "method"}, $id: Timeout exception $timeout.") *>
-            F.fail(new TimeoutException(s"${request.method -> "method"}, $id: No response in $timeout"))
+            logger.warn(s"WS Session: ${request.method -> "method"}: Timeout exception $timeout.") *>
+            F.fail(new TimeoutException(s"${request.method -> "method"}: No response in $timeout"))
         }
       } yield res
     }
