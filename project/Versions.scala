@@ -3,7 +3,7 @@ object V {
   // foundation
 
   val scalatest = "3.2.16"
-  val http4s = "0.23.18"
+  val http4s = "0.23.23"
   val http4s_blaze = "0.23.15"
 
   val scalameta = "4.8.7" // Not available for Scala 3 yet
