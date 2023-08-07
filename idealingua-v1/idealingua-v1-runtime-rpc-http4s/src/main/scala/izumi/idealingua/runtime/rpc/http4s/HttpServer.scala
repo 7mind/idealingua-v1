@@ -1,193 +1,195 @@
 package izumi.idealingua.runtime.rpc.http4s
 
 import _root_.io.circe.parser.*
+import cats.data.OptionT
+import cats.effect.Async
+import cats.effect.std.Queue
 import fs2.Stream
 import io.circe
-import io.circe.syntax.*
+import io.circe.syntax.EncoderOps
 import io.circe.{Json, Printer}
 import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
-import izumi.functional.bio.{Exit, IO2}
-import izumi.fundamentals.platform.language.Quirks.*
+import izumi.functional.bio.{Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
+import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.time.IzTime
 import izumi.idealingua.runtime.rpc
 import izumi.idealingua.runtime.rpc.*
-import izumi.logstage.api.IzLogger
+import izumi.idealingua.runtime.rpc.http4s.ws.*
+import izumi.idealingua.runtime.rpc.http4s.ws.WsClientSession.WsClientSessionImpl
+import logstage.LogIO2
 import org.http4s.*
+import org.http4s.dsl.Http4sDsl
 import org.http4s.server.AuthMiddleware
 import org.http4s.server.websocket.WebSocketBuilder2
-import org.http4s.websocket.WebSocketFrame
-import org.http4s.websocket.WebSocketFrame.{Binary, Close, Pong, Text}
+import org.http4s.websocket.{WebSocketContext, WebSocketFrame}
+import org.typelevel.vault.Key
 
 import java.time.ZonedDateTime
 import java.util.concurrent.RejectedExecutionException
+import scala.concurrent.duration.DurationInt
 
-class HttpServer[C <: Http4sContext](
-  val c: Http4sContextImpl[C],
-  val muxer: IRTServerMultiplexor[GetBiIO[C]#l, GetRequestContext[C]],
-  val codec: IRTClientMultiplexor[GetBiIO[C]#l],
-  val contextProvider: AuthMiddleware[GetMonoIO[C]#l, GetRequestContext[C]],
-  val wsContextProvider: WsContextProvider[GetBiIO[C]#l, GetRequestContext[C], GetClientId[C]],
-  val wsSessionStorage: WsSessionsStorage[GetBiIO[C]#l, GetClientId[C], GetRequestContext[C]],
-  val listeners: Seq[WsSessionListener[GetBiIO[C]#l, GetClientId[C]]],
-  logger: IzLogger,
-  printer: Printer
+class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, RequestCtx, MethodCtx, ClientId](
+  val muxer: IRTServerMultiplexor[F, RequestCtx],
+  val codec: IRTClientMultiplexor[F],
+  val contextProvider: AuthMiddleware[F[Throwable, _], RequestCtx],
+  val wsContextProvider: WsContextProvider[F, RequestCtx, ClientId],
+  val wsSessionStorage: WsSessionsStorage[F, RequestCtx, ClientId],
+  val listeners: Seq[WsSessionListener[F, ClientId]],
+  dsl: Http4sDsl[F[Throwable, _]],
+  logger: LogIO2[F],
+  printer: Printer,
+)(implicit val AT: Async[F[Throwable, _]]
 ) {
+  import dsl.*
 
-  import c.*
-  import c.dsl.*
-
-  protected def loggingMiddle(service: HttpRoutes[MonoIO]): HttpRoutes[MonoIO] = cats.data.Kleisli {
-    (req: Request[MonoIO]) =>
-      logger.trace(s"${req.method.name -> "method"} ${req.pathInfo -> "path"}: initiated")
-
-      try {
-        service(req).map {
-          case Status.Successful(resp) =>
-            logger.debug(s"${req.method.name -> "method"} ${req.pathInfo -> "path"}: success, ${resp.status.code -> "code"} ${resp.status.reason -> "reason"}")
-            resp
-          case resp if resp.attributes.lookup(org.http4s.server.websocket.websocketKey[MonoIO]).isDefined =>
-            logger.debug(s"${req.method.name -> "method"} ${req.pathInfo -> "path"}: websocket request")
-            resp
-          case resp =>
-            logger.info(s"${req.method.name -> "method"} ${req.pathInfo -> "uri"}: rejection, ${resp.status.code -> "code"} ${resp.status.reason -> "reason"}")
-            resp
+  protected def loggingMiddle(service: HttpRoutes[F[Throwable, _]]): HttpRoutes[F[Throwable, _]] = {
+    // we need to compute this key to differ ws responses from the others
+    // to not compute it on each request using unsafe run here
+    val wsAttributeKey = UnsafeRun2[F].unsafeRun(Key.newKey[F[Throwable, _], WebSocketContext[F[Throwable, _]]])
+    cats.data.Kleisli {
+      (req: Request[F[Throwable, _]]) =>
+        OptionT.apply {
+          (for {
+            _    <- logger.trace(s"${req.method.name -> "method"} ${req.pathInfo -> "path"}: initiated")
+            resp <- service(req).value
+            _ <- F.traverse(resp) {
+              case Status.Successful(resp) =>
+                logger.debug(s"${req.method.name -> "method"} ${req.pathInfo -> "path"}: success, ${resp.status.code -> "code"} ${resp.status.reason -> "reason"}")
+              case resp if resp.attributes.lookup(wsAttributeKey).isDefined =>
+                logger.debug(s"${req.method.name -> "method"} ${req.pathInfo -> "path"}: websocket request")
+              case resp =>
+                logger.info(s"${req.method.name -> "method"} ${req.pathInfo -> "uri"}: rejection, ${resp.status.code -> "code"} ${resp.status.reason -> "reason"}")
+            }
+          } yield resp).tapError {
+            cause =>
+              logger.error(s"${req.method.name -> "method"} ${req.pathInfo -> "path"}: failure, $cause")
+          }
         }
-      } catch {
-        case cause: Throwable =>
-          logger.error(s"${req.method.name -> "method"} ${req.pathInfo -> "path"}: failure, $cause")
-          throw cause
-      }
+    }
   }
 
-  def service(ws: WebSocketBuilder2[MonoIO]): HttpRoutes[MonoIO] = {
-    val svc = AuthedRoutes.of(handler(ws))
-    val aservice: HttpRoutes[MonoIO] = contextProvider(svc)
+  def service(ws: WebSocketBuilder2[F[Throwable, _]]): HttpRoutes[F[Throwable, _]] = {
+    val svc                                   = AuthedRoutes.of(router(ws))
+    val aservice: HttpRoutes[F[Throwable, _]] = contextProvider(svc)
     loggingMiddle(aservice)
   }
 
-  protected def handler(ws: WebSocketBuilder2[MonoIO]): PartialFunction[AuthedRequest[MonoIO, RequestContext], MonoIO[Response[MonoIO]]] = {
+  protected def router(ws: WebSocketBuilder2[F[Throwable, _]]): PartialFunction[AuthedRequest[F[Throwable, _], RequestCtx], F[Throwable, Response[F[Throwable, _]]]] = {
     case request @ GET -> Root / "ws" as ctx =>
-      val result = setupWs(request, ctx, ws)
-      result
+      setupWs(request, ctx, ws)
 
     case request @ GET -> Root / service / method as ctx =>
       val methodId = IRTMethodId(IRTServiceId(service), IRTMethodName(method))
-      run(new HttpRequestContext(request, ctx), body = "{}", methodId)
+      processHttpRequest(new HttpRequestContext(request, ctx), body = "{}", methodId)
 
     case request @ POST -> Root / service / method as ctx =>
       val methodId = IRTMethodId(IRTServiceId(service), IRTMethodName(method))
       request.req.decode[String] {
         body =>
-          run(new HttpRequestContext(request, ctx), body, methodId)
+          processHttpRequest(new HttpRequestContext(request, ctx), body, methodId)
       }
   }
 
-  protected def handleWsClose(context: WebsocketClientContext[BiIO, ClientId, RequestContext]): MonoIO[Unit] = {
-    F.sync(logger.debug(s"${context -> null}: Websocket client disconnected")) *>
+  protected def handleWsClose(context: WsClientSession[F, RequestCtx, ClientId]): F[Throwable, Unit] = {
+    logger.debug(s"WS Session: Websocket client disconnected ${context.id}.") *>
     context.finish()
   }
 
-  protected def onWsOpened(): MonoIO[Unit] = F.unit
-
-  protected def onWsUpdate(maybeNewId: Option[ClientId], old: WsClientId[ClientId]): MonoIO[Unit] = F.sync {
-    (maybeNewId, old).forget
+  protected def globalWsListener: WsSessionListener[F, ClientId] = new WsSessionListener[F, ClientId] {
+    def onSessionOpened(context: WsClientId[ClientId]): F[Throwable, Unit] = {
+      logger.debug(s"WS Session: opened ${context.id}.")
+    }
+    def onClientIdUpdate(context: WsClientId[ClientId], old: WsClientId[ClientId]): F[Throwable, Unit] = {
+      logger.debug(s"WS Session: Id updated to ${context.id}, was: ${old.id}.")
+    }
+    def onSessionClosed(context: WsClientId[ClientId]): F[Throwable, Unit] = {
+      logger.debug(s"WS Session: closed ${context.id}.")
+    }
   }
 
-  protected def onWsClosed(): MonoIO[Unit] = F.unit
-
-  protected def setupWs(request: AuthedRequest[MonoIO, RequestContext], initialContext: RequestContext, ws: WebSocketBuilder2[MonoIO]): MonoIO[Response[MonoIO]] = {
-    val context = new WebsocketClientContextImpl[C](c, request, initialContext, listeners, wsSessionStorage, logger) {
-      override def onWsSessionOpened(): MonoIO[Unit] = {
-        onWsOpened() *> super.onWsSessionOpened()
-      }
-      override def onWsClientIdUpdate(maybeNewId: Option[ClientId], oldId: WsClientId[ClientId]): MonoIO[Unit] = {
-        onWsUpdate(maybeNewId, oldId) *> super.onWsClientIdUpdate(maybeNewId, oldId)
-      }
-      override def onWsSessionClosed(): MonoIO[Unit] = {
-        onWsClosed() *> super.onWsSessionClosed()
-      }
+  protected def setupWs(
+    request: AuthedRequest[F[Throwable, _], RequestCtx],
+    initialContext: RequestCtx,
+    ws: WebSocketBuilder2[F[Throwable, _]],
+  ): F[Throwable, Response[F[Throwable, _]]] = {
+    Quirks.discard(request)
+    def pingStream: Stream[F[Throwable, _], WebSocketFrame.Ping] = {
+      Stream
+        .awakeEvery[F[Throwable, _]](5.second)
+        .evalMap(_ => logger.debug("WS Server: Sending ping frame.").as(WebSocketFrame.Ping()))
     }
     for {
-      _ <- context.start()
-      _ <- F.sync(logger.debug(s"${context -> null}: Websocket client connected"))
-      response <- context.queue.flatMap[Throwable, Response[MonoIO]] {
-        q =>
-          val dequeueStream = Stream.fromQueueUnterminated(q).through {
-            stream =>
-              stream
-                .evalMap(handleWsMessage(context))
-                .collect { case Some(v) => WebSocketFrame.Text(v) }
+      outQueue           <- Queue.unbounded[F[Throwable, _], WebSocketFrame]
+      listenersWithGlobal = Seq(globalWsListener) ++ listeners
+      context             = new WsClientSessionImpl(outQueue, initialContext, listenersWithGlobal, wsSessionStorage, printer, logger)
+      _                  <- context.start()
+      outStream           = Stream.fromQueueUnterminated(outQueue).merge(pingStream)
+      inStream = {
+        (inputStream: Stream[F[Throwable, _], WebSocketFrame]) =>
+          inputStream.evalMap {
+            handleWsFrame(context)(_).flatMap {
+              case Some(v) => outQueue.offer(WebSocketFrame.Text(v))
+              case None    => F.unit
+            }
           }
-          ws.withOnClose(onClose = handleWsClose(context))
-            .build(
-              send = dequeueStream.merge(context.outStream).merge(context.pingStream),
-              receive = _.enqueueUnterminated(q),
-            )
       }
+      response <- ws.withOnClose(handleWsClose(context)).build(outStream, inStream)
     } yield response
   }
 
-  protected def handleWsMessage(context: WebsocketClientContextImpl[C], requestTime: ZonedDateTime = IzTime.utcNow): WebSocketFrame => MonoIO[Option[String]] = {
-    case Text(msg, _) =>
-      makeResponse(context, msg).sandboxExit
-        .map(handleResult(context, _))
-
-    case Close(_) =>
-      F.pure(None)
-
-    case v: Binary =>
-      F.pure(Some(handleWsError(context, List.empty, Some(v.toString.take(100) + "..."), "badframe")))
-
-    case _: Pong =>
-      onHeartbeat(requestTime).map(_ => None)
-
-    case unknownMessage =>
-      logger.error(s"Cannot handle unknown websocket message $unknownMessage")
-      F.pure(None)
+  protected def onWsHeartbeat(requestTime: ZonedDateTime): F[Throwable, Unit] = {
+    logger.debug(s"WS Session: pong frame at $requestTime")
   }
 
-  def onHeartbeat(requestTime: ZonedDateTime): MonoIO[Unit] = {
-    requestTime.discard()
-    F.unit
+  protected def handleWsFrame(
+    context: WsClientSession[F, RequestCtx, ClientId],
+    requestTime: ZonedDateTime = IzTime.utcNow,
+  )(frame: WebSocketFrame
+  ): F[Throwable, Option[String]] = {
+    (frame match {
+      case WebSocketFrame.Text(msg, _) => makeWsResponse(context, msg).sandboxExit.flatMap(handleWsResult(context, _))
+      case WebSocketFrame.Close(_)     => F.pure(None)
+      case v: WebSocketFrame.Binary    => handleWsError(context, List.empty, Some(v.toString.take(100) + "..."), "badframe")
+      case _: WebSocketFrame.Pong      => onWsHeartbeat(requestTime).as(None)
+      case unknownMessage              => logger.error(s"Cannot handle unknown websocket message $unknownMessage").as(None)
+    }).map(_.map(p => printer.print(p.asJson)))
   }
 
-  protected def handleResult(context: WebsocketClientContextImpl[C], result: Exit[Throwable, Option[RpcPacket]]): Option[String] = {
+  protected def handleWsResult(
+    context: WsClientSession[F, RequestCtx, ClientId],
+    result: Exit[Throwable, Option[RpcPacket]],
+  ): F[Throwable, Option[RpcPacket]] = {
     result match {
-      case Success(v) =>
-        v.map(_.asJson).map(printer.print)
-
-      case Error(error, _) =>
-        Some(handleWsError(context, List(error), None, "failure"))
-
-      case Termination(cause, _, _) =>
-        Some(handleWsError(context, List(cause), None, "termination"))
-
-      case Interruption(cause, _, _)=>
-        Some(handleWsError(context, List(cause), None, "interruption"))
+      case Success(v)                => F.pure(v)
+      case Error(error, _)           => handleWsError(context, List(error), None, "failure")
+      case Termination(cause, _, _)  => handleWsError(context, List(cause), None, "termination")
+      case Interruption(cause, _, _) => handleWsError(context, List(cause), None, "interruption")
     }
   }
 
-  protected def makeResponse(context: WebsocketClientContextImpl[C], message: String): BiIO[Throwable, Option[RpcPacket]] = {
+  protected def makeWsResponse(context: WsClientSession[F, RequestCtx, ClientId], message: String): F[Throwable, Option[RpcPacket]] = {
     for {
-      parsed <- F.fromEither(parse(message))
-      unmarshalled <- F.fromEither(parsed.as[RpcPacket])
-      id <- wsContextProvider.toId(context.initialContext, context.id, unmarshalled)
-      _ <- context.updateId(id)
-      response <- respond(context, unmarshalled).sandbox.catchAll {
+      packet <- F.fromEither(io.circe.parser.decode[RpcPacket](message))
+      id     <- wsContextProvider.toId(context.initialContext, context.id, packet)
+      _      <- context.updateId(id)
+      response <- processWsRequest(context, packet).sandbox.catchAll {
         case Exit.Termination(exception, allExceptions, trace) =>
-          logger.error(s"${context -> null}: WS processing terminated, $message, $exception, $allExceptions, $trace")
-          F.pure(Some(rpc.RpcPacket.rpcFail(unmarshalled.id, exception.getMessage)))
+          logger
+            .error(s"${context -> null}: WS processing terminated, $message, $exception, $allExceptions, $trace")
+            .as(Some(rpc.RpcPacket.rpcFail(packet.id, exception.getMessage)))
         case Exit.Error(exception, trace) =>
-          logger.error(s"${context -> null}: WS processing failed, $message, $exception $trace")
-          F.pure(Some(rpc.RpcPacket.rpcFail(unmarshalled.id, exception.getMessage)))
+          logger
+            .error(s"${context -> null}: WS processing failed, $message, $exception $trace")
+            .as(Some(rpc.RpcPacket.rpcFail(packet.id, exception.getMessage)))
         case Exit.Interruption(exception, _, trace) =>
-          logger.error(s"${context -> null}: WS processing interrupted, $message, $exception $trace")
-          F.pure(Some(rpc.RpcPacket.rpcFail(unmarshalled.id, exception.getMessage)))
+          logger
+            .error(s"${context -> null}: WS processing interrupted, $message, $exception $trace")
+            .as(Some(rpc.RpcPacket.rpcFail(packet.id, exception.getMessage)))
       }
     } yield response
   }
 
-  protected def respond(context: WebsocketClientContextImpl[C], input: RpcPacket): BiIO[Throwable, Option[RpcPacket]] = {
+  protected def processWsRequest(context: WsClientSession[F, RequestCtx, ClientId], input: RpcPacket): F[Throwable, Option[RpcPacket]] = {
     input match {
       case RpcPacket(RPCPacketKind.RpcRequest, None, _, _, _, _, _) =>
         wsContextProvider.handleEmptyBodyPacket(context.id, context.initialContext, input).flatMap {
@@ -196,26 +198,29 @@ class HttpServer[C <: Http4sContext](
         }
 
       case RpcPacket(RPCPacketKind.RpcRequest, Some(data), Some(id), _, Some(service), Some(method), _) =>
-        val methodId = IRTMethodId(IRTServiceId(service), IRTMethodName(method))
         for {
           userCtx <- wsContextProvider.toContext(context.id, context.initialContext, input)
-          _ <- F.sync(logger.debug(s"${context -> null}: $id, $userCtx"))
-          result <- muxer.doInvoke(data, userCtx, methodId)
+          _       <- logger.debug(s"${context -> null}: $id, $userCtx")
+          methodId = IRTMethodId(IRTServiceId(service), IRTMethodName(method))
+          result  <- muxer.doInvoke(data, userCtx, methodId)
           packet <- result match {
-            case None =>
-              F.fail(new IRTMissingHandlerException(s"${context -> null}: No rpc handler for $methodId", input))
-            case Some(resp) =>
-              F.pure(rpc.RpcPacket.rpcResponse(id, resp))
+            case None       => F.fail(new IRTMissingHandlerException(s"${context -> null}: No rpc handler for $methodId", input))
+            case Some(resp) => F.pure(Some(rpc.RpcPacket.rpcResponse(id, resp)))
           }
-        } yield {
-          Some(packet)
-        }
+        } yield packet
+
+      case RpcPacket(RPCPacketKind.RpcResponse, Some(data), _, id, _, _, _) =>
+        context.handleResponse(id, data).as(None)
+
+      case RpcPacket(RPCPacketKind.RpcFail, Some(data), _, Some(id), _, _, _) =>
+        context.responseWith(id, RawResponse.BadRawResponse()) *>
+        F.fail(new IRTGenericFailure(s"Rpc returned failure: $data"))
 
       case RpcPacket(RPCPacketKind.BuzzResponse, Some(data), _, id, _, _, _) =>
-        context.requestState.handleResponse(id, data).as(None)
+        context.handleResponse(id, data).as(None)
 
       case RpcPacket(RPCPacketKind.BuzzFailure, Some(data), _, Some(id), _, _, _) =>
-        F.sync(context.requestState.respond(id, RawResponse.BadRawResponse())) *>
+        context.responseWith(id, RawResponse.BadRawResponse()) *>
         F.fail(new IRTGenericFailure(s"Buzzer has returned failure: $data"))
 
       case k =>
@@ -223,80 +228,88 @@ class HttpServer[C <: Http4sContext](
     }
   }
 
-  protected def handleWsError(context: WebsocketClientContextImpl[C], causes: List[Throwable], data: Option[String], kind: String): String = {
+  protected def handleWsError(
+    context: WsClientSession[F, RequestCtx, ClientId],
+    causes: List[Throwable],
+    data: Option[String],
+    kind: String,
+  ): F[Nothing, Option[RpcPacket]] = {
     causes.headOption match {
       case Some(cause) =>
-        logger.error(s"${context -> null}: WS Execution failed, $kind, $data, $cause")
-        printer.print(rpc.RpcPacket.rpcCritical(data.getOrElse(cause.getMessage), kind).asJson)
+        logger
+          .error(s"${context -> null}: WS Execution failed, $kind, $data, $cause")
+          .as(Some(rpc.RpcPacket.rpcCritical(data.getOrElse(cause.getMessage), kind)))
 
       case None =>
-        logger.error(s"${context -> null}: WS Execution failed, $kind, $data")
-        printer.print(rpc.RpcPacket.rpcCritical("?", kind).asJson)
+        logger
+          .error(s"${context -> null}: WS Execution failed, $kind, $data")
+          .as(Some(rpc.RpcPacket.rpcCritical("?", kind)))
     }
   }
 
-  protected def run(context: HttpRequestContext[MonoIO, RequestContext], body: String, method: IRTMethodId): MonoIO[Response[MonoIO]] = {
+  protected def processHttpRequest(
+    context: HttpRequestContext[F[Throwable, _], RequestCtx],
+    body: String,
+    method: IRTMethodId,
+  ): F[Throwable, Response[F[Throwable, _]]] = {
     val ioR = for {
-      parsed <- F.fromEither(parse(body))
+      parsed      <- F.fromEither(parse(body))
       maybeResult <- muxer.doInvoke(parsed, context.context, method)
     } yield {
       maybeResult
     }
 
-    ioR.sandboxExit
-      .flatMap(handleResult(context, method, _))
+    ioR.sandboxExit.flatMap(handleHttpResult(context, method, _))
   }
 
-  private def handleResult(
-    context: HttpRequestContext[MonoIO, RequestContext],
+  private def handleHttpResult(
+    context: HttpRequestContext[F[Throwable, _], RequestCtx],
     method: IRTMethodId,
-    result: Exit[Throwable, Option[Json]]
-  ): MonoIO[Response[MonoIO]] = {
+    result: Exit[Throwable, Option[Json]],
+  ): F[Throwable, Response[F[Throwable, _]]] = {
     result match {
-      case Success(v) =>
-        v match {
-          case Some(value) =>
-            dsl.Ok(printer.print(value))
-          case None =>
-            logger.warn(s"${context -> null}: No service handler for $method")
-            dsl.NotFound()
-        }
+      case Success(Some(value)) =>
+        dsl.Ok(printer.print(value))
+
+      case Success(None) =>
+        logger.warn(s"${context -> null}: No service handler for $method") *>
+        dsl.NotFound()
 
       case Error(error: circe.Error, trace) =>
-        logger.info(s"${context -> null}: Parsing failure while handling $method: $error $trace")
+        logger.info(s"${context -> null}: Parsing failure while handling $method: $error $trace") *>
         dsl.BadRequest()
 
       case Error(error: IRTDecodingException, trace) =>
-        logger.info(s"${context -> null}: Parsing failure while handling $method: $error $trace")
+        logger.info(s"${context -> null}: Parsing failure while handling $method: $error $trace") *>
         dsl.BadRequest()
 
       case Error(error: IRTLimitReachedException, trace) =>
-        logger.debug(s"${context -> null}: Request failed because of request limit reached $method: $error $trace")
+        logger.debug(s"${context -> null}: Request failed because of request limit reached $method: $error $trace") *>
         dsl.TooManyRequests()
 
       case Error(error: IRTUnathorizedRequestContextException, trace) =>
-        logger.debug(s"${context -> null}: Request failed because of unexpected request context reached $method: $error $trace")
-        // workaarount because implicits conflict
+        // workarount because implicits conflict
+        logger.debug(s"${context -> null}: Request failed because of unexpected request context reached $method: $error $trace") *>
         dsl.Forbidden().map(_.copy(status = dsl.Unauthorized))
 
       case Error(error, trace) =>
-        logger.info(s"${context -> null}: Unexpected failure while handling $method: $error $trace")
+        logger.info(s"${context -> null}: Unexpected failure while handling $method: $error $trace") *>
         dsl.InternalServerError()
 
       case Termination(_, (cause: IRTHttpFailureException) :: _, trace) =>
-        logger.debug(s"${context -> null}: Request rejected, $method, ${context.request}, $cause, $trace")
+        logger.debug(s"${context -> null}: Request rejected, $method, ${context.request}, $cause, $trace") *>
         F.pure(Response(status = cause.status))
 
       case Termination(_, (cause: RejectedExecutionException) :: _, trace) =>
-        logger.warn(s"${context -> null}: Not enough capacity to handle $method: $cause $trace")
+        logger.warn(s"${context -> null}: Not enough capacity to handle $method: $cause $trace") *>
         dsl.TooManyRequests()
 
       case Termination(cause, _, trace) =>
-        logger.error(s"${context -> null}: Execution failed, termination, $method, ${context.request}, $cause, $trace")
+        logger.error(s"${context -> null}: Execution failed, termination, $method, ${context.request}, $cause, $trace") *>
         dsl.InternalServerError()
 
       case Interruption(cause, _, trace) =>
-        logger.info(s"${context -> null}: Unexpected interruption while handling $method: $cause $trace")
+        logger.info(s"${context -> null}: Unexpected interruption while handling $method: $cause $trace") *>
         dsl.InternalServerError()
     }
   }
