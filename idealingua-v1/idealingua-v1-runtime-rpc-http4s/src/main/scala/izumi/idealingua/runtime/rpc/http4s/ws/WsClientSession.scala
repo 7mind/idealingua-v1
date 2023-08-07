@@ -90,7 +90,7 @@ object WsClientSession {
       F.fromEither(WebSocketFrame.Close(1000)).flatMap(outQueue.offer(_)) *>
       wsSessionStorage.deleteClient(sessionId) *>
       F.traverse_(listeners)(_.onSessionClosed(id)) *>
-      F.sync(requestState.clear())
+      requestState.clear()
     }
 
     protected[http4s] def start(): F[Throwable, Unit] = {
@@ -99,6 +99,7 @@ object WsClientSession {
     }
 
     override def toString: String = s"[${id.toString}, ${duration().toSeconds}s]"
+
     private[this] def duration(): FiniteDuration = {
       val now = IzTime.utcNow
       val d   = java.time.Duration.between(openingTime, now)

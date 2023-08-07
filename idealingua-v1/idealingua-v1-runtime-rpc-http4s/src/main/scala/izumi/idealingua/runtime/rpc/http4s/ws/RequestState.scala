@@ -5,9 +5,11 @@ import izumi.functional.bio.{F, IO2, Primitives2, Promise2, Temporal2}
 import izumi.fundamentals.platform.language.Quirks.*
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.PacketInfo
+import izumi.idealingua.runtime.rpc.http4s.ws.RawResponse.BadRawResponse
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.CollectionConverters.*
 
 class RequestState[F[+_, +_]: IO2: Temporal2: Primitives2] {
 
@@ -27,22 +29,18 @@ class RequestState[F[+_, +_]: IO2: Temporal2: Primitives2] {
     } yield promise
   }
 
-  def requestAndAwait(id: RpcPacketId, methodId: IRTMethodId, timeout: FiniteDuration): F[Throwable, Option[RawResponse]] = {
-    for {
-      promise <- request(id, methodId)
-      res     <- promise.await.timeout(timeout)
-    } yield res
-  }
-
   def forget(id: RpcPacketId): F[Nothing, Unit] = F.sync {
     requests.remove(id)
     responses.remove(id).discard()
   }
 
-  def clear(): Unit = {
+  def clear(): F[Throwable, Unit] = {
     // TODO: autocloseable + latch?
-    requests.clear()
-    responses.clear().discard()
+    for {
+      _ <- F.sync(requests.clear())
+      _ <- F.traverse(responses.values().asScala)(p => p.succeed(BadRawResponse()))
+      _ <- F.sync(responses.clear())
+    } yield ()
   }
 
   def responseWith(id: RpcPacketId, response: RawResponse): F[Throwable, Unit] = {
