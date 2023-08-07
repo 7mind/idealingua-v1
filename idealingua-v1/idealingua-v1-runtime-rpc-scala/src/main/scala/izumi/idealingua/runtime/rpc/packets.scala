@@ -143,7 +143,6 @@ object RpcPacket {
 
   def buzzerResponse(ref: RpcPacketId, data: Json): RpcPacket = {
     RpcPacket(RPCPacketKind.BuzzResponse, Some(data), None, Some(ref), None, None, None)
-
   }
 
   def buzzerFail(ref: Option[RpcPacketId], cause: String): RpcPacket = {

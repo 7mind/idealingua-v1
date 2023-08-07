@@ -1,51 +1,49 @@
 package izumi.idealingua.runtime.rpc.http4s
 
-import izumi.functional.bio.IO2
-import izumi.functional.bio.Exit
-import izumi.idealingua.runtime.rpc._
-import izumi.logstage.api.IzLogger
+import cats.effect.Async
 import fs2.Stream
 import io.circe
 import io.circe.parser.parse
-import org.http4s._
-import org.http4s.blaze.client._
+import izumi.functional.bio.{Exit, F, IO2}
+import izumi.idealingua.runtime.rpc.*
+import izumi.logstage.api.IzLogger
+import org.http4s.*
+import org.http4s.blaze.client.*
 
-class ClientDispatcher[C <: Http4sContext]
-(
-  val c: Http4sContextImpl[C]
-, logger: IzLogger
-, printer: circe.Printer
-, baseUri: Uri
-, codec: IRTClientMultiplexor[GetBiIO[C]#l]
-) extends IRTDispatcher[GetBiIO[C]#l] {
-  import c._
+class ClientDispatcher[F[+_, +_]: IO2](
+  logger: IzLogger,
+  printer: circe.Printer,
+  baseUri: Uri,
+  codec: IRTClientMultiplexor[F],
+  executionContext: HttpExecutionContext,
+)(implicit AT: Async[F[Throwable, _]]
+) extends IRTDispatcher[F] {
 
-  def dispatch(request: IRTMuxRequest): BiIO[Throwable, IRTMuxResponse] = {
-    val handler = handleResponse(request, _: Response[MonoIO])
+  def dispatch(request: IRTMuxRequest): F[Throwable, IRTMuxResponse] = {
+    val handler = handleResponse(request, _: Response[F[Throwable, _]])
 
     logger.trace(s"${request.method -> "method"}: Goint to perform $request")
 
-    codec.encode(request)
-      .flatMap {
-        encoded =>
-          val outBytes: Array[Byte] = printer.print(encoded).getBytes
-          val req = buildRequest(baseUri, request, outBytes)
+    codec.encode(request).flatMap {
+      encoded =>
+        val outBytes: Array[Byte] = printer.print(encoded).getBytes
+        val req                   = buildRequest(baseUri, request, outBytes)
 
-          logger.debug(s"${request.method -> "method"}: Prepared request $encoded")
-          runRequest[IRTMuxResponse](handler, req)
-      }
+        logger.debug(s"${request.method -> "method"}: Prepared request $encoded")
+        runRequest[IRTMuxResponse](handler, req)
+    }
   }
 
-  protected def runRequest[T](handler: Response[MonoIO] => MonoIO[T], req: Request[MonoIO]): BiIO[Throwable, T] = {
-    val clientBuilder = blazeClientBuilder(BlazeClientBuilder[MonoIO].withExecutionContext(c.clientExecutionContext))
+  protected def runRequest[T](handler: Response[F[Throwable, _]] => F[Throwable, T], req: Request[F[Throwable, _]]): F[Throwable, T] = {
+    val clientBuilder = blazeClientBuilder(BlazeClientBuilder[F[Throwable, _]].withExecutionContext(executionContext.clientExecutionContext))
     clientBuilder.resource.use {
       _.run(req).use(handler)
     }
   }
 
-  protected def blazeClientBuilder(defaultBuilder: BlazeClientBuilder[MonoIO]): BlazeClientBuilder[MonoIO] = defaultBuilder
+  protected def blazeClientBuilder(defaultBuilder: BlazeClientBuilder[F[Throwable, _]]): BlazeClientBuilder[F[Throwable, _]] = defaultBuilder
 
-  protected def handleResponse(input: IRTMuxRequest, resp: Response[MonoIO]): MonoIO[IRTMuxResponse] = {
+  protected def handleResponse(input: IRTMuxRequest, resp: Response[F[Throwable, _]]): F[Throwable, IRTMuxResponse] = {
     logger.trace(s"${input.method -> "method"}: Received response, going to materialize, ${resp.status.code -> "code"} ${resp.status.reason -> "reason"}")
 
     if (resp.status != Status.Ok) {
@@ -53,44 +51,44 @@ class ClientDispatcher[C <: Http4sContext]
       F.fail(IRTUnexpectedHttpStatus(resp.status))
     } else {
       resp
-      .as[MaterializedStream]
-      .flatMap {
-        body =>
-          logger.trace(s"${input.method -> "method"}: Received response: $body")
-          val decoded = for {
-            parsed <- F.fromEither(parse(body))
-            product <- codec.decode(parsed, input.method)
-          } yield {
-            logger.trace(s"${input.method -> "method"}: decoded response: $product")
-            product
-          }
+        .as[String]
+        .flatMap {
+          body =>
+            logger.trace(s"${input.method -> "method"}: Received response: $body")
+            val decoded = for {
+              parsed  <- F.fromEither(parse(body))
+              product <- codec.decode(parsed, input.method)
+            } yield {
+              logger.trace(s"${input.method -> "method"}: decoded response: $product")
+              product
+            }
 
-          decoded.sandbox.catchAll {
-            case Exit.Error(error, trace) =>
-              logger.info(s"${input.method -> "method"}: decoder returned failure on $body: $error $trace")
-              F.fail(new IRTUnparseableDataException(s"${input.method}: decoder returned failure on body=$body: error=$error trace=$trace", Option(error)))
+            decoded.sandbox.catchAll {
+              case Exit.Error(error, trace) =>
+                logger.info(s"${input.method -> "method"}: decoder returned failure on $body: $error $trace")
+                F.fail(new IRTUnparseableDataException(s"${input.method}: decoder returned failure on body=$body: error=$error trace=$trace", Option(error)))
 
-            case Exit.Termination(f, _, trace) =>
-              logger.info(s"${input.method -> "method"}: decoder failed on $body: $f $trace")
-              F.fail(new IRTUnparseableDataException(s"${input.method}: decoder failed on body=$body: f=$f trace=$trace", Option(f)))
+              case Exit.Termination(f, _, trace) =>
+                logger.info(s"${input.method -> "method"}: decoder failed on $body: $f $trace")
+                F.fail(new IRTUnparseableDataException(s"${input.method}: decoder failed on body=$body: f=$f trace=$trace", Option(f)))
 
-            case Exit.Interruption(error, _, trace) =>
-              logger.info(s"${input.method -> "method"}: decoder interrupted on $body: $error $trace")
-              F.fail(new IRTUnparseableDataException(s"${input.method}: decoder interrupted on body=$body: error=$error trace=$trace", Option(error)))
-          }
-      }
+              case Exit.Interruption(error, _, trace) =>
+                logger.info(s"${input.method -> "method"}: decoder interrupted on $body: $error $trace")
+                F.fail(new IRTUnparseableDataException(s"${input.method}: decoder interrupted on body=$body: error=$error trace=$trace", Option(error)))
+            }
+        }
     }
   }
 
-  protected final def buildRequest(baseUri: Uri, input: IRTMuxRequest, body: Array[Byte]): Request[MonoIO] = {
-    val entityBody: EntityBody[MonoIO] = Stream.emits(body).covary[MonoIO]
+  protected final def buildRequest(baseUri: Uri, input: IRTMuxRequest, body: Array[Byte]): Request[F[Throwable, _]] = {
+    val entityBody: EntityBody[F[Throwable, _]] = Stream.emits(body).covary[F[Throwable, _]]
     buildRequest(baseUri, input, entityBody)
   }
 
-  protected final def buildRequest(baseUri: Uri, input: IRTMuxRequest, body: EntityBody[MonoIO]): Request[MonoIO] = {
+  protected final def buildRequest(baseUri: Uri, input: IRTMuxRequest, body: EntityBody[F[Throwable, _]]): Request[F[Throwable, _]] = {
     val uri = baseUri / input.method.service.value / input.method.methodId.value
 
-    val base: Request[MonoIO] = if (input.body.value.productArity > 0) {
+    val base: Request[F[Throwable, _]] = if (input.body.value.productArity > 0) {
       Request(org.http4s.Method.POST, uri, body = body)
     } else {
       Request(org.http4s.Method.GET, uri)
@@ -99,5 +97,5 @@ class ClientDispatcher[C <: Http4sContext]
     transformRequest(base)
   }
 
-  protected def transformRequest(request: Request[MonoIO]): Request[MonoIO] = request
+  protected def transformRequest(request: Request[F[Throwable, _]]): Request[F[Throwable, _]] = request
 }

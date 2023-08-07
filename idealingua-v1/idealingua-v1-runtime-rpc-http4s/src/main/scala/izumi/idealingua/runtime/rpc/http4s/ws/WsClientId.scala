@@ -1,4 +1,4 @@
-package izumi.idealingua.runtime.rpc.http4s
+package izumi.idealingua.runtime.rpc.http4s.ws
 
 import java.util.UUID
 
