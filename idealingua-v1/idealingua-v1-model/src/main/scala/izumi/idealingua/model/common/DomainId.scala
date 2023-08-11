@@ -9,9 +9,6 @@ final case class DomainId(pkg: common.Package, id: String) {
 }
 
 object DomainId {
-  final val Builtin = DomainId(Seq.empty, "/")
+  final val Builtin   = DomainId(Seq.empty, "/")
   final val Undefined = DomainId(Seq.empty, ".")
 }
-
-
-
