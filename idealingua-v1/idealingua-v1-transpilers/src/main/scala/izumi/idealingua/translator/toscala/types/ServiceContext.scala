@@ -24,15 +24,14 @@ final case class ServiceContext(ctx: STContext, svc: Service) {
 
   val typeName: TypeName = svc.id.name
 
-
-  private val pkg: Term.Ref = svc.id.domain.toPackage.foldLeft(Term.Name("_root_") : Term.Ref) {
+  private val pkg: Term.Ref = svc.id.domain.toPackage.foldLeft(Term.Name("_root_"): Term.Ref) {
     case (acc, v) =>
       Term.Select(acc, Term.Name(v))
   }
 
   val methodImport = Import(List(Importer(pkg, List(Importee.Rename(Name(typeName), Name("_M"))))))
 
-  val basePath = TypePath(svc.id.domain, Seq(typeName))
+  val basePath              = TypePath(svc.id.domain, Seq(typeName))
   val svcBaseTpe: ScalaType = ctx.conv.toScala(IndefiniteId(svc.id.domain.toPackage, s"$typeName"))
 
   private def typeId(name: String): ScalaType = {
@@ -46,5 +45,5 @@ final case class ServiceContext(ctx: STContext, svc: Service) {
   val svcWrappedClientTpe: ScalaType = typeId(s"${typeName}WrappedClient")
 
   val svcMethods: ScalaType = svcBaseTpe
-  val svcCodecs: ScalaType = typeId(s"${typeName}Codecs")
+  val svcCodecs: ScalaType  = typeId(s"${typeName}Codecs")
 }
