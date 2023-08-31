@@ -10,44 +10,44 @@ object Idealingua {
     val sbtgen = Version.VExpr("V.sbtgen")
 
     val kind_projector = Version.VExpr("V.kind_projector")
-    val scalatest = Version.VExpr("V.scalatest")
+    val scalatest      = Version.VExpr("V.scalatest")
 
-    val cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version")
-    val cats_effect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
-    val circe = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version")
+    val cats                 = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version")
+    val cats_effect          = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version")
+    val circe                = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version")
     val circe_generic_extras = Version.VExpr("V.circe_generic_extras")
-    val circe_derivation = Version.VExpr("V.circe_derivation")
-    val jawn = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.org_typelevel_jawn_parser_version")
-    val zio = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
-    val zio_interop_cats = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version")
-    val izumi_reflect = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_izumi_reflect_version")
+    val circe_derivation     = Version.VExpr("V.circe_derivation")
+    val jawn                 = Version.VExpr("Izumi.Deps.fundamentals_json_circeJVM.org_typelevel_jawn_parser_version")
+    val zio                  = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version")
+    val zio_interop_cats     = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version")
+    val izumi_reflect        = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_izumi_reflect_version")
 
-    val http4s = Version.VExpr("V.http4s")
-    val http4s_blaze = Version.VExpr("V.http4s_blaze")
-    val scalameta = Version.VExpr("V.scalameta")
-    val fastparse = Version.VExpr("V.fastparse")
-    val scala_xml = Version.VExpr("V.scala_xml")
+    val http4s          = Version.VExpr("V.http4s")
+    val http4s_blaze    = Version.VExpr("V.http4s_blaze")
+    val scalameta       = Version.VExpr("V.scalameta")
+    val fastparse       = Version.VExpr("V.fastparse")
+    val scala_xml       = Version.VExpr("V.scala_xml")
     val asynchttpclient = Version.VExpr("V.asynchttpclient")
 
-    val slf4j = Version.VExpr("V.slf4j")
+    val slf4j           = Version.VExpr("V.slf4j")
     val typesafe_config = Version.VExpr("V.typesafe_config")
 
     val scala_java_time = Version.VExpr("V.scala_java_time")
   }
 
   object PV {
-    val izumi = Version.VExpr("PV.izumi")
-    val sbt_mdoc = Version.VExpr("PV.sbt_mdoc")
+    val izumi                      = Version.VExpr("PV.izumi")
+    val sbt_mdoc                   = Version.VExpr("PV.sbt_mdoc")
     val sbt_paradox_material_theme = Version.VExpr("PV.sbt_paradox_material_theme")
-    val sbt_ghpages = Version.VExpr("PV.sbt_ghpages")
-    val sbt_site = Version.VExpr("PV.sbt_site")
-    val sbt_unidoc = Version.VExpr("PV.sbt_unidoc")
-    val sbt_scoverage = Version.VExpr("PV.sbt_scoverage")
-    val sbt_pgp = Version.VExpr("PV.sbt_pgp")
-    val sbt_assembly = Version.VExpr("PV.sbt_assembly")
+    val sbt_ghpages                = Version.VExpr("PV.sbt_ghpages")
+    val sbt_site                   = Version.VExpr("PV.sbt_site")
+    val sbt_unidoc                 = Version.VExpr("PV.sbt_unidoc")
+    val sbt_scoverage              = Version.VExpr("PV.sbt_scoverage")
+    val sbt_pgp                    = Version.VExpr("PV.sbt_pgp")
+    val sbt_assembly               = Version.VExpr("PV.sbt_assembly")
 
-    val scala_js_version = Version.VExpr("PV.scala_js_version")
-    val crossproject_version = Version.VExpr("PV.crossproject_version")
+    val scala_js_version        = Version.VExpr("PV.scala_js_version")
+    val crossproject_version    = Version.VExpr("PV.crossproject_version")
     val scalajs_bundler_version = Version.VExpr("PV.scalajs_bundler_version")
   }
 
@@ -56,19 +56,19 @@ object Idealingua {
   }
 
   val settings = GlobalSettings(
-    groupId = "io.7mind.izumi",
-    sbtVersion = None,
+    groupId        = "io.7mind.izumi",
+    sbtVersion     = None,
     scalaJsVersion = Version.VConst("1.13.0"),
   )
 
   object Deps {
     final val fundamentals_collections = Library("io.7mind.izumi", "fundamentals-collections", V.izumi, LibraryType.Auto)
-    final val fundamentals_platform = Library("io.7mind.izumi", "fundamentals-platform", V.izumi, LibraryType.Auto)
-    final val fundamentals_functional = Library("io.7mind.izumi", "fundamentals-functional", V.izumi, LibraryType.Auto)
-    final val fundamentals_reflection = Library("io.7mind.izumi", "fundamentals-reflection", V.izumi, LibraryType.Auto)
-    final val fundamentals_bio = Library("io.7mind.izumi", "fundamentals-bio", V.izumi, LibraryType.Auto)
-    final val logstage_core = Library("io.7mind.izumi", "logstage-core", V.izumi, LibraryType.Auto)
-    final val logstage_adapter_slf4j = Library("io.7mind.izumi", "logstage-adapter-slf4j", V.izumi, LibraryType.Auto)
+    final val fundamentals_platform    = Library("io.7mind.izumi", "fundamentals-platform", V.izumi, LibraryType.Auto)
+    final val fundamentals_functional  = Library("io.7mind.izumi", "fundamentals-functional", V.izumi, LibraryType.Auto)
+    final val fundamentals_reflection  = Library("io.7mind.izumi", "fundamentals-reflection", V.izumi, LibraryType.Auto)
+    final val fundamentals_bio         = Library("io.7mind.izumi", "fundamentals-bio", V.izumi, LibraryType.Auto)
+    final val logstage_core            = Library("io.7mind.izumi", "logstage-core", V.izumi, LibraryType.Auto)
+    final val logstage_adapter_slf4j   = Library("io.7mind.izumi", "logstage-adapter-slf4j", V.izumi, LibraryType.Auto)
 
     final val fundamentals_basics = Seq(
       fundamentals_collections,
@@ -77,20 +77,20 @@ object Idealingua {
     )
     final val scalatest = Library("org.scalatest", "scalatest", V.scalatest, LibraryType.Auto) in Scope.Test.all
 
-    final val cats_core = Library("org.typelevel", "cats-core", V.cats, LibraryType.Auto)
+    final val cats_core   = Library("org.typelevel", "cats-core", V.cats, LibraryType.Auto)
     final val cats_effect = Library("org.typelevel", "cats-effect", V.cats_effect, LibraryType.Auto)
     final val cats_all = Seq(
       cats_core,
       cats_effect,
     )
 
-    final val zio_core = Library("dev.zio", "zio", V.zio, LibraryType.Auto)
+    final val zio_core         = Library("dev.zio", "zio", V.zio, LibraryType.Auto)
     final val zio_interop_cats = Library("dev.zio", "zio-interop-cats", V.zio_interop_cats, LibraryType.Auto)
-    final val izumi_reflect = Library("dev.zio", "izumi-reflect", V.izumi_reflect, LibraryType.Auto)
+    final val izumi_reflect    = Library("dev.zio", "izumi-reflect", V.izumi_reflect, LibraryType.Auto)
     final val zio_all = Seq(
       zio_core,
       zio_interop_cats,
-      izumi_reflect
+      izumi_reflect,
     )
 
     final val typesafe_config = Library("com.typesafe", "config", V.typesafe_config, LibraryType.Invariant) in Scope.Compile.all
@@ -106,7 +106,9 @@ object Idealingua {
     )
 
     final val scala_sbt = Library("org.scala-sbt", "sbt", Version.VExpr("sbtVersion.value"), LibraryType.Invariant)
-    final val scala_reflect = Library("org.scala-lang", "scala-reflect", Version.VExpr("scalaVersion.value"), LibraryType.Invariant) in Scope.Provided.all.scalaVersion(ScalaVersionScope.AllScala2)
+    final val scala_reflect = Library("org.scala-lang", "scala-reflect", Version.VExpr("scalaVersion.value"), LibraryType.Invariant) in Scope.Provided.all.scalaVersion(
+      ScalaVersionScope.AllScala2
+    )
     final val scala_xml = Library("org.scala-lang.modules", "scala-xml", V.scala_xml, LibraryType.Auto) in Scope.Compile.all
     final val scalameta = Library("org.scalameta", "scalameta", V.scalameta, LibraryType.Auto) in Scope.Compile.all
 
@@ -116,7 +118,7 @@ object Idealingua {
     final val fastparse = Library("com.lihaoyi", "fastparse", V.fastparse, LibraryType.Auto) in Scope.Compile.all
 
     final val http4s_client = Seq(
-      Library("org.http4s", "http4s-blaze-client", V.http4s_blaze, LibraryType.Auto),
+      Library("org.http4s", "http4s-blaze-client", V.http4s_blaze, LibraryType.Auto)
     )
 
     val http4s_server = Seq(
@@ -125,7 +127,7 @@ object Idealingua {
       Library("org.http4s", "http4s-blaze-server", V.http4s_blaze, LibraryType.Auto),
     )
 
-    val http4s_all = (http4s_server ++ http4s_client)
+    val http4s_all = http4s_server ++ http4s_client
 
     val asynchttpclient = Library("org.asynchttpclient", "async-http-client", V.asynchttpclient, LibraryType.Invariant)
 
@@ -137,11 +139,11 @@ object Idealingua {
   // DON'T REMOVE, these variables are read from CI build (build.sh)
   final val scala212 = ScalaVersion("2.12.18")
   final val scala213 = ScalaVersion("2.13.11")
-  final val scala300 = ScalaVersion("3.3.1-RC4")
+  final val scala300 = ScalaVersion("3.3.1-RC7")
 
   object Groups {
     final val fundamentals = Set(Group("fundamentals"))
-    final val idealingua = Set(Group("idealingua"))
+    final val idealingua   = Set(Group("idealingua"))
   }
 
   object Targets {
@@ -159,7 +161,7 @@ object Idealingua {
       language = targetScala2,
       settings = Seq(
         "coverageEnabled" := false,
-        "scalaJSLinkerConfig" in(SettingScope.Project, Platform.Js) := "{ scalaJSLinkerConfig.value.withModuleKind(ModuleKind.CommonJSModule) }".raw,
+        "scalaJSLinkerConfig" in (SettingScope.Project, Platform.Js) := "{ scalaJSLinkerConfig.value.withModuleKind(ModuleKind.CommonJSModule) }".raw,
       ),
     )
     private val jvmPlatform3 = PlatformEnv(
@@ -172,18 +174,18 @@ object Idealingua {
       language = targetScala3,
       settings = Seq(
         "coverageEnabled" := false,
-        "scalaJSLinkerConfig" in(SettingScope.Project, Platform.Js) := "{ scalaJSLinkerConfig.value.withModuleKind(ModuleKind.CommonJSModule) }".raw,
+        "scalaJSLinkerConfig" in (SettingScope.Project, Platform.Js) := "{ scalaJSLinkerConfig.value.withModuleKind(ModuleKind.CommonJSModule) }".raw,
       ),
     )
     final val cross2 = Seq(jvmPlatform2, jsPlatform2)
-    final val jvm2 = Seq(jvmPlatform2)
+    final val jvm2   = Seq(jvmPlatform2)
 
     final val cross3 = Seq(jvmPlatform3, jsPlatform3)
-    final val jvm3 = Seq(jvmPlatform3)
+    final val jvm3   = Seq(jvmPlatform3)
   }
 
   final val assemblyPluginJvm = Plugin("AssemblyPlugin", Platform.Jvm)
-  final val assemblyPluginJs = Plugin("AssemblyPlugin", Platform.Js)
+  final val assemblyPluginJs  = Plugin("AssemblyPlugin", Platform.Js)
 
   object Projects {
 
@@ -197,8 +199,8 @@ object Idealingua {
 
         version match {
           case Some(v: Version.VConst) => v.value
-          case Some(v: Version.VExpr) => v.value
-          case _ => ???
+          case Some(v: Version.VExpr)  => v.value
+          case _                       => ???
         }
       }
     }
@@ -208,7 +210,7 @@ object Idealingua {
 
         version match {
           case v: Version.VConst => v.value
-          case v: Version.VExpr => v.value
+          case v: Version.VExpr  => v.value
         }
       }
     }
@@ -216,7 +218,7 @@ object Idealingua {
     object root {
       final val id = ArtifactId("idealingua-v1")
       final val plugins = Plugins(
-        enabled = Seq(Plugin("SbtgenVerificationPlugin")),
+        enabled  = Seq(Plugin("SbtgenVerificationPlugin")),
         disabled = Seq(Plugin("AssemblyPlugin")),
       )
       final val settings = Seq(
@@ -225,7 +227,7 @@ object Idealingua {
       )
 
       final val sharedAggSettings = Seq(
-        "crossScalaVersions" := "Nil".raw,
+        "crossScalaVersions" := "Nil".raw
       )
 
       final val rootSettings = Defaults.SbtMetaRootOptions ++ Defaults.RootOptions ++ Seq(
@@ -264,12 +266,12 @@ object Idealingua {
         // Ignore scala-xml version conflict between scoverage where `coursier` requires scala-xml v2
         // and scoverage requires scala-xml v1 on Scala 2.12,
         // introduced when updating scoverage to 2.0.7 https://github.com/7mind/idealingua-v1/pull/373/
-        "libraryDependencySchemes" in SettingScope.Build += """"org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always""".raw
+        "libraryDependencySchemes" in SettingScope.Build += """"org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always""".raw,
       )
 
       final val sharedSettings = Defaults.SbtMetaSharedOptions ++ Defaults.CrossScalaPlusSources ++ Seq(
         "testOptions" in SettingScope.Test += """Tests.Argument("-oDF")""".raw,
-        //"testOptions" in (SettingScope.Test, Platform.Jvm) ++= s"""Seq(Tests.Argument("-u"), Tests.Argument(s"$${target.value}/junit-xml-$${scalaVersion.value}"))""".raw,
+        // "testOptions" in (SettingScope.Test, Platform.Jvm) ++= s"""Seq(Tests.Argument("-u"), Tests.Argument(s"$${target.value}/junit-xml-$${scalaVersion.value}"))""".raw,
         "scalacOptions" ++= Seq(
           SettingKey(Some(scala212), None) := Defaults.Scala212Options,
           SettingKey(Some(scala213), None) := Defaults.Scala213Options,
@@ -281,32 +283,31 @@ object Idealingua {
             "-opt:l:inline",
             "-opt-inline-from:izumi.**",
           ),
-          SettingKey.Default := Const.EmptySeq
+          SettingKey.Default := Const.EmptySeq,
         ),
         "scalacOptions" -= "-Wconf:any:error",
       )
 
     }
 
-
     object idealingua {
-      final val id = ArtifactId("idealingua")
+      final val id       = ArtifactId("idealingua")
       final val basePath = Seq("idealingua-v1")
 
-      final val model = ArtifactId("idealingua-v1-model")
-      final val core = ArtifactId("idealingua-v1-core")
-      final val runtimeRpcScala = ArtifactId("idealingua-v1-runtime-rpc-scala")
-      final val testDefs = ArtifactId("idealingua-v1-test-defs")
-      final val transpilers = ArtifactId("idealingua-v1-transpilers")
-      final val runtimeRpcHttp4s = ArtifactId("idealingua-v1-runtime-rpc-http4s")
+      final val model                = ArtifactId("idealingua-v1-model")
+      final val core                 = ArtifactId("idealingua-v1-core")
+      final val runtimeRpcScala      = ArtifactId("idealingua-v1-runtime-rpc-scala")
+      final val testDefs             = ArtifactId("idealingua-v1-test-defs")
+      final val transpilers          = ArtifactId("idealingua-v1-transpilers")
+      final val runtimeRpcHttp4s     = ArtifactId("idealingua-v1-runtime-rpc-http4s")
       final val runtimeRpcTypescript = ArtifactId("idealingua-v1-runtime-rpc-typescript")
-      final val runtimeRpcCSharp = ArtifactId("idealingua-v1-runtime-rpc-csharp")
-      final val runtimeRpcGo = ArtifactId("idealingua-v1-runtime-rpc-go")
-      final val compiler = ArtifactId("idealingua-v1-compiler")
+      final val runtimeRpcCSharp     = ArtifactId("idealingua-v1-runtime-rpc-csharp")
+      final val runtimeRpcGo         = ArtifactId("idealingua-v1-runtime-rpc-go")
+      final val compiler             = ArtifactId("idealingua-v1-compiler")
     }
 
     object docs {
-      final val id = ArtifactId("doc")
+      final val id       = ArtifactId("doc")
       final val basePath = Seq("doc")
 
       final lazy val microsite = ArtifactId("microsite")
@@ -315,21 +316,21 @@ object Idealingua {
   }
 
   final val forkTests = Seq(
-    "fork" in(SettingScope.Test, Platform.Jvm) := true,
+    "fork" in (SettingScope.Test, Platform.Jvm) := true
   )
 
   final lazy val idealingua = Aggregate(
     name = Projects.idealingua.id,
     artifacts = Seq(
       Artifact(
-        name = Projects.idealingua.model,
-        libs = Seq(scala_reflect) ++ Deps.fundamentals_basics.map(_ in Scope.Compile.all),
+        name    = Projects.idealingua.model,
+        libs    = Seq(scala_reflect) ++ Deps.fundamentals_basics.map(_ in Scope.Compile.all),
         depends = Seq.empty,
       ),
       Artifact(
-        name = Projects.idealingua.core,
-        libs = Seq(fastparse) ++ Seq(Deps.fundamentals_reflection in Scope.Compile.all),
-        depends = Seq(Projects.idealingua.model).map(_ in Scope.Compile.all),
+        name      = Projects.idealingua.core,
+        libs      = Seq(fastparse) ++ Seq(Deps.fundamentals_reflection in Scope.Compile.all),
+        depends   = Seq(Projects.idealingua.model).map(_ in Scope.Compile.all),
         platforms = Targets.cross2,
       ),
       Artifact(
@@ -364,38 +365,35 @@ object Idealingua {
           circe_all,
         depends = Seq(
           Projects.idealingua.core,
-          Projects.idealingua.runtimeRpcScala
+          Projects.idealingua.runtimeRpcScala,
         ).map(_ in Scope.Compile.all) ++
-          Seq(Projects.idealingua.testDefs,
-            Projects.idealingua.runtimeRpcTypescript,
-            Projects.idealingua.runtimeRpcGo,
-            Projects.idealingua.runtimeRpcCSharp
-          ).map(_ in Scope.Test.jvm),
-        settings = forkTests,
+          Seq(Projects.idealingua.testDefs, Projects.idealingua.runtimeRpcTypescript, Projects.idealingua.runtimeRpcGo, Projects.idealingua.runtimeRpcCSharp)
+            .map(_ in Scope.Test.jvm),
+        settings  = forkTests,
         platforms = Targets.cross2,
       ),
       Artifact(
-        name = Projects.idealingua.testDefs,
-        libs = zio_all,
-        depends = Seq(Projects.idealingua.runtimeRpcScala).map(_ in Scope.Compile.all),
+        name      = Projects.idealingua.testDefs,
+        libs      = zio_all,
+        depends   = Seq(Projects.idealingua.runtimeRpcScala).map(_ in Scope.Compile.all),
         platforms = Targets.jvm3,
       ),
       Artifact(
-        name = Projects.idealingua.runtimeRpcTypescript,
-        libs = Seq.empty,
-        depends = Seq.empty,
+        name      = Projects.idealingua.runtimeRpcTypescript,
+        libs      = Seq.empty,
+        depends   = Seq.empty,
         platforms = Targets.jvm3,
       ),
       Artifact(
-        name = Projects.idealingua.runtimeRpcGo,
-        libs = Seq.empty,
-        depends = Seq.empty,
+        name      = Projects.idealingua.runtimeRpcGo,
+        libs      = Seq.empty,
+        depends   = Seq.empty,
         platforms = Targets.jvm3,
       ),
       Artifact(
-        name = Projects.idealingua.runtimeRpcCSharp,
-        libs = Seq.empty,
-        depends = Seq.empty,
+        name      = Projects.idealingua.runtimeRpcCSharp,
+        libs      = Seq.empty,
+        depends   = Seq.empty,
         platforms = Targets.jvm3,
       ),
       Artifact(
@@ -410,7 +408,7 @@ object Idealingua {
           Projects.idealingua.testDefs,
         ).map(_ in Scope.Compile.all),
         platforms = Targets.jvm2,
-        plugins = Plugins(Seq(assemblyPluginJvm)),
+        plugins   = Plugins(Seq(assemblyPluginJvm)),
         settings = Seq(
           "mainClass" in SettingScope.Raw("assembly") := """Some("izumi.idealingua.compiler.CommandlineIDLCompiler")""".raw,
           "assemblyMergeStrategy" in SettingScope.Raw("assembly") :=
@@ -425,37 +423,37 @@ object Idealingua {
               |      val art = (Compile / assembly / artifact).value
               |      art.withClassifier(Some("assembly"))
               |}""".stripMargin.raw,
-          SettingDef.RawSettingDef("addArtifact(Compile / assembly / artifact, assembly)")
-        )
+          SettingDef.RawSettingDef("addArtifact(Compile / assembly / artifact, assembly)"),
+        ),
       ),
     ),
-    pathPrefix = Projects.idealingua.basePath,
-    groups = Groups.idealingua,
+    pathPrefix       = Projects.idealingua.basePath,
+    groups           = Groups.idealingua,
     defaultPlatforms = Targets.cross3,
   )
 
   val izumi: Project = Project(
     name = Projects.root.id,
     aggregates = Seq(
-      idealingua,
+      idealingua
     ),
-    topLevelSettings = Projects.root.settings,
-    sharedSettings = Projects.root.sharedSettings,
+    topLevelSettings  = Projects.root.settings,
+    sharedSettings    = Projects.root.sharedSettings,
     sharedAggSettings = Projects.root.sharedAggSettings,
-    rootSettings = Projects.root.rootSettings,
-    imports = Seq.empty,
+    rootSettings      = Projects.root.rootSettings,
+    imports           = Seq.empty,
     globalLibs = Seq(
       ScopedLibrary(projector, FullDependencyScope(Scope.Compile, Platform.All, ScalaVersionScope.AllScala2), compilerPlugin = true),
       scalatest,
     ),
-    rootPlugins = Projects.root.plugins,
-    globalPlugins = Projects.plugins,
+    rootPlugins         = Projects.root.plugins,
+    globalPlugins       = Projects.plugins,
     pluginConflictRules = Map(assemblyPluginJvm.name -> true),
     appendPlugins = Defaults.SbtGenPlugins ++ Seq(
       SbtPlugin("com.eed3si9n", "sbt-assembly", PV.sbt_assembly),
       SbtPlugin("com.jsuereth", "sbt-pgp", PV.sbt_pgp),
       SbtPlugin("org.scoverage", "sbt-scoverage", PV.sbt_scoverage),
       SbtPlugin("io.7mind.izumi", "sbt-izumi-deps", PV.izumi),
-    )
+    ),
   )
 }
