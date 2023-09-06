@@ -22,7 +22,7 @@ object CSharpTranslatorDescriptor extends TranslatorDescriptor[CSharpTranslatorO
   override def make(typespace: Typespace, options: UntypedCompilerOptions): Translator = new CSharpTranslator(typespace, typedOptions(options))
 
   override def rules: Seq[VerificationRule] = Seq(
-    ReservedKeywordRule.warning("c#", keywords),
+    ReservedKeywordRule.warning("c#", keywords)
   )
 
   override def makeHook(options: UntypedCompilerOptions): TranslationLayouter = new CSharpLayouter(typedOptions(options))
@@ -141,4 +141,3 @@ object CSharpTranslatorDescriptor extends TranslatorDescriptor[CSharpTranslatorO
 //    "yield",
 //  )
 }
-
