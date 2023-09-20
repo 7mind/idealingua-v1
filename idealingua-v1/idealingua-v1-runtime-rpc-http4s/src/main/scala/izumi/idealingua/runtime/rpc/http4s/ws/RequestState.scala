@@ -4,7 +4,6 @@ import io.circe.Json
 import izumi.functional.bio.{F, IO2, Primitives2, Promise2, Temporal2}
 import izumi.fundamentals.platform.language.Quirks.*
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.PacketInfo
 import izumi.idealingua.runtime.rpc.http4s.ws.RawResponse.BadRawResponse
 
 import java.util.concurrent.ConcurrentHashMap
@@ -17,15 +16,17 @@ class RequestState[F[+_, +_]: IO2: Temporal2: Primitives2] {
   protected val requests: ConcurrentHashMap[RpcPacketId, IRTMethodId]                        = new ConcurrentHashMap[RpcPacketId, IRTMethodId]()
   protected val responses: ConcurrentHashMap[RpcPacketId, Promise2[F, Nothing, RawResponse]] = new ConcurrentHashMap[RpcPacketId, Promise2[F, Nothing, RawResponse]]()
 
-  def methodOf(id: RpcPacketId): Option[IRTMethodId] = {
-    Option(requests.get(id))
+  def requestEmpty(id: RpcPacketId): F[Throwable, Promise2[F, Nothing, RawResponse]] = {
+    for {
+      promise <- F.mkPromise[Nothing, RawResponse]
+      _       <- F.sync(responses.put(id, promise))
+    } yield promise
   }
 
   def request(id: RpcPacketId, methodId: IRTMethodId): F[Throwable, Promise2[F, Nothing, RawResponse]] = {
     for {
       _       <- F.sync(requests.put(id, methodId))
-      promise <- F.mkPromise[Nothing, RawResponse]
-      _       <- F.sync(responses.put(id, promise))
+      promise <- requestEmpty(id)
     } yield promise
   }
 
@@ -34,11 +35,11 @@ class RequestState[F[+_, +_]: IO2: Temporal2: Primitives2] {
     responses.remove(id).discard()
   }
 
-  def clear(): F[Throwable, Unit] = {
+  def clear(): F[Nothing, Unit] = {
     // TODO: autocloseable + latch?
     for {
       _ <- F.sync(requests.clear())
-      _ <- F.traverse(responses.values().asScala)(p => p.succeed(BadRawResponse()))
+      _ <- F.traverse(responses.values().asScala)(p => p.succeed(BadRawResponse(None)))
       _ <- F.sync(responses.clear())
     } yield ()
   }
@@ -50,18 +51,18 @@ class RequestState[F[+_, +_]: IO2: Temporal2: Primitives2] {
     } *> forget(id)
   }
 
-  def handleResponse(maybePacketId: Option[RpcPacketId], data: Json): F[Throwable, PacketInfo] = {
+  def handleResponse(maybePacketId: Option[RpcPacketId], data: Json): F[Throwable, Unit] = {
     for {
       maybeMethod <- F.sync {
         for {
           id     <- maybePacketId
-          method <- methodOf(id)
-        } yield PacketInfo(method, id)
+          method <- Option(requests.get(id))
+        } yield method -> id
       }
 
       method <- maybeMethod match {
-        case Some(m @ PacketInfo(method, id)) =>
-          responseWith(id, RawResponse.GoodRawResponse(data, method)).as(m)
+        case Some((method, id)) =>
+          responseWith(id, RawResponse.GoodRawResponse(data, method))
 
         case None =>
           F.fail(new IRTMissingHandlerException(s"Cannot handle response for async request $maybePacketId: no service handler", data))

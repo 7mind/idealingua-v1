@@ -7,7 +7,6 @@ import izumi.functional.bio.{F, IO2, Primitives2, Temporal2}
 import izumi.fundamentals.platform.time.IzTime
 import izumi.fundamentals.platform.uuid.UUIDGen
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.PacketInfo
 import logstage.LogIO2
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.Text
@@ -28,7 +27,7 @@ trait WsClientSession[F[+_, +_], RequestCtx, ClientId] {
   def requestAndAwaitResponse(method: IRTMethodId, data: Json, timeout: FiniteDuration): F[Throwable, Option[RawResponse]]
 
   def responseWith(id: RpcPacketId, response: RawResponse): F[Throwable, Unit]
-  def handleResponse(maybePacketId: Option[RpcPacketId], data: Json): F[Throwable, PacketInfo]
+  def handleResponse(maybePacketId: Option[RpcPacketId], data: Json): F[Throwable, Unit]
 
   def finish(): F[Throwable, Unit]
 }
@@ -73,7 +72,7 @@ object WsClientSession {
       requestState.responseWith(id, response)
     }
 
-    override def handleResponse(maybePacketId: Option[RpcPacketId], data: Json): F[Throwable, PacketInfo] = {
+    override def handleResponse(maybePacketId: Option[RpcPacketId], data: Json): F[Throwable, Unit] = {
       requestState.handleResponse(maybePacketId, data)
     }
 

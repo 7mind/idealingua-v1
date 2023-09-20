@@ -16,6 +16,7 @@ import izumi.idealingua.runtime.rpc
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.ws.*
 import izumi.idealingua.runtime.rpc.http4s.ws.WsClientSession.WsClientSessionImpl
+import izumi.idealingua.runtime.rpc.http4s.ws.WsContextProvider.WsAuthResult
 import logstage.LogIO2
 import org.http4s.*
 import org.http4s.dsl.Http4sDsl
@@ -192,9 +193,8 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, RequestCtx,
   protected def processWsRequest(context: WsClientSession[F, RequestCtx, ClientId], input: RpcPacket): F[Throwable, Option[RpcPacket]] = {
     input match {
       case RpcPacket(RPCPacketKind.RpcRequest, None, _, _, _, _, _) =>
-        wsContextProvider.handleEmptyBodyPacket(context.id, context.initialContext, input).flatMap {
-          case (id, eff) =>
-            context.updateId(id) *> eff
+        wsContextProvider.handleAuthorizationPacket(context.id, context.initialContext, input).flatMap {
+          case WsAuthResult(id, packet) => context.updateId(id).as(Some(packet))
         }
 
       case RpcPacket(RPCPacketKind.RpcRequest, Some(data), Some(id), _, Some(service), Some(method), _) =>
@@ -212,16 +212,14 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, RequestCtx,
       case RpcPacket(RPCPacketKind.RpcResponse, Some(data), _, id, _, _, _) =>
         context.handleResponse(id, data).as(None)
 
-      case RpcPacket(RPCPacketKind.RpcFail, Some(data), _, Some(id), _, _, _) =>
-        context.responseWith(id, RawResponse.BadRawResponse()) *>
-        F.fail(new IRTGenericFailure(s"Rpc returned failure: $data"))
+      case RpcPacket(RPCPacketKind.RpcFail, data, _, Some(id), _, _, _) =>
+        context.responseWith(id, RawResponse.BadRawResponse(data)).as(None)
 
       case RpcPacket(RPCPacketKind.BuzzResponse, Some(data), _, id, _, _, _) =>
         context.handleResponse(id, data).as(None)
 
-      case RpcPacket(RPCPacketKind.BuzzFailure, Some(data), _, Some(id), _, _, _) =>
-        context.responseWith(id, RawResponse.BadRawResponse()) *>
-        F.fail(new IRTGenericFailure(s"Buzzer has returned failure: $data"))
+      case RpcPacket(RPCPacketKind.BuzzFailure, data, _, Some(id), _, _, _) =>
+        context.responseWith(id, RawResponse.BadRawResponse(data)).as(None)
 
       case k =>
         F.fail(new IRTMissingHandlerException(s"Can't handle $k", k))

@@ -69,6 +69,9 @@ object WsSessionsStorage {
         json     <- codec.encode(request)
         response <- session.requestAndAwaitResponse(request.method, json, timeout)
         res <- response match {
+          case Some(value: RawResponse.EmptyRawResponse) =>
+            F.fail(new IRTGenericFailure(s"${request.method -> "method"}: empty response: $value"))
+
           case Some(value: RawResponse.GoodRawResponse) =>
             logger.debug(s"WS Session: ${request.method -> "method"}: Have response: $value.") *>
             codec.decode(value.data, value.method)
