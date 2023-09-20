@@ -16,14 +16,14 @@ import org.http4s.client.Client
 import org.typelevel.ci.*
 
 class HttpDispatcherFactory[F[+_, +_]: IO2](
-  logger: LogIO2[F],
-  printer: circe.Printer,
+  codec: IRTClientMultiplexor[F],
   executionContext: HttpExecutionContext,
+  printer: circe.Printer,
+  logger: LogIO2[F],
 )(implicit AT: Async[F[Throwable, _]]
 ) {
   def dispatcher(
     uri: Uri,
-    codec: IRTClientMultiplexor[F],
     headers: Headers,
   ): IRTDispatcherRaw[F] = {
     new IRTDispatcherRaw[F] {
@@ -38,12 +38,10 @@ class HttpDispatcherFactory[F[+_, +_]: IO2](
 
   def dispatcher(
     uri: Uri,
-    codec: IRTClientMultiplexor[F],
     headers: Map[String, String],
   ): IRTDispatcherRaw[F] = {
     dispatcher(
       uri,
-      codec,
       new Headers(headers.map { case (k, v) => Header.Raw(CIString(k), v) }.toList),
     )
   }

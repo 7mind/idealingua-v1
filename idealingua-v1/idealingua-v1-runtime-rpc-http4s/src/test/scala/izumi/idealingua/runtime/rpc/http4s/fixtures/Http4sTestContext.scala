@@ -102,17 +102,12 @@ object Http4sTestContext {
     RT.printer,
   )
 
-  final val httpClientFactory = new HttpDispatcherFactory[IO](RT.logger, RT.printer, RT.execCtx)
-  final def httpClient(headers: Headers): HttpDispatcherFactory.IRTDispatcherRaw[IO] = httpClientFactory.dispatcher(
-    baseUri,
-    demo.Client.codec,
-    headers,
-  )
+  final val httpClientFactory: HttpDispatcherFactory[IO]                             = new HttpDispatcherFactory[IO](demo.Client.codec, RT.execCtx, RT.printer, RT.logger)
+  final def httpClient(headers: Headers): HttpDispatcherFactory.IRTDispatcherRaw[IO] = httpClientFactory.dispatcher(baseUri, headers)
 
-  final val wsClientFactory = new WsDispatcherFactory[IO](RT.logger, RT.printer)
+  final val wsClientFactory: WsDispatcherFactory[IO] = new WsDispatcherFactory[IO](demo.Client.codec, RT.printer, RT.logger)
   final def wsClient(headers: Headers): Lifecycle[IO[Throwable, _], WsDispatcherFactory.WsIRTDispatcher[IO]] = wsClientFactory.dispatcher(
     wsUri,
-    demo.Client.codec,
     demo.Client.buzzerMultiplexor,
     WsClientContextProvider.unit,
     headers,

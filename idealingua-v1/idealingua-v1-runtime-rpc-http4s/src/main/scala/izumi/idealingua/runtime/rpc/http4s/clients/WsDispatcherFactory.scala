@@ -20,13 +20,13 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 class WsDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRun2](
-  logger: LogIO2[F],
+  codec: IRTClientMultiplexor[F],
   printer: Printer,
+  logger: LogIO2[F],
 ) {
 
   def dispatcher[ServerContext](
     uri: Uri,
-    codec: IRTClientMultiplexor[F],
     muxer: IRTServerMultiplexor[F, ServerContext],
     contextProvider: WsClientContextProvider[ServerContext],
     headers: Map[String, String] = Map.empty,
@@ -54,23 +54,21 @@ class WsDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRun2]
 
   def dispatcher[ServerContext](
     uri: Uri,
-    codec: IRTClientMultiplexor[F],
     muxer: IRTServerMultiplexor[F, ServerContext],
     contextProvider: WsClientContextProvider[ServerContext],
     headers: Headers,
   ): Lifecycle[F[Throwable, *], WsIRTDispatcher[F]] = {
-    dispatcher(uri, codec, muxer, contextProvider, headers.headers.map(h => h.name.toString -> h.value).toMap)
+    dispatcher(uri, muxer, contextProvider, headers.headers.map(h => h.name.toString -> h.value).toMap)
   }
 
   def dispatcher[ServerContext](
     uri: Uri,
-    codec: IRTClientMultiplexor[F],
     muxer: IRTServerMultiplexor[F, ServerContext],
     contextProvider: WsClientContextProvider[ServerContext],
     headers: Headers,
     timeout: FiniteDuration,
   ): Lifecycle[F[Throwable, *], WsIRTDispatcher[F]] = {
-    dispatcher(uri, codec, muxer, contextProvider, headers.headers.map(h => h.name.toString -> h.value).toMap, timeout)
+    dispatcher(uri, muxer, contextProvider, headers.headers.map(h => h.name.toString -> h.value).toMap, timeout)
   }
 
   protected def performAuthorization(
