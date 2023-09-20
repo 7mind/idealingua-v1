@@ -17,7 +17,7 @@ import org.http4s.{Headers, Uri}
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.jdk.CollectionConverters.SeqHasAsJava
+import scala.jdk.CollectionConverters.*
 
 class WsDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRun2](
   codec: IRTClientMultiplexor[F],
