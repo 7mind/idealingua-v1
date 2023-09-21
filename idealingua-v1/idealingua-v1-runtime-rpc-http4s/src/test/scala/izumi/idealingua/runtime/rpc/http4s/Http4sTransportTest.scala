@@ -4,7 +4,7 @@ import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
 import izumi.functional.bio.F
 import izumi.fundamentals.platform.language.Quirks.*
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcClientDispatcher.IRTDispatcherRaw
+import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcDispatcher.IRTDispatcherRaw
 import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceMethods}
 import org.http4s.*
 import org.http4s.blaze.server.*

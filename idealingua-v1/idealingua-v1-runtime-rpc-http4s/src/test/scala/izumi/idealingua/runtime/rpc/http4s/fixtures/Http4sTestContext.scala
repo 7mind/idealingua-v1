@@ -6,8 +6,8 @@ import izumi.functional.lifecycle.Lifecycle
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.network.IzSockets
 import izumi.idealingua.runtime.rpc.http4s.*
-import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcClientDispatcherFactory.WsRpcContextProvider
-import izumi.idealingua.runtime.rpc.http4s.clients.{HttpRpcClientDispatcher, HttpRpcClientDispatcherFactory, WsRpcClientDispatcher, WsRpcClientDispatcherFactory}
+import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.WsRpcContextProvider
+import izumi.idealingua.runtime.rpc.http4s.clients.{HttpRpcDispatcher, HttpRpcDispatcherFactory, WsRpcDispatcher, WsRpcDispatcherFactory}
 import izumi.idealingua.runtime.rpc.http4s.ws.WsContextProvider.WsAuthResult
 import izumi.idealingua.runtime.rpc.http4s.ws.WsSessionsStorage.WsSessionsStorageImpl
 import izumi.idealingua.runtime.rpc.http4s.ws.{WsClientId, WsContextProvider, WsSessionListener}
@@ -102,17 +102,17 @@ object Http4sTestContext {
     RT.printer,
   )
 
-  final val httpClientFactory: HttpRpcClientDispatcherFactory[IO] = {
-    new HttpRpcClientDispatcherFactory[IO](demo.Client.codec, RT.execCtx, RT.printer, RT.logger)
+  final val httpClientFactory: HttpRpcDispatcherFactory[IO] = {
+    new HttpRpcDispatcherFactory[IO](demo.Client.codec, RT.execCtx, RT.printer, RT.logger)
   }
-  final def httpRpcClientDispatcher(headers: Headers): HttpRpcClientDispatcher.IRTDispatcherRaw[IO] = {
+  final def httpRpcClientDispatcher(headers: Headers): HttpRpcDispatcher.IRTDispatcherRaw[IO] = {
     httpClientFactory.dispatcher(baseUri, headers)
   }
 
-  final val wsClientFactory: WsRpcClientDispatcherFactory[IO] = {
-    new WsRpcClientDispatcherFactory[IO](demo.Client.codec, RT.printer, RT.logger)
+  final val wsClientFactory: WsRpcDispatcherFactory[IO] = {
+    new WsRpcDispatcherFactory[IO](demo.Client.codec, RT.printer, RT.logger)
   }
-  final def wsRpcClientDispatcher(): Lifecycle[IO[Throwable, _], WsRpcClientDispatcher.WsRpcDispatcher[IO]] = {
+  final def wsRpcClientDispatcher(): Lifecycle[IO[Throwable, _], WsRpcDispatcher.IRTDispatcherWs[IO]] = {
     wsClientFactory.dispatcher(wsUri, demo.Client.buzzerMultiplexor, WsRpcContextProvider.unit)
   }
 }

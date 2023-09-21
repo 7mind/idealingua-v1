@@ -7,7 +7,7 @@ import izumi.functional.bio.{F, IO2, Primitives2, Temporal2}
 import izumi.fundamentals.platform.time.IzTime
 import izumi.fundamentals.platform.uuid.UUIDGen
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.ws.WsMessageHandler.WsClientResponder
+import izumi.idealingua.runtime.rpc.http4s.ws.WsRpcHandler.WsClientResponder
 import logstage.LogIO2
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.Text

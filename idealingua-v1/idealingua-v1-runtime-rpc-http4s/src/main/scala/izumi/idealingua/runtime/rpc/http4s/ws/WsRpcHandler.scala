@@ -5,10 +5,10 @@ import izumi.functional.bio.Exit.Success
 import izumi.functional.bio.{Exit, F, IO2}
 import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.ws.WsMessageHandler.WsClientResponder
+import izumi.idealingua.runtime.rpc.http4s.ws.WsRpcHandler.WsClientResponder
 import logstage.LogIO2
 
-abstract class WsMessageHandler[F[+_, +_]: IO2, RequestCtx](
+abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
   muxer: IRTServerMultiplexor[F, RequestCtx],
   responder: WsClientResponder[F],
   logger: LogIO2[F],
@@ -125,7 +125,7 @@ abstract class WsMessageHandler[F[+_, +_]: IO2, RequestCtx](
   }
 }
 
-object WsMessageHandler {
+object WsRpcHandler {
   trait WsClientResponder[F[_, _]] {
     def responseWith(id: RpcPacketId, response: RawResponse): F[Throwable, Unit]
     def responseWithData(id: RpcPacketId, data: Json): F[Throwable, Unit]

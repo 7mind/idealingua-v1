@@ -3,20 +3,20 @@ package izumi.idealingua.runtime.rpc.http4s.clients
 import io.circe.Json
 import izumi.functional.bio.{Async2, F, Temporal2}
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcClientDispatcher.WsRpcDispatcher
-import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcClientDispatcherFactory.WsRpcClientConnection
+import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcher.IRTDispatcherWs
+import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.WsRpcClientConnection
 import izumi.idealingua.runtime.rpc.http4s.ws.RawResponse
 import logstage.LogIO2
 
 import java.util.concurrent.TimeoutException
 import scala.concurrent.duration.FiniteDuration
 
-class WsRpcClientDispatcher[F[+_, +_]: Async2](
+class WsRpcDispatcher[F[+_, +_]: Async2](
   connection: WsRpcClientConnection[F],
   timeout: FiniteDuration,
   codec: IRTClientMultiplexor[F],
   logger: LogIO2[F],
-) extends WsRpcDispatcher[F] {
+) extends IRTDispatcherWs[F] {
 
   override def authorize(headers: Map[String, String]): F[Throwable, Unit] = {
     connection.authorize(headers, timeout)
@@ -60,8 +60,8 @@ class WsRpcClientDispatcher[F[+_, +_]: Async2](
   }
 }
 
-object WsRpcClientDispatcher {
-  trait WsRpcDispatcher[F[_, _]] extends IRTDispatcher[F] {
+object WsRpcDispatcher {
+  trait IRTDispatcherWs[F[_, _]] extends IRTDispatcher[F] {
     def authorize(headers: Map[String, String]): F[Throwable, Unit]
   }
 }

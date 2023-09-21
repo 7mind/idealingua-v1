@@ -5,7 +5,7 @@ import izumi.functional.bio.{F, IO2, Primitives2, Promise2, Temporal2}
 import izumi.fundamentals.platform.language.Quirks.*
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.ws.RawResponse.BadRawResponse
-import izumi.idealingua.runtime.rpc.http4s.ws.WsMessageHandler.WsClientResponder
+import izumi.idealingua.runtime.rpc.http4s.ws.WsRpcHandler.WsClientResponder
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.duration.FiniteDuration

@@ -13,7 +13,7 @@ import izumi.functional.bio.{Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.time.IzTime
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.HttpServer.{ServerWsMessageHandler, WsResponseMarker}
+import izumi.idealingua.runtime.rpc.http4s.HttpServer.{ServerWsRpcHandler, WsResponseMarker}
 import izumi.idealingua.runtime.rpc.http4s.ws.*
 import izumi.idealingua.runtime.rpc.http4s.ws.WsClientSession.WsClientSessionImpl
 import izumi.idealingua.runtime.rpc.http4s.ws.WsContextProvider.WsAuthResult
@@ -153,8 +153,8 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, RequestCtx,
     }).map(_.map(p => printer.print(p.asJson)))
   }
 
-  protected def wsHandler(context: WsClientSession[F, RequestCtx, ClientId]): WsMessageHandler[F, RequestCtx] = {
-    new ServerWsMessageHandler(muxer, wsContextProvider, context, logger)
+  protected def wsHandler(context: WsClientSession[F, RequestCtx, ClientId]): WsRpcHandler[F, RequestCtx] = {
+    new ServerWsRpcHandler(muxer, wsContextProvider, context, logger)
   }
 
   protected def onWsHeartbeat(requestTime: ZonedDateTime): F[Throwable, Unit] = {
@@ -232,12 +232,12 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, RequestCtx,
 
 object HttpServer {
   case object WsResponseMarker
-  class ServerWsMessageHandler[F[+_, +_]: IO2, RequestCtx, ClientId](
+  class ServerWsRpcHandler[F[+_, +_]: IO2, RequestCtx, ClientId](
     muxer: IRTServerMultiplexor[F, RequestCtx],
     wsContextProvider: WsContextProvider[F, RequestCtx, ClientId],
     context: WsClientSession[F, RequestCtx, ClientId],
     logger: LogIO2[F],
-  ) extends WsMessageHandler[F, RequestCtx](muxer, context, logger) {
+  ) extends WsRpcHandler[F, RequestCtx](muxer, context, logger) {
     override def handlePacket(packet: RpcPacket): F[Throwable, Unit] = {
       wsContextProvider.toId(context.initialContext, context.id, packet).flatMap(context.updateId)
     }

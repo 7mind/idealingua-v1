@@ -6,13 +6,13 @@ import izumi.functional.bio.{F, IO2}
 import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.HttpExecutionContext
-import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcClientDispatcher.IRTDispatcherRaw
+import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcDispatcher.IRTDispatcherRaw
 import logstage.LogIO2
 import org.http4s.*
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.typelevel.ci.*
 
-class HttpRpcClientDispatcherFactory[F[+_, +_]: IO2](
+class HttpRpcDispatcherFactory[F[+_, +_]: IO2](
   codec: IRTClientMultiplexor[F],
   executionContext: HttpExecutionContext,
   printer: circe.Printer,
@@ -25,7 +25,7 @@ class HttpRpcClientDispatcherFactory[F[+_, +_]: IO2](
     tweakRequest: Request[F[Throwable, _]] => Request[F[Throwable, _]] = (req: Request[F[Throwable, _]]) => req,
     resourceCheck: F[Throwable, Unit]                                  = F.unit,
   ): IRTDispatcherRaw[F] = {
-    new HttpRpcClientDispatcher[F](uri, codec, executionContext, printer, dispatcherLogger(uri, logger)) {
+    new HttpRpcDispatcher[F](uri, codec, executionContext, printer, dispatcherLogger(uri, logger)) {
       override def dispatch(input: IRTMuxRequest): F[Throwable, IRTMuxResponse] = {
         resourceCheck *> super.dispatch(input)
       }

@@ -7,14 +7,14 @@ import io.circe.parser.parse
 import izumi.functional.bio.{Exit, F, IO2}
 import izumi.functional.lifecycle.Lifecycle
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcClientDispatcher.IRTDispatcherRaw
+import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcDispatcher.IRTDispatcherRaw
 import izumi.idealingua.runtime.rpc.http4s.{HttpExecutionContext, IRTUnexpectedHttpStatus}
 import logstage.LogIO2
 import org.http4s.*
 import org.http4s.blaze.client.*
 import org.http4s.client.Client
 
-class HttpRpcClientDispatcher[F[+_, +_]: IO2](
+class HttpRpcDispatcher[F[+_, +_]: IO2](
   uri: Uri,
   codec: IRTClientMultiplexor[F],
   executionContext: HttpExecutionContext,
@@ -121,7 +121,7 @@ class HttpRpcClientDispatcher[F[+_, +_]: IO2](
   }
 }
 
-object HttpRpcClientDispatcher {
+object HttpRpcDispatcher {
   trait IRTDispatcherRaw[F[_, _]] extends IRTDispatcher[F] {
     def dispatchRaw(method: IRTMethodId, body: String): F[Throwable, IRTMuxResponse]
   }

@@ -6,9 +6,9 @@ import izumi.functional.bio.{Async2, F, IO2, Primitives2, Temporal2, UnsafeRun2}
 import izumi.functional.lifecycle.Lifecycle
 import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcClientDispatcher.WsRpcDispatcher
-import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcClientDispatcherFactory.{ClientWsMessageHandler, WsRpcClientConnection, WsRpcContextProvider}
-import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsMessageHandler, WsRequestState}
+import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcher.IRTDispatcherWs
+import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.{ClientWsRpcHandler, WsRpcClientConnection, WsRpcContextProvider}
+import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsRequestState, WsRpcHandler}
 import logstage.LogIO2
 import org.asynchttpclient.netty.ws.NettyWebSocket
 import org.asynchttpclient.ws.{WebSocket, WebSocketListener, WebSocketUpgradeHandler}
@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.jdk.CollectionConverters.*
 
-class WsRpcClientDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRun2](
+class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRun2](
   codec: IRTClientMultiplexor[F],
   printer: Printer,
   logger: LogIO2[F],
@@ -31,7 +31,7 @@ class WsRpcClientDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: Un
     contextProvider: WsRpcContextProvider[ServerContext],
   ): Lifecycle[F[Throwable, _], WsRpcClientConnection[F]] = {
     for {
-      client         <- WsRpcClientDispatcherFactory.asyncHttpClient[F]
+      client         <- WsRpcDispatcherFactory.asyncHttpClient[F]
       requestState    = new WsRequestState[F]
       listener       <- Lifecycle.liftF(F.syncThrowable(createListener(muxer, contextProvider, requestState, dispatcherLogger(uri, logger))))
       handler        <- Lifecycle.liftF(F.syncThrowable(new WebSocketUpgradeHandler(List(listener).asJava)))
@@ -47,11 +47,11 @@ class WsRpcClientDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: Un
     uri: Uri,
     muxer: IRTServerMultiplexor[F, ServerContext],
     contextProvider: WsRpcContextProvider[ServerContext],
-    tweakRequest: RpcPacket => RpcPacket,
-    timeout: FiniteDuration = 30.seconds,
-  ): Lifecycle[F[Throwable, _], WsRpcDispatcher[F]] = {
+    tweakRequest: RpcPacket => RpcPacket = identity,
+    timeout: FiniteDuration              = 30.seconds,
+  ): Lifecycle[F[Throwable, _], IRTDispatcherWs[F]] = {
     connect(uri, muxer, contextProvider).map {
-      new WsRpcClientDispatcher(_, timeout, codec, dispatcherLogger(uri, logger)) {
+      new WsRpcDispatcher(_, timeout, codec, dispatcherLogger(uri, logger)) {
         override protected def buildRequest(rpcPacketId: RpcPacketId, method: IRTMethodId, body: Json): RpcPacket = {
           tweakRequest(super.buildRequest(rpcPacketId, method, body))
         }
@@ -64,8 +64,8 @@ class WsRpcClientDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: Un
     muxer: IRTServerMultiplexor[F, ServerContext],
     contextProvider: WsRpcContextProvider[ServerContext],
     requestState: WsRequestState[F],
-  ): WsMessageHandler[F, ServerContext] = {
-    new ClientWsMessageHandler(muxer, requestState, contextProvider, logger)
+  ): WsRpcHandler[F, ServerContext] = {
+    new ClientWsRpcHandler(muxer, requestState, contextProvider, logger)
   }
 
   protected def createListener[ServerContext](
@@ -110,7 +110,7 @@ class WsRpcClientDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: Un
   }
 }
 
-object WsRpcClientDispatcherFactory {
+object WsRpcDispatcherFactory {
   def asyncHttpClient[F[+_, +_]: IO2]: Lifecycle[F[Throwable, _], DefaultAsyncHttpClient] = {
     Lifecycle.fromAutoCloseable(F.syncThrowable {
       new DefaultAsyncHttpClient(
@@ -129,12 +129,12 @@ object WsRpcClientDispatcherFactory {
     })
   }
 
-  class ClientWsMessageHandler[F[+_, +_]: IO2, ServerCtx](
+  class ClientWsRpcHandler[F[+_, +_]: IO2, ServerCtx](
     muxer: IRTServerMultiplexor[F, ServerCtx],
     requestState: WsRequestState[F],
     contextProvider: WsRpcContextProvider[ServerCtx],
     logger: LogIO2[F],
-  ) extends WsMessageHandler[F, ServerCtx](muxer, requestState, logger) {
+  ) extends WsRpcHandler[F, ServerCtx](muxer, requestState, logger) {
     override def handlePacket(packet: RpcPacket): F[Throwable, Unit] = {
       F.unit
     }
