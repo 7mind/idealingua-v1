@@ -7,6 +7,7 @@ import izumi.functional.bio.{F, IO2, Primitives2, Temporal2}
 import izumi.fundamentals.platform.time.IzTime
 import izumi.fundamentals.platform.uuid.UUIDGen
 import izumi.idealingua.runtime.rpc.*
+import izumi.idealingua.runtime.rpc.http4s.ws.WsMessageHandler.WsClientResponder
 import logstage.LogIO2
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.Text
@@ -16,7 +17,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.*
 
-trait WsClientSession[F[+_, +_], RequestCtx, ClientId] {
+trait WsClientSession[F[+_, +_], RequestCtx, ClientId] extends WsClientResponder[F] {
   def id: WsClientId[ClientId]
   def initialContext: RequestCtx
 
@@ -25,9 +26,6 @@ trait WsClientSession[F[+_, +_], RequestCtx, ClientId] {
 
   def request(method: IRTMethodId, data: Json): F[Throwable, RpcPacketId]
   def requestAndAwaitResponse(method: IRTMethodId, data: Json, timeout: FiniteDuration): F[Throwable, Option[RawResponse]]
-
-  def responseWith(id: RpcPacketId, response: RawResponse): F[Throwable, Unit]
-  def handleResponse(maybePacketId: Option[RpcPacketId], data: Json): F[Throwable, Unit]
 
   def finish(): F[Throwable, Unit]
 }
@@ -44,13 +42,13 @@ object WsClientSession {
     private val openingTime: ZonedDateTime = IzTime.utcNow
     private val sessionId                  = WsSessionId(UUIDGen.getTimeUUID())
     private val clientId                   = new AtomicReference[Option[ClientId]](None)
-    private val requestState               = new RequestState()
+    private val requestState               = new WsRequestState()
 
     def id: WsClientId[ClientId] = WsClientId(sessionId, clientId.get())
 
     override def request(method: IRTMethodId, data: Json): F[Throwable, RpcPacketId] = {
-      val request = RpcPacket.buzzerRequestRndId(method, data)
-      val id      = request.id.get
+      val id      = RpcPacketId.random()
+      val request = RpcPacket.buzzerRequest(id, method, data)
       for {
         _ <- logger.debug(s"WS Session: enqueue $request with $id to request state & send queue.")
         _ <- outQueue.offer(Text(printer.print(request.asJson)))
@@ -72,8 +70,8 @@ object WsClientSession {
       requestState.responseWith(id, response)
     }
 
-    override def handleResponse(maybePacketId: Option[RpcPacketId], data: Json): F[Throwable, Unit] = {
-      requestState.handleResponse(maybePacketId, data)
+    override def responseWithData(id: RpcPacketId, data: Json): F[Throwable, Unit] = {
+      requestState.responseWithData(id, data)
     }
 
     override def updateId(maybeNewId: Option[ClientId]): F[Throwable, Unit] = {

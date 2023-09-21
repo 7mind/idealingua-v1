@@ -5,12 +5,13 @@ import izumi.functional.bio.{F, IO2, Primitives2, Promise2, Temporal2}
 import izumi.fundamentals.platform.language.Quirks.*
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.ws.RawResponse.BadRawResponse
+import izumi.idealingua.runtime.rpc.http4s.ws.WsMessageHandler.WsClientResponder
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.*
 
-class RequestState[F[+_, +_]: IO2: Temporal2: Primitives2] {
+class WsRequestState[F[+_, +_]: IO2: Temporal2: Primitives2] extends WsClientResponder[F] {
 
   // TODO: stale item cleanups
   protected val requests: ConcurrentHashMap[RpcPacketId, IRTMethodId]                        = new ConcurrentHashMap[RpcPacketId, IRTMethodId]()
@@ -44,30 +45,20 @@ class RequestState[F[+_, +_]: IO2: Temporal2: Primitives2] {
     } yield ()
   }
 
-  def responseWith(id: RpcPacketId, response: RawResponse): F[Throwable, Unit] = {
-    F.sync(Option(responses.get(id))).flatMap {
+  def responseWith(packetId: RpcPacketId, response: RawResponse): F[Throwable, Unit] = {
+    F.sync(Option(responses.get(packetId))).flatMap {
       case Some(promise) => promise.succeed(response).void
       case None          => F.unit
-    } *> forget(id)
+    } *> forget(packetId)
   }
 
-  def handleResponse(maybePacketId: Option[RpcPacketId], data: Json): F[Throwable, Unit] = {
+  def responseWithData(packetId: RpcPacketId, data: Json): F[Throwable, Unit] = {
     for {
-      maybeMethod <- F.sync {
-        for {
-          id     <- maybePacketId
-          method <- Option(requests.get(id))
-        } yield method -> id
+      method <- F.fromOption(new IRTMissingHandlerException(s"Cannot handle response for async request $packetId: no service handler", data)) {
+        Option(requests.get(packetId))
       }
-
-      method <- maybeMethod match {
-        case Some((method, id)) =>
-          responseWith(id, RawResponse.GoodRawResponse(data, method))
-
-        case None =>
-          F.fail(new IRTMissingHandlerException(s"Cannot handle response for async request $maybePacketId: no service handler", data))
-      }
-    } yield method
+      _ <- responseWith(packetId, RawResponse.GoodRawResponse(data, method))
+    } yield ()
   }
 
   def awaitResponse(id: RpcPacketId, timeout: FiniteDuration): F[Nothing, Option[RawResponse]] = {

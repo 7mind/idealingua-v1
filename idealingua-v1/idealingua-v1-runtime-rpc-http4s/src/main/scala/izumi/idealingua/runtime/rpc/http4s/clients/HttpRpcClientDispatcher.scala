@@ -7,55 +7,39 @@ import io.circe.parser.parse
 import izumi.functional.bio.{Exit, F, IO2}
 import izumi.functional.lifecycle.Lifecycle
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.clients.HttpDispatcherFactory.IRTDispatcherRaw
+import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcClientDispatcher.IRTDispatcherRaw
 import izumi.idealingua.runtime.rpc.http4s.{HttpExecutionContext, IRTUnexpectedHttpStatus}
 import logstage.LogIO2
 import org.http4s.*
 import org.http4s.blaze.client.*
 import org.http4s.client.Client
-import org.typelevel.ci.*
 
-class HttpDispatcherFactory[F[+_, +_]: IO2](
+class HttpRpcClientDispatcher[F[+_, +_]: IO2](
+  uri: Uri,
   codec: IRTClientMultiplexor[F],
   executionContext: HttpExecutionContext,
   printer: circe.Printer,
   logger: LogIO2[F],
 )(implicit AT: Async[F[Throwable, _]]
-) {
-  def dispatcher(
-    uri: Uri,
-    headers: Headers,
-  ): IRTDispatcherRaw[F] = {
-    new IRTDispatcherRaw[F] {
-      override def dispatch(input: IRTMuxRequest): F[Throwable, IRTMuxResponse] = {
-        blazeClient.use(dispatchWith(uri, codec, headers)(input))
-      }
-      override def dispatchRaw(method: IRTMethodId, body: String): F[Throwable, IRTMuxResponse] = {
-        blazeClient.use(dispatchRawWith(uri, codec, headers)(method, body))
-      }
-    }
+) extends IRTDispatcherRaw[F] {
+
+  override def dispatchRaw(method: IRTMethodId, request: String): F[Throwable, IRTMuxResponse] = {
+    blazeClient.use(dispatchRawWith(uri, codec)(method, request))
   }
 
-  def dispatcher(
-    uri: Uri,
-    headers: Map[String, String],
-  ): IRTDispatcherRaw[F] = {
-    dispatcher(
-      uri,
-      new Headers(headers.map { case (k, v) => Header.Raw(CIString(k), v) }.toList),
-    )
+  override def dispatch(input: IRTMuxRequest): F[Throwable, IRTMuxResponse] = {
+    blazeClient.use(dispatchWith(uri, codec)(input))
   }
 
   protected def dispatchRawWith(
     uri: Uri,
     codec: IRTClientMultiplexor[F],
-    headers: Headers,
   )(method: IRTMethodId,
     request: String,
   )(client: Client[F[Throwable, _]]
   ): F[Throwable, IRTMuxResponse] = {
     for {
-      req <- F.sync(buildRequest(uri)(method, request.getBytes, headers))
+      req <- F.sync(buildRequest(uri)(method, request.getBytes))
       _   <- logger.trace(s"$method: Prepared request $req")
       res <- client.run(req).use(handleResponse(codec, method))
     } yield res
@@ -64,14 +48,13 @@ class HttpDispatcherFactory[F[+_, +_]: IO2](
   protected def dispatchWith(
     uri: Uri,
     codec: IRTClientMultiplexor[F],
-    headers: Headers,
   )(request: IRTMuxRequest
   )(client: Client[F[Throwable, _]]
   ): F[Throwable, IRTMuxResponse] = {
     for {
       _       <- logger.trace(s"${request.method -> "method"}: Going to perform $request")
       encoded <- codec.encode(request)
-      res     <- dispatchRawWith(uri, codec, headers)(request.method, printer.print(encoded))(client)
+      res     <- dispatchRawWith(uri, codec)(request.method, printer.print(encoded))(client)
     } yield res
   }
 
@@ -124,17 +107,21 @@ class HttpDispatcherFactory[F[+_, +_]: IO2](
     } yield res
   }
 
-  protected def buildRequest(baseUri: Uri)(method: IRTMethodId, body: Array[Byte], headers: Headers): Request[F[Throwable, _]] = {
+  protected def buildRequest(
+    baseUri: Uri
+  )(method: IRTMethodId,
+    body: Array[Byte],
+  ): Request[F[Throwable, _]] = {
     val uri = baseUri / method.service.value / method.methodId.value
     if (body.nonEmpty) {
-      Request(org.http4s.Method.POST, uri, body = Stream.emits[F[Throwable, _], Byte](body), headers = headers)
+      Request[F[Throwable, _]](org.http4s.Method.POST, uri, body = Stream.emits[F[Throwable, _], Byte](body))
     } else {
-      Request(org.http4s.Method.GET, uri, headers = headers)
+      Request[F[Throwable, _]](org.http4s.Method.GET, uri)
     }
   }
 }
 
-object HttpDispatcherFactory {
+object HttpRpcClientDispatcher {
   trait IRTDispatcherRaw[F[_, _]] extends IRTDispatcher[F] {
     def dispatchRaw(method: IRTMethodId, body: String): F[Throwable, IRTMuxResponse]
   }

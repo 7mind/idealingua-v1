@@ -4,7 +4,7 @@ import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
 import izumi.functional.bio.F
 import izumi.fundamentals.platform.language.Quirks.*
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.clients.HttpDispatcherFactory.IRTDispatcherRaw
+import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcClientDispatcher.IRTDispatcherRaw
 import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceMethods}
 import org.http4s.*
 import org.http4s.blaze.server.*
@@ -27,7 +27,7 @@ class Http4sTransportTest extends AnyWordSpec {
       withServer {
         for {
           // with credentials
-          httpClient1   <- F.sync(httpClient(Headers(Authorization(BasicCredentials("user", "pass")))))
+          httpClient1   <- F.sync(httpRpcClientDispatcher(Headers(Authorization(BasicCredentials("user", "pass")))))
           greeterClient1 = new GreeterServiceClientWrapped(httpClient1)
           _             <- greeterClient1.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
           _             <- greeterClient1.alternative().either.map(res => assert(res == Right("value")))
@@ -35,14 +35,14 @@ class Http4sTransportTest extends AnyWordSpec {
           _             <- checkBadBody("{unparseable", httpClient1)
 
           // without credentials
-          greeterClient2 <- F.sync(httpClient(Headers())).map(new GreeterServiceClientWrapped(_))
+          greeterClient2 <- F.sync(httpRpcClientDispatcher(Headers())).map(new GreeterServiceClientWrapped(_))
           _ <- F.sandboxExit(greeterClient2.alternative()).map {
             case Termination(exception: IRTUnexpectedHttpStatus, _, _) => assert(exception.status == Status.Forbidden)
             case o                                                     => fail(s"Expected IRTGenericFailure but got $o")
           }
 
           // with bad credentials
-          greeterClient2 <- F.sync(httpClient(Headers(Authorization(BasicCredentials("user", "badpass"))))).map(new GreeterServiceClientWrapped(_))
+          greeterClient2 <- F.sync(httpRpcClientDispatcher(Headers(Authorization(BasicCredentials("user", "badpass"))))).map(new GreeterServiceClientWrapped(_))
           _ <- F.sandboxExit(greeterClient2.alternative()).map {
             case Termination(exception: IRTUnexpectedHttpStatus, _, _) => assert(exception.status == Status.Unauthorized)
             case o                                                     => fail(s"Expected IRTGenericFailure but got $o")
@@ -53,7 +53,7 @@ class Http4sTransportTest extends AnyWordSpec {
 
     "support websockets" in {
       withServer {
-        wsClient(Headers.empty).use {
+        wsRpcClientDispatcher().use {
           dispatcher =>
             for {
               id1          <- ZIO.succeed(s"Basic ${Base64.getEncoder.encodeToString("user:pass".getBytes)}")
