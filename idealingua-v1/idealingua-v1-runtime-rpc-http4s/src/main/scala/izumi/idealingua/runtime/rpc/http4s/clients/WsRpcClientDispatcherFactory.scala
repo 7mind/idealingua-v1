@@ -1,9 +1,10 @@
 package izumi.idealingua.runtime.rpc.http4s.clients
 
-import io.circe.Printer
 import io.circe.syntax.*
+import io.circe.{Json, Printer}
 import izumi.functional.bio.{Async2, F, IO2, Primitives2, Temporal2, UnsafeRun2}
 import izumi.functional.lifecycle.Lifecycle
+import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcClientDispatcher.WsRpcDispatcher
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcClientDispatcherFactory.{ClientWsMessageHandler, WsRpcClientConnection, WsRpcContextProvider}
@@ -32,7 +33,7 @@ class WsRpcClientDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: Un
     for {
       client         <- WsRpcClientDispatcherFactory.asyncHttpClient[F]
       requestState    = new WsRequestState[F]
-      listener       <- Lifecycle.liftF(F.syncThrowable(createListener(muxer, contextProvider, requestState)))
+      listener       <- Lifecycle.liftF(F.syncThrowable(createListener(muxer, contextProvider, requestState, dispatcherLogger(uri, logger))))
       handler        <- Lifecycle.liftF(F.syncThrowable(new WebSocketUpgradeHandler(List(listener).asJava)))
       nettyWebSocket <- Lifecycle.liftF(F.fromFutureJava(client.prepareGet(uri.toString()).execute(handler).toCompletableFuture))
       _              <- Lifecycle.make(F.unit)(_ => F.sync(nettyWebSocket.sendCloseFrame().await()).void)
@@ -46,14 +47,20 @@ class WsRpcClientDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: Un
     uri: Uri,
     muxer: IRTServerMultiplexor[F, ServerContext],
     contextProvider: WsRpcContextProvider[ServerContext],
+    tweakRequest: RpcPacket => RpcPacket,
     timeout: FiniteDuration = 30.seconds,
   ): Lifecycle[F[Throwable, _], WsRpcDispatcher[F]] = {
     connect(uri, muxer, contextProvider).map {
-      new WsRpcClientDispatcher(_, timeout, codec, logger)
+      new WsRpcClientDispatcher(_, timeout, codec, dispatcherLogger(uri, logger)) {
+        override protected def buildRequest(rpcPacketId: RpcPacketId, method: IRTMethodId, body: Json): RpcPacket = {
+          tweakRequest(super.buildRequest(rpcPacketId, method, body))
+        }
+      }
     }
   }
 
   protected def wsHandler[ServerContext](
+    logger: LogIO2[F],
     muxer: IRTServerMultiplexor[F, ServerContext],
     contextProvider: WsRpcContextProvider[ServerContext],
     requestState: WsRequestState[F],
@@ -65,8 +72,9 @@ class WsRpcClientDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: Un
     muxer: IRTServerMultiplexor[F, ServerContext],
     contextProvider: WsRpcContextProvider[ServerContext],
     requestState: WsRequestState[F],
+    logger: LogIO2[F],
   ): WebSocketListener = new WebSocketListener() {
-    private val handler   = wsHandler(muxer, contextProvider, requestState)
+    private val handler   = wsHandler(logger, muxer, contextProvider, requestState)
     private val socketRef = new AtomicReference[Option[WebSocket]](None)
     override def onOpen(websocket: WebSocket): Unit = {
       socketRef.set(Some(websocket))
@@ -94,6 +102,11 @@ class WsRpcClientDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: Un
           }
       }
     }
+  }
+
+  protected def dispatcherLogger(uri: Uri, logger: LogIO2[F]): LogIO2[F] = {
+    uri.discard()
+    logger
   }
 }
 

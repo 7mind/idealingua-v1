@@ -83,7 +83,7 @@ abstract class WsMessageHandler[F[+_, +_]: IO2, RequestCtx](
     }
   }
 
-  private def handleWsRequest(
+  protected def handleWsRequest(
     input: RpcPacket,
     data: Json,
     methodId: IRTMethodId,
