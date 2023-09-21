@@ -19,6 +19,7 @@ class HttpRpcClientDispatcherFactory[F[+_, +_]: IO2](
   logger: LogIO2[F],
 )(implicit AT: Async[F[Throwable, _]]
 ) {
+  self =>
   def dispatcher(
     uri: Uri,
     tweakRequest: Request[F[Throwable, _]] => Request[F[Throwable, _]] = (req: Request[F[Throwable, _]]) => req,
@@ -35,7 +36,7 @@ class HttpRpcClientDispatcherFactory[F[+_, +_]: IO2](
         tweakRequest(super.buildRequest(baseUri)(method, body))
       }
       override protected def blazeClientBuilder(defaultBuilder: BlazeClientBuilder[F[Throwable, *]]): BlazeClientBuilder[F[Throwable, *]] = {
-        super.blazeClientBuilder(defaultBuilder)
+        self.blazeClientBuilder(super.blazeClientBuilder(defaultBuilder))
       }
     }
   }
