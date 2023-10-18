@@ -1,8 +1,9 @@
+
 object V {
   // foundation
 
-  val scalatest    = "3.2.17"
-  val http4s       = "0.23.23"
+  val scalatest = "3.2.16"
+  val http4s = "0.23.23"
   val http4s_blaze = "0.23.15"
 
   val scalameta = "4.8.7" // Not available for Scala 3 yet
@@ -12,7 +13,7 @@ object V {
 
   val kind_projector = "0.13.2"
 
-  val circe_derivation     = "0.13.0-M5"
+  val circe_derivation = "0.13.0-M5"
   val circe_generic_extras = "0.14.3"
 
   val scala_java_time = "2.5.0"
@@ -21,6 +22,6 @@ object V {
   // java, we need it bcs http4s ws client isn't ready yet
   val asynchttpclient = "2.12.3"
 
-  val slf4j           = "1.7.30"
+  val slf4j = "1.7.30"
   val typesafe_config = "1.4.2"
 }
