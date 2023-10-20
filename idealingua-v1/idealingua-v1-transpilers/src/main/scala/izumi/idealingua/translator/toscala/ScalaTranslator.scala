@@ -12,6 +12,7 @@ import izumi.idealingua.translator.{Translated, Translator}
 
 import scala.meta._
 
+
 object ScalaTranslator {
   final val defaultExtensions = Seq(
     AnyvalExtension,
@@ -22,15 +23,20 @@ object ScalaTranslator {
   )
 }
 
-class ScalaTranslator(ts: Typespace, options: ScalaTranslatorOptions) extends Translator {
+
+
+class ScalaTranslator(ts: Typespace, options: ScalaTranslatorOptions)
+  extends Translator {
   protected val ctx: STContext = new STContext(ts, options.extensions, options.manifest.sbt)
 
   def translate(): Translated = {
     import izumi.fundamentals.collections.IzCollections._
-    val aliases = ctx.typespace.domain.types.collect {
-      case a: Alias =>
-        ctx.modules.toModuleId(a) -> renderAlias(a)
-    }.toMultimap
+    val aliases = ctx.typespace.domain.types
+      .collect {
+        case a: Alias =>
+          ctx.modules.toModuleId(a) -> renderAlias(a)
+      }
+      .toMultimap
       .mapValues(_.flatten.toSeq)
 
     val packageObjects = aliases.map {
@@ -47,10 +53,10 @@ class ScalaTranslator(ts: Typespace, options: ScalaTranslatorOptions) extends Tr
     }
 
     val modules = Seq(
-      ctx.typespace.domain.types.flatMap(translateDef),
-      ctx.typespace.domain.services.flatMap(translateService),
-      ctx.typespace.domain.buzzers.flatMap(translateBuzzer),
-      packageObjects,
+      ctx.typespace.domain.types.flatMap(translateDef)
+      , ctx.typespace.domain.services.flatMap(translateService)
+      , ctx.typespace.domain.buzzers.flatMap(translateBuzzer)
+      , packageObjects
     ).flatten
 
     Translated(ts, ctx.ext.extend(modules))
@@ -58,19 +64,19 @@ class ScalaTranslator(ts: Typespace, options: ScalaTranslatorOptions) extends Tr
 
   protected def translateBuzzer(definition: Buzzer): Seq[Module] = {
     ctx.modules.toSource(
-      definition.id.domain,
-      ctx.modules.toModuleId(definition.id),
-      ctx.serviceRenderer.renderService(definition.asService),
-      ctx.sbtOptions.scalaVersion,
+      definition.id.domain
+      , ctx.modules.toModuleId(definition.id)
+      , ctx.serviceRenderer.renderService(definition.asService)
+      , ctx.sbtOptions.scalaVersion
     )
   }
 
   protected def translateService(definition: Service): Seq[Module] = {
     ctx.modules.toSource(
-      definition.id.domain,
-      ctx.modules.toModuleId(definition.id),
-      ctx.serviceRenderer.renderService(definition),
-      ctx.sbtOptions.scalaVersion,
+      definition.id.domain
+      , ctx.modules.toModuleId(definition.id)
+      , ctx.serviceRenderer.renderService(definition)
+      , ctx.sbtOptions.scalaVersion
     )
   }
 

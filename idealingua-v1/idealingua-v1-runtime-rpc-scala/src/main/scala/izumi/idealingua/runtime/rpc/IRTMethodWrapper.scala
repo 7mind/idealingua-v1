@@ -10,7 +10,7 @@ abstract class IRTMethodWrapper[F[_, _], -C] { self =>
 
   final def contramap[D](f: D => C): IRTMethodWrapper[F, D] = {
     new IRTMethodWrapper[F, D] {
-      override final val signature: self.signature.type   = self.signature
+      override final val signature: self.signature.type = self.signature
       override final val marshaller: self.marshaller.type = self.marshaller
       override final def invoke(ctx: D, input: self.signature.Input): F[Nothing, self.signature.Output] = {
         self.invoke(f(ctx), input)

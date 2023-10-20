@@ -6,5 +6,5 @@ import izumi.idealingua.model.common.TypeId.InterfaceId
 package object defns {
   type RawInterfaces = List[InterfaceId]
   type RawStructures = List[IndefiniteMixin]
-  type RawTuple      = List[RawField]
+  type RawTuple = List[RawField]
 }

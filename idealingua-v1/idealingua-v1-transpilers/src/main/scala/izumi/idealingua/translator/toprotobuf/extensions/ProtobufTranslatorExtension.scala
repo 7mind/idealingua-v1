@@ -44,3 +44,5 @@ trait ProtobufTranslatorExtension extends TranslatorExtension {
     product
   }
 }
+
+

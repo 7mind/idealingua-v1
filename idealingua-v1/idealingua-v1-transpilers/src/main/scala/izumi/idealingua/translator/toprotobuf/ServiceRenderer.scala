@@ -29,7 +29,7 @@ final class ServiceRenderer(ctx: PBTContext) {
     case Output.Struct(struct) =>
       ProtobufMethod.Structure(ctx.conv.toProtobuf(struct.fields))
     case Output.Algebraic(alternatives) =>
-      val alts = alternatives.map(alt => ProtobufAdtMember(alt.memberName, ctx.conv.toProtobuf(alt.typeId)))
+      val alts = alternatives.map { alt => ProtobufAdtMember(alt.memberName, ctx.conv.toProtobuf(alt.typeId)) }
       ProtobufMethod.ADT(alts)
   }
 

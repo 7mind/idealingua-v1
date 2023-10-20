@@ -30,8 +30,8 @@ class TypespaceCompilerFSFacade(toCompile: Seq[LoadedDomain.Success]) {
 
     val files = finalized.emodules.map {
       emodule =>
-        val module     = emodule.module
-        val parts      = module.id.path :+ module.id.name
+        val module = emodule.module
+        val parts = module.id.path :+ module.id.name
         val modulePath = parts.foldLeft(target) { case (path, part) => path.resolve(part) }
         modulePath.getParent.toFile.mkdirs()
         Files.write(modulePath, module.content.utf8)
@@ -39,14 +39,16 @@ class TypespaceCompilerFSFacade(toCompile: Seq[LoadedDomain.Success]) {
     }
     val result = IDLCompilationResult(target, files)
 
+
     if (options.zipOutput) {
       // pack output
       import IzZip._
 
-      val ztarget = target.getParent
+      val ztarget = target
+        .getParent
         .resolve(s"${options.language.toString}.zip")
 
-      val toPack  = result.paths.map(p => ZE(result.target.relativize(p).toString, p))
+      val toPack = result.paths.map(p => ZE(result.target.relativize(p).toString, p))
       val grouped = toPack.groupBy(_.name.toLowerCase)
       verifySanity(grouped)
       zip(ztarget, grouped.values.map(_.head))
@@ -57,14 +59,18 @@ class TypespaceCompilerFSFacade(toCompile: Seq[LoadedDomain.Success]) {
     }
   }
 
+
   private def verifySanity(grouped: Map[String, Seq[IzZip.ZE]]): Unit = {
-    val conflicts = grouped.filter { // at first we compare zip entries by file path and entry name
-      case (_, v) =>
-        v.toSet.size > 1
-    }.filter { // then compare the rest by content
-      case (_, v) =>
-        v.map(f => IzFiles.readString(f.file)).toSet.size > 1
-    }.values
+    val conflicts = grouped
+      .filter { // at first we compare zip entries by file path and entry name
+        case (_, v) =>
+          v.toSet.size > 1
+      }
+      .filter { // then compare the rest by content
+        case (_, v) =>
+          v.map(f => IzFiles.readString(f.file)).toSet.size > 1
+      }
+      .values
 
     import izumi.fundamentals.platform.strings.IzString._
     if (conflicts.nonEmpty) {
@@ -94,8 +100,9 @@ object TypespaceCompilerFSFacade {
   final case class IDLCompilationResult(target: Path, paths: Seq[Path])
 
   case class Result(
-    compilationProducts: IDLCompilationResult,
-    zippedOutput: Option[Path],
-  )
+                     compilationProducts: IDLCompilationResult
+                     , zippedOutput: Option[Path]
+                   )
+
 
 }

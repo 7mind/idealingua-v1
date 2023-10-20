@@ -13,15 +13,15 @@ class ModuleTools(configuredOptions: Map[String, String]) {
         Seq.empty
 
       case _ =>
-        val preamble        = products.flatMap(_.preamble).distinct.mkString("\n")
-        val code            = products.flatMap(_.render).distinct.mkString("\n")
+        val preamble = products.flatMap(_.preamble).distinct.mkString("\n")
+        val code = products.flatMap(_.render).distinct.mkString("\n")
         val content: String = withPackage(id.toPackage, preamble, code)
         Seq(Module(moduleId, content))
     }
   }
 
   def withPackage(pkg: idealingua.model.common.Package, preamble: String, code: String): String = {
-    val options = if (configuredOptions.nonEmpty) {
+    val options = if(configuredOptions.nonEmpty) {
       configuredOptions.map {
         case (k, v) =>
           s"option $k = $v;"

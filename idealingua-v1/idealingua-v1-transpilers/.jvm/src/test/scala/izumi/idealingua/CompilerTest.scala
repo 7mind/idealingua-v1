@@ -19,13 +19,9 @@ class CompilerTest extends AnyWordSpec {
     "be able to compile into scala" in {
       if (!useDockerForLocalScalaTest) {
         require("scalac")
-        val systemScalaVersion = Process(Seq("scalac", "-version"), None, scalaSysEnv.toSeq: _*)
-          .#|(Process(Seq("sed", "-r", """s/.*version (.*) --.*/\1/"""))).!!.split("\\.").take(2).mkString(".")
+        val systemScalaVersion = Process(Seq("scalac", "-version"), None, scalaSysEnv.toSeq: _*).#|(Process(Seq("sed", "-r", """s/.*version (.*) --.*/\1/"""))).!!.split("\\.").take(2).mkString(".")
         assume(systemScalaVersion.nonEmpty)
-        assume(
-          Properties.versionNumberString.startsWith(systemScalaVersion),
-          s"compiler test can run on systemScalaVersion=$systemScalaVersion only (local compiler used for test should be the same as build compiler)",
-        )
+        assume(Properties.versionNumberString.startsWith(systemScalaVersion), s"compiler test can run on systemScalaVersion=$systemScalaVersion only (local compiler used for test should be the same as build compiler)")
       }
 
       assert(compilesScala(s"$id-plain", loadDefs(), ScalaProjectLayout.PLAIN, useDockerForLocalScalaTest))
@@ -38,7 +34,7 @@ class CompilerTest extends AnyWordSpec {
       // we can't test sbt build: it depends on artifacts which may not exist yet
       assert(compilesScala(s"$id-sbt", loadDefs(), ScalaProjectLayout.SBT, useDockerForLocalScalaTest))
       // circular sbt projects are broken in V1
-      // assert(compilesScala(s"$id-sbt-nonportable", loadDefs("/defs/scala"), ScalaProjectLayout.SBT))
+      //assert(compilesScala(s"$id-sbt-nonportable", loadDefs("/defs/scala"), ScalaProjectLayout.SBT))
     }
 
     "be able to compile into typescript" in {

@@ -11,20 +11,21 @@ import io.circe.Json
 import io.circe.literal._
 import io.circe.syntax._
 
+
 class TypescriptLayouter(options: TypescriptTranslatorOptions) extends TranslationLayouter {
   private val naming = new TypescriptNamingConvention(options.manifest)
 
   override def layout(outputs: Seq[Translated]): Layouted = {
     val modules = outputs.flatMap(applyLayout)
-    val rt      = toRuntimeModules(options)
+    val rt = toRuntimeModules(options)
 
     val withLayout = if (options.manifest.layout == TypeScriptProjectLayout.YARN) {
-      val inSubdir       = modules
-      val inRtSubdir     = addPrefix(rt ++ buildIRTPackageModule(), Seq(options.manifest.yarn.scope))
+      val inSubdir = modules
+      val inRtSubdir = addPrefix(rt ++ buildIRTPackageModule(), Seq(options.manifest.yarn.scope))
       val inBundleSubdir = buildBundlePackageModules(outputs)
 
       addPrefix(inSubdir ++ inRtSubdir ++ inBundleSubdir, Seq("packages")) ++
-      buildRootModules(options.manifest)
+        buildRootModules(options.manifest)
 
     } else {
       modules ++ rt ++ buildRootModules(options.manifest)
@@ -40,7 +41,8 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
         buildIndexModule(ts) :: buildPackageModule(ts).toList
       else
         List(buildIndexModule(ts))
-    )
+      )
+
 
     val mm = if (options.manifest.layout == TypeScriptProjectLayout.YARN) {
       modules.map {
@@ -52,6 +54,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
     }
     mm.map(m => ExtendedModule.DomainModule(translated.typespace.domain.id, m))
   }
+
 
   private def buildRootModules(mf: TypeScriptBuildManifest): Seq[ExtendedModule.RuntimeModule] = {
     val rootDir = if (mf.layout == TypeScriptProjectLayout.YARN) {
@@ -150,6 +153,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
     ).map(ExtendedModule.RuntimeModule)
   }
 
+
   private def toScopedId(id: ModuleId): ModuleId = {
     val path = Seq(options.manifest.yarn.scope, naming.makeName(id))
 
@@ -158,18 +162,19 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
 
   private def esPostfix(name: String) = s"$name-es"
 
+
   private def buildPackageModule(ts: Typespace): Seq[Module] = {
     val allDeps = ts.domain.meta.directImports.map(i => ManifestDependency(naming.toScopedId(i.id.toPackage), mfVersion)) :+
       ManifestDependency(naming.irtDependency, mfVersion)
     val allDepsEs = ts.domain.meta.directImports.map(i => ManifestDependency(esPostfix(naming.toScopedId(i.id.toPackage)), mfVersion)) :+
       ManifestDependency(esPostfix(naming.irtDependency), mfVersion)
 
-    val name   = naming.toScopedId(ts.domain.id.toPackage)
+    val name = naming.toScopedId(ts.domain.id.toPackage)
     val nameEs = esPostfix(name)
 
-    val mf        = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDeps))
-    val mfEs      = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDepsEs))
-    val content   = generatePackage(mf, Some("index"), name)
+    val mf = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDeps))
+    val mfEs = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDepsEs))
+    val content = generatePackage(mf, Some("index"), name)
     val contentEs = generatePackage(mfEs, Some("index"), nameEs)
     Seq(
       Module(ModuleId(ts.domain.id.toPackage, "package.json"), content.toString()),
@@ -178,7 +183,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
   }
 
   private def buildIRTPackageModule(): Seq[ExtendedModule.RuntimeModule] = {
-    val content   = generatePackage(options.manifest, Some("index"), naming.irtDependency)
+    val content = generatePackage(options.manifest, Some("index"), naming.irtDependency)
     val contentEs = generatePackage(options.manifest, Some("index"), esPostfix(naming.irtDependency))
     Seq(
       ExtendedModule.RuntimeModule(Module(ModuleId(Seq("irt"), "package.json"), content.toString())),
@@ -187,12 +192,12 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
   }
 
   private def buildBundlePackageModules(translated: Seq[Translated]): Seq[ExtendedModule.RuntimeModule] = {
-    val allDeps   = translated.map(ts => ManifestDependency(naming.toScopedId(ts.typespace.domain.id.toPackage), mfVersion))
+    val allDeps = translated.map(ts => ManifestDependency(naming.toScopedId(ts.typespace.domain.id.toPackage), mfVersion))
     val allDepsEs = translated.map(ts => ManifestDependency(esPostfix(naming.toScopedId(ts.typespace.domain.id.toPackage)), mfVersion))
 
-    val mf        = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDeps))
-    val mfEs      = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDepsEs))
-    val content   = generatePackage(mf, None, naming.bundleId)
+    val mf = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDeps))
+    val mfEs = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDepsEs))
+    val content = generatePackage(mf, None, naming.bundleId)
     val contentEs = generatePackage(mfEs, None, esPostfix(naming.bundleId))
     Seq(
       ExtendedModule.RuntimeModule(Module(ModuleId(Seq(naming.bundleId), "package.json"), content.toString())),
@@ -218,8 +223,8 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
   }
 
   private def generatePackage(manifest: TypeScriptBuildManifest, main: Option[String], name: String): Json = {
-    val author  = s"${manifest.common.publisher.name} (${manifest.common.publisher.id})"
-    val deps    = manifest.yarn.dependencies.map(d => d.module -> d.version).toMap.asJson
+    val author = s"${manifest.common.publisher.name} (${manifest.common.publisher.id})"
+    val deps = manifest.yarn.dependencies.map(d => d.module -> d.version).toMap.asJson
     val devDeps = manifest.yarn.devDependencies.map(d => d.module -> d.version).toMap.asJson
 
     val base =
@@ -234,9 +239,11 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
        }
      """
 
+
     main match {
       case Some(value) =>
-        base.deepMerge(json"""{"main": ${s"$value.js"}, "typings": ${s"$value.d.ts"}}""")
+        base.deepMerge(
+          json"""{"main": ${s"$value.js"}, "typings": ${s"$value.d.ts"}}""")
       case None =>
         base
     }

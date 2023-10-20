@@ -31,6 +31,7 @@ import io.circe.Codec
   *     object C extends IRTWithCirce[C]
   *   }
   * }}}
+  *
   */
 abstract class IRTWithCirce[A]()(implicit derivedCodec: DerivationDerivedCodec[A]) {
   // workaround for https://github.com/milessabin/shapeless/issues/837

@@ -1,7 +1,7 @@
 package izumi.idealingua.runtime.rpc
 
 import io.circe.Json
-import izumi.functional.bio.{Exit, F, IO2}
+import izumi.functional.bio.{IO2, Exit, F}
 
 trait ContextExtender[-Ctx, +Ctx2] {
   def extend(context: Ctx, body: Json, irtMethodId: IRTMethodId): Ctx2
@@ -24,7 +24,7 @@ class IRTServerMultiplexorImpl[F[+_, +_]: IO2, -C, -C2](
   def doInvoke(parsedBody: Json, context: C, toInvoke: IRTMethodId): F[Throwable, Option[Json]] = {
     (for {
       service <- services.get(toInvoke.service)
-      method  <- service.allMethods.get(toInvoke)
+      method <- service.allMethods.get(toInvoke)
     } yield method) match {
       case Some(value) =>
         invoke(extender.extend(context, parsedBody, toInvoke), toInvoke, value, parsedBody).map(Some.apply)
@@ -44,10 +44,10 @@ class IRTServerMultiplexorImpl[F[+_, +_]: IO2, -C, -C2](
         case Exit.Error(decodingFailure, trace) =>
           F.fail(new IRTDecodingException(s"$toInvoke: Failed to decode JSON ${parsedBody.toString()} $trace", Some(decodingFailure)))
       }
-      casted        = safeDecoded.value.asInstanceOf[method.signature.Input]
+      casted = safeDecoded.value.asInstanceOf[method.signature.Input]
       resultAction <- F.syncThrowable(method.invoke(context, casted))
-      safeResult   <- resultAction
-      encoded      <- F.syncThrowable(method.marshaller.encodeResponse.apply(IRTResBody(safeResult)))
+      safeResult <- resultAction
+      encoded <- F.syncThrowable(method.marshaller.encodeResponse.apply(IRTResBody(safeResult)))
     } yield encoded
   }
 }

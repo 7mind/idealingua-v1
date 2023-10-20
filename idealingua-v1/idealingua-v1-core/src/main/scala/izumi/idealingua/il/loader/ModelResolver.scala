@@ -10,6 +10,7 @@ import izumi.idealingua.model.problems.TypespaceError.VerificationException
 import izumi.idealingua.model.typespace.verification.{TypespaceVerifier, VerificationRule}
 import izumi.idealingua.model.typespace.{Typespace, TypespaceImpl}
 
+
 class ModelResolver(rules: Seq[VerificationRule]) {
 
   def resolve(domains: UnresolvedDomains): LoadedModels = {
@@ -29,15 +30,17 @@ class ModelResolver(rules: Seq[VerificationRule]) {
     result.withDiagnostics(postDiag)
   }
 
+
   private def makeTyped(f: Either[LoadedDomain.Failure, DomainMeshResolved]): LoadedDomain = {
     (for {
-      d      <- f
-      ts     <- runTyper(d)
+      d <- f
+      ts <- runTyper(d)
       result <- runVerifier(ts)
     } yield {
       result
     }).fold(identity, identity)
   }
+
 
   private def runVerifier(ts: Typespace): Either[LoadedDomain.VerificationFailed, LoadedDomain.Success] = {
     try {

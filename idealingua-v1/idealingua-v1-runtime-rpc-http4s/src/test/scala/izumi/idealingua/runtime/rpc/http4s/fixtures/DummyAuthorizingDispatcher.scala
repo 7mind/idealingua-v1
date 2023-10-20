@@ -5,7 +5,7 @@ import izumi.idealingua.runtime.rpc._
 import izumi.idealingua.runtime.rpc.http4s.{IRTBadCredentialsException, IRTNoCredentialsException}
 import org.http4s.{BasicCredentials, Status}
 
-final class DummyAuthorizingDispatcher[F[+_, +_]: IO2, Ctx](proxied: IRTWrappedService[F, Ctx]) extends IRTWrappedService[F, Ctx] {
+final class DummyAuthorizingDispatcher[F[+ _, + _] : IO2, Ctx](proxied: IRTWrappedService[F, Ctx]) extends IRTWrappedService[F, Ctx] {
   override def serviceId: IRTServiceId = proxied.serviceId
 
   override def allMethods: Map[IRTMethodId, IRTMethodWrapper[F, Ctx]] = proxied.allMethods.mapValues {
@@ -13,7 +13,7 @@ final class DummyAuthorizingDispatcher[F[+_, +_]: IO2, Ctx](proxied: IRTWrappedS
       new IRTMethodWrapper[F, Ctx] {
         val R: IO2[F] = implicitly
 
-        override val signature: IRTMethodSignature  = method.signature
+        override val signature: IRTMethodSignature = method.signature
         override val marshaller: IRTCirceMarshaller = method.marshaller
 
         override def invoke(ctx: Ctx, input: signature.Input): R.Just[signature.Output] = {

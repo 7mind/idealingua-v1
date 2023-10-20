@@ -8,9 +8,10 @@ import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.tocsharp.types.{CSharpClass, CSharpType}
 import izumi.idealingua.translator.tocsharp.{CSTContext, CSharpImports}
 
+
 object NUnitExtension extends CSharpTranslatorExtension {
   override def postEmitModules(ctx: CSTContext, id: Enumeration)(implicit im: CSharpImports, ts: Typespace): Seq[Module] = {
-    val name       = id.id.name
+    val name = id.id.name
     val testMember = id.members.head.value
     val code =
       s"""public static class ${name}TestHelper {
@@ -98,7 +99,7 @@ object NUnitExtension extends CSharpTranslatorExtension {
 
   override def postEmitModules(ctx: CSTContext, i: Adt)(implicit im: CSharpImports, ts: Typespace): Seq[Module] = {
     val name = i.id.name
-    val adt  = i.alternatives.head
+    val adt = i.alternatives.head
     val testValue = adt.typeId match {
       case _: StructureId =>
         CSharpType(adt.typeId).getRandomValue(3)
@@ -148,10 +149,10 @@ object NUnitExtension extends CSharpTranslatorExtension {
 
   override def postEmitModules(ctx: CSTContext, i: DTO)(implicit im: CSharpImports, ts: Typespace): Seq[Module] = {
     val implIface = ts.inheritance.allParents(i.id).find(ii => ts.tools.implId(ii) == i.id)
-    val dtoName   = if (implIface.isDefined) implIface.get.name + i.id.name else i.id.name
+    val dtoName = if (implIface.isDefined) implIface.get.name + i.id.name else i.id.name
 
     val structure = ts.structure.structure(i)
-    val struct    = CSharpClass(i.id, i.id.name, structure, List.empty)
+    val struct = CSharpClass(i.id, i.id.name, structure, List.empty)
 
     val code =
       s"""public static class ${dtoName}TestHelper {
@@ -194,3 +195,4 @@ object NUnitExtension extends CSharpTranslatorExtension {
     ctx.modules.toTestSource(i.id.path.domain, ctx.modules.toTestModuleId(i.id, if (implIface.isDefined) Some(implIface.get.name) else None), header, code)
   }
 }
+

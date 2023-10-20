@@ -45,7 +45,7 @@ final class WithCirceTest extends AnyWordSpec {
       val t = ZonedDateTime.parse("2019-12-04T00:07:12.363856Z[UTC]")
 
       val circeJson = TimeCirce(t).asJson
-      val irtJson   = TimeIRT(t).asJson
+      val irtJson = TimeIRT(t).asJson
 
       assert(circeJson.noSpaces == """{"zonedDateTime":"2019-12-04T00:07:12.363856Z[UTC]"}""")
       assert(irtJson.noSpaces == """{"zonedDateTime":"2019-12-04T00:07:12.363Z"}""")

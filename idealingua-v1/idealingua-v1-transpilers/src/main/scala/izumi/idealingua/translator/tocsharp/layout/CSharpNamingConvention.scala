@@ -5,7 +5,7 @@ import izumi.idealingua.model.publishing.ProjectNamingRule
 import izumi.idealingua.translator.BaseNamingConvention
 
 class CSharpNamingConvention(rule: ProjectNamingRule) {
-  private val naming           = new BaseNamingConvention(rule)
+  private val naming = new BaseNamingConvention(rule)
   private final val testSuffix = "Tests"
 
   def irtId: String = specialId(Some("IRT"))

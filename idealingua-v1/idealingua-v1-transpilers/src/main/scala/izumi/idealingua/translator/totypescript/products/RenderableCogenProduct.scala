@@ -9,8 +9,8 @@ trait RenderableCogenProduct {
 
 object RenderableCogenProduct {
   def empty: RenderableCogenProduct = new RenderableCogenProduct {
-    override def render: List[String]       = List.empty
+    override def render: List[String] = List.empty
     override def renderHeader: List[String] = List.empty
-    override def preamble: String           = ""
+    override def preamble: String = ""
   }
 }

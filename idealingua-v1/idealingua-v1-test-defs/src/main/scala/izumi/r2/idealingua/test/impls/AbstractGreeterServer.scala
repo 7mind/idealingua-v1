@@ -3,7 +3,8 @@ package izumi.r2.idealingua.test.impls
 import izumi.functional.bio.IO2
 import izumi.r2.idealingua.test.generated._
 
-abstract class AbstractGreeterServer[F[+_, +_]: IO2, C] extends GreeterServiceServer[F, C] {
+abstract class AbstractGreeterServer[F[+_, +_] : IO2, C]
+  extends GreeterServiceServer[F, C] {
 
   val R: IO2[F] = implicitly
 
@@ -27,5 +28,5 @@ abstract class AbstractGreeterServer[F[+_, +_]: IO2, C] extends GreeterServiceSe
 }
 
 object AbstractGreeterServer {
-  class Impl[F[+_, +_]: IO2, C] extends AbstractGreeterServer[F, C]
+  class Impl[F[+_, +_] : IO2, C] extends AbstractGreeterServer[F, C]
 }

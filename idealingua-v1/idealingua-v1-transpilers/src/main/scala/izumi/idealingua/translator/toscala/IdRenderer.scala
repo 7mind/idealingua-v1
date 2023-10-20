@@ -12,36 +12,41 @@ class IdRenderer(ctx: STContext) {
   import ctx._
   import conv._
 
+
   def renderIdentifier(i: Identifier): RenderableCogenProduct = {
-    val fields   = typespace.structure.structure(i).toScala
-    val decls    = fields.all.toParams
+    val fields = typespace.structure.structure(i).toScala
+    val decls = fields.all.toParams
     val typeName = i.id.name
 
     val interp = Term.Interpolate(Term.Name("s"), List(Lit.String(typeName + "#"), Lit.String("")), List(Term.Name("suffix")))
 
-    val t     = conv.toScala(i.id)
+    val t = conv.toScala(i.id)
     val tools = t.within(s"${i.id.name}Extensions")
 
     val qqTools = q"""implicit class ${tools.typeName}(_value: ${t.typeFull}) { }"""
 
     val sortedFields = fields.all.sortBy(_.field.field.name)
 
-    val parsers = sortedFields.zipWithIndex.map { case (field, idx) => (field, idx, field.field.field.typeId) }.map {
-      case (field, idx, t: EnumId) =>
-        q"${field.name} = ${conv.toScala(t).termFull}.parse(parts(${Lit.Int(idx)}))"
-      case (field, idx, t: IdentifierId) =>
-        q"${field.name} = ${conv.toScala(t).termFull}.parse(parts(${Lit.Int(idx)}))"
-      case (field, idx, _: PrimitiveId) =>
-        q"${field.name} = parsePart[${field.fieldType}](parts(${Lit.Int(idx)}), classOf[${field.fieldType}])"
-      case o =>
-        throw new IDLException(s"Impossible case/id field: $o")
-    }
+    val parsers = sortedFields
+      .zipWithIndex
+      .map { case (field, idx) => (field, idx, field.field.field.typeId) }
+      .map {
+        case (field, idx, t: EnumId) =>
+          q"${field.name} = ${conv.toScala(t).termFull}.parse(parts(${Lit.Int(idx)}))"
+        case (field, idx, t: IdentifierId) =>
+          q"${field.name} = ${conv.toScala(t).termFull}.parse(parts(${Lit.Int(idx)}))"
+        case (field, idx, _: PrimitiveId) =>
+          q"${field.name} = parsePart[${field.fieldType}](parts(${Lit.Int(idx)}), classOf[${field.fieldType}])"
+        case o =>
+          throw new IDLException(s"Impossible case/id field: $o")
+      }
 
     val parts = sortedFields.map(fi => q"this.${fi.name}")
 
     val superClasses = List(rt.generated.init(), rt.tIDLIdentifier.init())
 
     val errorInterp = Term.Interpolate(Term.Name("s"), List(Lit.String("Serialized form of "), Lit.String(s" should start with $typeName#")), List(Term.Name("name")))
+
 
     val qqCompanion =
       q"""object ${t.termName} {
@@ -65,6 +70,7 @@ class IdRenderer(ctx: STContext) {
               $interp
             }
          }"""
+
 
     ext.extend(i, CogenProduct(qqIdentifier, qqCompanion, qqTools, List.empty), _.handleIdentifier)
   }

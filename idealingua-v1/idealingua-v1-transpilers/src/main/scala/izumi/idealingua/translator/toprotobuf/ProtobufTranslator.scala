@@ -9,19 +9,21 @@ import izumi.idealingua.translator.toprotobuf.extensions.ProtobufTranslatorExten
 import izumi.idealingua.translator.toprotobuf.products.RenderableCogenProduct
 import izumi.idealingua.translator.{Translated, Translator}
 
+
 object ProtobufTranslator {
   final val defaultExtensions: Seq[ProtobufTranslatorExtension] = Seq(
   )
 }
 
-class ProtobufTranslator(ts: Typespace, options: ProtobufTranslatorOptions) extends Translator {
+class ProtobufTranslator(ts: Typespace, options: ProtobufTranslatorOptions)
+  extends Translator {
   protected val ctx: PBTContext = new PBTContext(ts, options.extensions, options.manifest.options)
 
   def translate(): Translated = {
-    val cogenTypes    = translateDefinitions(ctx.typespace.domain.types)
+    val cogenTypes = translateDefinitions(ctx.typespace.domain.types)
     val cogenServices = ctx.typespace.domain.services.map(ctx.serviceRenderer.defns)
-    val cogen         = cogenTypes ++ cogenServices
-    val modules       = ctx.modules.toSource(ctx.typespace.domain.id, ctx.modules.toModuleId(ctx.typespace.domain.id), cogen)
+    val cogen = cogenTypes ++ cogenServices
+    val modules = ctx.modules.toSource(ctx.typespace.domain.id, ctx.modules.toModuleId(ctx.typespace.domain.id), cogen)
     Translated(ts, modules)
   }
 
@@ -48,19 +50,16 @@ class ProtobufTranslator(ts: Typespace, options: ProtobufTranslatorOptions) exte
       e =>
         e.id.name -> e.members.map(_.value).toSet
     }
-    m.foreach {
-      case (name, members) =>
-        m.foreach {
-          case (name1, members1) if name1 != name =>
-            val intersect = members1.intersect(members)
-            if (intersect.nonEmpty) {
-              throw new IDLException(
-                s"[${ctx.typespace.domain.id}]: Protobuf can not generate ENUMs with same internals under one domain. $name1 and $name contains same elements: ${intersect
-                    .mkString(",")}"
-              )
-            }
-          case _ =>
-        }
+    m.foreach { case (name, members) =>
+      m.foreach {
+        case (name1, members1) if name1 != name =>
+          val intersect = members1.intersect(members)
+          if (intersect.nonEmpty) {
+            throw new IDLException(s"[${ctx.typespace.domain.id}]: Protobuf can not generate ENUMs with same internals under one domain. $name1 and $name contains same elements: ${intersect.mkString(",")}")
+          }
+        case _ =>
+      }
     }
   }
 }
+

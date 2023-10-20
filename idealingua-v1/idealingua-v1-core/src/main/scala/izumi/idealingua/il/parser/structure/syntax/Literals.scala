@@ -17,17 +17,17 @@ object Literals {
     * Parses whitespace, including newlines.
     * This is the default for most things
     */
-  def WL0[$: P]: P[Unit] = P(NoTrace((Basic.WSChars | Literals.Comment | Basic.Newline).rep)) // (sourcecode.Name("WL"))
-  def WL[$: P]: P[Unit]  = P(NoCut(WL0))
+  def WL0[$: P]: P[Unit] = P(NoTrace((Basic.WSChars | Literals.Comment | Basic.Newline).rep)) //(sourcecode.Name("WL"))
+  def WL[$: P]: P[Unit] = P(NoCut(WL0))
 
-  def Semi[$: P]: P[Unit]    = P(WS ~ Basic.Semi)
-  def Semis[$: P]: P[Unit]   = P(Semi.rep(1) ~ WS)
+  def Semi[$: P]: P[Unit] = P(WS ~ Basic.Semi)
+  def Semis[$: P]: P[Unit] = P(Semi.rep(1) ~ WS)
   def Newline[$: P]: P[Unit] = P(WL ~ Basic.Newline)
 
-  def NotNewline[$: P]: P0           = P(&(WS ~ !Basic.Newline))
+  def NotNewline[$: P]: P0 = P(&(WS ~ !Basic.Newline))
   def ConsumeComments[$: P]: P[Unit] = P((Basic.WSChars.? ~ Literals.Comment ~ Basic.WSChars.? ~ Basic.Newline).rep)
-  def OneNLMax[$: P]: P0             = P(NoCut(WS ~ Basic.Newline.? ~ ConsumeComments ~ NotNewline))
-  def TrailingComma[$: P]: P0        = P(("," ~ WS ~ Basic.Newline).?)
+  def OneNLMax[$: P]: P0 = P(NoCut(WS ~ Basic.Newline.? ~ ConsumeComments ~ NotNewline))
+  def TrailingComma[$: P]: P0 = P(("," ~ WS ~ Basic.Newline).?)
 
 //  def Pattern: P0
 
@@ -50,16 +50,16 @@ object Literals {
     // Comments cannot have cuts in them, because they appear before every
     // terminal node. That means that a comment before any terminal will
     // prevent any backtracking from working, which is not what we want!
-    def CommentChunk[$: P]: P[Unit]       = P(CharsWhile(c => c != '/' && c != '*') | MultilineComment | !"*/" ~ AnyChar)
-    def MultilineComment[$: P]: P0        = P("/*" ~/ CommentChunk.rep ~ "*/")
+    def CommentChunk[$: P]: P[Unit] = P(CharsWhile(c => c != '/' && c != '*') | MultilineComment | !"*/" ~ AnyChar)
+    def MultilineComment[$: P]: P0 = P("/*" ~/ CommentChunk.rep ~ "*/")
     def SameLineCharChunks[$: P]: P[Unit] = P(CharsWhile(c => c != '\n' && c != '\r') | !Basic.Newline ~ AnyChar)
-    def LineComment[$: P]: P[Unit]        = P("//" ~ SameLineCharChunks.rep ~ &(Basic.Newline | End))
-    def Comment[$: P]: P0                 = P(MultilineComment | LineComment)
+    def LineComment[$: P]: P[Unit] = P("//" ~ SameLineCharChunks.rep ~ &(Basic.Newline | End))
+    def Comment[$: P]: P0 = P(MultilineComment | LineComment)
 
     def Null[$: P]: P[Unit] = Key.W("null")
 
     def OctalEscape[$: P]: P[Unit] = P(Digit ~ Digit.? ~ Digit.?)
-    def Escape[$: P]: P[Unit]      = P("\\" ~/ (CharIn("""btnfr'\"]""") | OctalEscape | UnicodeEscape))
+    def Escape[$: P]: P[Unit] = P("\\" ~/ (CharIn("""btnfr'\"]""") | OctalEscape | UnicodeEscape))
 
     def Char[$: P]: P[Unit] = {
       // scalac 2.10 crashes if PrintableChar below is substituted by its body
@@ -68,28 +68,31 @@ object Literals {
       P((Escape | PrintableChar) ~ "'")
     }
 
-    def TQ[$: P]: P[Unit] = P("\"\"\"")
+
+    def TQ[$: P]: P[Unit] = P( "\"\"\"" )
     /**
       * Helper to quickly gobble up large chunks of un-interesting
       * characters. We break out conservatively, even if we don't know
       * it's a "real" escape sequence: worst come to worst it turns out
       * to be a dud and we go back into a CharsChunk next rep
       */
-    def StringChars[$: P]: P[Unit]        = P(CharsWhile(c => c != '\n' && c != '"' && c != '\\' && c != '$'))
-    def NonTripleQuoteChar[$: P]: P[Unit] = P("\"" ~ "\"".? ~ !"\"" | CharIn("\\$\n"))
-    def TripleChars[$: P]: P[Unit]        = P((StringChars | NonTripleQuoteChar).rep)
-    def TripleTail[$: P]: P[Unit]         = P(TQ ~ "\"".rep)
+    def StringChars[$: P]: P[Unit] = P( CharsWhile(c => c != '\n' && c != '"' && c != '\\' && c != '$') )
+    def NonTripleQuoteChar[$: P]: P[Unit] = P( "\"" ~ "\"".? ~ !"\"" | CharIn("\\$\n") )
+    def TripleChars[$: P]: P[Unit] = P( (StringChars | NonTripleQuoteChar).rep )
+    def TripleTail[$: P]: P[Unit] = P( TQ ~ "\"".rep )
     def SingleChars[$: P](allowSlash: Boolean): P[Unit] = {
-      def LiteralSlash = P(if (allowSlash) "\\" else Fail)
-      def NonStringEnd = P(!CharIn("\n\"") ~ AnyChar)
-      P((StringChars | LiteralSlash | Escape | NonStringEnd).rep)
+      def LiteralSlash = P( if(allowSlash) "\\" else Fail )
+      def NonStringEnd = P( !CharIn("\n\"") ~ AnyChar )
+      P( (StringChars | LiteralSlash | Escape | NonStringEnd ).rep )
     }
     def Str[$: P]: P[String] = {
       P {
-        (TQ ~/ TripleChars.! ~ TripleTail) |
-        ("\"" ~/ SingleChars(false).! ~ "\"")
+          (TQ ~/ TripleChars.! ~ TripleTail) |
+          ("\"" ~/ SingleChars(false).! ~ "\"")
       }
     }
+
+
 
 //    case class NamedFunction(f: Char => Boolean)
 //                            (implicit name: sourcecode.Name) extends (Char => Boolean){
@@ -152,6 +155,10 @@ object Literals {
 ////    def Pat[$: P] = new InterpCtx(Some(() => l.Pattern))
 ////    def Expr[$: P] = new InterpCtx(Some(() => Block))
 
+
   }
+
+
+
 
 }

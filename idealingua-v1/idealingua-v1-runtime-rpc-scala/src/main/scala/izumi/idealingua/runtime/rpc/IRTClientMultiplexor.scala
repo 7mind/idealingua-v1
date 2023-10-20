@@ -1,14 +1,14 @@
 package izumi.idealingua.runtime.rpc
 
 import io.circe.Json
-import izumi.functional.bio.{F, IO2}
+import izumi.functional.bio.{IO2, F}
 
-trait IRTClientMultiplexor[F[+_, +_]] {
+trait IRTClientMultiplexor[F[+ _, + _]] {
   def encode(input: IRTMuxRequest): F[Throwable, Json]
   def decode(input: Json, method: IRTMethodId): F[Throwable, IRTMuxResponse]
 }
 
-class IRTClientMultiplexorImpl[F[+_, +_]: IO2](clients: Set[IRTWrappedClient]) extends IRTClientMultiplexor[F] {
+class IRTClientMultiplexorImpl[F[+ _, + _] : IO2](clients: Set[IRTWrappedClient]) extends IRTClientMultiplexor[F] {
   val codecs: Map[IRTMethodId, IRTCirceMarshaller] = clients.flatMap(_.allCodecs).toMap
 
   def encode(input: IRTMuxRequest): F[Throwable, Json] = {
@@ -25,7 +25,7 @@ class IRTClientMultiplexorImpl[F[+_, +_]: IO2](clients: Set[IRTWrappedClient]) e
       case Some(marshaller) =>
         for {
           decoder <- F.syncThrowable(marshaller.decodeResponse[F].apply(IRTJsonBody(method, input)))
-          body    <- decoder
+          body <- decoder
         } yield {
           IRTMuxResponse(body, method)
         }

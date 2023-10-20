@@ -14,39 +14,38 @@ import izumi.idealingua.translator.totypescript.types.TypeScriptTypeConverter
 
 object IntrospectionExtension extends TypeScriptTranslatorExtension {
   private def unwindType(id: TypeId)(implicit ts: Typespace): String = id match {
-    case Primitive.TBool   => "{intro: IntrospectorTypes.Bool}"
+    case Primitive.TBool => "{intro: IntrospectorTypes.Bool}"
     case Primitive.TString => "{intro: IntrospectorTypes.Str}"
-    case Primitive.TInt8   => "{intro: IntrospectorTypes.I08}"
-    case Primitive.TInt16  => "{intro: IntrospectorTypes.I16}"
-    case Primitive.TInt32  => "{intro: IntrospectorTypes.I32}"
-    case Primitive.TInt64  => "{intro: IntrospectorTypes.I64}"
-    case Primitive.TUInt8  => "{intro: IntrospectorTypes.U08}"
+    case Primitive.TInt8 => "{intro: IntrospectorTypes.I08}"
+    case Primitive.TInt16 => "{intro: IntrospectorTypes.I16}"
+    case Primitive.TInt32 => "{intro: IntrospectorTypes.I32}"
+    case Primitive.TInt64 => "{intro: IntrospectorTypes.I64}"
+    case Primitive.TUInt8 => "{intro: IntrospectorTypes.U08}"
     case Primitive.TUInt16 => "{intro: IntrospectorTypes.U16}"
     case Primitive.TUInt32 => "{intro: IntrospectorTypes.U32}"
     case Primitive.TUInt64 => "{intro: IntrospectorTypes.U64}"
-    case Primitive.TFloat  => "{intro: IntrospectorTypes.F32}"
+    case Primitive.TFloat => "{intro: IntrospectorTypes.F32}"
     case Primitive.TDouble => "{intro: IntrospectorTypes.F64}"
-    case Primitive.TUUID   => "{intro: IntrospectorTypes.Uid}"
-    case Primitive.TBLOB   => ???
-    case Primitive.TTime   => "{intro: IntrospectorTypes.Time}"
-    case Primitive.TDate   => "{intro: IntrospectorTypes.Date}"
-    case Primitive.TTs     => "{intro: IntrospectorTypes.Tsl}"
-    case Primitive.TTsTz   => "{intro: IntrospectorTypes.Tsz}"
-    case Primitive.TTsU    => "{intro: IntrospectorTypes.Tsu}"
-    case g: Generic =>
-      g match {
-        case gm: Generic.TMap    => s"{intro: IntrospectorTypes.Map, key: ${unwindType(gm.keyType)}, value: ${unwindType(gm.valueType)}} as IIntrospectorMapType"
-        case gl: Generic.TList   => s"{intro: IntrospectorTypes.List, value: ${unwindType(gl.valueType)}} as IIntrospectorGenericType"
-        case gs: Generic.TSet    => s"{intro: IntrospectorTypes.Set, value: ${unwindType(gs.valueType)}} as IIntrospectorGenericType"
-        case go: Generic.TOption => s"{intro: IntrospectorTypes.Opt, value: ${unwindType(go.valueType)}} as IIntrospectorGenericType"
-      }
-    case id: DTOId        => s"{intro: IntrospectorTypes.Data, full: '${id.path.toPackage.mkString(".") + "." + id.name}'} as IIntrospectorUserType"
-    case id: InterfaceId  => s"{intro: IntrospectorTypes.Mixin, full: '${id.path.toPackage.mkString(".") + "." + id.name}'} as IIntrospectorUserType"
-    case id: AdtId        => s"{intro: IntrospectorTypes.Adt, full: '${id.path.toPackage.mkString(".") + "." + id.name}'} as IIntrospectorUserType"
-    case id: EnumId       => s"{intro: IntrospectorTypes.Enum, full: '${id.path.toPackage.mkString(".") + "." + id.name}'} as IIntrospectorUserType"
+    case Primitive.TUUID => "{intro: IntrospectorTypes.Uid}"
+    case Primitive.TBLOB => ???
+    case Primitive.TTime => "{intro: IntrospectorTypes.Time}"
+    case Primitive.TDate => "{intro: IntrospectorTypes.Date}"
+    case Primitive.TTs => "{intro: IntrospectorTypes.Tsl}"
+    case Primitive.TTsTz => "{intro: IntrospectorTypes.Tsz}"
+    case Primitive.TTsU => "{intro: IntrospectorTypes.Tsu}"
+    case g: Generic => g match {
+      case gm: Generic.TMap => s"{intro: IntrospectorTypes.Map, key: ${unwindType(gm.keyType)}, value: ${unwindType(gm.valueType)}} as IIntrospectorMapType"
+      case gl: Generic.TList => s"{intro: IntrospectorTypes.List, value: ${unwindType(gl.valueType)}} as IIntrospectorGenericType"
+      case gs: Generic.TSet => s"{intro: IntrospectorTypes.Set, value: ${unwindType(gs.valueType)}} as IIntrospectorGenericType"
+      case go: Generic.TOption => s"{intro: IntrospectorTypes.Opt, value: ${unwindType(go.valueType)}} as IIntrospectorGenericType"
+    }
+    case id: DTOId => s"{intro: IntrospectorTypes.Data, full: '${id.path.toPackage.mkString(".") + "." + id.name}'} as IIntrospectorUserType"
+    case id: InterfaceId => s"{intro: IntrospectorTypes.Mixin, full: '${id.path.toPackage.mkString(".") + "." + id.name}'} as IIntrospectorUserType"
+    case id: AdtId => s"{intro: IntrospectorTypes.Adt, full: '${id.path.toPackage.mkString(".") + "." + id.name}'} as IIntrospectorUserType"
+    case id: EnumId => s"{intro: IntrospectorTypes.Enum, full: '${id.path.toPackage.mkString(".") + "." + id.name}'} as IIntrospectorUserType"
     case id: IdentifierId => s"{intro: IntrospectorTypes.Id, full: '${id.path.toPackage.mkString(".") + "." + id.name}'} as IIntrospectorUserType"
-    case al: AliasId      => unwindType(ts.dealias(al))
-    case _                => throw new Exception(s"Unwind type is not implemented for type $id")
+    case al: AliasId => unwindType(ts.dealias(al))
+    case _ => throw new Exception(s"Unwind type is not implemented for type $id")
   }
 
   // TODO:MJSON
@@ -75,9 +74,9 @@ object IntrospectionExtension extends TypeScriptTranslatorExtension {
 
   override def handleEnum(ctx: TSTContext, enumeration: TypeDef.Enumeration, product: EnumProduct): EnumProduct = {
 //    implicit val ts: Typespace = ctx.typespace
-    val pkg   = enumeration.id.path.toPackage.mkString(".")
+    val pkg = enumeration.id.path.toPackage.mkString(".")
     val short = enumeration.id.name
-    val full  = pkg + "." + short
+    val full = pkg + "." + short
     val extension =
       s"""
          |// Introspector registration
@@ -96,7 +95,7 @@ object IntrospectionExtension extends TypeScriptTranslatorExtension {
   }
 
   override def handleIdentifier(ctx: TSTContext, identifier: TypeDef.Identifier, product: IdentifierProduct): IdentifierProduct = {
-    implicit val ts: Typespace                 = ctx.typespace
+    implicit val ts: Typespace = ctx.typespace
     implicit val conv: TypeScriptTypeConverter = ctx.conv
 
     val short = identifier.id.name
@@ -143,10 +142,10 @@ object IntrospectionExtension extends TypeScriptTranslatorExtension {
   }
 
   override def handleDTO(ctx: TSTContext, dto: DTO, product: CompositeProduct): CompositeProduct = {
-    implicit val ts: Typespace                 = ctx.typespace
+    implicit val ts: Typespace = ctx.typespace
     implicit val conv: TypeScriptTypeConverter = ctx.conv
 
-    val short  = dto.id.name
+    val short = dto.id.name
     val fields = ts.structure.structure(dto.id).all.distinctBy(_.field.name).map(_.field)
 
     val extension =
@@ -167,16 +166,16 @@ object IntrospectionExtension extends TypeScriptTranslatorExtension {
   }
 
   override def handleInterface(ctx: TSTContext, interface: Interface, product: InterfaceProduct): InterfaceProduct = {
-    implicit val ts: Typespace                 = ctx.typespace
+    implicit val ts: Typespace = ctx.typespace
     implicit val conv: TypeScriptTypeConverter = ctx.conv
 
     val short = interface.id.name
-    val pkg   = interface.id.path.toPackage.mkString(".")
-    val full  = s"$pkg.$short"
+    val pkg = interface.id.path.toPackage.mkString(".")
+    val full = s"$pkg.$short"
 
     val fields = interface.struct.fields
     val implId = ts.tools.implId(interface.id)
-    val eid    = interface.id.name + implId.name
+    val eid = interface.id.name + implId.name
 
     val extension =
       s"""
@@ -210,9 +209,9 @@ object IntrospectionExtension extends TypeScriptTranslatorExtension {
 
   override def handleAdt(ctx: TSTContext, adt: TypeDef.Adt, product: AdtProduct): AdtProduct = {
     implicit val ts: Typespace = ctx.typespace
-    val pkg                    = adt.id.path.toPackage.mkString(".")
-    val short                  = adt.id.name
-    val full                   = pkg + "." + short
+    val pkg = adt.id.path.toPackage.mkString(".")
+    val short = adt.id.name
+    val full = pkg + "." + short
 
     val extension =
       s"""

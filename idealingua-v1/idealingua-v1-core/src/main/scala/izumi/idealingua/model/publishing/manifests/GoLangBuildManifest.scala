@@ -3,6 +3,7 @@ package izumi.idealingua.model.publishing.manifests
 import izumi.idealingua.model.publishing.BuildManifest
 import izumi.idealingua.model.publishing.BuildManifest.{Common, ManifestDependency}
 
+
 sealed trait GoProjectLayout
 
 object GoProjectLayout {
@@ -16,31 +17,32 @@ object GoProjectLayout {
 }
 
 case class GoRepositoryOptions(
-  dependencies: List[ManifestDependency],
-  repository: String,
-)
+                                dependencies: List[ManifestDependency],
+                                repository: String,
+                              )
 
 object GoRepositoryOptions {
   def example: GoRepositoryOptions = GoRepositoryOptions(
     dependencies = List(ManifestDependency("github.com/gorilla/websocket", "78cf1bc733a927f673fd1988a25256b425552a8a")),
-    repository   = "github.com/TestCompany/TestRepo",
+    repository = "github.com/TestCompany/TestRepo",
   )
 }
 
+
 case class GoLangBuildManifest(
-  common: Common,
-  layout: GoProjectLayout,
-  repository: GoRepositoryOptions,
-  enableTesting: Boolean,
-) extends BuildManifest
+                                common: Common,
+                                layout: GoProjectLayout,
+                                repository: GoRepositoryOptions,
+                                enableTesting: Boolean
+                              ) extends BuildManifest
 
 object GoLangBuildManifest {
   def example: GoLangBuildManifest = {
     GoLangBuildManifest(
-      common        = BuildManifest.Common.example,
-      layout        = GoProjectLayout.REPOSITORY,
-      repository    = GoRepositoryOptions.example,
-      enableTesting = true,
+      common = BuildManifest.Common.example,
+      layout = GoProjectLayout.REPOSITORY,
+      repository = GoRepositoryOptions.example,
+      enableTesting = true
     )
   }
 

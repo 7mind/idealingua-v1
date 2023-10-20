@@ -27,7 +27,7 @@ trait TranslationLayouter {
   protected def toRuntimeModules(options: CompilerOptions[?, ?]): Seq[ExtendedModule.RuntimeModule] = {
     for {
       rt <- options.providedRuntime.toSeq
-      m  <- rt.modules
+      m <- rt.modules
     } yield {
       ExtendedModule.RuntimeModule(m)
     }
@@ -54,6 +54,7 @@ trait TranslationLayouter {
         ExtendedModule.RuntimeModule(module.copy(id = module.id.copy(path = prefix ++ module.id.path)))
     }
   }
+
 
   protected def renderVersion(version: ProjectVersion): String = {
     val baseVersion = version.version

@@ -21,7 +21,7 @@ object ProtobufTranslatorDescriptor extends TranslatorDescriptor[ProtobufTransla
   override def make(typespace: Typespace, options: UntypedCompilerOptions): Translator = new ProtobufTranslator(typespace, typedOptions(options))
 
   override def rules: Seq[VerificationRule] = Seq(
-    ReservedKeywordRule.warning("protobuf", keywords)
+    ReservedKeywordRule.warning("protobuf", keywords),
   )
 
   override def makeHook(options: UntypedCompilerOptions): TranslationLayouter = new ProtobufLayouter(typedOptions(options))

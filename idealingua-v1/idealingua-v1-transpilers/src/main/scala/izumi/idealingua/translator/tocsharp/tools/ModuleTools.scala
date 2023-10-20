@@ -15,8 +15,8 @@ class ModuleTools() {
         Seq.empty
 
       case _ =>
-        val code            = product.render.mkString("\n").shift(4)
-        val header          = product.renderHeader.mkString("\n")
+        val code = product.render.mkString("\n").shift(4)
+        val header = product.renderHeader.mkString("\n")
         val content: String = withPackage(id.toPackage, header, code)
 
         val tests = product.renderTests
@@ -24,7 +24,7 @@ class ModuleTools() {
           Seq(Module(moduleId, content))
         } else {
           Seq(
-            Module(moduleId, content)
+            Module(moduleId, content),
           )
         }
     }
@@ -35,9 +35,9 @@ class ModuleTools() {
       code
     } else {
       s"""// Auto-generated, any modifications may be overwritten in the future.
-         |${if (header.length > 0) s"\n$header\n" else ""}
+         |${ if (header.length > 0) s"\n$header\n" else ""}
          |namespace ${pkg.map(p => p.capitalize).mkString(".")} {
-         |$code
+         |${code}
          |}
        """.stripMargin
     }

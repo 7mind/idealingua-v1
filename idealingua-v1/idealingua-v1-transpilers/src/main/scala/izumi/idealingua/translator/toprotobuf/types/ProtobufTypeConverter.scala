@@ -36,7 +36,7 @@ class ProtobufTypeConverter(domain: DomainId) {
   private def checkOnNestedGenerics(t: TypeId): Unit = {
     t match {
       case _: Generic => throw new IDLException(s"[$domain] Protobuf does not support nested Generic parameters. Parameter: ${t.path}#${t.name}")
-      case _          => ()
+      case _ => ()
     }
   }
 
@@ -85,7 +85,7 @@ class ProtobufTypeConverter(domain: DomainId) {
         val arg = toProtobuf(o.valueType)
         o.valueType match {
           case _: Generic => ProtobufType(Seq.empty, toProtobuf(o.valueType).fullName, List(arg), optional = None)
-          case _          => ProtobufType(Seq.empty, arg.fullName, List(arg), optional = Some(true))
+          case _ => ProtobufType(Seq.empty, arg.fullName, List(arg), optional = Some(true))
         }
     }
   }

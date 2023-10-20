@@ -5,20 +5,23 @@ import izumi.idealingua.model.common.DomainId
 
 import scala.meta.{Init, Name, Term, Type}
 
+
 final case class ScalaTypeImpl(
-  termAbsoluteBase: Term.Ref,
-  typeAbsoluteBase: Type.Ref,
-  termBase: Term.Ref,
-  typeBase: Type.Ref,
-  termName: Term.Name,
-  typeName: Type.Name,
-  fullJavaType: JavaType,
-  domainId: DomainId,
-  typeArgs: List[Type],
-  termArgs: List[Term],
-) extends ScalaType {
+                          termAbsoluteBase: Term.Ref
+                          , typeAbsoluteBase: Type.Ref
+                          , termBase: Term.Ref
+                          , typeBase: Type.Ref
+                          , termName: Term.Name
+                          , typeName: Type.Name
+
+                          , fullJavaType: JavaType
+                          , domainId: DomainId
+                          , typeArgs: List[Type]
+                          , termArgs: List[Term]
+                        ) extends ScalaType {
 
   override def parameterize(names: List[Type]): ScalaType = copy(typeArgs = names)
+
 
   override def termAbsolute: Term = if (termArgs.isEmpty) {
     termAbsoluteBase

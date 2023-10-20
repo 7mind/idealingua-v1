@@ -18,8 +18,8 @@ class ModuleTools() {
         Seq.empty
 
       case _ =>
-        val dialect         = if (scalaVersion.exists(_.startsWith("3"))) scala.meta.dialects.Scala30 else scala.meta.dialects.Scala213
-        val code            = (product.preamble +: product.render.map(TreeSyntax[Tree](dialect).apply(_).toString())).mkString("\n\n")
+        val dialect = if (scalaVersion.exists(_.startsWith("3"))) scala.meta.dialects.Scala30 else scala.meta.dialects.Scala213
+        val code = (product.preamble +:  product.render.map(TreeSyntax[Tree](dialect).apply(_).toString())).mkString("\n\n")
         val content: String = withPackage(id.toPackage, code)
         Seq(Module(moduleId, content))
     }

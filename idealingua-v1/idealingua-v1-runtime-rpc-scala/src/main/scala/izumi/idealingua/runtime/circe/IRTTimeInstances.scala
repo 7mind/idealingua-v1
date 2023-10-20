@@ -32,14 +32,14 @@ trait IRTTimeInstances {
   implicit final def decodeOffsetDateTimeDefault: Decoder[OffsetDateTime] = IRTTimeInstances.decodeOffsetDateTimeDefault
   implicit final def encodeOffsetDateTimeDefault: Encoder[OffsetDateTime] = IRTTimeInstances.encodeOffsetDateTimeDefault
 
-  final def decodeLocalDate(formatter: DateTimeFormatter): Decoder[LocalDate] = IRTTimeInstances.decodeLocalDate(formatter)
+  final def decodeLocalDate(formatter: DateTimeFormatter): Decoder[LocalDate] =  IRTTimeInstances.decodeLocalDate(formatter)
   final def encodeLocalDate(formatter: DateTimeFormatter): Encoder[LocalDate] = IRTTimeInstances.encodeLocalDate(formatter)
 
   implicit final def decodeLocalDateDefault: Decoder[LocalDate] = IRTTimeInstances.decodeLocalDateDefault
   implicit final def encodeLocalDateDefault: Encoder[LocalDate] = IRTTimeInstances.encodeLocalDateDefault
 
   final def decodeLocalTime(formatter: DateTimeFormatter): Decoder[LocalTime] = IRTTimeInstances.decodeLocalTime(formatter)
-  final def encodeLocalTime(formatter: DateTimeFormatter): Encoder[LocalTime] = IRTTimeInstances.encodeLocalTime(formatter)
+  final def encodeLocalTime(formatter: DateTimeFormatter): Encoder[LocalTime] = IRTTimeInstances.encodeLocalTime( formatter)
 
   implicit final def decodeLocalTimeDefault: Decoder[LocalTime] = IRTTimeInstances.decodeLocalTimeDefault
   implicit final def encodeLocalTimeDefault: Encoder[LocalTime] = IRTTimeInstances.encodeLocalTimeDefault
@@ -67,44 +67,36 @@ object IRTTimeInstances {
   import izumi.fundamentals.platform.time.IzTime.*
 
   implicit final val decodeInstant: Decoder[Instant] =
-    Decoder.instance {
-      c =>
-        c.as[String].flatMap {
-          s =>
-            try Right(Instant.parse(s))
-            catch {
-              case _: DateTimeParseException => Left(DecodingFailure("Instant", c.history))
-            }
+    Decoder.instance { c =>
+      c.as[String].flatMap {
+        s => try Right(Instant.parse(s)) catch {
+          case _: DateTimeParseException => Left(DecodingFailure("Instant", c.history))
         }
+      }
     }
 
   implicit final val encodeInstant: Encoder[Instant] = Encoder.instance(time => Json.fromString(time.toString))
 
   implicit final val decodeZoneId: Decoder[ZoneId] =
-    Decoder.instance {
-      c =>
-        c.as[String].flatMap {
-          s =>
-            try Right(ZoneId.of(s))
-            catch {
-              case _: DateTimeException => Left(DecodingFailure("ZoneId", c.history))
-            }
-        }
+    Decoder.instance { c =>
+      c.as[String].flatMap {
+        s =>
+          try Right(ZoneId.of(s)) catch {
+            case _: DateTimeException => Left(DecodingFailure("ZoneId", c.history))
+          }
+      }
     }
 
   implicit final val encodeZoneId: Encoder[ZoneId] =
     Encoder[String].contramap(_.getId)
 
   final def decodeLocalDateTime(formatter: DateTimeFormatter): Decoder[LocalDateTime] =
-    Decoder.instance {
-      c =>
-        c.as[String].flatMap {
-          s =>
-            try Right(LocalDateTime.parse(s, formatter))
-            catch {
-              case _: DateTimeParseException => Left(DecodingFailure("LocalDateTime", c.history))
-            }
+    Decoder.instance { c =>
+      c.as[String].flatMap {
+        s => try Right(LocalDateTime.parse(s, formatter)) catch {
+          case _: DateTimeParseException => Left(DecodingFailure("LocalDateTime", c.history))
         }
+      }
     }
 
   final def encodeLocalDateTime(formatter: DateTimeFormatter): Encoder[LocalDateTime] =
@@ -114,21 +106,19 @@ object IRTTimeInstances {
   implicit final val encodeLocalDateTimeDefault: Encoder[LocalDateTime] = encodeLocalDateTime(ISO_LOCAL_DATE_TIME_3NANO)
 
   final def decodeZonedDateTime(formatter: DateTimeFormatter): Decoder[ZonedDateTime] =
-    Decoder.instance {
-      c =>
-        c.as[String].flatMap {
-          s =>
-            try {
-              val parsed = ZonedDateTime.parse(s, formatter)
-              if (parsed.getZone.getId == "Z") {
-                Right(parsed.withZoneSameLocal(IzTime.TZ_UTC))
-              } else {
-                Right(parsed)
-              }
-            } catch {
-              case _: DateTimeParseException => Left(DecodingFailure("ZonedDateTime", c.history))
-            }
+    Decoder.instance { c =>
+      c.as[String].flatMap {
+        s => try {
+          val parsed = ZonedDateTime.parse(s, formatter)
+          if (parsed.getZone.getId == "Z") {
+            Right(parsed.withZoneSameLocal(IzTime.TZ_UTC))
+          } else {
+            Right(parsed)
+          }
+        } catch {
+          case _: DateTimeParseException => Left(DecodingFailure("ZonedDateTime", c.history))
         }
+      }
     }
 
   // TODO: this is a temporary solution!
@@ -139,15 +129,12 @@ object IRTTimeInstances {
   implicit final val encodeZonedDateTimeDefault: Encoder[ZonedDateTime] = encodeZonedDateTime(ISO_ZONED_DATE_TIME_3NANO)
 
   final def decodeOffsetDateTime(formatter: DateTimeFormatter): Decoder[OffsetDateTime] =
-    Decoder.instance {
-      c =>
-        c.as[String].flatMap {
-          s =>
-            try Right(OffsetDateTime.parse(s, formatter))
-            catch {
-              case _: DateTimeParseException => Left(DecodingFailure("OffsetDateTime", c.history))
-            }
+    Decoder.instance { c =>
+      c.as[String].flatMap {
+        s => try Right(OffsetDateTime.parse(s, formatter)) catch {
+          case _: DateTimeParseException => Left(DecodingFailure("OffsetDateTime", c.history))
         }
+      }
     }
 
   final def encodeOffsetDateTime(formatter: DateTimeFormatter): Encoder[OffsetDateTime] =
@@ -157,15 +144,12 @@ object IRTTimeInstances {
   implicit final val encodeOffsetDateTimeDefault: Encoder[OffsetDateTime] = encodeOffsetDateTime(ISO_OFFSET_DATE_TIME_3NANO)
 
   final def decodeLocalDate(formatter: DateTimeFormatter): Decoder[LocalDate] =
-    Decoder.instance {
-      c =>
-        c.as[String].flatMap {
-          s =>
-            try Right(LocalDate.parse(s, formatter))
-            catch {
-              case _: DateTimeParseException => Left(DecodingFailure("LocalDate", c.history))
-            }
+    Decoder.instance { c =>
+      c.as[String].flatMap {
+        s => try Right(LocalDate.parse(s, formatter)) catch {
+          case _: DateTimeParseException => Left(DecodingFailure("LocalDate", c.history))
         }
+      }
     }
 
   final def encodeLocalDate(formatter: DateTimeFormatter): Encoder[LocalDate] =
@@ -175,15 +159,12 @@ object IRTTimeInstances {
   implicit final val encodeLocalDateDefault: Encoder[LocalDate] = encodeLocalDate(ISO_LOCAL_DATE)
 
   final def decodeLocalTime(formatter: DateTimeFormatter): Decoder[LocalTime] =
-    Decoder.instance {
-      c =>
-        c.as[String].flatMap {
-          s =>
-            try Right(LocalTime.parse(s, formatter))
-            catch {
-              case _: DateTimeParseException => Left(DecodingFailure("LocalTime", c.history))
-            }
+    Decoder.instance { c =>
+      c.as[String].flatMap {
+        s => try Right(LocalTime.parse(s, formatter)) catch {
+          case _: DateTimeParseException => Left(DecodingFailure("LocalTime", c.history))
         }
+      }
     }
 
   final def encodeLocalTime(formatter: DateTimeFormatter): Encoder[LocalTime] =
@@ -193,15 +174,12 @@ object IRTTimeInstances {
   implicit final val encodeLocalTimeDefault: Encoder[LocalTime] = encodeLocalTime(ISO_LOCAL_TIME_3NANO)
 
   final def decodeOffsetTime(formatter: DateTimeFormatter): Decoder[OffsetTime] =
-    Decoder.instance {
-      c =>
-        c.as[String].flatMap {
-          s =>
-            try Right(OffsetTime.parse(s, formatter))
-            catch {
-              case _: DateTimeParseException => Left(DecodingFailure("OffsetTime", c.history))
-            }
+    Decoder.instance { c =>
+      c.as[String].flatMap {
+        s => try Right(OffsetTime.parse(s, formatter)) catch {
+          case _: DateTimeParseException => Left(DecodingFailure("OffsetTime", c.history))
         }
+      }
     }
 
   final def encodeOffsetTime(formatter: DateTimeFormatter): Encoder[OffsetTime] =
@@ -210,32 +188,27 @@ object IRTTimeInstances {
   implicit final val decodeOffsetTimeDefault: Decoder[OffsetTime] = decodeOffsetTime(DateTimeFormatter.ISO_OFFSET_TIME)
   implicit final val encodeOffsetTimeDefault: Encoder[OffsetTime] = encodeOffsetTime(ISO_OFFSET_TIME_3NANO)
 
-  implicit final val decodePeriod: Decoder[Period] = Decoder.instance {
-    c =>
-      c.as[String].flatMap {
-        s =>
-          try Right(Period.parse(s))
-          catch {
-            case _: DateTimeParseException => Left(DecodingFailure("Period", c.history))
-          }
+  implicit final val decodePeriod: Decoder[Period] = Decoder.instance { c =>
+    c.as[String].flatMap {
+      s => try Right(Period.parse(s)) catch {
+        case _: DateTimeParseException => Left(DecodingFailure("Period", c.history))
       }
+    }
   }
 
-  implicit final val encodePeriod: Encoder[Period] = Encoder.instance {
-    period =>
-      Json.fromString(period.toString)
+  implicit final val encodePeriod: Encoder[Period] = Encoder.instance { period =>
+    Json.fromString(period.toString)
   }
 
   final def decodeYearMonth(formatter: DateTimeFormatter): Decoder[YearMonth] =
-    Decoder.instance {
-      c =>
-        c.as[String].flatMap {
-          s =>
-            try Right(YearMonth.parse(s, formatter))
-            catch {
-              case _: DateTimeParseException => Left(DecodingFailure("YearMonth", c.history))
-            }
-        }
+    Decoder.instance { c =>
+      c.as[String].flatMap {
+        s =>
+          try Right(YearMonth.parse(s, formatter))
+          catch {
+            case _: DateTimeParseException => Left(DecodingFailure("YearMonth", c.history))
+          }
+      }
     }
 
   final def encodeYearMonth(formatter: DateTimeFormatter): Encoder[YearMonth] =
@@ -247,15 +220,12 @@ object IRTTimeInstances {
   implicit final val encodeYearMonthDefault: Encoder[YearMonth] = encodeYearMonth(yearMonthFormatter)
 
   implicit final val decodeDuration: Decoder[Duration] =
-    Decoder.instance {
-      c =>
-        c.as[String].flatMap {
-          s =>
-            try Right(Duration.parse(s))
-            catch {
-              case _: DateTimeParseException => Left(DecodingFailure("Duration", c.history))
-            }
+    Decoder.instance { c =>
+      c.as[String].flatMap {
+        s => try Right(Duration.parse(s)) catch {
+          case _: DateTimeParseException => Left(DecodingFailure("Duration", c.history))
         }
+      }
     }
 
   implicit final val encodeDuration: Encoder[Duration] =
