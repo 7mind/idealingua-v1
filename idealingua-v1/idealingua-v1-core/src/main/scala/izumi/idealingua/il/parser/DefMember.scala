@@ -6,7 +6,6 @@ import izumi.idealingua.model.il.ast.raw.defns.RawTopLevelDefn.TLDBaseType
 import izumi.idealingua.model.il.ast.raw.models.{Inclusion, ModelMember}
 import fastparse._
 
-
 class DefMember(context: IDLParserContext) extends Aggregates {
 
   import context._
@@ -16,31 +15,31 @@ class DefMember(context: IDLParserContext) extends Aggregates {
 
   def baseTypeMember[$: P]: P[TLDBaseType] = P(
     defStructure.enumBlock |
-      defStructure.adtBlock |
-      defStructure.aliasBlock |
-      defStructure.idBlock |
-      defStructure.mixinBlock |
-      defStructure.dtoBlock
+    defStructure.adtBlock |
+    defStructure.aliasBlock |
+    defStructure.idBlock |
+    defStructure.mixinBlock |
+    defStructure.dtoBlock
   )
     .map(TLDBaseType)
 
   def typeMember[$: P]: P[RawTopLevelDefn.TypeDefn] = P(
     defStructure.foreignBlock |
-      defStructure.cloneBlock |
-      defStructure.declaredBlock
+    defStructure.cloneBlock |
+    defStructure.declaredBlock
   )
 
   def otherMember[$: P]: P[RawTopLevelDefn] = P(
     defService.serviceBlock |
-      defBuzzer.buzzerBlock |
-      defStreams.streamsBlock |
-      defConst.constBlock
+    defBuzzer.buzzerBlock |
+    defStreams.streamsBlock |
+    defConst.constBlock
   )
 
   def topLevelDefn[$: P]: P[ModelMember] = P(
     baseTypeMember |
-      typeMember |
-      otherMember
+    typeMember |
+    otherMember
   ).map(ModelMember.MMTopLevelDefn)
 
   def anyMember[$: P]: P[ModelMember] = P(topLevelDefn | inclusion.map(ModelMember.MMInclusion))

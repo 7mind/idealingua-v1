@@ -23,7 +23,6 @@ trait Codecs {
 
   implicit def decProjectNamingRule: Decoder[ProjectNamingRule] = deriveDecoder
 
-
   //
   implicit def decScalaProjectLayout: Decoder[ScalaProjectLayout] = semiauto.deriveEnumerationDecoder
 
@@ -66,7 +65,6 @@ trait Codecs {
 
   implicit def encProjectNamingRule: Encoder[ProjectNamingRule] = deriveEncoder
 
-
   //
   implicit def encScalaProjectLayout: Encoder[ScalaProjectLayout] = semiauto.deriveEnumerationEncoder
 
@@ -106,6 +104,4 @@ trait Codecs {
   implicit def encVersionOverlay: Encoder[VersionOverlay] = deriveEncoder
 }
 
-object Codecs extends Codecs {
-
-}
+object Codecs extends Codecs {}

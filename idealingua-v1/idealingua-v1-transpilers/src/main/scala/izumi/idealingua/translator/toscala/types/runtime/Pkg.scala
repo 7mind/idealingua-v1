@@ -5,8 +5,7 @@ import izumi.idealingua.translator.toscala.types.ScalaTypeConverter
 
 import scala.reflect.{ClassTag, classTag}
 
-
-final case class Pkg private(pkgParts: Seq[String]) {
+final case class Pkg private (pkgParts: Seq[String]) {
   final val conv = new ScalaTypeConverter(DomainId(pkgParts.init, pkgParts.last))
 
   def within(name: String) = Pkg(pkgParts :+ name)
@@ -17,7 +16,7 @@ final case class Pkg private(pkgParts: Seq[String]) {
 object Pkg {
 
   def of[T: ClassTag]: Pkg = {
-    val className = classTag[T].runtimeClass.getName
+    val className     = classTag[T].runtimeClass.getName
     val classPkgParts = className.split('.').init
     Pkg(classPkgParts.toIndexedSeq)
   }
