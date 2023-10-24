@@ -46,10 +46,10 @@ object CyclicUsageRule extends VerificationRule {
             id.fields.filterNot(_.typeId.isInstanceOf[Builtin]).flatMap(f => extractFieldCycles(f.name, f.typeId)).toSet
 
           case structure: WithStructure =>
-            val removedFields = structure.struct.removedFields.toSet
-            val fields = structure.struct.fields.filterNot(_.typeId.isInstanceOf[Builtin]).flatMap(f => extractFieldCycles(f.name, f.typeId)).toSet
+            val removedFields   = structure.struct.removedFields.toSet
+            val fields          = structure.struct.fields.filterNot(_.typeId.isInstanceOf[Builtin]).flatMap(f => extractFieldCycles(f.name, f.typeId)).toSet
             val interfaceFields = structure.struct.superclasses.interfaces.flatMap(t => extractTypeCycles(ts.apply(t), removedFields)).toSet
-            val conceptsFields = structure.struct.superclasses.concepts.flatMap(t => extractTypeCycles(ts.apply(t), removedFields)).toSet
+            val conceptsFields  = structure.struct.superclasses.concepts.flatMap(t => extractTypeCycles(ts.apply(t), removedFields)).toSet
             fields ++ interfaceFields ++ conceptsFields
 
           case _: Enumeration => Set.empty
@@ -58,7 +58,7 @@ object CyclicUsageRule extends VerificationRule {
 
           case adt: Adt =>
             val membersCycles = adt.alternatives.filterNot(_.typeId.isInstanceOf[Builtin]).map(_.typeId).map(tpe => extractTypeCycles(ts.apply(tpe)))
-            val issues = membersCycles.filter(_.nonEmpty)
+            val issues        = membersCycles.filter(_.nonEmpty)
             if (membersCycles.size == issues.size) {
               issues.toSet.flatten
             } else {
@@ -69,10 +69,10 @@ object CyclicUsageRule extends VerificationRule {
 
       toVerify match {
         case structure: WithStructure => extractTypeCycles(structure)
-        case i: Identifier => extractTypeCycles(i)
-        case adt: Adt => extractTypeCycles(adt)
-        case _: Alias => Set.empty
-        case _: Enumeration => Set.empty
+        case i: Identifier            => extractTypeCycles(i)
+        case adt: Adt                 => extractTypeCycles(adt)
+        case _: Alias                 => Set.empty
+        case _: Enumeration           => Set.empty
 
       }
     }

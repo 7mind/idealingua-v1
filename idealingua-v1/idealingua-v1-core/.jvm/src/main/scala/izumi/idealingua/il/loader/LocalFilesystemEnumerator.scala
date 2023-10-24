@@ -35,7 +35,8 @@ class LocalFilesystemEnumerator(roots: Seq[Path], cp: Seq[File], expectedExtensi
   }
 
   def enumerateZip(directory: Path): Seq[(FSPath, String)] = {
-    IzZip.findInZips(Seq(directory.toFile), hasExpectedExt)
+    IzZip
+      .findInZips(Seq(directory.toFile), hasExpectedExt)
       .map {
         case (path, content) =>
           toFsPath(path) -> content
@@ -46,7 +47,8 @@ class LocalFilesystemEnumerator(roots: Seq[Path], cp: Seq[File], expectedExtensi
   def enumerateDirectory(directory: Path): Seq[(FSPath, String)] = {
     import scala.jdk.CollectionConverters._
 
-    java.nio.file.Files.walk(directory)
+    java.nio.file.Files
+      .walk(directory)
       .iterator().asScala
       .filter {
         p => Files.isRegularFile(p) && hasExpectedExt(p)
