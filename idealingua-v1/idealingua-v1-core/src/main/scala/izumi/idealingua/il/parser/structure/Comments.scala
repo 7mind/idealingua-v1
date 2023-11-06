@@ -3,8 +3,7 @@ package izumi.idealingua.il.parser.structure
 import fastparse._
 import fastparse.NoWhitespace._
 
-trait Comments
-  extends Symbols {
+trait Comments extends Symbols {
 
   def MaybeDoc[$: P]: P[Option[String]] = P(DocComment ~ NLC ~ sep.inline).?
 

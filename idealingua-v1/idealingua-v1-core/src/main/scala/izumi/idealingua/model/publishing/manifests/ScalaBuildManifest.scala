@@ -3,27 +3,26 @@ package izumi.idealingua.model.publishing.manifests
 import izumi.idealingua.model.publishing.BuildManifest.Common
 import izumi.idealingua.model.publishing.{BuildManifest, ProjectNamingRule}
 
-
 case class ScalaBuildManifest(
-                               common: Common,
-                               layout: ScalaProjectLayout,
-                               sbt: SbtOptions,
-                             ) extends BuildManifest
+  common: Common,
+  layout: ScalaProjectLayout,
+  sbt: SbtOptions,
+) extends BuildManifest
 
 case class SbtOptions(
-                       projectNaming: ProjectNamingRule,
-                       enableScalaJs: Boolean,
-                       scalaVersion: Option[String],
-                       sbtVersion: Option[String],
-                     )
+  projectNaming: ProjectNamingRule,
+  enableScalaJs: Boolean,
+  scalaVersion: Option[String],
+  sbtVersion: Option[String],
+)
 
 object SbtOptions {
   def example: SbtOptions = {
     SbtOptions(
       projectNaming = ProjectNamingRule.example,
       enableScalaJs = true,
-      scalaVersion = None,
-      sbtVersion = None,
+      scalaVersion  = None,
+      sbtVersion    = None,
     )
   }
 }
@@ -34,11 +33,10 @@ object ScalaBuildManifest {
     ScalaBuildManifest(
       common = common.copy(version = common.version.copy(snapshotQualifier = "SNAPSHOT")),
       layout = ScalaProjectLayout.SBT,
-      sbt = SbtOptions.example,
+      sbt    = SbtOptions.example,
     )
   }
 }
-
 
 sealed trait ScalaProjectLayout
 

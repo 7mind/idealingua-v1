@@ -32,7 +32,7 @@ class CompositeRenderer(ctx: STContext) {
     }
 
     val (mirrorInterface: List[Defn.Trait], moreBases: Interfaces) = if (withMirror) {
-      val eid = typespace.tools.defnId(struct.fields.id)
+      val eid           = typespace.tools.defnId(struct.fields.id)
       val implStructure = ctx.tools.mkStructure(eid)
       (List(ctx.interfaceRenderer.mkTrait(List.empty, conv.toScala(eid), implStructure.fields)), List(eid))
     } else {
@@ -52,7 +52,6 @@ class CompositeRenderer(ctx: STContext) {
     val toolBases = List(rt.Conversions.parameterize(List(struct.t.typeFull)).init())
 
     val qqTools = q""" implicit class ${tools.typeName}(override protected val _value: ${struct.t.typeFull}) extends ..$toolBases { }"""
-
 
     val qqCompositeCompanion =
       q"""object ${struct.t.termName} {

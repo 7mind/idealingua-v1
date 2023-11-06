@@ -19,7 +19,6 @@ object AnyvalExtension extends ScalaTranslatorExtension {
 
   import izumi.idealingua.translator.toscala.tools.ScalaMetaTools._
 
-
   override def handleTrait(ctx: STContext, interface: ScalaStruct, product: CogenProduct.TraitProduct): CogenProduct.TraitProduct = {
     product.copy(defn = product.defn.prependBase(withAny(ctx, interface.fields)))
   }
@@ -77,7 +76,6 @@ object AnyvalExtension extends ScalaTranslatorExtension {
       case _: AdtId =>
         false
 
-
       case a: AliasId =>
         ctx.typespace(a) match {
           case alias: TypeDef.Alias =>
@@ -91,12 +89,12 @@ object AnyvalExtension extends ScalaTranslatorExtension {
         val struct = ctx.typespace.structure.structure(t)
         struct.isComposite
 
-        // this predicate doesn't work well across domains
-        /*
+      // this predicate doesn't work well across domains
+      /*
         || (struct.isScalar && !struct.all
           .filterNot(v => seen.contains(v.field.typeId))
           .exists(v => canBeAnyValField(ctx, v.field.typeId, seen + v.field.typeId)))
-          */
+       */
 
       case t: IdentifierId =>
         val struct = ctx.typespace.structure.structure(t)

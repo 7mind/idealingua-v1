@@ -5,20 +5,19 @@ import izumi.idealingua.model.common.TypeId
 import izumi.idealingua.model.il.ast.typed.DefMethod.RPCMethod
 import izumi.idealingua.model.il.ast.typed.{AdtMember, DefMethod, SimpleStructure}
 
-class MethodRenderer(context: IDLRenderingContext)(
-  implicit evSimpleStructure: Renderable[SimpleStructure],
-
+class MethodRenderer(
+  context: IDLRenderingContext
+)(implicit
+  evSimpleStructure: Renderable[SimpleStructure],
   evTypeId: Renderable[TypeId],
-
   evAdtMember: Renderable[AdtMember],
 ) {
-
 
   def renderMethod(kw: String, tpe: DefMethod): String = {
     tpe match {
       case m: RPCMethod =>
         val resultRepr = render(m.signature.output).fold("")(s => s": $s")
-        val out = s"$kw ${m.name}(${m.signature.input.render()})$resultRepr"
+        val out        = s"$kw ${m.name}(${m.signature.input.render()})$resultRepr"
         context.meta.withMeta(m.meta, out)
     }
   }

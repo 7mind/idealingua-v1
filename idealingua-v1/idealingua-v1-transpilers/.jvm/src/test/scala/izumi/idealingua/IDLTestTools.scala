@@ -44,7 +44,6 @@ final case class CompilerOutput(targetDir: Path, allFiles: Seq[Path]) {
   def relativeOutputs: Seq[String] = allFiles.map(p => absoluteTargetDir.relativize(p.toAbsolutePath).toString)
 }
 
-
 @ExposedTestScope
 object IDLTestTools {
   def hasDocker: Boolean = IzFiles.haveExecutables("docker")
@@ -59,7 +58,7 @@ object IDLTestTools {
   def scalaSysEnv = Map("JAVA_OPTS" -> "")
 
   def makeLoader(base: String): LocalModelLoaderContext = {
-    val src = new File(getClass.getResource(base).toURI).toPath
+    val src     = new File(getClass.getResource(base).toURI).toPath
     val context = new LocalModelLoaderContext(Seq(src), Seq.empty)
     context
   }
@@ -71,23 +70,28 @@ object IDLTestTools {
     new ModelResolver(rules)
   }
 
-
   def loadDefs(context: LocalModelLoaderContext, resolver: ModelResolver): Seq[LoadedDomain.Success] = {
-    val loaded = context.loader.load()
+    val loaded   = context.loader.load()
     val resolved = resolver.resolve(loaded).ifWarnings(w => System.err.println(w)).throwIfFailed()
 
     val loadable = context.enumerator.enumerate().filter(_._1.name.endsWith(context.domainExt)).keySet
-    val good = resolved.successful.map(_.path).toSet
-    val failed = loadable.diff(good)
+    val good     = resolved.successful.map(_.path).toSet
+    val failed   = loadable.diff(good)
     assert(failed.isEmpty, s"domains were not loaded: $failed")
 
     resolved.successful
   }
 
-  def compilesScala(id: String, domains: Seq[LoadedDomain.Success], layout: ScalaProjectLayout, useDockerForLocalTest: Boolean, extensions: Seq[ScalaTranslatorExtension] = ScalaTranslator.defaultExtensions): Boolean = {
-    val mf = ScalaBuildManifest.example
-    val manifest = mf.copy(layout = ScalaProjectLayout.SBT, sbt = mf.sbt.copy(projectNaming = mf.sbt.projectNaming.copy(dropFQNSegments = Some(1))))
-    val out = compiles(id, domains, CompilerOptions(IDLLanguage.Scala, extensions, manifest))
+  def compilesScala(
+    id: String,
+    domains: Seq[LoadedDomain.Success],
+    layout: ScalaProjectLayout,
+    useDockerForLocalTest: Boolean,
+    extensions: Seq[ScalaTranslatorExtension] = ScalaTranslator.defaultExtensions,
+  ): Boolean = {
+    val mf                = ScalaBuildManifest.example
+    val manifest          = mf.copy(layout = ScalaProjectLayout.SBT, sbt = mf.sbt.copy(projectNaming = mf.sbt.projectNaming.copy(dropFQNSegments = Some(1))))
+    val out               = compiles(id, domains, CompilerOptions(IDLLanguage.Scala, extensions, manifest))
     val classpath: String = IzJvm.safeClasspath()
 
     val cmd = layout match {
@@ -110,14 +114,14 @@ object IDLTestTools {
   private def virtualiseFs(v: Iterable[String], prefix: String): Iterable[(Seq[String], String)] = {
     v.map {
       cpe =>
-        val p = Paths.get(cpe)
+        val p      = Paths.get(cpe)
         val target = s"/$prefix/${p.getParent.toString.hashCode().toLong + Int.MaxValue}/${p.getFileName.toString}"
         (Seq("-v", s"'$cpe:$target:ro'"), target)
     }
   }
 
   private def dockerRun(out: CompilerOutput, classpath: String, scala213: Boolean): Seq[String] = {
-    val v = classpath.split(':')
+    val v  = classpath.split(':')
     val cp = virtualiseFs(v, "cp")
 
     val cpe = cp.flatMap(_._1)
@@ -138,26 +142,24 @@ object IDLTestTools {
     val dcp = Seq(
       "docker",
       "run",
-      "--rm"
+      "--rm",
     ) ++ cpe ++
       Seq(
-        "-v", s"'${out.absoluteTargetDir}:/work:Z'",
+        "-v",
+        s"'${out.absoluteTargetDir}:/work:Z'",
         "septimalmind/izumi-env:latest",
-
         "scalac",
         "-J-Xmx2g",
         "-language:higherKinds",
-
-
         "-unchecked",
         "-feature",
         "-deprecation",
-
         "-Xlint:_",
       ) ++
       flags ++
       Seq(
-        "-classpath", scp,
+        "-classpath",
+        scp,
       ) ++ out.relativeOutputs.filter(_.endsWith(".scala")).map(t => s"'$t'")
 
     dcp
@@ -165,17 +167,24 @@ object IDLTestTools {
 
   private def directRun(out: CompilerOutput, classpath: String) = {
     Seq(
-      "scalac"
-      , "-deprecation"
-      , "-opt-warnings:_"
-      , "-d", out.phase2Relative.toString
-      , "-classpath", classpath
+      "scalac",
+      "-deprecation",
+      "-opt-warnings:_",
+      "-d",
+      out.phase2Relative.toString,
+      "-classpath",
+      classpath,
     ) ++ out.relativeOutputs.filter(_.endsWith(".scala"))
   }
 
-  def compilesTypeScript(id: String, domains: Seq[LoadedDomain.Success], layout: TypeScriptProjectLayout, extensions: Seq[TypeScriptTranslatorExtension] = TypeScriptTranslator.defaultExtensions): Boolean = {
+  def compilesTypeScript(
+    id: String,
+    domains: Seq[LoadedDomain.Success],
+    layout: TypeScriptProjectLayout,
+    extensions: Seq[TypeScriptTranslatorExtension] = TypeScriptTranslator.defaultExtensions,
+  ): Boolean = {
     val manifest = TypeScriptBuildManifest.example.copy(layout = layout)
-    val out = compiles(id, domains, CompilerOptions(IDLLanguage.Typescript, extensions, manifest))
+    val out      = compiles(id, domains, CompilerOptions(IDLLanguage.Typescript, extensions, manifest))
 
     val outputTsconfigPath = out.targetDir.resolve("tsconfig.json")
     val tsconfigBytes = new String(Files.readAllBytes(outputTsconfigPath), StandardCharsets.UTF_8)
@@ -198,19 +207,24 @@ object IDLTestTools {
     exitCode == 0
   }
 
-  def compilesCSharp(id: String, domains: Seq[LoadedDomain.Success], layout: CSharpProjectLayout, extensions: Seq[CSharpTranslatorExtension] = CSharpTranslator.defaultExtensions): Boolean = {
-    val mf = CSharpBuildManifest.example
+  def compilesCSharp(
+    id: String,
+    domains: Seq[LoadedDomain.Success],
+    layout: CSharpProjectLayout,
+    extensions: Seq[CSharpTranslatorExtension] = CSharpTranslator.defaultExtensions,
+  ): Boolean = {
+    val mf       = CSharpBuildManifest.example
     val manifest = mf.copy(layout = layout)
 
     val lang = IDLLanguage.CSharp
-    val out = compiles(id, domains, CompilerOptions(lang, extensions, manifest))
+    val out  = compiles(id, domains, CompilerOptions(lang, extensions, manifest))
 
     layout match {
       case CSharpProjectLayout.NUGET =>
-        val conv = new CSharpNamingConvention(manifest.nuget.projectNaming)
-        val cmdNuget = Seq("nuget", "pack", s"nuspec/${conv.nuspecName(conv.pkgId)}")
-        val exitCodeBuild = run(out.targetDir, cmdNuget, Map.empty, "cs-nuget")
-        val cmdMsbuild = Seq("msbuild", "/t:Restore", "/t:Rebuild")
+        val conv            = new CSharpNamingConvention(manifest.nuget.projectNaming)
+        val cmdNuget        = Seq("nuget", "pack", s"nuspec/${conv.nuspecName(conv.pkgId)}")
+        val exitCodeBuild   = run(out.targetDir, cmdNuget, Map.empty, "cs-nuget")
+        val cmdMsbuild      = Seq("msbuild", "/t:Restore", "/t:Rebuild")
         val exitCodeMsBuild = run(out.targetDir, cmdMsbuild, Map.empty, "cs-msbuild")
         exitCodeBuild == 0 && exitCodeMsBuild == 0
 
@@ -220,17 +234,17 @@ object IDLTestTools {
         IzFiles.recreateDirs(refsDir)
 
         val refsSrc = s"refs/${lang.toString.toLowerCase()}"
-        val refDlls = IzResourcesDirty.copyFromClasspath(refsSrc, refsDir).files
+        val refDlls = IzResourcesDirty
+          .copyFromClasspath(refsSrc, refsDir).files
           .filter(f => f.toFile.isFile && f.toString.endsWith(".dll")).map(f => out.absoluteTargetDir.relativize(f.toAbsolutePath))
         IzResourcesDirty.copyFromClasspath(refsSrc, out.phase2)
 
-
-        val outname = "test-output.dll"
-        val refs = s"/reference:${refDlls.mkString(",")}"
-        val cmdBuild = Seq("csc", "-target:library", s"-out:${out.phase2Relative}/$outname", "-recurse:\\*.cs", refs)
+        val outname       = "test-output.dll"
+        val refs          = s"/reference:${refDlls.mkString(",")}"
+        val cmdBuild      = Seq("csc", "-target:library", s"-out:${out.phase2Relative}/$outname", "-recurse:\\*.cs", refs)
         val exitCodeBuild = run(out.absoluteTargetDir, cmdBuild, Map.empty, "cs-build")
 
-        val cmdTest = Seq("nunit-console", outname)
+        val cmdTest      = Seq("nunit-console", outname)
         val exitCodeTest = run(out.phase2, cmdTest, Map.empty, "cs-test")
 
         exitCodeBuild == 0 && exitCodeTest == 0
@@ -238,11 +252,16 @@ object IDLTestTools {
     }
   }
 
-  def compilesGolang(id: String, domains: Seq[LoadedDomain.Success], layout: GoProjectLayout, extensions: Seq[GoLangTranslatorExtension] = GoLangTranslator.defaultExtensions): Boolean = {
-    val mf = GoLangBuildManifest.example
+  def compilesGolang(
+    id: String,
+    domains: Seq[LoadedDomain.Success],
+    layout: GoProjectLayout,
+    extensions: Seq[GoLangTranslatorExtension] = GoLangTranslator.defaultExtensions,
+  ): Boolean = {
+    val mf       = GoLangBuildManifest.example
     val manifest = mf.copy(layout = layout)
-    val out = compiles(id, domains, CompilerOptions(IDLLanguage.Go, extensions, manifest))
-    val outDir = out.absoluteTargetDir
+    val out      = compiles(id, domains, CompilerOptions(IDLLanguage.Go, extensions, manifest))
+    val outDir   = out.absoluteTargetDir
 
     val tmp = outDir.getParent.resolve("phase1-compiler-tmp")
     tmp.toFile.mkdirs()
@@ -250,30 +269,36 @@ object IDLTestTools {
     Files.move(tmp, outDir)
 
     val env = Map(
-      "GOPATH" -> out.absoluteTargetDir.toString,
-      "GO111MODULE" -> "off"
+      "GOPATH"      -> out.absoluteTargetDir.toString,
+      "GO111MODULE" -> "off",
     )
     val goSrc = out.absoluteTargetDir.resolve("src")
     if (manifest.repository.dependencies.nonEmpty) {
-      manifest.repository.dependencies.foreach(md => {
-        run(goSrc, Seq("go", "get", md.module), env, "go-dep-install")
-      })
+      manifest.repository.dependencies.foreach(
+        md => {
+          run(goSrc, Seq("go", "get", md.module), env, "go-dep-install")
+        }
+      )
     }
 
     val cmdBuild = Seq("go", "install", "-pkgdir", out.phase2.toString, "./...")
-    val cmdTest = Seq("go", "test", "./...")
-
+    val cmdTest  = Seq("go", "test", "./...")
 
     val exitCodeBuild = run(goSrc, cmdBuild, env, "go-build")
-    val exitCodeTest = run(goSrc, cmdTest, env, "go-test")
+    val exitCodeTest  = run(goSrc, cmdTest, env, "go-test")
 
     exitCodeBuild == 0 && exitCodeTest == 0
   }
 
-  def compilesProtobuf(id: String, domains: Seq[LoadedDomain.Success], options: Map[String, String], extensions: Seq[ProtobufTranslatorExtension] = ProtobufTranslator.defaultExtensions): Boolean = {
+  def compilesProtobuf(
+    id: String,
+    domains: Seq[LoadedDomain.Success],
+    options: Map[String, String],
+    extensions: Seq[ProtobufTranslatorExtension] = ProtobufTranslator.defaultExtensions,
+  ): Boolean = {
     val manifest = ProtobufBuildManifest.example.copy(options = options)
-    val out = compiles(id, domains, CompilerOptions(IDLLanguage.Protobuf, extensions, manifest))
-    val outDir = out.absoluteTargetDir
+    val out      = compiles(id, domains, CompilerOptions(IDLLanguage.Protobuf, extensions, manifest))
+    val outDir   = out.absoluteTargetDir
 
     val tmp = outDir.getParent.resolve("phase1-compiler-tmp")
     tmp.toFile.mkdirs()
@@ -281,10 +306,10 @@ object IDLTestTools {
     Files.move(tmp, outDir)
 
     val protoSrc = out.absoluteTargetDir.resolve("src")
-    val jOut = out.absoluteTargetDir.resolve("java_output")
+    val jOut     = out.absoluteTargetDir.resolve("java_output")
     jOut.toFile.mkdirs()
 
-    val cmdBuild = Seq("protoc", s"--java_out=$jOut", "$(find ./ -iname \"*.proto\")")
+    val cmdBuild      = Seq("protoc", s"--java_out=$jOut", "$(find ./ -iname \"*.proto\")")
     val exitCodeBuild = run(protoSrc, cmdBuild, Map.empty, "proto-build")
 
     exitCodeBuild == 0
@@ -292,19 +317,19 @@ object IDLTestTools {
 
   private def compiles[E <: TranslatorExtension, M <: BuildManifest](id: String, domains: Seq[LoadedDomain.Success], options: CompilerOptions[E, M]): CompilerOutput = {
     val targetDir = Paths.get("target")
-    val tmpdir = targetDir.resolve("idl-output")
+    val tmpdir    = targetDir.resolve("idl-output")
 
     Quirks.discard(tmpdir.toFile.mkdirs())
 
     // TODO: clashes still may happen in case of parallel runs with the same ID
     val stablePrefix = s"$id-${options.language.toString}"
-    val vmPrefix = s"$stablePrefix-u${ManagementFactory.getRuntimeMXBean.getStartTime}"
-    val dirPrefix = s"$vmPrefix-ts${System.currentTimeMillis()}"
+    val vmPrefix     = s"$stablePrefix-u${ManagementFactory.getRuntimeMXBean.getStartTime}"
+    val dirPrefix    = s"$vmPrefix-ts${System.currentTimeMillis()}"
 
     dropOldRunsData(tmpdir, stablePrefix, vmPrefix)
 
-    val runDir = tmpdir.resolve(dirPrefix)
-    val domainsDir = runDir.resolve("phase0-rerender")
+    val runDir      = tmpdir.resolve(dirPrefix)
+    val domainsDir  = runDir.resolve("phase0-rerender")
     val compilerDir = runDir.resolve("phase1-compiler-input")
 
     IzFiles.recreateDirs(runDir, domainsDir, compilerDir)
@@ -322,7 +347,6 @@ object IDLTestTools {
     out
   }
 
-
   private def rerenderDomains(domainsDir: Path, domains: Seq[LoadedDomain.Success]): Unit = {
     domains.foreach {
       d =>
@@ -331,10 +355,8 @@ object IDLTestTools {
     }
   }
 
-
   private def dropOldRunsData(tmpdir: Path, stablePrefix: String, vmPrefix: String): Unit = {
-    tmpdir
-      .toFile
+    tmpdir.toFile
       .listFiles()
       .toList
       .filter(f => f.isDirectory && f.getName.startsWith(stablePrefix) && !f.getName.startsWith(vmPrefix))
@@ -378,10 +400,9 @@ object IDLTestTools {
       System.err.flush()
       System.err.println(s"Process failed for $cname: exitCode=$exitCode in $duration ${duration.readable}")
       System.err.flush()
-      System.err.println(
-        s"""
-           |Failure log (${log.getAbsolutePath}):
-           |${IzFiles.readString(log)}""".stripMargin)
+      System.err.println(s"""
+                            |Failure log (${log.getAbsolutePath}):
+                            |${IzFiles.readString(log)}""".stripMargin)
       System.err.flush()
     }
     exitCode

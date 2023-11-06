@@ -14,23 +14,22 @@ class InterfaceRenderer(ctx: STContext) {
 
   def renderInterface(i: Interface): RenderableCogenProduct = {
     val fields = typespace.structure.structure(i).toScala
-    val t = conv.toScala(i.id)
+    val t      = conv.toScala(i.id)
 
     val qqInterface = mkTrait(i.struct.superclasses.interfaces, t, fields)
 
-    val eid = typespace.tools.implId(i.id)
+    val eid           = typespace.tools.implId(i.id)
     val implStructure = ctx.tools.mkStructure(eid)
-    val impl = compositeRenderer.defns(implStructure, ClassSource.CsInterface(i)).render
+    val impl          = compositeRenderer.defns(implStructure, ClassSource.CsInterface(i)).render
     val qqInterfaceCompanion =
       q"""object ${t.termName} {
              def apply(..${implStructure.decls}) = ${conv.toScala(eid).termName}(..${implStructure.names})
              ..$impl
          }"""
 
-
     val toolBases = List(rt.Conversions.parameterize(List(t.typeFull)).init())
 
-    val tools = t.within(s"${i.id.name}Extensions")
+    val tools   = t.within(s"${i.id.name}Extensions")
     val qqTools = q"""implicit class ${tools.typeName}(override protected val _value: ${t.typeFull}) extends ..$toolBases { }"""
 
     ext.extend(i, CogenProduct(qqInterface, qqInterfaceCompanion, qqTools, List.empty), _.handleInterface)
@@ -43,7 +42,6 @@ class InterfaceRenderer(ctx: STContext) {
     }
 
     val ifDecls = (rt.generated +: supers.map(conv.toScala)).map(_.init())
-
 
     val qqInterface =
       q"""trait ${t.typeName} extends ..$ifDecls {

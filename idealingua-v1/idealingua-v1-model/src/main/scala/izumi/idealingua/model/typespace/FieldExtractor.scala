@@ -14,13 +14,13 @@ private class FieldExtractor(resolver: TypeResolver, user: TypeId) {
     val nextDepth = depth + 1
     val fields = defn match {
       case t: Interface =>
-        val struct = t.struct
+        val struct      = t.struct
         val superFields = compositeFields(nextDepth, struct.superclasses.interfaces)
-        //.map(_.copy(definedBy = t.id)) // for interfaces super field is ok to consider as defined by this interface
+        // .map(_.copy(definedBy = t.id)) // for interfaces super field is ok to consider as defined by this interface
         filterFields(nextDepth, t.id, superFields, struct)
 
       case t: DTO =>
-        val struct = t.struct
+        val struct      = t.struct
         val superFields = compositeFields(nextDepth, struct.superclasses.interfaces)
         filterFields(nextDepth, t.id, superFields, struct)
 
@@ -60,11 +60,11 @@ private class FieldExtractor(resolver: TypeResolver, user: TypeId) {
 
   private def filterFields(nextDepth: Int, id: StructureId, superFields: List[ExtendedField], struct: Structure): List[ExtendedField] = {
     val embeddedFields = struct.superclasses.concepts.map(resolver.apply).flatMap(extractFields(_, nextDepth))
-    val thisFields = toExtendedFields(nextDepth, struct.fields, id)
+    val thisFields     = toExtendedFields(nextDepth, struct.fields, id)
 
     val removable = embeddedFields ++ thisFields
 
-    val defn = resolver.apply(id)
+    val defn          = resolver.apply(id)
     val removedFields = extractRemoved(defn).toSet
 
     val badRemovals = superFields.map(_.field).toSet.intersect(removedFields)

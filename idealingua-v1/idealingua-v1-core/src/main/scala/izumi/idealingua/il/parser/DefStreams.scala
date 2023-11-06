@@ -26,9 +26,8 @@ class DefStreams(context: IDLParserContext) {
   // other method kinds should be added here
   def streams[$: P]: P[Seq[RawStream]] = P(stream.rep(sep = any))
 
-  def streamsBlock[$: P]: P[RawTopLevelDefn.TLDStreams] = P(metaAgg.cblock(kw.streams, streams))
-    .map {
-      case (c, i, v) => RawStreams(i.toStreamsId, v.toList, c)
-    }
+  def streamsBlock[$: P]: P[RawTopLevelDefn.TLDStreams] = P(metaAgg.cblock(kw.streams, streams)).map {
+    case (c, i, v) => RawStreams(i.toStreamsId, v.toList, c)
+  }
     .map(RawTopLevelDefn.TLDStreams)
 }

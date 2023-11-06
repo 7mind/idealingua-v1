@@ -15,8 +15,8 @@ class ModuleTools() {
         Seq.empty
 
       case _ =>
-        val code = product.render.mkString("\n")
-        val header = product.renderHeader.mkString("\n")
+        val code            = product.render.mkString("\n")
+        val header          = product.renderHeader.mkString("\n")
         val content: String = withPackage(id.toPackage, header, code)
 
         val tests = product.renderTests
@@ -25,7 +25,7 @@ class ModuleTools() {
         } else {
           Seq(
             Module(moduleId, content),
-            Module(testModuleId, withPackage(id.toPackage, "", tests.mkString("\n")))
+            Module(testModuleId, withPackage(id.toPackage, "", tests.mkString("\n"))),
           )
         }
     }
@@ -37,8 +37,8 @@ class ModuleTools() {
     } else {
       s"""// Auto-generated, any modifications may be overwritten in the future.
          |package ${pkg.last}
-         |${ if (header.length > 0) s"\n$header\n" else ""}
-         |${code}
+         |${if (header.length > 0) s"\n$header\n" else ""}
+         |$code
        """.stripMargin
     }
     content.densify()
@@ -59,7 +59,7 @@ class ModuleTools() {
       case other =>
         toModuleId(other.id)
     }
-    */
+     */
   }
 
   def toTestModuleId(id: TypeId): ModuleId = {

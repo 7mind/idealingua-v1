@@ -6,20 +6,19 @@ import izumi.idealingua.translator.toscala.products.CogenProduct.InterfaceProduc
 
 import scala.meta._
 
-
 object CastDownExpandExtension extends ScalaTranslatorExtension {
 
   override def handleInterface(ctx: STContext, interface: Interface, product: InterfaceProduct): InterfaceProduct = {
     val constructors = ctx.typespace.structure.conversions(interface.id).map {
       t =>
 
-        val constructorCode = ctx.tools.makeConstructor(t)
+        val constructorCode      = ctx.tools.makeConstructor(t)
         val constructorSignature = ctx.tools.makeParams(t)
 
         val impl = t.typeToConstruct
 
-        val thisType = ctx.conv.toScala(interface.id)
-        val targetType = ctx.conv.toScala(impl)
+        val thisType       = ctx.conv.toScala(interface.id)
+        val targetType     = ctx.conv.toScala(impl)
         val targetImplType = ctx.conv.toScala(impl)
 
         val name = Term.Name(s"${thisType.termName.value}_downcast_extend_${impl.uniqueDomainName}")
@@ -45,6 +44,5 @@ object CastDownExpandExtension extends ScalaTranslatorExtension {
 
     product.copy(companionBase = product.companionBase.appendDefinitions(constructors))
   }
-
 
 }

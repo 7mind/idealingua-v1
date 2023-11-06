@@ -17,8 +17,7 @@ class ServiceRenderer(ctx: STContext) {
   def renderService(svc: Service): RenderableCogenProduct = {
     val c = ServiceContext(ctx, svc)
 
-    val decls = svc.methods
-      .collect { case c: RPCMethod => c }
+    val decls = svc.methods.collect { case c: RPCMethod => c }
       .map(ServiceMethodProduct(ctx, c, _))
 
     val qqServer =
@@ -93,20 +92,20 @@ class ServiceRenderer(ctx: STContext) {
        """
 
     val out = CogenServiceProduct(
-      qqServer
-      , qqClient
-      , CogenServiceProduct.Pair(qqServerWrapped, qqServerWrappedCompanion)
-      , CogenServiceProduct.Pair(qqClientWrapped, qqClientWrappedCompanion)
-      , qqServiceMethods
-      , qqServiceCodecs
-      , List(
+      qqServer,
+      qqClient,
+      CogenServiceProduct.Pair(qqServerWrapped, qqServerWrappedCompanion),
+      CogenServiceProduct.Pair(qqClientWrapped, qqClientWrappedCompanion),
+      qqServiceMethods,
+      qqServiceCodecs,
+      List(
         runtime.Import.from(runtime.Pkg.language, "higherKinds"),
         runtime.Import.from(runtime.Pkg.of[IO2[Nothing]], "IO2", Some("IRTIO2")),
         runtime.Import[Json](Some("IRTJson")),
         runtime.Import[DecodingFailure](Some("IRTDecodingFailure")),
         runtime.Pkg.of[_root_.io.circe.syntax.EncoderOps[Nothing]].`import`,
         rt.services.`import`,
-      )
+      ),
     )
 
     ext.extend(FullServiceContext(c, decls), out, _.handleService)

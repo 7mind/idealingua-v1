@@ -16,24 +16,22 @@ class AdtRenderer(ctx: STContext) {
     val members = i.alternatives.map {
       m =>
         val memberName = m.typename
-        val mt = t.within(memberName)
-        val original = conv.toScala(m.typeId)
+        val mt         = t.within(memberName)
+        val original   = conv.toScala(m.typeId)
 
-        val qqElement = q"""final case class ${mt.typeName}(value: ${original.typeAbsolute}) extends ..${List(t.init())}"""
+        val qqElement   = q"""final case class ${mt.typeName}(value: ${original.typeAbsolute}) extends ..${List(t.init())}"""
         val qqCompanion = q""" object ${mt.termName} {} """
 
-
         val converters = List(
-          q"""implicit def ${Term.Name("into" + memberName)}(value: ${original.typeAbsolute}): ${t.typeFull} = ${mt.termFull}(value) """
-          ,
-          q"""implicit def ${Term.Name("from" + memberName)}(value: ${mt.typeFull}): ${original.typeAbsolute} = value.value"""
+          q"""implicit def ${Term.Name("into" + memberName)}(value: ${original.typeAbsolute}): ${t.typeFull} = ${mt.termFull}(value) """,
+          q"""implicit def ${Term.Name("from" + memberName)}(value: ${mt.typeFull}): ${original.typeAbsolute} = value.value""",
         )
 
         AdtElementProduct(memberName, qqElement, qqCompanion, converters)
     }
 
     val superClasses = List(rt.adtEl.init()) ++ bases ++ List(conv.toScala[Product].init())
-    val qqAdt = q""" sealed trait ${t.typeName} extends ..$superClasses {} """
+    val qqAdt        = q""" sealed trait ${t.typeName} extends ..$superClasses {} """
     val qqAdtCompanion =
       q"""object ${t.termName} extends ${rt.adt.init()} {
             import _root_.scala.language.implicitConversions

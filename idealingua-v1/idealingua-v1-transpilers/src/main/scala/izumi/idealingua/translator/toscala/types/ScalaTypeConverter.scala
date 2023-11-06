@@ -12,13 +12,12 @@ import izumi.idealingua.model.typespace.structures.{PlainStruct, Struct}
 import scala.meta._
 import scala.reflect.{ClassTag, classTag}
 
-
 class ScalaTypeConverter(domain: DomainId) {
   protected def toScalaField(field: ExtendedField): ScalaField = {
     ScalaField(
-      Term.Name(field.field.name)
-      , ScalaTypeConverter.this.toScala(field.field.typeId).typeFull
-      , field
+      Term.Name(field.field.name),
+      ScalaTypeConverter.this.toScala(field.field.typeId).typeFull,
+      field,
     )
   }
 
@@ -32,11 +31,10 @@ class ScalaTypeConverter(domain: DomainId) {
     def toScala: ScalaStruct = {
       val good = fields.unambigious.map(toScalaField)
       val soft = fields.ambigious.map(toScalaField)
-      val all = fields.all.map(toScalaField)
+      val all  = fields.all.map(toScalaField)
       new ScalaStruct(fields, good, soft, all)
     }
   }
-
 
   implicit class ScalaTypeOps(st: ScalaType) {
     def sibling(name: TypeName): ScalaType = {
@@ -63,13 +61,12 @@ class ScalaTypeConverter(domain: DomainId) {
     }
   }
 
-
   def toScala[T: ClassTag]: ScalaType = {
     toScala(classTag[T].runtimeClass)
   }
 
   def toScala(clazz: Class[?]): ScalaType = {
-    val parts = clazz.getName.split('.')
+    val parts    = clazz.getName.split('.')
     val javaType = JavaType(parts.init.toIndexedSeq, parts.last)
     toScala(javaType)
   }
@@ -87,22 +84,21 @@ class ScalaTypeConverter(domain: DomainId) {
   }
 
   private def toScala(javaType: JavaType, args: List[TypeId]): ScalaType = {
-    val withRoot = javaType.withRoot
+    val withRoot  = javaType.withRoot
     val minimized = javaType.minimize(domain)
     ScalaTypeImpl(
-      toSelectTerm(withRoot)
-      , toSelect(withRoot)
-      , toSelectTerm(minimized)
-      , toSelect(minimized)
-      , Term.Name(javaType.name)
-      , Type.Name(javaType.name)
-      , javaType
-      , domain
-      , args.map(toScala(_).typeFull)
-      , args.map(toScala(_).termFull)
+      toSelectTerm(withRoot),
+      toSelect(withRoot),
+      toSelectTerm(minimized),
+      toSelect(minimized),
+      Term.Name(javaType.name),
+      Type.Name(javaType.name),
+      javaType,
+      domain,
+      args.map(toScala(_).typeFull),
+      args.map(toScala(_).termFull),
     )
   }
-
 
   private def toPrimitive(id: Primitive): JavaType = id match {
     case Primitive.TBool =>

@@ -21,7 +21,7 @@ object ScalaTranslatorDescriptor extends TranslatorDescriptor[ScalaTranslatorOpt
   override def make(typespace: Typespace, options: UntypedCompilerOptions): Translator = new ScalaTranslator(typespace, typedOptions(options))
 
   override def rules: Seq[VerificationRule] = Seq(
-    ReservedKeywordRule.warning("scala", keywords),
+    ReservedKeywordRule.warning("scala", keywords)
   )
 
   override def makeHook(options: UntypedCompilerOptions): TranslationLayouter = new ScalaLayouter(typedOptions(options))

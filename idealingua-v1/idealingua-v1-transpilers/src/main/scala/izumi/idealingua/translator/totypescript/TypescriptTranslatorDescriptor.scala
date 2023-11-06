@@ -21,7 +21,7 @@ object TypescriptTranslatorDescriptor extends TranslatorDescriptor[TypescriptTra
   override def make(typespace: Typespace, options: UntypedCompilerOptions): Translator = new TypeScriptTranslator(typespace, typedOptions(options))
 
   override def rules: Seq[VerificationRule] = Seq(
-    ReservedKeywordRule.warning("typescript", keywords),
+    ReservedKeywordRule.warning("typescript", keywords)
   )
 
   override def makeHook(options: UntypedCompilerOptions): TranslationLayouter = new TypescriptLayouter(typedOptions(options))

@@ -34,7 +34,7 @@ object ProtobufLayouter {
         |  required int32 nanos = 2;
         |  optional string timezone = 3;
         |}
-        |""".stripMargin
+        |""".stripMargin,
     )
   )
 }

@@ -14,11 +14,11 @@ object TypeScriptProjectLayout {
 }
 
 case class YarnOptions(
-                        projectNaming: ProjectNamingRule,
-                        scope: String,
-                        dependencies: List[ManifestDependency],
-                        devDependencies: List[ManifestDependency],
-                      )
+  projectNaming: ProjectNamingRule,
+  scope: String,
+  dependencies: List[ManifestDependency],
+  devDependencies: List[ManifestDependency],
+)
 
 object YarnOptions {
   def example: YarnOptions = YarnOptions(
@@ -30,7 +30,7 @@ object YarnOptions {
       ManifestDependency("@types/websocket", "^1.0.1"),
     ),
     devDependencies = List(
-      ManifestDependency("typescript", "^4.5.5"),
+      ManifestDependency("typescript", "^4.5.5")
     ),
     scope = "@TestScope",
   )
@@ -39,10 +39,10 @@ object YarnOptions {
 // https://docs.npmjs.com/files/package.json
 // https://github.com/npm/node-semver#prerelease-tags
 case class TypeScriptBuildManifest(
-                                    common: Common,
-                                    layout: TypeScriptProjectLayout,
-                                    yarn: YarnOptions
-                                  ) extends BuildManifest
+  common: Common,
+  layout: TypeScriptProjectLayout,
+  yarn: YarnOptions,
+) extends BuildManifest
 
 object TypeScriptBuildManifest {
   def example: TypeScriptBuildManifest = {
@@ -50,7 +50,7 @@ object TypeScriptBuildManifest {
     TypeScriptBuildManifest(
       common = common.copy(version = common.version.copy(snapshotQualifier = "build.0")),
       layout = TypeScriptProjectLayout.YARN,
-      yarn = YarnOptions.example,
+      yarn   = YarnOptions.example,
     )
   }
 }
