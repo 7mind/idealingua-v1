@@ -7,7 +7,6 @@ import izumi.idealingua.il.loader.{FilesystemEnumerator, LocalFilesystemEnumerat
 import izumi.idealingua.il.renderer.{IDLRenderer, IDLRenderingOptions}
 import org.scalatest.wordspec.AnyWordSpec
 
-
 class LoaderTest extends AnyWordSpec {
 
   "IL loader" should {
@@ -20,16 +19,16 @@ class LoaderTest extends AnyWordSpec {
   "FS enumerator" should {
     "be able to find files in jars" in {
       val classpath = IzJvm.safeClasspath().split(':')
-      val enumerator = new LocalFilesystemEnumerator(Seq(Paths.get("/tmp/nonexistent")), classpath.toSeq.filter(_.contains("fastparse")).map(p => Paths.get(p).toFile), Set(".MF"))
+      val enumerator =
+        new LocalFilesystemEnumerator(Seq(Paths.get("/tmp/nonexistent")), classpath.toSeq.filter(_.contains("fastparse")).map(p => Paths.get(p).toFile), Set(".MF"))
       assert(enumerator.enumerate().size == 1)
     }
   }
 
-
   private def testIn(base: String): Unit = {
-    val loader = IDLTestTools.makeLoader(base)
+    val loader   = IDLTestTools.makeLoader(base)
     val resolver = IDLTestTools.makeResolver(base)
-    val defs = IDLTestTools.loadDefs(loader, resolver)
+    val defs     = IDLTestTools.loadDefs(loader, resolver)
 
     assert(defs.nonEmpty)
 
@@ -43,17 +42,17 @@ class LoaderTest extends AnyWordSpec {
 
     defs.foreach {
       original =>
-        val ts = original.typespace
+        val ts       = original.typespace
         val domainId = ts.domain.id
         val rendered = new IDLRenderer(ts.domain, IDLRenderingOptions(expandIncludes = false)).render()
-        val updated = files.updated(original.path, rendered)
+        val updated  = files.updated(original.path, rendered)
 
         val enumerator = new FilesystemEnumerator.Pseudo(updated.map {
           case (k, v) => k.asString -> v
         })
         val unresolved = new ModelLoaderImpl(enumerator, loader.parser, loader.modelExt, loader.domainExt, loader.overlayExt).load()
 
-        val typespaces = resolver.resolve(unresolved).throwIfFailed().successful
+        val typespaces        = resolver.resolve(unresolved).throwIfFailed().successful
         val restoredTypespace = typespaces.find(_.typespace.domain.id == domainId).get.typespace
 
         // TODO: custom equality check ignoring meta
@@ -63,6 +62,5 @@ class LoaderTest extends AnyWordSpec {
         assert(restoredTypespace.domain.streams.toSet == ts.domain.streams.toSet, domainId)
     }
   }
-
 
 }

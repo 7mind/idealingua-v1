@@ -36,14 +36,14 @@ protected[typespace] class InheritanceQueriesImpl(ts: Typespace) extends Inherit
   protected def safeParentsInherited(id: TypeId, excluded: Set[TypeId]): List[InterfaceId] = {
     id match {
       case i: InterfaceId =>
-        val defn = ts.resolver.get(i)
-        val parents = defn.struct.superclasses.interfaces
+        val defn          = ts.resolver.get(i)
+        val parents       = defn.struct.superclasses.interfaces
         val newExclusions = checkCycles(excluded, i, parents)
         List(i) ++ parents.flatMap(safeParentsInherited(_, newExclusions))
 
       case i: DTOId =>
-        val defn = ts.resolver.get(i)
-        val parents = defn.struct.superclasses.interfaces
+        val defn          = ts.resolver.get(i)
+        val parents       = defn.struct.superclasses.interfaces
         val newExclusions = checkCycles(excluded, i, parents)
         parents.flatMap(safeParentsInherited(_, newExclusions))
 
@@ -67,9 +67,9 @@ protected[typespace] class InheritanceQueriesImpl(ts: Typespace) extends Inherit
   protected def safeParentsConcepts(id: TypeId, excluded: Set[TypeId]): List[InterfaceId] = {
     id match {
       case i: StructureId =>
-        val defn = ts.resolver.get(i)
-        val superclasses = defn.struct.superclasses
-        val removed = superclasses.removedConcepts.toSet
+        val defn          = ts.resolver.get(i)
+        val superclasses  = defn.struct.superclasses
+        val removed       = superclasses.removedConcepts.toSet
         val newExclusions = checkCycles(excluded, i, superclasses.concepts)
         superclasses.concepts.flatMap(safeAllParents(_, newExclusions)).filterNot(removed.contains)
 
