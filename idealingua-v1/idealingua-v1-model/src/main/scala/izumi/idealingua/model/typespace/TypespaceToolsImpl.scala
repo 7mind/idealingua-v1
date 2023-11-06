@@ -7,13 +7,13 @@ import izumi.idealingua.model.il.ast.typed.DefMethod.RPCMethod
 
 class TypespaceToolsImpl(ts: Typespace) extends TypespaceTools {
   val methodOutputSuffix = "Output"
-  val methodInputSuffix = "Input"
+  val methodInputSuffix  = "Input"
 
   val goodAltBranchName = "Success"
-  val badAltBranchName = "Failure"
+  val badAltBranchName  = "Failure"
 
   val goodAltSuffix = "Success"
-  val badAltSuffix = "Failure"
+  val badAltSuffix  = "Failure"
 
   def idToParaName(id: TypeId): String = id.name.toLowerCase
 
@@ -55,7 +55,6 @@ class TypespaceToolsImpl(ts: Typespace) extends TypespaceTools {
     s"${method.name.capitalize}$badAltSuffix"
   }
 
-
   def toPositiveBranchName(id: AdtId): String = {
     Quirks.discard(id)
     goodAltBranchName
@@ -66,11 +65,10 @@ class TypespaceToolsImpl(ts: Typespace) extends TypespaceTools {
     badAltBranchName
   }
 
-
   def toDtoName(id: TypeId): String = {
     id match {
       case _: InterfaceId =>
-        //s"${id.name}Struct"
+        // s"${id.name}Struct"
         "Struct"
       case _ =>
         s"${id.name}"
@@ -81,7 +79,7 @@ class TypespaceToolsImpl(ts: Typespace) extends TypespaceTools {
   def toInterfaceName(id: TypeId): String = {
     id match {
       case _: DTOId =>
-        //s"${id.name}Defn"
+        // s"${id.name}Defn"
 
         "Defn"
       case _ =>
