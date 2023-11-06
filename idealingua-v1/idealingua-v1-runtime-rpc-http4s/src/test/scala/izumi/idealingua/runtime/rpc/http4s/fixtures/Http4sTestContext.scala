@@ -110,7 +110,7 @@ object Http4sTestContext {
   }
 
   final val wsClientFactory: WsRpcDispatcherFactory[IO] = {
-    new WsRpcDispatcherFactory[IO](demo.Client.codec, RT.printer, RT.logger)
+    new WsRpcDispatcherFactory[IO](demo.Client.codec, RT.printer, RT.logger, RT.izLogger)
   }
   final def wsRpcClientDispatcher(): Lifecycle[IO[Throwable, _], WsRpcDispatcher.IRTDispatcherWs[IO]] = {
     wsClientFactory.dispatcher(wsUri, demo.Client.buzzerMultiplexor, WsRpcContextProvider.unit)

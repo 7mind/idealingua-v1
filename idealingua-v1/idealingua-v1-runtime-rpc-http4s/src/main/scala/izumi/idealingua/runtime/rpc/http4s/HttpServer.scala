@@ -128,7 +128,7 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, RequestCtx,
       inStream = {
         (inputStream: Stream[F[Throwable, _], WebSocketFrame]) =>
           inputStream.evalMap {
-            processWsRequest(context)(_).flatMap {
+            processWsRequest(context, IzTime.utcNow)(_).flatMap {
               case Some(v) => outQueue.offer(WebSocketFrame.Text(v))
               case None    => F.unit
             }
@@ -142,14 +142,18 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, RequestCtx,
 
   protected def processWsRequest(
     context: WsClientSession[F, RequestCtx, ClientId],
-    requestTime: ZonedDateTime = IzTime.utcNow,
+    requestTime: ZonedDateTime,
   )(frame: WebSocketFrame
   ): F[Throwable, Option[String]] = {
     (frame match {
       case WebSocketFrame.Text(msg, _) => wsHandler(context).processRpcMessage(msg)
       case WebSocketFrame.Close(_)     => F.pure(None)
       case _: WebSocketFrame.Pong      => onWsHeartbeat(requestTime).as(None)
-      case unknownMessage              => wsHandler(context).handleWsError(List.empty, s"Unsupported WS frame: $unknownMessage.")
+      case unknownMessage =>
+        val message = s"Unsupported WS frame: $unknownMessage."
+        logger
+          .error(s"WS request failed: $message.")
+          .as(Some(RpcPacket.rpcCritical(message, None)))
     }).map(_.map(p => printer.print(p.asJson)))
   }
 

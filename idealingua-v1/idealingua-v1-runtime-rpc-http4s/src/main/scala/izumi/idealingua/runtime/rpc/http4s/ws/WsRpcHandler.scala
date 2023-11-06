@@ -15,18 +15,16 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
 ) {
 
   protected def handlePacket(packet: RpcPacket): F[Throwable, Unit]
-
   protected def handleAuthRequest(packet: RpcPacket): F[Throwable, Option[RpcPacket]]
+  protected def extractContext(packet: RpcPacket): F[Throwable, RequestCtx]
 
   protected def handleAuthResponse(ref: RpcPacketId, packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
     packet.discard()
     responder.responseWith(ref, RawResponse.EmptyRawResponse()).as(None)
   }
 
-  protected def extractContext(packet: RpcPacket): F[Throwable, RequestCtx]
-
-  def processRpcMessage(message: String): F[Nothing, Option[RpcPacket]] = {
-    (for {
+  def processRpcMessage(message: String): F[Throwable, Option[RpcPacket]] = {
+    for {
       packet <- F.fromEither(io.circe.parser.decode[RpcPacket](message))
       _      <- handlePacket(packet)
       response <- packet match {
@@ -76,11 +74,7 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
             .error(s"WS request failed: No buzzer client handler for $packet")
             .as(Some(RpcPacket.rpcCritical("No buzzer client handler", packet.ref)))
       }
-    } yield response).sandbox.catchAll {
-      case Exit.Error(error, _)           => handleWsError(List(error), "errored")
-      case Exit.Termination(error, _, _)  => handleWsError(List(error), "terminated")
-      case Exit.Interruption(error, _, _) => handleWsError(List(error), "interrupted")
-    }
+    } yield response
   }
 
   protected def handleWsRequest(
@@ -109,19 +103,6 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
           logger.error(s"WS request interrupted, $exception $allExceptions $trace").as(Some(onFail(exception.getMessage)))
       }
     } yield res
-  }
-
-  def handleWsError(causes: List[Throwable], message: String): F[Nothing, Option[RpcPacket]] = {
-    causes.headOption match {
-      case Some(cause) =>
-        logger
-          .error(s"WS request failed: $message, $cause")
-          .as(Some(RpcPacket.rpcCritical(s"$message, cause: $cause", None)))
-      case None =>
-        logger
-          .error(s"WS request failed: $message.")
-          .as(Some(RpcPacket.rpcCritical(message, None)))
-    }
   }
 }
 
