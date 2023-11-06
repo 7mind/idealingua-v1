@@ -1,9 +1,9 @@
 package izumi.idealingua.runtime.rpc
 
-import izumi.fundamentals.platform.uuid.UUIDGen
-import io.circe.generic.semiauto._
-import io.circe.syntax._
+import io.circe.generic.semiauto.*
+import io.circe.syntax.*
 import io.circe.{Decoder, Encoder, Json}
+import izumi.fundamentals.platform.uuid.UUIDGen
 
 sealed trait RPCPacketKind
 
@@ -90,29 +90,27 @@ case class RpcPacket(
   service: Option[String],
   method: Option[String],
   headers: Option[Map[String, String]],
-)
+) {
+  def withHeaders(h: Map[String, String]): RpcPacket = {
+    copy(headers = Option(h).filter(_.nonEmpty))
+  }
+}
 
 object RpcPacket {
   implicit def dec0: Decoder[RpcPacket] = deriveDecoder
 
   implicit def enc0: Encoder[RpcPacket] = deriveEncoder
 
-  def rpcCritical(data: String, cause: String): RpcPacket = {
-    RpcPacket(RPCPacketKind.Fail, Some(Map("data" -> data, "cause" -> cause).asJson), None, None, None, None, None)
+  def rpcCritical(error: String, ref: Option[RpcPacketId]): RpcPacket = {
+    RpcPacket(RPCPacketKind.Fail, Some(Json.obj("cause" -> error.asJson)), None, ref, None, None, None)
   }
 
-  def rpcRequestRndId(method: IRTMethodId, data: Json): RpcPacket = {
-    val rndId = RpcPacketId.random()
+  def auth(id: RpcPacketId, headers: Map[String, String]): RpcPacket = {
+    RpcPacket(RPCPacketKind.RpcRequest, None, Some(id), None, None, None, Some(headers))
+  }
 
-    RpcPacket(
-      RPCPacketKind.RpcRequest,
-      Some(data),
-      Some(rndId),
-      None,
-      Some(method.service.value),
-      Some(method.methodId.value),
-      None,
-    )
+  def rpcRequest(id: RpcPacketId, method: IRTMethodId, data: Json): RpcPacket = {
+    RpcPacket(RPCPacketKind.RpcRequest, Some(data), Some(id), None, Some(method.service.value), Some(method.methodId.value), None)
   }
 
   def rpcResponse(ref: RpcPacketId, data: Json): RpcPacket = {
@@ -123,18 +121,8 @@ object RpcPacket {
     RpcPacket(RPCPacketKind.RpcFail, Some(Map("cause" -> cause).asJson), None, ref, None, None, None)
   }
 
-  def buzzerRequestRndId(method: IRTMethodId, data: Json): RpcPacket = {
-    val rndId = RpcPacketId.random()
-
-    RpcPacket(
-      RPCPacketKind.BuzzRequest,
-      Some(data),
-      Some(rndId),
-      None,
-      Some(method.service.value),
-      Some(method.methodId.value),
-      None,
-    )
+  def buzzerRequest(id: RpcPacketId, method: IRTMethodId, data: Json): RpcPacket = {
+    RpcPacket(RPCPacketKind.BuzzRequest, Some(data), Some(id), None, Some(method.service.value), Some(method.methodId.value), None)
   }
 
   def buzzerResponse(ref: RpcPacketId, data: Json): RpcPacket = {

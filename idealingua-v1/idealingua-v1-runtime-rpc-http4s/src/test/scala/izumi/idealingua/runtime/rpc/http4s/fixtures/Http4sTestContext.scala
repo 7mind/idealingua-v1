@@ -2,22 +2,21 @@ package izumi.idealingua.runtime.rpc.http4s.fixtures
 
 import cats.data.{Kleisli, OptionT}
 import com.comcast.ip4s.*
-import io.circe.Json
+import izumi.functional.lifecycle.Lifecycle
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.network.IzSockets
 import izumi.idealingua.runtime.rpc.http4s.*
+import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.WsRpcContextProvider
+import izumi.idealingua.runtime.rpc.http4s.clients.{HttpRpcDispatcher, HttpRpcDispatcherFactory, WsRpcDispatcher, WsRpcDispatcherFactory}
+import izumi.idealingua.runtime.rpc.http4s.ws.WsContextProvider.WsAuthResult
 import izumi.idealingua.runtime.rpc.http4s.ws.WsSessionsStorage.WsSessionsStorageImpl
 import izumi.idealingua.runtime.rpc.http4s.ws.{WsClientId, WsContextProvider, WsSessionListener}
-import izumi.idealingua.runtime.rpc.{IRTMuxRequest, IRTMuxResponse, RpcPacket}
-import izumi.r2.idealingua.test.generated.GreeterServiceClientWrapped
+import izumi.idealingua.runtime.rpc.{RPCPacketKind, RpcPacket}
 import org.http4s.*
 import org.http4s.headers.Authorization
 import org.http4s.server.AuthMiddleware
 import zio.interop.catz.*
 import zio.{IO, ZIO}
-
-import java.net.URI
-import java.util.concurrent.atomic.AtomicReference
 
 object Http4sTestContext {
   import RT.IO2R
@@ -27,7 +26,7 @@ object Http4sTestContext {
   final val port    = addr.getPort
   final val host    = addr.getHostName
   final val baseUri = Uri(Some(Uri.Scheme.http), Some(Uri.Authority(host = Uri.RegName(host), port = Some(port))))
-  final val wsUri   = new URI("ws", null, host, port, "/ws", null, null)
+  final val wsUri   = Uri.unsafeFromString(s"ws://$host:$port/ws")
 
   //
 //
@@ -45,71 +44,47 @@ object Http4sTestContext {
     }
 
   final val wsContextProvider: WsContextProvider[IO, DummyRequestContext, String] = new WsContextProvider[IO, DummyRequestContext, String] {
-    // DON'T DO THIS IN PRODUCTION CODE !!!
-    val knownAuthorization = new AtomicReference[Credentials](null)
-
     override def toContext(id: WsClientId[String], initial: DummyRequestContext, packet: RpcPacket): zio.IO[Throwable, DummyRequestContext] = {
-      Quirks.discard(id)
-
-      initial.credentials match {
-        case Some(value) =>
-          knownAuthorization.compareAndSet(null, value)
-        case None =>
-      }
-
-      val maybeAuth = packet.headers.getOrElse(Map.empty).get("Authorization")
-
-      maybeAuth.map(Authorization.parse).flatMap(_.toOption) match {
-        case Some(value) =>
-          knownAuthorization.set(value.credentials)
-        case None =>
-      }
       ZIO.succeed {
-        initial.copy(credentials = Option(knownAuthorization.get()))
+        val fromState  = id.id.map(header => Map("Authorization" -> header)).getOrElse(Map.empty)
+        val allHeaders = fromState ++ packet.headers.getOrElse(Map.empty)
+        val creds      = allHeaders.get("Authorization").flatMap(Authorization.parse(_).toOption).map(_.credentials)
+        DummyRequestContext(initial.ip, creds.orElse(initial.credentials))
       }
     }
 
     override def toId(initial: DummyRequestContext, currentId: WsClientId[String], packet: RpcPacket): zio.IO[Throwable, Option[String]] = {
       ZIO.attempt {
-        packet.headers
-          .getOrElse(Map.empty).get("Authorization")
-          .map(Authorization.parse)
-          .flatMap(_.toOption)
-          .collect {
-            case Authorization(BasicCredentials((user, _))) => user
-          }
+        val fromState  = currentId.id.map(header => Map("Authorization" -> header)).getOrElse(Map.empty)
+        val allHeaders = fromState ++ packet.headers.getOrElse(Map.empty)
+        allHeaders.get("Authorization")
       }
     }
 
-    override def handleEmptyBodyPacket(
+    override def handleAuthorizationPacket(
       id: WsClientId[String],
       initial: DummyRequestContext,
       packet: RpcPacket,
-    ): IO[Throwable, (Option[String], zio.IO[Throwable, Option[RpcPacket]])] = {
+    ): IO[Throwable, WsAuthResult[String]] = {
       Quirks.discard(id, initial)
 
-      packet.headers.getOrElse(Map.empty).get("Authorization") match {
+      packet.headers.flatMap(_.get("Authorization")) match {
         case Some(value) if value.isEmpty =>
           // here we may clear internal state
-          ZIO.succeed(None -> ZIO.succeed(None))
+          ZIO.succeed(WsAuthResult(None, RpcPacket(RPCPacketKind.RpcResponse, None, None, packet.id, None, None, None)))
 
         case Some(_) =>
-          toId(initial, id, packet) flatMap {
-            case id @ Some(_) =>
+          toId(initial, id, packet).flatMap {
+            case Some(header) =>
               // here we may set internal state
-              ZIO.succeed {
-                id -> ZIO.succeed(packet.ref.map {
-                  ref =>
-                    RpcPacket.rpcResponse(ref, Json.obj())
-                })
-              }
+              ZIO.succeed(WsAuthResult(Some(header), RpcPacket(RPCPacketKind.RpcResponse, None, None, packet.id, None, None, None)))
 
             case None =>
-              ZIO.succeed(None -> ZIO.succeed(Some(RpcPacket.rpcFail(packet.ref, "Authorization failed"))))
+              ZIO.succeed(WsAuthResult(None, RpcPacket.rpcFail(packet.id, "Authorization failed")))
           }
 
         case None =>
-          ZIO.succeed(None -> ZIO.succeed(None))
+          ZIO.succeed(WsAuthResult(None, RpcPacket(RPCPacketKind.RpcResponse, None, None, packet.id, None, None, None)))
       }
     }
   }
@@ -127,41 +102,17 @@ object Http4sTestContext {
     RT.printer,
   )
 
-  final def clientDispatcher(): ClientDispatcher[IO] & TestHttpDispatcher =
-    new ClientDispatcher[IO](RT.izLogger, RT.printer, baseUri, demo.Client.codec, RT.execCtx) with TestHttpDispatcher {
-
-      override def sendRaw(request: IRTMuxRequest, body: Array[Byte]): BiIO[Throwable, IRTMuxResponse] = {
-        val req = buildRequest(baseUri, request, body)
-        runRequest(handleResponse(request, _), req)
-      }
-
-      override protected def transformRequest(request: Request[IO[Throwable, _]]): Request[IO[Throwable, _]] = {
-        request.withHeaders(Headers(creds.get()))
-      }
-    }
-
-  final val wsClientContextProvider = new WsClientContextProvider[Unit] {
-    override def toContext(packet: RpcPacket): Unit = ()
+  final val httpClientFactory: HttpRpcDispatcherFactory[IO] = {
+    new HttpRpcDispatcherFactory[IO](demo.Client.codec, RT.execCtx, RT.printer, RT.logger)
+  }
+  final def httpRpcClientDispatcher(headers: Headers): HttpRpcDispatcher.IRTDispatcherRaw[IO] = {
+    httpClientFactory.dispatcher(baseUri, headers)
   }
 
-  final def wsClientDispatcher(): ClientWsDispatcher[IO, Unit] & TestDispatcher = {
-    new ClientWsDispatcher[IO, Unit](wsUri, demo.Client.codec, demo.Client.buzzerMultiplexor, wsClientContextProvider, RT.izLogger, RT.printer) with TestDispatcher {
-
-      import scala.concurrent.duration.*
-      override protected val timeout: FiniteDuration = 5.seconds
-
-      override protected def transformRequest(request: RpcPacket): RpcPacket = {
-        Option(creds.get()) match {
-          case Some(value) =>
-            val update = value.values.map(h => (h.name.toString, h.value)).toMap
-            request.copy(headers = Some(request.headers.getOrElse(Map.empty) ++ update))
-          case None =>
-            request
-        }
-      }
-    }
+  final val wsClientFactory: WsRpcDispatcherFactory[IO] = {
+    new WsRpcDispatcherFactory[IO](demo.Client.codec, RT.printer, RT.logger, RT.izLogger)
   }
-
-  final val greeterClient = new GreeterServiceClientWrapped(clientDispatcher())
-
+  final def wsRpcClientDispatcher(): Lifecycle[IO[Throwable, _], WsRpcDispatcher.IRTDispatcherWs[IO]] = {
+    wsClientFactory.dispatcher(wsUri, demo.Client.buzzerMultiplexor, WsRpcContextProvider.unit)
+  }
 }
