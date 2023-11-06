@@ -54,11 +54,11 @@ object WsSessionsStorage {
     }
 
     override def dispatcherForSession(id: WsSessionId, timeout: FiniteDuration): F[Throwable, Option[WsClientDispatcher[F, RequestContext, ClientId]]] = F.sync {
-      Option(sessions.get(id)).map(WsClientDispatcher(_, codec, logger, timeout))
+      Option(sessions.get(id)).map(new WsClientDispatcher(_, codec, logger, timeout))
     }
   }
 
-  final case class WsClientDispatcher[F[+_, +_]: IO2, RequestContext, ClientId](
+  class WsClientDispatcher[F[+_, +_]: IO2, RequestContext, ClientId](
     session: WsClientSession[F, RequestContext, ClientId],
     codec: IRTClientMultiplexor[F],
     logger: LogIO2[F],
@@ -69,13 +69,16 @@ object WsSessionsStorage {
         json     <- codec.encode(request)
         response <- session.requestAndAwaitResponse(request.method, json, timeout)
         res <- response match {
+          case Some(value: RawResponse.EmptyRawResponse) =>
+            F.fail(new IRTGenericFailure(s"${request.method -> "method"}: empty response: $value"))
+
           case Some(value: RawResponse.GoodRawResponse) =>
             logger.debug(s"WS Session: ${request.method -> "method"}: Have response: $value.") *>
             codec.decode(value.data, value.method)
 
           case Some(value: RawResponse.BadRawResponse) =>
-            logger.debug(s"WS Session: ${request.method -> "method"}: Generic failure response: $value.") *>
-            F.fail(new IRTGenericFailure(s"${request.method -> "method"}: generic failure: $value"))
+            logger.debug(s"WS Session: ${request.method -> "method"}: Generic failure response: ${value.error}.") *>
+            F.fail(new IRTGenericFailure(s"${request.method -> "method"}: generic failure: ${value.error}"))
 
           case None =>
             logger.warn(s"WS Session: ${request.method -> "method"}: Timeout exception $timeout.") *>
@@ -84,4 +87,6 @@ object WsSessionsStorage {
       } yield res
     }
   }
+
+
 }

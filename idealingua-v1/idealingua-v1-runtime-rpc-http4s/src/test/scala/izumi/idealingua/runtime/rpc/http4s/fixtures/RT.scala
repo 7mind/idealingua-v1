@@ -9,6 +9,7 @@ import logstage.LogIO
 import org.http4s.dsl.Http4sDsl
 import zio.IO
 
+import java.util.concurrent.{Executor, Executors}
 import scala.concurrent.ExecutionContext.global
 
 object RT {
@@ -16,10 +17,17 @@ object RT {
   final val logger           = LogIO.fromLogger[IO[Nothing, _]](makeLogger())
   final val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
 
-  final val handler                     = UnsafeRun2.FailureHandler.Custom(message => izLogger.warn(s"Fiber failed: $message"))
-  implicit val IO2R: UnsafeRun2[zio.IO] = UnsafeRun2.createZIO(handler = handler)
-  final val dsl                         = Http4sDsl.apply[zio.IO[Throwable, _]]
-  final val execCtx                     = HttpExecutionContext(global)
+  final val handler = UnsafeRun2.FailureHandler.Custom(message => izLogger.warn(s"Fiber failed: $message"))
+  implicit val IO2R: UnsafeRun2[zio.IO] = UnsafeRun2.createZIO(
+    handler = handler,
+    customCpuPool = Some(
+      zio.Executor.fromJavaExecutor(
+        Executors.newFixedThreadPool(2)
+      )
+    ),
+  )
+  final val dsl     = Http4sDsl.apply[zio.IO[Throwable, _]]
+  final val execCtx = HttpExecutionContext(global)
 
   private def makeLogger(): IzLogger = {
     val router = ConfigurableLogRouter(

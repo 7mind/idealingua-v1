@@ -1,7 +1,7 @@
 package izumi.idealingua.runtime.rpc.http4s.fixtures
 
 import izumi.functional.bio.IO2
-import izumi.idealingua.runtime.rpc._
+import izumi.idealingua.runtime.rpc.*
 import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceServerWrapped}
 import izumi.r2.idealingua.test.impls.AbstractGreeterServer
 
@@ -26,5 +26,4 @@ class DummyServices[F[+_, +_]: IO2, Ctx] {
     val codec                                  = new IRTClientMultiplexorImpl[F](clients)
     val buzzerMultiplexor                      = new IRTServerMultiplexorImpl[F, Unit, Unit](dispatchers, ContextExtender.id)
   }
-
 }
