@@ -87,13 +87,12 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
     }
 
     override def onClose(websocket: WebSocket, code: Int, reason: String): Unit = {
-      websocket.sendCloseFrame()
       socketRef.set(None)
+      websocket.sendCloseFrame()
     }
 
     override def onError(t: Throwable): Unit = {
-      socketRef.get().foreach(_.sendCloseFrame())
-      socketRef.set(None)
+      socketRef.getAndSet(None).foreach(_.sendCloseFrame())
     }
 
     override def onPingFrame(payload: Array[Byte]): Unit = {
@@ -227,17 +226,22 @@ object WsRpcDispatcherFactory {
       callback =>
         nettyFuture.addListener {
           (completedFuture: Future[A]) =>
-            if (!completedFuture.isDone) {
-              // shouldn't be possible, future should already be completed
-              completedFuture.await(1000L)
-            }
-            if (completedFuture.isSuccess) {
-              callback(Right(completedFuture.getNow))
-            } else {
-              Option(completedFuture.cause()) match {
-                case Some(error) => callback(Left(error))
-                case None        => callback(Left(new RuntimeException("Awaiting NettyFuture failed, but no exception was available.")))
+            try {
+              if (!completedFuture.isDone) {
+                // shouldn't be possible, future should already be completed
+                completedFuture.await(1000L)
               }
+              if (completedFuture.isSuccess) {
+                callback(Right(completedFuture.getNow))
+              } else {
+                Option(completedFuture.cause()) match {
+                  case Some(error) => callback(Left(error))
+                  case None        => callback(Left(new RuntimeException("Awaiting NettyFuture failed, but no exception was available.")))
+                }
+              }
+            } catch {
+              case exception: Throwable =>
+                callback(Left(new RuntimeException(s"Awaiting NettyFuture threw an exception=$exception")))
             }
         }
         val canceler = F.sync { nettyFuture.cancel(false); () }
