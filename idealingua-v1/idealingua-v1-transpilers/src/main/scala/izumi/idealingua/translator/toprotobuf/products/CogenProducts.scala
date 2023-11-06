@@ -16,7 +16,7 @@ object CogenProducts {
     override def render: List[String] = {
       val methodsRendered = methods.map {
         method =>
-          val inputType = methodInputType(method)
+          val inputType  = methodInputType(method)
           val outputType = methodOutputType(method)
           s"\trpc ${method.name}(${inputType.fullName}) returns (${outputType.fullName});"
       }.mkString("\n")
@@ -37,20 +37,19 @@ object CogenProducts {
       ProtobufType(Seq.empty, s"$name${method.name.capitalize}Output")
     }
 
-
     private[this] def cogenMethodMessages(method: ProtobufMethod): Seq[RenderableCogenProduct] = {
       def cogenNonAlternativeOutputs(tpe: ProtobufType, outputs: ProtobufMethod.NonAlternativeOutput): RenderableCogenProduct = {
         outputs match {
-          case ProtobufMethod.Void => Message(tpe, Nil)
-          case ProtobufMethod.ADT(members) => ADT(tpe, members)
+          case ProtobufMethod.Void              => Message(tpe, Nil)
+          case ProtobufMethod.ADT(members)      => ADT(tpe, members)
           case ProtobufMethod.Single(singleTpe) => Message(tpe, List(ProtobufField("single", singleTpe)))
           case ProtobufMethod.Structure(fields) => Message(tpe, fields)
         }
       }
 
-      val inputType = methodInputType(method)
+      val inputType  = methodInputType(method)
       val outputType = methodOutputType(method)
-      val input = Message(inputType, method.inputs)
+      val input      = Message(inputType, method.inputs)
       val output = method.output match {
         case na: ProtobufMethod.NonAlternativeOutput => List(cogenNonAlternativeOutputs(outputType, na))
         case ProtobufMethod.Alternative(successOut, failureOut) =>
@@ -62,7 +61,7 @@ object CogenProducts {
               List(
                 ProtobufAdtMember(Some("success"), successType),
                 ProtobufAdtMember(Some("failure"), failureType),
-              )
+              ),
             ),
             cogenNonAlternativeOutputs(successType, successOut),
             cogenNonAlternativeOutputs(failureType, failureOut),
@@ -124,11 +123,11 @@ object CogenProducts {
     override def render: List[String] = {
       val sorted = fields.sortBy(_.name).zipWithIndex.toMap
       val fieldsRendered = fields.map {
-        case field@ProtobufField(name, tpe@ProtobufType(_, _, _, Some(true))) =>
+        case field @ ProtobufField(name, tpe @ ProtobufType(_, _, _, Some(true))) =>
           s"\toptional ${tpe.fullName} $name = ${sorted(field) + 1};"
-        case field@ProtobufField(name, tpe@ProtobufType(_, _, _, Some(false))) =>
+        case field @ ProtobufField(name, tpe @ ProtobufType(_, _, _, Some(false))) =>
           s"\trequired ${tpe.fullName} $name = ${sorted(field) + 1};"
-        case field@ProtobufField(name, tpe@ProtobufType(_, _, _, None)) =>
+        case field @ ProtobufField(name, tpe @ ProtobufType(_, _, _, None)) =>
           s"\t${tpe.fullName} $name = ${sorted(field) + 1};"
       }.mkString("\n")
       List(

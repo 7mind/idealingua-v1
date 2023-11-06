@@ -8,59 +8,58 @@ import izumi.fundamentals.platform.cli.model.schema._
 import izumi.fundamentals.platform.cli.{CLIParserImpl, ParserFailureHandler}
 
 case class LanguageOpts(
-                         id: String,
-                         withRuntime: Boolean,
-                         zip: Boolean,
-                         target: Option[Path],
-                         manifest: Option[File],
-                         credentials: Option[File],
-                         extensions: List[String],
-                         overrides: Map[String, String],
-                       )
-
+  id: String,
+  withRuntime: Boolean,
+  zip: Boolean,
+  target: Option[Path],
+  manifest: Option[File],
+  credentials: Option[File],
+  extensions: List[String],
+  overrides: Map[String, String],
+)
 
 case class IDLCArgs(
-                     root: Path,
-                     source: Path,
-                     overlay: Path,
-                     target: Path,
-                     languages: List[LanguageOpts],
-                     init: Option[Path],
-                     versionOverlay: Option[Path],
-                     overrides: Map[String, String],
-                     publish: Boolean = false
-                   )
+  root: Path,
+  source: Path,
+  overlay: Path,
+  target: Path,
+  languages: List[LanguageOpts],
+  init: Option[Path],
+  versionOverlay: Option[Path],
+  overrides: Map[String, String],
+  publish: Boolean = false,
+)
 
 object IDLCArgs {
   def default: IDLCArgs = IDLCArgs(
-    Paths.get(".")
-    , Paths.get("source")
-    , Paths.get("overlay")
-    , Paths.get("target")
-    , List.empty
-    , None
-    , None
-    , Map.empty
+    Paths.get("."),
+    Paths.get("source"),
+    Paths.get("overlay"),
+    Paths.get("target"),
+    List.empty,
+    None,
+    None,
+    Map.empty,
   )
 
   object P extends ParserDef {
-    final val rootDir = arg("root", "r", "root directory", "<path>")
-    final val sourceDir = arg("source", "s", "source directory", "<path>")
-    final val targetDir = arg("target", "t", "target directory", "<path>")
-    final val overlayDir = arg("overlay", "o", "overlay directory", "<path>")
+    final val rootDir            = arg("root", "r", "root directory", "<path>")
+    final val sourceDir          = arg("source", "s", "source directory", "<path>")
+    final val targetDir          = arg("target", "t", "target directory", "<path>")
+    final val overlayDir         = arg("overlay", "o", "overlay directory", "<path>")
     final val overlayVersionFile = arg("overlay-version", "v", "version file", "<path>")
-    final val define = arg("define", "d", "define value", "const.name=value")
-    final val publish = flag("publish", "p", "build and publish generated code")
+    final val define             = arg("define", "d", "define value", "const.name=value")
+    final val publish            = flag("publish", "p", "build and publish generated code")
   }
 
   object LP extends ParserDef {
-    final val target = arg("target", "t", "lang target directory", "<path>")
-    final val manifest = arg("manifest", "m", "manifest file", "<path>")
-    final val credentials = arg("credentials", "cr", "credentials file", "<path>")
+    final val target        = arg("target", "t", "lang target directory", "<path>")
+    final val manifest      = arg("manifest", "m", "manifest file", "<path>")
+    final val credentials   = arg("credentials", "cr", "credentials file", "<path>")
     final val extensionSpec = arg("extensions", "e", "extensions spec", "{* | -AnyvalExtension;-CirceDerivationTranslatorExtension}")
-    final val noRuntime = flag("disable-runtime", "nr", "don't include builtin runtime")
-    final val noZip = flag("disable-zip", "nz", "don't zip outputs")
-    final val define = arg("define", "d", "define value", "const.name=value")
+    final val noRuntime     = flag("disable-runtime", "nr", "don't include builtin runtime")
+    final val noZip         = flag("disable-zip", "nz", "don't zip outputs")
+    final val define        = arg("define", "d", "define value", "const.name=value")
   }
 
   object IP extends ParserDef
@@ -75,13 +74,18 @@ object IDLCArgs {
 
     val globalArgs = GlobalArgsSchema(P, None, None)
 
-    val roleHelp = ParserSchemaFormatter.makeDocs(ParserSchema(globalArgs, Seq(
-      RoleParserSchema("init", IP, Some("setup project template. Invoke as :init <path>"), None, freeArgsAllowed = true),
-      RoleParserSchema("scala", LP, Some("scala target"), None, freeArgsAllowed = false),
-      RoleParserSchema("go", LP, Some("go target"), None, freeArgsAllowed = false),
-      RoleParserSchema("csharp", LP, Some("C#/Unity target"), None, freeArgsAllowed = false),
-      RoleParserSchema("typescript", LP, Some("Typescript target"), None, freeArgsAllowed = false),
-    )))
+    val roleHelp = ParserSchemaFormatter.makeDocs(
+      ParserSchema(
+        globalArgs,
+        Seq(
+          RoleParserSchema("init", IP, Some("setup project template. Invoke as :init <path>"), None, freeArgsAllowed = true),
+          RoleParserSchema("scala", LP, Some("scala target"), None, freeArgsAllowed                                  = false),
+          RoleParserSchema("go", LP, Some("go target"), None, freeArgsAllowed                                        = false),
+          RoleParserSchema("csharp", LP, Some("C#/Unity target"), None, freeArgsAllowed                              = false),
+          RoleParserSchema("typescript", LP, Some("Typescript target"), None, freeArgsAllowed                        = false),
+        ),
+      )
+    )
 
     if (parsed.roles.isEmpty || parsed.roles.exists(_.role == "help")) {
       println(roleHelp)
@@ -93,37 +97,37 @@ object IDLCArgs {
     }
 
     val parameters = parsed.globalParameters
-    val root = parameters.findValue(P.rootDir).asPath.getOrElse(Paths.get("."))
-    val src = parameters.findValue(P.sourceDir).asPath.getOrElse(root.resolve("source"))
-    val target = parameters.findValue(P.targetDir).asPath.getOrElse(root.resolve("target"))
+    val root       = parameters.findValue(P.rootDir).asPath.getOrElse(Paths.get("."))
+    val src        = parameters.findValue(P.sourceDir).asPath.getOrElse(root.resolve("source"))
+    val target     = parameters.findValue(P.targetDir).asPath.getOrElse(root.resolve("target"))
     assert(src.toFile.getCanonicalPath != target.toFile.getCanonicalPath)
-    val overlay = parameters.findValue(P.overlayDir).asPath.getOrElse(root.resolve("overlay"))
+    val overlay        = parameters.findValue(P.overlayDir).asPath.getOrElse(root.resolve("overlay"))
     val overlayVersion = parameters.findValue(P.overlayVersionFile).asPath
-    val publish = parameters.hasFlag(P.publish)
-    val defines = parseDefs(parameters, P.define)
+    val publish        = parameters.hasFlag(P.publish)
+    val defines        = parseDefs(parameters, P.define)
 
     val internalRoles = Seq("init", "help")
 
     val languages = parsed.roles.filterNot(r => internalRoles.contains(r.role)).map {
       role =>
-        val parameters = role.roleParameters
-        val runtime = parameters.hasNoFlag(LP.noRuntime)
-        val zip = parameters.hasNoFlag(LP.noZip)
-        val target = parameters.findValue(LP.target).asPath
-        val manifest = parameters.findValue(LP.manifest).asFile
+        val parameters  = role.roleParameters
+        val runtime     = parameters.hasNoFlag(LP.noRuntime)
+        val zip         = parameters.hasNoFlag(LP.noZip)
+        val target      = parameters.findValue(LP.target).asPath
+        val manifest    = parameters.findValue(LP.manifest).asFile
         val credentials = parameters.findValue(LP.credentials).asFile
-        val defines = parseDefs(parameters, LP.define)
-        val extensions = parameters.findValue(LP.extensionSpec).map(_.value.split(',')).toList.flatten
+        val defines     = parseDefs(parameters, LP.define)
+        val extensions  = parameters.findValue(LP.extensionSpec).map(_.value.split(',')).toList.flatten
 
         LanguageOpts(
-          id = role.role,
+          id          = role.role,
           withRuntime = runtime,
-          target = target,
-          manifest = manifest,
+          target      = target,
+          manifest    = manifest,
           credentials = credentials,
-          extensions = extensions,
-          overrides = defines,
-          zip = zip,
+          extensions  = extensions,
+          overrides   = defines,
+          zip         = zip,
         )
     }
 
@@ -136,16 +140,17 @@ object IDLCArgs {
       init,
       overlayVersion,
       defines,
-      publish
+      publish,
     )
   }
 
   private def parseDefs(parameters: RawEntrypointParams, argDef: ParserDef.ArgDef): Map[String, String] = {
-    parameters.findValues(argDef).map {
-      v =>
-        val parts = v.value.split('=')
-        parts.head -> parts.tail.mkString("=")
-    }.toMap
+    parameters
+      .findValues(argDef).map {
+        v =>
+          val parts = v.value.split('=')
+          parts.head -> parts.tail.mkString("=")
+      }.toMap
   }
 
 }
