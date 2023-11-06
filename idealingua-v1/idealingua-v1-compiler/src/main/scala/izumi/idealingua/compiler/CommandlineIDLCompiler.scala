@@ -22,12 +22,12 @@ import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 object CommandlineIDLCompiler {
-  private val log: CompilerLog = CompilerLog.Default
+  private val log: CompilerLog   = CompilerLog.Default
   private val shutdown: Shutdown = ShutdownImpl
 
   def main(args: Array[String]): Unit = {
-    val mf = IzArtifactMaterializer.currentArtifact
-    val izumiVersion = mf.version.toString
+    val mf               = IzArtifactMaterializer.currentArtifact
+    val izumiVersion     = mf.version.toString
     val izumiInfoVersion = mf.justVersion
 
     log.log(s"Izumi IDL Compiler $izumiInfoVersion")
@@ -37,7 +37,7 @@ object CommandlineIDLCompiler {
     val results = Seq(
       initDir(conf),
       runCompilations(izumiVersion, conf),
-      runPublish(conf)
+      runPublish(conf),
     )
 
     if (!results.contains(true)) {
@@ -47,12 +47,13 @@ object CommandlineIDLCompiler {
 
   private def runPublish(conf: IDLCArgs): Boolean = {
     if (conf.publish && conf.languages.nonEmpty) {
-      conf.languages.foreach { lang =>
-        val manifest = toOptions(conf, Map.empty)(lang).manifest
-        publishLangArtifacts(conf, lang, manifest) match {
-          case Left(err) => throw err
-          case _ => ()
-        }
+      conf.languages.foreach {
+        lang =>
+          val manifest = toOptions(conf, Map.empty)(lang).manifest
+          publishLangArtifacts(conf, lang, manifest) match {
+            case Left(err) => throw err
+            case _         => ()
+          }
       }
       true
     } else
@@ -60,15 +61,18 @@ object CommandlineIDLCompiler {
   }
 
   def publishLangArtifacts(conf: IDLCArgs, langOpts: LanguageOpts, manifest: BuildManifest): Either[Throwable, Unit] = for {
-    credsFile <- Either.cond(langOpts.credentials.isDefined, langOpts.credentials.get,
-      new IllegalArgumentException(s"Can't publish ${langOpts.id} with empty credentials file. " +
+    credsFile <- Either.cond(
+      langOpts.credentials.isDefined,
+      langOpts.credentials.get,
+      new IllegalArgumentException(
+        s"Can't publish ${langOpts.id} with empty credentials file. " +
         s"Use `--credentials` command line arg to set it"
-      )
+      ),
     )
-    lang <- Try(IDLLanguage.parse(langOpts.id)).toEither
-    creds <- new CredentialsReader(lang, credsFile).read(toJson(langOpts.overrides))
+    lang   <- Try(IDLLanguage.parse(langOpts.id)).toEither
+    creds  <- new CredentialsReader(lang, credsFile).read(toJson(langOpts.overrides))
     target <- Try(conf.target.toAbsolutePath.resolve(langOpts.id)).toEither
-    res <- new ArtifactPublisher(target, lang, creds, manifest).publish()
+    res    <- new ArtifactPublisher(target, lang, creds, manifest).publish()
   } yield res
 
   private def initDir(conf: IDLCArgs): Boolean = {
@@ -110,7 +114,7 @@ object CommandlineIDLCompiler {
       log.log(toRun.niceList())
       log.log("")
 
-      val path = conf.source.toAbsolutePath
+      val path   = conf.source.toAbsolutePath
       val target = conf.target.toAbsolutePath
       target.toFile.mkdirs()
 
@@ -138,7 +142,7 @@ object CommandlineIDLCompiler {
   }
 
   private def runCompiler(target: Path, loaded: Timed[UnresolvedDomains], option: UntypedCompilerOptions): Unit = {
-    val langId = option.language.toString
+    val langId  = option.language.toString
     val itarget = option.target.getOrElse(target.resolve(langId))
     log.log(s"Preparing typespace for $langId")
     val toCompile = Timed {
@@ -203,12 +207,12 @@ object CommandlineIDLCompiler {
         JsonObject.empty.asJson
     }
 
-    val envJson = toJson(env)
+    val envJson               = toJson(env)
     val languageOverridesJson = toJson(lopt.overrides)
-    val globalOverridesJson = toJson(conf.overrides)
-    val patch = overlayJson.deepMerge(globalOverridesJson).deepMerge(envJson).deepMerge(languageOverridesJson)
+    val globalOverridesJson   = toJson(conf.overrides)
+    val patch                 = overlayJson.deepMerge(globalOverridesJson).deepMerge(envJson).deepMerge(languageOverridesJson)
 
-    val reader = new ManifestReader(conf, log, shutdown, patch, lang, lopt.manifest)
+    val reader   = new ManifestReader(conf, log, shutdown, patch, lang, lopt.manifest)
     val manifest = reader.read()
     manifest
   }
@@ -217,24 +221,25 @@ object CommandlineIDLCompiler {
     import io.circe.literal.*
 
     for {
-      parsed <- parse(IzFiles.readString(path.toFile))
+      parsed  <- parse(IzFiles.readString(path.toFile))
       decoded <- parsed.as[VersionOverlay]
     } yield {
       val defQualifier = decoded.snapshotQualifiers.getOrElse(lang.toString.toLowerCase, "UNSET")
-      val timestamp = ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond
-      val qualifier = if (lang == IDLLanguage.Typescript) s"$defQualifier-$timestamp" else defQualifier
-      val version = ProjectVersion(decoded.version, decoded.release, qualifier)
+      val timestamp    = ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond
+      val qualifier    = if (lang == IDLLanguage.Typescript) s"$defQualifier-$timestamp" else defQualifier
+      val version      = ProjectVersion(decoded.version, decoded.release, qualifier)
       json"""{"common": {"version": $version}}"""
     }
   }
 
   private def toJson(env: Map[String, String]) = {
     val updatedEnv = env.map {
-      case (k, v) => io.circe.parser.parse(v) match {
-        case Right(b) if b.isBoolean => k -> b.asBoolean.get
-        case Right(s) if s.isString => k -> s.asString.get
-        case _ => k -> v
-      }
+      case (k, v) =>
+        io.circe.parser.parse(v) match {
+          case Right(b) if b.isBoolean => k -> b.asBoolean.get
+          case Right(s) if s.isString  => k -> s.asString.get
+          case _                       => k -> v
+        }
     }
     valToJson(ConfigFactory.parseMap(updatedEnv.asJava).root().unwrapped())
   }
@@ -244,12 +249,10 @@ object CommandlineIDLCompiler {
 
     (v: @unchecked) match {
       case m: java.util.HashMap[?, ?] =>
-        m.asScala
-          .map {
-            case (k, value) =>
-              k.toString -> valToJson(value.asInstanceOf[AnyRef])
-          }
-          .asJson
+        m.asScala.map {
+          case (k, value) =>
+            k.toString -> valToJson(value.asInstanceOf[AnyRef])
+        }.asJson
 
       case s: String =>
         s.asJson
@@ -259,10 +262,9 @@ object CommandlineIDLCompiler {
     }
   }
 
-
   private def getExt(lang: IDLLanguage, filter: List[String]): Seq[TranslatorExtension] = {
     val descriptor = TypespaceCompilerBaseFacade.descriptor(lang)
-    val negative = filter.filter(_.startsWith("-")).map(_.substring(1)).map(ExtensionId).toSet
+    val negative   = filter.filter(_.startsWith("-")).map(_.substring(1)).map(ExtensionId).toSet
     descriptor.defaultExtensions.filterNot(e => negative.contains(e.id))
   }
 }
@@ -275,12 +277,11 @@ object VersionOverlay {
       "0.0.1",
       release = false,
       Map(
-        IDLLanguage.Scala -> "SNAPSHOT",
+        IDLLanguage.Scala      -> "SNAPSHOT",
         IDLLanguage.Typescript -> "build.0",
-        IDLLanguage.Go -> "0",
-        IDLLanguage.CSharp -> "alpha",
-      )
-        .map { case (k, v) => k.toString.toLowerCase -> v }
+        IDLLanguage.Go         -> "0",
+        IDLLanguage.CSharp     -> "alpha",
+      ).map { case (k, v) => k.toString.toLowerCase -> v },
     )
   }
 }
