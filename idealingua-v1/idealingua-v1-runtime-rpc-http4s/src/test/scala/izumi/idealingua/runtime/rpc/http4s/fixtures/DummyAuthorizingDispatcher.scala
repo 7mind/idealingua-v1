@@ -16,7 +16,7 @@ final class DummyAuthorizingDispatcher[F[+_, +_]: IO2, Ctx](proxied: IRTWrappedS
         override val signature: IRTMethodSignature  = method.signature
         override val marshaller: IRTCirceMarshaller = method.marshaller
 
-        override def invoke(ctx: Ctx, input: signature.Input): R.Just[signature.Output] = {
+        override def invoke(ctx: Ctx, input: signature.Input): F[Nothing, signature.Output] = {
           ctx match {
             case DummyRequestContext(_, Some(BasicCredentials(user, pass))) =>
               if (user == "user" && pass == "pass") {
