@@ -35,12 +35,14 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
   ): Lifecycle[F[Throwable, _], WsRpcClientConnection[F]] = {
     for {
       client       <- WsRpcDispatcherFactory.asyncHttpClient[F]
-      requestState <- Lifecycle.make(F.syncThrowable(new WsRequestState[F]))(_.clear())
+      requestState <- Lifecycle.liftF(F.syncThrowable(new WsRequestState[F]))
       listener     <- Lifecycle.liftF(F.syncThrowable(createListener(muxer, contextProvider, requestState, dispatcherLogger(uri, logger))))
       handler      <- Lifecycle.liftF(F.syncThrowable(new WebSocketUpgradeHandler(List(listener).asJava)))
       nettyWebSocket <- Lifecycle.make(
         F.fromFutureJava(client.prepareGet(uri.toString()).execute(handler).toCompletableFuture)
       )(nettyWebSocket => fromNettyFuture(nettyWebSocket.sendCloseFrame()).void)
+      // fill promises before closing WS connection, potentially giving a chance to send out an error response before closing
+      _ <- Lifecycle.make(F.unit)(_ => requestState.clear())
     } yield {
       new WsRpcClientConnection.Netty(nettyWebSocket, requestState, printer)
     }
