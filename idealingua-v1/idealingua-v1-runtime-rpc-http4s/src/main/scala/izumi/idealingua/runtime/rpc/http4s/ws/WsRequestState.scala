@@ -49,7 +49,7 @@ class WsRequestState[F[+_, +_]: IO2: Temporal2: Primitives2] extends WsClientRes
     F.sync(Option(responses.get(packetId))).flatMap {
       case Some(promise) => promise.succeed(response).void
       case None          => F.unit
-    } *> forget(packetId)
+    }
   }
 
   def responseWithData(packetId: RpcPacketId, data: Json): F[Throwable, Unit] = {
