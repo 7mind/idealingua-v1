@@ -64,7 +64,8 @@ class WsRequestState[F[+_, +_]: IO2: Temporal2: Primitives2] extends WsClientRes
   def awaitResponse(id: RpcPacketId, timeout: FiniteDuration): F[Nothing, Option[RawResponse]] = {
     Option(responses.get(id)) match {
       case Some(value) => value.await.timeout(timeout)
-      case None        => F.pure(None)
+      case None =>
+        ???
     }
   }
 }

@@ -1,7 +1,7 @@
 package izumi.idealingua.runtime.rpc.http4s
 
 import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
-import izumi.functional.bio.F
+import izumi.functional.bio.{Exit, F}
 import izumi.fundamentals.platform.language.Quirks.*
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcDispatcher.IRTDispatcherRaw
@@ -52,29 +52,32 @@ class Http4sTransportTest extends AnyWordSpec {
     }
 
     "support websockets" in {
-      withServer {
-        wsRpcClientDispatcher().use {
-          dispatcher =>
-            for {
-              id1          <- ZIO.succeed(s"Basic ${Base64.getEncoder.encodeToString("user:pass".getBytes)}")
-              _            <- dispatcher.authorize(Map("Authorization" -> id1))
-              greeterClient = new GreeterServiceClientWrapped(dispatcher)
-              _            <- greeterClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
-              _            <- greeterClient.alternative().either.map(res => assert(res == Right("value")))
-              buzzers      <- ioService.wsSessionStorage.dispatcherForClient(id1)
-              _             = assert(buzzers.nonEmpty)
-              _ <- ZIO.foreach(buzzers) {
-                buzzer =>
-                  val client = new GreeterServiceClientWrapped(buzzer)
-                  client.greet("John", "Buzzer").map(res => assert(res == "Hi, John Buzzer!"))
-              }
-              _ <- dispatcher.authorize(Map("Authorization" -> s"Basic ${Base64.getEncoder.encodeToString("user:badpass".getBytes)}"))
-              _ <- F.sandboxExit(greeterClient.alternative()).map {
-                case Termination(_: IRTGenericFailure, _, _) =>
-                case o                                       => fail(s"Expected IRTGenericFailure but got $o")
-              }
-            } yield ()
-        }
+      (1 to 2000).foreach {
+        _ =>
+          withServer {
+            wsRpcClientDispatcher().use {
+              dispatcher =>
+                for {
+                  id1          <- ZIO.succeed(s"Basic ${Base64.getEncoder.encodeToString("user:pass".getBytes)}")
+                  _            <- dispatcher.authorize(Map("Authorization" -> id1))
+                  greeterClient = new GreeterServiceClientWrapped(dispatcher)
+                  _            <- greeterClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
+                  _            <- greeterClient.alternative().either.map(res => assert(res == Right("value")))
+                  buzzers      <- ioService.wsSessionStorage.dispatcherForClient(id1)
+                  _             = assert(buzzers.nonEmpty)
+                  _ <- ZIO.foreach(buzzers) {
+                    buzzer =>
+                      val client = new GreeterServiceClientWrapped(buzzer)
+                      client.greet("John", "Buzzer").map(res => assert(res == "Hi, John Buzzer!"))
+                  }
+                  _ <- dispatcher.authorize(Map("Authorization" -> s"Basic ${Base64.getEncoder.encodeToString("user:badpass".getBytes)}"))
+                  _ <- F.sandboxExit(greeterClient.alternative()).map {
+                    case Termination(_: IRTGenericFailure, _, _) =>
+                    case o                                       => fail(s"Expected IRTGenericFailure but got $o")
+                  }
+                } yield ()
+            }
+          }
       }
     }
   }
@@ -87,7 +90,10 @@ class Http4sTransportTest extends AnyWordSpec {
       .use(_ => f)
       .unit
 
-    IO2R.unsafeRun(io)
+    IO2R.unsafeRunSync(io) match {
+      case Success(())              => ()
+      case failure: Exit.Failure[_] => throw failure.trace.toThrowable
+    }
   }
 
   def checkBadBody(body: String, disp: IRTDispatcherRaw[IO]): ZIO[Any, Nothing, Unit] = {
