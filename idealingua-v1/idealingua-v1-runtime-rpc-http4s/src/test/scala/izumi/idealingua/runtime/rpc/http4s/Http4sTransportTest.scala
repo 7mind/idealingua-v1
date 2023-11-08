@@ -87,8 +87,8 @@ class Http4sTransportTest extends AnyWordSpec {
         for {
           id1 <- ZIO.succeed(RpcPacketId.random())
           id2 <- ZIO.succeed(RpcPacketId.random())
-          _   <- rs.requestEmpty(id1, 0.minutes)
-          _   <- rs.requestEmpty(id2)
+          _   <- rs.registerRequest(id1, None, 0.minutes)
+          _   <- rs.registerRequest(id2, None, 5.minutes)
           _ <- F.attempt(rs.awaitResponse(id1, 5.seconds)).map {
             case Left(_: IRTMissingHandlerException) => ()
             case other                               => fail(s"Expected IRTMissingHandlerException, but got $other.")
