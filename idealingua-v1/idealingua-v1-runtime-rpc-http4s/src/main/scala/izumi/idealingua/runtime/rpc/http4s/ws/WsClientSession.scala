@@ -24,7 +24,6 @@ trait WsClientSession[F[+_, +_], RequestCtx, ClientId] extends WsClientResponder
   def updateId(maybeNewId: Option[ClientId]): F[Throwable, Unit]
   def outQueue: Queue[F[Throwable, _], WebSocketFrame]
 
-  def request(method: IRTMethodId, data: Json): F[Throwable, RpcPacketId]
   def requestAndAwaitResponse(method: IRTMethodId, data: Json, timeout: FiniteDuration): F[Throwable, Option[RawResponse]]
 
   def finish(): F[Throwable, Unit]
@@ -46,23 +45,15 @@ object WsClientSession {
 
     def id: WsClientId[ClientId] = WsClientId(sessionId, clientId.get())
 
-    override def request(method: IRTMethodId, data: Json): F[Throwable, RpcPacketId] = {
+    def requestAndAwaitResponse(method: IRTMethodId, data: Json, timeout: FiniteDuration): F[Throwable, Option[RawResponse]] = {
       val id      = RpcPacketId.random()
       val request = RpcPacket.buzzerRequest(id, method, data)
       for {
         _ <- logger.debug(s"WS Session: enqueue $request with $id to request state & send queue.")
-        _ <- outQueue.offer(Text(printer.print(request.asJson)))
-        _ <- requestState.request(id, method)
-      } yield id
-    }
-
-    def requestAndAwaitResponse(method: IRTMethodId, data: Json, timeout: FiniteDuration): F[Throwable, Option[RawResponse]] = {
-      for {
-        id <- request(method, data)
-        response <- requestState.awaitResponse(id, timeout).guarantee {
-          logger.debug(s"WS Session: $method, ${id -> "id"}: cleaning request state.") *>
-          requestState.forget(id)
+        response <- requestState.requestAndAwait(id, Some(method), timeout) {
+          outQueue.offer(Text(printer.print(request.asJson)))
         }
+        _ <- logger.debug(s"WS Session: $method, ${id -> "id"}: cleaning request state.")
       } yield response
     }
 

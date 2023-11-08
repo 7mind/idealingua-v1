@@ -12,7 +12,7 @@ import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.*
 
 class WsRequestState[F[+_, +_]: IO2: Temporal2: Primitives2] extends WsClientResponder[F] {
@@ -21,21 +21,31 @@ class WsRequestState[F[+_, +_]: IO2: Temporal2: Primitives2] extends WsClientRes
   private[this] val requests: ConcurrentHashMap[RpcPacketId, IRTMethodId]        = new ConcurrentHashMap[RpcPacketId, IRTMethodId]()
   private[this] val responses: ConcurrentHashMap[RpcPacketId, RequestHandler[F]] = new ConcurrentHashMap[RpcPacketId, RequestHandler[F]]()
 
-  def requestEmpty(id: RpcPacketId, ttl: FiniteDuration = 3.minute): F[Throwable, Promise2[F, Nothing, RawResponse]] = {
+  def requestAndAwait[A](id: RpcPacketId, methodId: Option[IRTMethodId], timeout: FiniteDuration)(request: => F[Throwable, A]): F[Throwable, Option[RawResponse]] = {
+    (for {
+      handler <- registerRequest(id, methodId, timeout)
+      // request should be performed after handler created
+      _   <- request
+      res <- handler.promise.await.timeout(timeout)
+    } yield res).guarantee(forget(id))
+  }
+
+  def registerRequest(id: RpcPacketId, methodId: Option[IRTMethodId], timeout: FiniteDuration): F[Nothing, RequestHandler[F]] = {
     for {
       now     <- clock.nowOffset()
       _       <- forgetExpired(now)
       promise <- F.mkPromise[Nothing, RawResponse]
+      ttl      = timeout * 3
       handler  = RequestHandler(id, promise, ttl, now)
       _       <- F.sync(responses.put(id, handler))
-    } yield promise
+      _       <- F.traverse(methodId)(m => F.sync(requests.put(id, m)))
+    } yield handler
   }
 
-  def request(id: RpcPacketId, methodId: IRTMethodId, ttl: FiniteDuration = 3.minute): F[Throwable, Promise2[F, Nothing, RawResponse]] = {
-    for {
-      _       <- F.sync(requests.put(id, methodId))
-      promise <- requestEmpty(id, ttl)
-    } yield promise
+  def awaitResponse(id: RpcPacketId, timeout: FiniteDuration): F[Throwable, Option[RawResponse]] = {
+    F.fromOption(new IRTMissingHandlerException(s"Can not await for async response: $id. Missing handler.", null)) {
+      Option(responses.get(id))
+    }.flatMap(_.promise.await.timeout(timeout))
   }
 
   def forget(id: RpcPacketId): F[Nothing, Unit] = F.sync {
@@ -65,12 +75,6 @@ class WsRequestState[F[+_, +_]: IO2: Temporal2: Primitives2] extends WsClientRes
       }
       _ <- responseWith(packetId, RawResponse.GoodRawResponse(data, method))
     } yield ()
-  }
-
-  def awaitResponse(id: RpcPacketId, timeout: FiniteDuration): F[Throwable, Option[RawResponse]] = {
-    F.fromOption(new IRTMissingHandlerException(s"Can not await for async response: $id. Missing handler.", null)) {
-      Option(responses.get(id))
-    }.flatMap(_.promise.await.timeout(timeout))
   }
 
   private[this] def forgetExpired(now: OffsetDateTime): F[Nothing, Unit] = {
