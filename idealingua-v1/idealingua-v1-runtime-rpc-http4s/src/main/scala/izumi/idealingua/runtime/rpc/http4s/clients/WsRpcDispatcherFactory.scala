@@ -198,18 +198,9 @@ object WsRpcDispatcherFactory {
         method: Option[IRTMethodId],
         timeout: FiniteDuration,
       ): F[Throwable, Option[RawResponse]] = {
-        F.bracket {
-          method match {
-            case Some(irtMethod) => requestState.request(id, irtMethod)
-            case _               => requestState.requestEmpty(id)
-          }
-        }(_ => requestState.forget(id))(
-          _ =>
-            for {
-              _   <- fromNettyFuture(nettyWebSocket.sendTextFrame(printer.print(packet.asJson)))
-              res <- requestState.awaitResponse(id, timeout)
-            } yield res
-        )
+        requestState.requestAndAwait(id, method, timeout) {
+          fromNettyFuture(nettyWebSocket.sendTextFrame(printer.print(packet.asJson)))
+        }
       }
     }
   }
