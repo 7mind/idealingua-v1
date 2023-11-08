@@ -115,7 +115,7 @@ class Http4sTransportTest extends AnyWordSpec {
   def executeIO(io: IO[Throwable, Any]): Unit = {
     IO2R.unsafeRunSync(io.unit) match {
       case Success(())              => ()
-      case failure: Exit.Failure[_] => throw failure.trace.toThrowable
+      case failure: Exit.Failure[?] => throw failure.trace.toThrowable
     }
   }
 
