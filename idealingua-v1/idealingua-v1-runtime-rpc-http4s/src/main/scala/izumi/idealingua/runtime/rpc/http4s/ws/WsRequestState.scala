@@ -81,7 +81,7 @@ class WsRequestState[F[+_, +_]: IO2: Temporal2: Primitives2] extends WsClientRes
         responses.values().removeIf {
           handler =>
             val isExpired = handler.expired(now)
-            if (isExpired) removed.addOne(handler)
+            if (isExpired) removed.append(handler)
             isExpired
         }
         removed.toList

@@ -88,6 +88,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
     override def onClose(websocket: WebSocket, code: Int, reason: String): Unit = {
       socketRef.set(None)
       websocket.sendCloseFrame()
+      ()
     }
 
     override def onError(t: Throwable): Unit = {
