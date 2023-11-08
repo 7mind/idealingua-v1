@@ -2,7 +2,6 @@ package izumi.idealingua.runtime.rpc.http4s.clients
 
 import io.circe.syntax.*
 import io.circe.{Json, Printer}
-import io.netty.util.concurrent.Future
 import izumi.functional.bio.{Async2, Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
 import izumi.functional.lifecycle.Lifecycle
 import izumi.fundamentals.platform.language.Quirks.Discarder
@@ -89,6 +88,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
     override def onClose(websocket: WebSocket, code: Int, reason: String): Unit = {
       socketRef.set(None)
       websocket.sendCloseFrame()
+      ()
     }
 
     override def onError(t: Throwable): Unit = {
@@ -206,7 +206,7 @@ object WsRpcDispatcherFactory {
         }(_ => requestState.forget(id))(
           _ =>
             for {
-              _   <- fromNettyFuture(nettyWebSocket.sendTextFrame(printer.print(packet.asJson))).orTerminate
+              _   <- fromNettyFuture(nettyWebSocket.sendTextFrame(printer.print(packet.asJson)))
               res <- requestState.awaitResponse(id, timeout)
             } yield res
         )
@@ -221,31 +221,37 @@ object WsRpcDispatcherFactory {
     def unit: WsRpcContextProvider[Unit] = _ => ()
   }
 
-  private def fromNettyFuture[F[+_, +_]: Async2, A](nettyFuture: Future[A]): F[Throwable, A] = {
-    F.asyncCancelable {
-      callback =>
-        nettyFuture.addListener {
-          (completedFuture: Future[A]) =>
-            try {
-              if (!completedFuture.isDone) {
-                // shouldn't be possible, future should already be completed
-                completedFuture.await(1000L)
-              }
-              if (completedFuture.isSuccess) {
-                callback(Right(completedFuture.getNow))
-              } else {
-                Option(completedFuture.cause()) match {
-                  case Some(error) => callback(Left(error))
-                  case None        => callback(Left(new RuntimeException("Awaiting NettyFuture failed, but no exception was available.")))
+  private def fromNettyFuture[F[+_, +_]: Async2, A](mkNettyFuture: => io.netty.util.concurrent.Future[A]): F[Throwable, A] = {
+    F.syncThrowable(mkNettyFuture).flatMap {
+      nettyFuture =>
+        F.asyncCancelable {
+          callback =>
+            nettyFuture.addListener {
+              (completedFuture: io.netty.util.concurrent.Future[A]) =>
+                try {
+                  if (!completedFuture.isDone) {
+                    // shouldn't be possible, future should already be completed
+                    completedFuture.await(1000L)
+                  }
+                  if (completedFuture.isSuccess) {
+                    callback(Right(completedFuture.getNow))
+                  } else {
+                    Option(completedFuture.cause()) match {
+                      case Some(error) => callback(Left(error))
+                      case None        => callback(Left(new RuntimeException("Awaiting NettyFuture failed, but no exception was available.")))
+                    }
+                  }
+                } catch {
+                  case exception: Throwable =>
+                    callback(Left(new RuntimeException(s"Awaiting NettyFuture threw an exception=$exception")))
                 }
-              }
-            } catch {
-              case exception: Throwable =>
-                callback(Left(new RuntimeException(s"Awaiting NettyFuture threw an exception=$exception")))
             }
+            val canceler = F.sync {
+              nettyFuture.cancel(false);
+              ()
+            }
+            canceler
         }
-        val canceler = F.sync { nettyFuture.cancel(false); () }
-        canceler
     }
   }
 

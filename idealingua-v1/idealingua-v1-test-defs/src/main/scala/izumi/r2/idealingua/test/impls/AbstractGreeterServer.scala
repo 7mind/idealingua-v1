@@ -7,21 +7,19 @@ abstract class AbstractGreeterServer[F[+_, +_]: IO2, C] extends GreeterServiceSe
 
   val R: IO2[F] = implicitly
 
-  import R._
-
-  override def greet(ctx: C, name: String, surname: String): Just[String] = pure {
+  override def greet(ctx: C, name: String, surname: String): Just[String] = R.pure {
     s"Hi, $name $surname!"
   }
 
-  override def sayhi(ctx: C): Just[String] = pure {
+  override def sayhi(ctx: C): Just[String] = R.pure {
     "Hi!"
   }
 
-  override def alternative(ctx: C): Or[Long, String] = fromEither {
+  override def alternative(ctx: C): F[Long, String] = R.fromEither {
     Right("value")
   }
 
-  override def nothing(ctx: C): Or[Nothing, String] = pure {
+  override def nothing(ctx: C): F[Nothing, String] = R.pure {
     ""
   }
 }

@@ -35,7 +35,7 @@ class GreeterServiceClientWrapped[F[+_, +_]: IO2](dispatcher: IRTDispatcher[F]) 
   val R: IO2[F] = implicitly
   import izumi.r2.idealingua.test.generated.{GreeterServiceMethods => _M}
 
-  override def greet(name: String, surname: String): R.Just[String] = {
+  override def greet(name: String, surname: String): F[Nothing, String] = {
     R.redeem(dispatcher.dispatch(IRTMuxRequest(IRTReqBody(GreeterServiceMethods.greet.Input(name, surname)), GreeterServiceMethods.greet.id)))(
       { err => R.terminate(err) },
       {
@@ -47,7 +47,7 @@ class GreeterServiceClientWrapped[F[+_, +_]: IO2](dispatcher: IRTDispatcher[F]) 
     )
   }
 
-  override def alternative(): R.Or[Long, String] = {
+  override def alternative(): F[Long, String] = {
     R.redeem(dispatcher.dispatch(IRTMuxRequest(IRTReqBody(GreeterServiceMethods.alternative.Input()), GreeterServiceMethods.alternative.id)))(
       {
         err => R.terminate(err)
@@ -68,9 +68,9 @@ class GreeterServiceClientWrapped[F[+_, +_]: IO2](dispatcher: IRTDispatcher[F]) 
     )
   }
 
-  override def sayhi(): R.Just[String] = ???
+  override def sayhi(): F[Nothing, String] = ???
 
-  override def nothing(): R.Just[Unit] = ???
+  override def nothing(): F[Nothing, Unit] = ???
 }
 
 object GreeterServiceClientWrapped extends IRTWrappedClient {

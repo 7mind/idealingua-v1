@@ -102,7 +102,7 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.11") => Seq(
+      case (_, "2.13.12") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -144,7 +144,7 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
   .jvmSettings(
     crossScalaVersions := Seq(
       "3.3.1",
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head
@@ -152,7 +152,7 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
   .jsSettings(
     crossScalaVersions := Seq(
       "3.3.1",
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -253,7 +253,7 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.11") => Seq(
+      case (_, "2.13.12") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -294,14 +294,14 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -417,7 +417,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.11") => Seq(
+      case (_, "2.13.12") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -459,7 +459,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
   .jvmSettings(
     crossScalaVersions := Seq(
       "3.3.1",
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head
@@ -467,7 +467,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
   .jsSettings(
     crossScalaVersions := Seq(
       "3.3.1",
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -509,7 +509,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
   .settings(
     crossScalaVersions := Seq(
       "3.3.1",
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -586,7 +586,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.11") => Seq(
+      case (_, "2.13.12") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -730,7 +730,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.11") => Seq(
+      case (_, "2.13.12") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -771,7 +771,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -779,7 +779,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -821,7 +821,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
   .settings(
     crossScalaVersions := Seq(
       "3.3.1",
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -898,7 +898,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.11") => Seq(
+      case (_, "2.13.12") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -952,7 +952,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
   .settings(
     crossScalaVersions := Seq(
       "3.3.1",
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -1029,7 +1029,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.11") => Seq(
+      case (_, "2.13.12") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -1083,7 +1083,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
   .settings(
     crossScalaVersions := Seq(
       "3.3.1",
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -1160,7 +1160,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.11") => Seq(
+      case (_, "2.13.12") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -1214,7 +1214,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
   .settings(
     crossScalaVersions := Seq(
       "3.3.1",
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -1291,7 +1291,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.11") => Seq(
+      case (_, "2.13.12") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -1353,7 +1353,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.13.11",
+      "2.13.12",
       "2.12.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -1430,7 +1430,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.11") => Seq(
+      case (_, "2.13.12") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
