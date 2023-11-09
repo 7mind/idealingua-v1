@@ -38,10 +38,10 @@ object WsClientSession {
     printer: Printer,
     logger: LogIO2[F],
   ) extends WsClientSession[F, RequestCtx, ClientId] {
-    private val openingTime: ZonedDateTime = IzTime.utcNow
-    private val sessionId                  = WsSessionId(UUIDGen.getTimeUUID())
-    private val clientId                   = new AtomicReference[Option[ClientId]](None)
-    private val requestState               = new WsRequestState()
+    private val openingTime: ZonedDateTime                  = IzTime.utcNow
+    private val sessionId: WsSessionId                      = WsSessionId(UUIDGen.getTimeUUID())
+    private val clientId: AtomicReference[Option[ClientId]] = new AtomicReference[Option[ClientId]](None)
+    private val requestState: WsRequestState[F]             = WsRequestState.create[F]
 
     def id: WsClientId[ClientId] = WsClientId(sessionId, clientId.get())
 
