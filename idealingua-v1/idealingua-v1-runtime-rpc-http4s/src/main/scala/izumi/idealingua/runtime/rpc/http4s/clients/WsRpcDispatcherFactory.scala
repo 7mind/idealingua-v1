@@ -34,7 +34,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
   ): Lifecycle[F[Throwable, _], WsRpcClientConnection[F]] = {
     for {
       client       <- WsRpcDispatcherFactory.asyncHttpClient[F]
-      requestState <- Lifecycle.liftF(F.syncThrowable(new WsRequestState[F]))
+      requestState <- Lifecycle.liftF(F.syncThrowable(WsRequestState.create[F]))
       listener     <- Lifecycle.liftF(F.syncThrowable(createListener(muxer, contextProvider, requestState, dispatcherLogger(uri, logger))))
       handler      <- Lifecycle.liftF(F.syncThrowable(new WebSocketUpgradeHandler(List(listener).asJava)))
       nettyWebSocket <- Lifecycle.make(

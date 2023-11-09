@@ -83,7 +83,7 @@ class Http4sTransportTest extends AnyWordSpec {
 
     "support request state clean" in {
       executeIO {
-        val rs = new WsRequestState[IO]()
+        val rs = new WsRequestState.Default[IO]()
         for {
           id1 <- ZIO.succeed(RpcPacketId.random())
           id2 <- ZIO.succeed(RpcPacketId.random())
