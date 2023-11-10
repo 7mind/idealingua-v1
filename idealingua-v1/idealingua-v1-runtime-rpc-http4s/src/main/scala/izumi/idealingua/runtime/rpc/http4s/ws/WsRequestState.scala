@@ -110,27 +110,28 @@ object WsRequestState {
     }
 
     private[this] def forgetExpired(now: OffsetDateTime): F[Nothing, Unit] = {
-      for {
-        removed <- F.sync {
-          val removed = mutable.ArrayBuffer.empty[RequestHandler[F]]
-          // it should be synchronized on node remove
-          responses.values().removeIf {
-            handler =>
-              val isExpired = handler.expired(now)
-              if (isExpired) removed.append(handler)
-              isExpired
-          }
-          removed.toList
+      F.suspendSafe {
+        val removed = mutable.ArrayBuffer.empty[RequestHandler[F]]
+        // it should be synchronized on node remove
+        responses.values().removeIf {
+          handler =>
+            val isExpired = handler.expired(now)
+            if (isExpired) removed.append(handler)
+            isExpired
         }
-        _ <- F.traverse(removed) {
+        F.sequence_(removed.map {
           handler =>
             requests.remove(handler.id)
+
             handler.promise.poll.flatMap {
               case Some(_) => F.unit
-              case None    => handler.promise.succeed(BadRawResponse(Some(Json.obj("error" -> Json.fromString(s"Request expired within ${handler.ttl}.")))))
+              case None =>
+                handler.promise
+                  .succeed(BadRawResponse(Some(Json.obj("error" -> Json.fromString(s"Request expired within ${handler.ttl}.")))))
+                  .void
             }
-        }
-      } yield ()
+        })
+      }
     }
   }
 }
