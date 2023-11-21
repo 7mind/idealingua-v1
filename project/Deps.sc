@@ -44,7 +44,6 @@ object Idealingua {
     val sbt_unidoc                 = Version.VExpr("PV.sbt_unidoc")
     val sbt_scoverage              = Version.VExpr("PV.sbt_scoverage")
     val sbt_pgp                    = Version.VExpr("PV.sbt_pgp")
-    val sbt_assembly               = Version.VExpr("PV.sbt_assembly")
 
     val scala_js_version        = Version.VExpr("PV.scala_js_version")
     val crossproject_version    = Version.VExpr("PV.crossproject_version")
@@ -184,14 +183,10 @@ object Idealingua {
     final val jvm3   = Seq(jvmPlatform3)
   }
 
-  final val assemblyPluginJvm = Plugin("AssemblyPlugin", Platform.Jvm)
-  final val assemblyPluginJs  = Plugin("AssemblyPlugin", Platform.Js)
-
   object Projects {
 
     final val plugins = Plugins(
       Seq(Plugin("IzumiPlugin")),
-      Seq(assemblyPluginJs, assemblyPluginJvm),
     )
 
     implicit class VersionOptionExt(version: Option[Version]) {
@@ -219,7 +214,6 @@ object Idealingua {
       final val id = ArtifactId("idealingua-v1")
       final val plugins = Plugins(
         enabled  = Seq(Plugin("SbtgenVerificationPlugin")),
-        disabled = Seq(Plugin("AssemblyPlugin")),
       )
       final val settings = Seq(
         "libraryDependencySchemes" in SettingScope.Build += s""""io.circe" %% "circe-core" % VersionScheme.Always""".raw,
@@ -408,23 +402,7 @@ object Idealingua {
           Projects.idealingua.testDefs,
         ).map(_ in Scope.Compile.all),
         platforms = Targets.jvm2,
-        plugins   = Plugins(Seq(assemblyPluginJvm)),
-        settings = Seq(
-          "mainClass" in SettingScope.Raw("assembly") := """Some("izumi.idealingua.compiler.CommandlineIDLCompiler")""".raw,
-          "assemblyMergeStrategy" in SettingScope.Raw("assembly") :=
-            """{
-              |      case path if path.contains("scala/annotation/nowarn") =>
-              |        MergeStrategy.last
-              |      case p =>
-              |        (assembly / assemblyMergeStrategy).value(p)
-              |}""".stripMargin.raw,
-          "artifact" in SettingScope.Raw("Compile / assembly") :=
-            """{
-              |      val art = (Compile / assembly / artifact).value
-              |      art.withClassifier(Some("assembly"))
-              |}""".stripMargin.raw,
-          SettingDef.RawSettingDef("addArtifact(Compile / assembly / artifact, assembly)"),
-        ),
+        settings = Seq.empty,
       ),
     ),
     pathPrefix       = Projects.idealingua.basePath,
@@ -448,9 +426,7 @@ object Idealingua {
     ),
     rootPlugins         = Projects.root.plugins,
     globalPlugins       = Projects.plugins,
-    pluginConflictRules = Map(assemblyPluginJvm.name -> true),
     appendPlugins = Defaults.SbtGenPlugins ++ Seq(
-      SbtPlugin("com.eed3si9n", "sbt-assembly", PV.sbt_assembly),
       SbtPlugin("com.github.sbt", "sbt-pgp", PV.sbt_pgp),
       SbtPlugin("org.scoverage", "sbt-scoverage", PV.sbt_scoverage),
       SbtPlugin("io.7mind.izumi", "sbt-izumi-deps", PV.izumi),
