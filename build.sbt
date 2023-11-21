@@ -9,8 +9,6 @@ import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 enablePlugins(SbtgenVerificationPlugin)
 
-disablePlugins(AssemblyPlugin)
-
 ThisBuild / libraryDependencySchemes += "io.circe" %% "circe-core" % VersionScheme.Always
 
 ThisBuild / libraryDependencySchemes += "io.circe" %% "circe-core_sjs1" % VersionScheme.Always
@@ -161,9 +159,7 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
   )
   .enablePlugins(IzumiPlugin)
 lazy val `idealingua-v1-modelJVM` = `idealingua-v1-model`.jvm
-  .disablePlugins(AssemblyPlugin)
 lazy val `idealingua-v1-modelJS` = `idealingua-v1-model`.js
-  .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(CrossType.Pure).in(file("idealingua-v1/idealingua-v1-core"))
   .dependsOn(
@@ -310,9 +306,7 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
   )
   .enablePlugins(IzumiPlugin)
 lazy val `idealingua-v1-coreJVM` = `idealingua-v1-core`.jvm
-  .disablePlugins(AssemblyPlugin)
 lazy val `idealingua-v1-coreJS` = `idealingua-v1-core`.js
-  .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatform).crossType(CrossType.Pure).in(file("idealingua-v1/idealingua-v1-runtime-rpc-scala"))
   .settings(
@@ -476,7 +470,6 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
   )
   .enablePlugins(IzumiPlugin)
 lazy val `idealingua-v1-runtime-rpc-scalaJVM` = `idealingua-v1-runtime-rpc-scala`.jvm
-  .disablePlugins(AssemblyPlugin)
 lazy val `idealingua-v1-runtime-rpc-scalaJS` = `idealingua-v1-runtime-rpc-scala`.js
   .settings(
     libraryDependencies ++= Seq(
@@ -484,7 +477,6 @@ lazy val `idealingua-v1-runtime-rpc-scalaJS` = `idealingua-v1-runtime-rpc-scala`
       "io.github.cquiroz" %%% "scala-java-time" % V.scala_java_time % Test
     )
   )
-  .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-http4s"))
   .dependsOn(
@@ -626,7 +618,6 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
-  .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).crossType(CrossType.Pure).in(file("idealingua-v1/idealingua-v1-transpilers"))
   .dependsOn(
@@ -794,14 +785,12 @@ lazy val `idealingua-v1-transpilersJVM` = `idealingua-v1-transpilers`.jvm
     `idealingua-v1-runtime-rpc-go` % "test->compile",
     `idealingua-v1-runtime-rpc-csharp` % "test->compile"
   )
-  .disablePlugins(AssemblyPlugin)
 lazy val `idealingua-v1-transpilersJS` = `idealingua-v1-transpilers`.js
   .settings(
     libraryDependencies ++= Seq(
       "org.typelevel" %% "jawn-parser" % Izumi.Deps.fundamentals_json_circeJVM.org_typelevel_jawn_parser_version
     )
   )
-  .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v1-test-defs"))
   .dependsOn(
@@ -938,7 +927,6 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
-  .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-typescript"))
   .settings(
@@ -1069,7 +1057,6 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
-  .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-go"))
   .settings(
@@ -1200,7 +1187,6 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
-  .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/idealingua-v1-runtime-rpc-csharp"))
   .settings(
@@ -1331,7 +1317,6 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     scalacOptions -= "-Wconf:any:error"
   )
   .enablePlugins(IzumiPlugin)
-  .disablePlugins(AssemblyPlugin)
 
 lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1-compiler"))
   .dependsOn(
@@ -1467,21 +1452,9 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
       )
       case (_, _) => Seq.empty
     } },
-    scalacOptions -= "-Wconf:any:error",
-    assembly / mainClass := Some("izumi.idealingua.compiler.CommandlineIDLCompiler"),
-    assembly / assemblyMergeStrategy := {
-          case path if path.contains("scala/annotation/nowarn") =>
-            MergeStrategy.last
-          case p =>
-            (assembly / assemblyMergeStrategy).value(p)
-    },
-    Compile / assembly / artifact := {
-          val art = (Compile / assembly / artifact).value
-          art.withClassifier(Some("assembly"))
-    },
-    addArtifact(Compile / assembly / artifact, assembly)
+    scalacOptions -= "-Wconf:any:error"
   )
-  .enablePlugins(AssemblyPlugin, IzumiPlugin)
+  .enablePlugins(IzumiPlugin)
 
 lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
   .settings(
@@ -1489,7 +1462,6 @@ lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
     crossScalaVersions := Nil
   )
   .enablePlugins(IzumiPlugin)
-  .disablePlugins(AssemblyPlugin)
   .aggregate(
     `idealingua-v1-modelJVM`,
     `idealingua-v1-modelJS`,
@@ -1512,7 +1484,6 @@ lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"
     publish / skip := true,
     crossScalaVersions := Nil
   )
-  .disablePlugins(AssemblyPlugin)
   .aggregate(
     `idealingua-v1-modelJVM`,
     `idealingua-v1-coreJVM`,
@@ -1531,7 +1502,6 @@ lazy val `idealingua-js` = (project in file(".agg/idealingua-v1-idealingua-js"))
     publish / skip := true,
     crossScalaVersions := Nil
   )
-  .disablePlugins(AssemblyPlugin)
   .aggregate(
     `idealingua-v1-modelJS`,
     `idealingua-v1-coreJS`,
@@ -1544,7 +1514,6 @@ lazy val `idealingua-v1-jvm` = (project in file(".agg/.agg-jvm"))
     publish / skip := true,
     crossScalaVersions := Nil
   )
-  .disablePlugins(AssemblyPlugin)
   .aggregate(
     `idealingua-jvm`
   )
@@ -1554,7 +1523,6 @@ lazy val `idealingua-v1-js` = (project in file(".agg/.agg-js"))
     publish / skip := true,
     crossScalaVersions := Nil
   )
-  .disablePlugins(AssemblyPlugin)
   .aggregate(
     `idealingua-js`
   )
@@ -1619,7 +1587,6 @@ lazy val `idealingua-v1` = (project in file("."))
     ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
   )
   .enablePlugins(IzumiPlugin)
-  .disablePlugins(AssemblyPlugin)
   .aggregate(
     `idealingua`
   )
