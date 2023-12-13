@@ -6,15 +6,17 @@ import izumi.functional.bio.{Async2, Exit, F, IO2, Primitives2, Temporal2, Unsaf
 import izumi.functional.lifecycle.Lifecycle
 import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.idealingua.runtime.rpc.*
+import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
+import izumi.idealingua.runtime.rpc.http4s.IRTContextServicesMuxer
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcher.IRTDispatcherWs
-import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.{ClientWsRpcHandler, WsRpcClientConnection, WsRpcContextProvider, fromNettyFuture}
+import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.{ClientWsRpcHandler, WsRpcClientConnection, fromNettyFuture}
 import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsRequestState, WsRpcHandler}
 import izumi.logstage.api.IzLogger
 import logstage.LogIO2
 import org.asynchttpclient.netty.ws.NettyWebSocket
 import org.asynchttpclient.ws.{WebSocket, WebSocketListener, WebSocketUpgradeHandler}
 import org.asynchttpclient.{DefaultAsyncHttpClient, DefaultAsyncHttpClientConfig}
-import org.http4s.Uri
+import org.http4s.{Headers, Uri}
 
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -27,15 +29,14 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
   izLogger: IzLogger,
 ) {
 
-  def connect[ServerContext](
+  def connect(
     uri: Uri,
-    muxer: IRTServerMultiplexor[F, ServerContext],
-    contextProvider: WsRpcContextProvider[ServerContext],
+    muxer: IRTContextServicesMuxer[F],
   ): Lifecycle[F[Throwable, _], WsRpcClientConnection[F]] = {
     for {
       client       <- WsRpcDispatcherFactory.asyncHttpClient[F]
       requestState <- Lifecycle.liftF(F.syncThrowable(WsRequestState.create[F]))
-      listener     <- Lifecycle.liftF(F.syncThrowable(createListener(muxer, contextProvider, requestState, dispatcherLogger(uri, logger))))
+      listener     <- Lifecycle.liftF(F.syncThrowable(createListener(muxer, requestState, dispatcherLogger(uri, logger))))
       handler      <- Lifecycle.liftF(F.syncThrowable(new WebSocketUpgradeHandler(List(listener).asJava)))
       nettyWebSocket <- Lifecycle.make(
         F.fromFutureJava(client.prepareGet(uri.toString()).execute(handler).toCompletableFuture)
@@ -49,12 +50,11 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
 
   def dispatcher[ServerContext](
     uri: Uri,
-    muxer: IRTServerMultiplexor[F, ServerContext],
-    contextProvider: WsRpcContextProvider[ServerContext],
+    muxer: IRTContextServicesMuxer[F],
     tweakRequest: RpcPacket => RpcPacket = identity,
     timeout: FiniteDuration              = 30.seconds,
   ): Lifecycle[F[Throwable, _], IRTDispatcherWs[F]] = {
-    connect(uri, muxer, contextProvider).map {
+    connect(uri, muxer).map {
       new WsRpcDispatcher(_, timeout, codec, dispatcherLogger(uri, logger)) {
         override protected def buildRequest(rpcPacketId: RpcPacketId, method: IRTMethodId, body: Json): RpcPacket = {
           tweakRequest(super.buildRequest(rpcPacketId, method, body))
@@ -64,21 +64,19 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
   }
 
   protected def wsHandler[ServerContext](
-    logger: LogIO2[F],
-    muxer: IRTServerMultiplexor[F, ServerContext],
-    contextProvider: WsRpcContextProvider[ServerContext],
+    muxer: IRTContextServicesMuxer[F],
     requestState: WsRequestState[F],
-  ): WsRpcHandler[F, ServerContext] = {
-    new ClientWsRpcHandler(muxer, requestState, contextProvider, logger)
+    logger: LogIO2[F],
+  ): WsRpcHandler[F] = {
+    new ClientWsRpcHandler(muxer, requestState, logger)
   }
 
-  protected def createListener[ServerContext](
-    muxer: IRTServerMultiplexor[F, ServerContext],
-    contextProvider: WsRpcContextProvider[ServerContext],
+  protected def createListener(
+    muxer: IRTContextServicesMuxer[F],
     requestState: WsRequestState[F],
     logger: LogIO2[F],
   ): WebSocketListener = new WebSocketListener() {
-    private val handler   = wsHandler(logger, muxer, contextProvider, requestState)
+    private val handler   = wsHandler(muxer, requestState, logger)
     private val socketRef = new AtomicReference[Option[WebSocket]](None)
 
     override def onOpen(websocket: WebSocket): Unit = {
@@ -102,7 +100,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
     override def onTextFrame(payload: String, finalFragment: Boolean, rsv: Int): Unit = {
       UnsafeRun2[F].unsafeRunAsync(handler.processRpcMessage(payload)) {
         exit =>
-          val maybeResponse = exit match {
+          val maybeResponse: Option[RpcPacket] = exit match {
             case Exit.Success(response)         => response
             case Exit.Error(error, _)           => handleWsError(List(error), "errored")
             case Exit.Termination(error, _, _)  => handleWsError(List(error), "terminated")
@@ -154,20 +152,21 @@ object WsRpcDispatcherFactory {
     })
   }
 
-  class ClientWsRpcHandler[F[+_, +_]: IO2, ServerCtx](
-    muxer: IRTServerMultiplexor[F, ServerCtx],
+  class ClientWsRpcHandler[F[+_, +_]: IO2](
+    muxer: IRTContextServicesMuxer[F],
     requestState: WsRequestState[F],
-    contextProvider: WsRpcContextProvider[ServerCtx],
     logger: LogIO2[F],
-  ) extends WsRpcHandler[F, ServerCtx](muxer, requestState, logger) {
-    override def handlePacket(packet: RpcPacket): F[Throwable, Unit] = {
+  ) extends WsRpcHandler[F](muxer, requestState, logger) {
+    override protected def handlePacket(packet: RpcPacket): F[Throwable, Unit] = {
       F.unit
     }
-    override def handleAuthRequest(packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
+
+    override protected def handleAuthRequest(packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
       F.pure(None)
     }
-    override def extractContext(packet: RpcPacket): F[Throwable, ServerCtx] = {
-      F.sync(contextProvider.toContext(packet))
+
+    override protected def getAuthContext: AuthContext = {
+      AuthContext(Headers.empty, None)
     }
   }
 

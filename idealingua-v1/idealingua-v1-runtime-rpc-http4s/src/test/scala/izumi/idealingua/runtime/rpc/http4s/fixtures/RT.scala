@@ -9,7 +9,7 @@ import logstage.LogIO
 import org.http4s.dsl.Http4sDsl
 import zio.IO
 
-import java.util.concurrent.{Executor, Executors}
+import java.util.concurrent.Executors
 import scala.concurrent.ExecutionContext.global
 
 object RT {

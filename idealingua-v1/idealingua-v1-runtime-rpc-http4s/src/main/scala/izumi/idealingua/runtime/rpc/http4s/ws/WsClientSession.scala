@@ -1,92 +1,73 @@
 package izumi.idealingua.runtime.rpc.http4s.ws
 
-import cats.effect.std.Queue
-import io.circe.syntax.*
-import io.circe.{Json, Printer}
-import izumi.functional.bio.{F, IO2, Primitives2, Temporal2}
+import izumi.functional.bio.{F, IO2, Temporal2}
 import izumi.fundamentals.platform.time.IzTime
 import izumi.fundamentals.platform.uuid.UUIDGen
-import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.ws.WsRpcHandler.WsClientResponder
-import logstage.LogIO2
-import org.http4s.websocket.WebSocketFrame
-import org.http4s.websocket.WebSocketFrame.Text
+import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
+import izumi.idealingua.runtime.rpc.http4s.IRTContextServicesMuxer
 
 import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.*
 
-trait WsClientSession[F[+_, +_], RequestCtx, ClientId] extends WsClientResponder[F] {
-  def id: WsClientId[ClientId]
-  def initialContext: RequestCtx
+trait WsClientSession[F[+_, +_]] {
+  def sessionId: WsSessionId
+  def getAuthContext: AuthContext
+  def requests: WsClientRequests[F]
 
-  def updateId(maybeNewId: Option[ClientId]): F[Throwable, Unit]
-  def outQueue: Queue[F[Throwable, _], WebSocketFrame]
+  def servicesMuxer: IRTContextServicesMuxer[F]
 
-  def requestAndAwaitResponse(method: IRTMethodId, data: Json, timeout: FiniteDuration): F[Throwable, Option[RawResponse]]
+  def updateAuthContext(newContext: AuthContext): F[Throwable, Unit]
 
+  def start(): F[Throwable, Unit]
   def finish(): F[Throwable, Unit]
 }
 
 object WsClientSession {
-  class WsClientSessionImpl[F[+_, +_]: IO2: Temporal2: Primitives2, RequestCtx, ClientId](
-    val outQueue: Queue[F[Throwable, _], WebSocketFrame],
-    val initialContext: RequestCtx,
-    listeners: Seq[WsSessionListener[F, ClientId]],
-    wsSessionStorage: WsSessionsStorage[F, RequestCtx, ClientId],
-    printer: Printer,
-    logger: LogIO2[F],
-  ) extends WsClientSession[F, RequestCtx, ClientId] {
-    private val openingTime: ZonedDateTime                  = IzTime.utcNow
-    private val sessionId: WsSessionId                      = WsSessionId(UUIDGen.getTimeUUID())
-    private val clientId: AtomicReference[Option[ClientId]] = new AtomicReference[Option[ClientId]](None)
-    private val requestState: WsRequestState[F]             = WsRequestState.create[F]
 
-    def id: WsClientId[ClientId] = WsClientId(sessionId, clientId.get())
+  class WsClientSessionImpl[F[+_, +_]: IO2](
+    val initialContext: AuthContext,
+    val servicesMuxer: IRTContextServicesMuxer[F],
+    val requests: WsClientRequests[F],
+    wsSessionStorage: WsSessionsStorage[F],
+  ) extends WsClientSession[F] {
+    private val authContextRef             = new AtomicReference[AuthContext](initialContext)
+    private val openingTime: ZonedDateTime = IzTime.utcNow
 
-    def requestAndAwaitResponse(method: IRTMethodId, data: Json, timeout: FiniteDuration): F[Throwable, Option[RawResponse]] = {
-      val id      = RpcPacketId.random()
-      val request = RpcPacket.buzzerRequest(id, method, data)
+    override val sessionId: WsSessionId = WsSessionId(UUIDGen.getTimeUUID())
+
+    override def getAuthContext: AuthContext = authContextRef.get()
+
+    override def updateAuthContext(newContext: AuthContext): F[Throwable, Unit] = {
       for {
-        _ <- logger.debug(s"WS Session: enqueue $request with $id to request state & send queue.")
-        response <- requestState.requestAndAwait(id, Some(method), timeout) {
-          outQueue.offer(Text(printer.print(request.asJson)))
+        contexts <- F.sync {
+          authContextRef.synchronized {
+            val oldContext = authContextRef.get()
+            val updatedContext = authContextRef.updateAndGet {
+              old => AuthContext(old.headers ++ newContext.headers, old.networkAddress.orElse(newContext.networkAddress))
+            }
+            oldContext -> updatedContext
+          }
         }
-        _ <- logger.debug(s"WS Session: $method, ${id -> "id"}: cleaning request state.")
-      } yield response
-    }
-
-    override def responseWith(id: RpcPacketId, response: RawResponse): F[Throwable, Unit] = {
-      requestState.responseWith(id, response)
-    }
-
-    override def responseWithData(id: RpcPacketId, data: Json): F[Throwable, Unit] = {
-      requestState.responseWithData(id, data)
-    }
-
-    override def updateId(maybeNewId: Option[ClientId]): F[Throwable, Unit] = {
-      for {
-        old     <- F.sync(id)
-        _       <- F.sync(clientId.set(maybeNewId))
-        current <- F.sync(id)
-        _       <- F.when(old != current)(F.traverse_(listeners)(_.onClientIdUpdate(current, old)))
+        (oldContext, updatedContext) = contexts
+        _ <- F.when(oldContext != updatedContext) {
+          F.traverse_(servicesMuxer.contextServices)(_.onWsSessionUpdate(sessionId, updatedContext))
+        }
       } yield ()
     }
 
     override def finish(): F[Throwable, Unit] = {
-      F.fromEither(WebSocketFrame.Close(1000)).flatMap(outQueue.offer(_)) *>
-      wsSessionStorage.deleteClient(sessionId) *>
-      F.traverse_(listeners)(_.onSessionClosed(id)) *>
-      requestState.clear()
+      wsSessionStorage.deleteSession(sessionId) *>
+      F.traverse_(servicesMuxer.contextServices)(_.onWsSessionClosed(sessionId, getAuthContext))
     }
 
-    protected[http4s] def start(): F[Throwable, Unit] = {
-      wsSessionStorage.addClient(this) *>
-      F.traverse_(listeners)(_.onSessionOpened(id))
+    override def start(): F[Throwable, Unit] = {
+      wsSessionStorage.addSession(this) *>
+      F.traverse_(servicesMuxer.contextServices)(_.onWsSessionOpened(sessionId, getAuthContext))
     }
 
-    override def toString: String = s"[${id.toString}, ${duration().toSeconds}s]"
+    override def toString: String = s"[$sessionId, ${duration().toSeconds}s]"
 
     private[this] def duration(): FiniteDuration = {
       val now = IzTime.utcNow

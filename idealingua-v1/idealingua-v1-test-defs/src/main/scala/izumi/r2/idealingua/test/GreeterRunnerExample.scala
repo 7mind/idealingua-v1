@@ -1,14 +1,14 @@
 package izumi.r2.idealingua.test
 
 import _root_.io.circe.syntax.*
-import izumi.idealingua.runtime.rpc.{ContextExtender, IRTServerMultiplexorImpl}
+import izumi.idealingua.runtime.rpc.IRTServerMultiplexor.IRTServerMultiplexorImpl
 import izumi.r2.idealingua.test.generated.GreeterServiceServerWrapped
 import zio.*
 
 object GreeterRunnerExample {
   def main(args: Array[String]): Unit = {
     val greeter     = new GreeterServiceServerWrapped[IO, Unit](new impls.AbstractGreeterServer.Impl[IO, Unit]())
-    val multiplexor = new IRTServerMultiplexorImpl[IO, Unit, Unit](Set(greeter), ContextExtender.id)
+    val multiplexor = new IRTServerMultiplexorImpl[IO, Unit](Set(greeter))
 
     val req1  = new greeter.greet.signature.Input("John", "Doe")
     val json1 = req1.asJson
