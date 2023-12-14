@@ -12,6 +12,7 @@ trait WsSessionsStorage[F[+_, +_]] {
   def addSession(session: WsClientSession[F]): F[Throwable, WsClientSession[F]]
   def deleteSession(sessionId: WsSessionId): F[Throwable, Option[WsClientSession[F]]]
   def allSessions(): F[Throwable, Seq[WsClientSession[F]]]
+  def getSession(sessionId: WsSessionId): F[Throwable, Option[WsClientSession[F]]]
 
   def dispatcherForSession(
     sessionId: WsSessionId,
@@ -39,6 +40,10 @@ object WsSessionsStorage {
       } yield res
     }
 
+    override def getSession(sessionId: WsSessionId): F[Throwable, Option[WsClientSession[F]]] = {
+      F.sync(Option(sessions.get(sessionId)))
+    }
+
     override def allSessions(): F[Throwable, Seq[WsClientSession[F]]] = F.sync {
       sessions.values().asScala.toSeq
     }
@@ -61,10 +66,10 @@ object WsSessionsStorage {
     override def dispatch(request: IRTMuxRequest): F[Throwable, IRTMuxResponse] = {
       for {
         json     <- codec.encode(request)
-        response <- session.requests.requestAndAwaitResponse(request.method, json, timeout)
+        response <- session.requestAndAwaitResponse(request.method, json, timeout)
         res <- response match {
           case Some(value: RawResponse.EmptyRawResponse) =>
-            F.fail(new IRTGenericFailure(s"${request.method -> "method"}: empty response: $value"))
+            F.fail(new IRTGenericFailure(s"${request.method}: empty response: $value"))
 
           case Some(value: RawResponse.GoodRawResponse) =>
             logger.debug(s"WS Session: ${request.method -> "method"}: Have response: $value.") *>
@@ -72,11 +77,11 @@ object WsSessionsStorage {
 
           case Some(value: RawResponse.BadRawResponse) =>
             logger.debug(s"WS Session: ${request.method -> "method"}: Generic failure response: ${value.error}.") *>
-            F.fail(new IRTGenericFailure(s"${request.method -> "method"}: generic failure: ${value.error}"))
+            F.fail(new IRTGenericFailure(s"${request.method}: generic failure: ${value.error}"))
 
           case None =>
             logger.warn(s"WS Session: ${request.method -> "method"}: Timeout exception $timeout.") *>
-            F.fail(new TimeoutException(s"${request.method -> "method"}: No response in $timeout"))
+            F.fail(new TimeoutException(s"${request.method}: No response in $timeout"))
         }
       } yield res
     }

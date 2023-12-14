@@ -7,7 +7,7 @@ import izumi.functional.lifecycle.Lifecycle
 import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
-import izumi.idealingua.runtime.rpc.http4s.IRTContextServicesMuxer
+import izumi.idealingua.runtime.rpc.http4s.IRTServicesContextMultiplexor
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcher.IRTDispatcherWs
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.{ClientWsRpcHandler, WsRpcClientConnection, fromNettyFuture}
 import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsRequestState, WsRpcHandler}
@@ -31,7 +31,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
 
   def connect(
     uri: Uri,
-    muxer: IRTContextServicesMuxer[F],
+    muxer: IRTServicesContextMultiplexor[F],
   ): Lifecycle[F[Throwable, _], WsRpcClientConnection[F]] = {
     for {
       client       <- WsRpcDispatcherFactory.asyncHttpClient[F]
@@ -50,7 +50,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
 
   def dispatcher[ServerContext](
     uri: Uri,
-    muxer: IRTContextServicesMuxer[F],
+    muxer: IRTServicesContextMultiplexor[F],
     tweakRequest: RpcPacket => RpcPacket = identity,
     timeout: FiniteDuration              = 30.seconds,
   ): Lifecycle[F[Throwable, _], IRTDispatcherWs[F]] = {
@@ -64,7 +64,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
   }
 
   protected def wsHandler[ServerContext](
-    muxer: IRTContextServicesMuxer[F],
+    muxer: IRTServicesContextMultiplexor[F],
     requestState: WsRequestState[F],
     logger: LogIO2[F],
   ): WsRpcHandler[F] = {
@@ -72,7 +72,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
   }
 
   protected def createListener(
-    muxer: IRTContextServicesMuxer[F],
+    muxer: IRTServicesContextMultiplexor[F],
     requestState: WsRequestState[F],
     logger: LogIO2[F],
   ): WebSocketListener = new WebSocketListener() {
@@ -153,7 +153,7 @@ object WsRpcDispatcherFactory {
   }
 
   class ClientWsRpcHandler[F[+_, +_]: IO2](
-    muxer: IRTContextServicesMuxer[F],
+    muxer: IRTServicesContextMultiplexor[F],
     requestState: WsRequestState[F],
     logger: LogIO2[F],
   ) extends WsRpcHandler[F](muxer, requestState, logger) {
