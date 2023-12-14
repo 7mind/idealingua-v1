@@ -7,7 +7,7 @@ import izumi.functional.lifecycle.Lifecycle
 import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
-import izumi.idealingua.runtime.rpc.http4s.IRTServicesContextMultiplexor
+import izumi.idealingua.runtime.rpc.http4s.IRTServicesMultiplexor
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcher.IRTDispatcherWs
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.{ClientWsRpcHandler, WsRpcClientConnection, fromNettyFuture}
 import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsRequestState, WsRpcHandler}
@@ -31,7 +31,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
 
   def connect(
     uri: Uri,
-    muxer: IRTServicesContextMultiplexor[F],
+    muxer: IRTServicesMultiplexor[F, ?, ?],
   ): Lifecycle[F[Throwable, _], WsRpcClientConnection[F]] = {
     for {
       client       <- WsRpcDispatcherFactory.asyncHttpClient[F]
@@ -48,9 +48,9 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
     }
   }
 
-  def dispatcher[ServerContext](
+  def dispatcher(
     uri: Uri,
-    muxer: IRTServicesContextMultiplexor[F],
+    muxer: IRTServicesMultiplexor[F, ?, ?],
     tweakRequest: RpcPacket => RpcPacket = identity,
     timeout: FiniteDuration              = 30.seconds,
   ): Lifecycle[F[Throwable, _], IRTDispatcherWs[F]] = {
@@ -64,7 +64,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
   }
 
   protected def wsHandler[ServerContext](
-    muxer: IRTServicesContextMultiplexor[F],
+    muxer: IRTServicesMultiplexor[F, ?, ?],
     requestState: WsRequestState[F],
     logger: LogIO2[F],
   ): WsRpcHandler[F] = {
@@ -72,7 +72,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
   }
 
   protected def createListener(
-    muxer: IRTServicesContextMultiplexor[F],
+    muxer: IRTServicesMultiplexor[F, ?, ?],
     requestState: WsRequestState[F],
     logger: LogIO2[F],
   ): WebSocketListener = new WebSocketListener() {
@@ -153,18 +153,13 @@ object WsRpcDispatcherFactory {
   }
 
   class ClientWsRpcHandler[F[+_, +_]: IO2](
-    muxer: IRTServicesContextMultiplexor[F],
+    muxer: IRTServicesMultiplexor[F, ?, ?],
     requestState: WsRequestState[F],
     logger: LogIO2[F],
   ) extends WsRpcHandler[F](muxer, requestState, logger) {
-    override protected def handlePacket(packet: RpcPacket): F[Throwable, Unit] = {
+    override protected def updateAuthContext(packet: RpcPacket): F[Throwable, Unit] = {
       F.unit
     }
-
-    override protected def handleAuthRequest(packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
-      F.pure(None)
-    }
-
     override protected def getAuthContext: AuthContext = {
       AuthContext(Headers.empty, None)
     }
@@ -202,13 +197,6 @@ object WsRpcDispatcherFactory {
         }
       }
     }
-  }
-
-  trait WsRpcContextProvider[Ctx] {
-    def toContext(packet: RpcPacket): Ctx
-  }
-  object WsRpcContextProvider {
-    def unit: WsRpcContextProvider[Unit] = _ => ()
   }
 
   private def fromNettyFuture[F[+_, +_]: Async2, A](mkNettyFuture: => io.netty.util.concurrent.Future[A]): F[Throwable, A] = {

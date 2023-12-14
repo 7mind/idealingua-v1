@@ -10,11 +10,12 @@ import io.circe.syntax.EncoderOps
 import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
 import izumi.functional.bio.{Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
 import izumi.fundamentals.platform.language.Quirks
+import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.fundamentals.platform.time.IzTime
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.HttpServer.{ServerWsRpcHandler, WsResponseMarker}
 import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
-import izumi.idealingua.runtime.rpc.http4s.IRTServicesContext.{InvokeMethodFailure, InvokeMethodResult}
+import izumi.idealingua.runtime.rpc.http4s.IRTServicesMultiplexor.{InvokeMethodFailure, InvokeMethodResult}
 import izumi.idealingua.runtime.rpc.http4s.ws.*
 import izumi.idealingua.runtime.rpc.http4s.ws.WsClientSession.WsClientSessionImpl
 import logstage.LogIO2
@@ -31,7 +32,8 @@ import java.util.concurrent.RejectedExecutionException
 import scala.concurrent.duration.DurationInt
 
 class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2](
-  val muxer: IRTServicesContextMultiplexor[F],
+  val servicesMuxer: IRTServicesMultiplexor[F, ?, ?],
+  val wsContextsSessions: Set[WsContextSessions[F, ?, ?]],
   val wsSessionsStorage: WsSessionsStorage[F],
   dsl: Http4sDsl[F[Throwable, _]],
   logger: LogIO2[F],
@@ -56,7 +58,17 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2](
 
   protected def handleWsClose(session: WsClientSession[F]): F[Throwable, Unit] = {
     logger.debug(s"WS Session: Websocket client disconnected ${session.sessionId}.") *>
-    session.finish()
+    session.finish(onWsDisconnected)
+  }
+
+  protected def onWsConnected(authContext: AuthContext): F[Throwable, Unit] = {
+    authContext.discard()
+    F.unit
+  }
+
+  protected def onWsDisconnected(authContext: AuthContext): F[Throwable, Unit] = {
+    authContext.discard()
+    F.unit
   }
 
   protected def globalWsListener[Ctx, WsCtx]: WsSessionListener[F, Ctx, WsCtx] = new WsSessionListener[F, Ctx, WsCtx] {
@@ -84,8 +96,8 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2](
     for {
       outQueue     <- Queue.unbounded[F[Throwable, _], WebSocketFrame]
       authContext  <- F.syncThrowable(extractAuthContext(request))
-      clientSession = new WsClientSessionImpl(outQueue, authContext, muxer, wsSessionsStorage, logger, printer)
-      _            <- clientSession.start()
+      clientSession = new WsClientSessionImpl(outQueue, authContext, wsContextsSessions, wsSessionsStorage, logger, printer)
+      _            <- clientSession.start(onWsConnected)
 
       outStream = Stream.fromQueueUnterminated(outQueue).merge(pingStream)
       inStream = {
@@ -121,7 +133,7 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2](
   }
 
   protected def wsHandler(clientSession: WsClientSession[F]): WsRpcHandler[F] = {
-    new ServerWsRpcHandler(clientSession, muxer, logger)
+    new ServerWsRpcHandler(clientSession, servicesMuxer, logger)
   }
 
   protected def onWsHeartbeat(requestTime: ZonedDateTime): F[Throwable, Unit] = {
@@ -138,7 +150,7 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2](
     (for {
       authContext <- F.syncThrowable(extractAuthContext(request))
       parsedBody  <- F.fromEither(io.circe.parser.parse(body))
-      invokeRes   <- muxer.invokeMethodWithAuth(methodId)(authContext, parsedBody)
+      invokeRes   <- servicesMuxer.invokeMethodWithAuth(methodId)(authContext, parsedBody)
     } yield invokeRes).sandboxExit.flatMap(handleHttpResult(request, methodId))
   }
 
@@ -235,22 +247,19 @@ object HttpServer {
   case object WsResponseMarker
   class ServerWsRpcHandler[F[+_, +_]: IO2, RequestCtx, ClientId](
     clientSession: WsClientSession[F],
-    contextServicesMuxer: IRTServicesContextMultiplexor[F],
+    contextServicesMuxer: IRTServicesMultiplexor[F, ?, ?],
     logger: LogIO2[F],
   ) extends WsRpcHandler[F](contextServicesMuxer, clientSession, logger) {
-    override protected def getAuthContext: AuthContext = clientSession.getAuthContext
-
-    override def handlePacket(packet: RpcPacket): F[Throwable, Unit] = {
+    override protected def getAuthContext: AuthContext = {
+      clientSession.getAuthContext
+    }
+    override protected def updateAuthContext(packet: RpcPacket): F[Throwable, Unit] = {
       F.traverse_(packet.headers) {
         headersMap =>
           val headers     = Headers.apply(headersMap.toSeq.map { case (k, v) => Header.Raw(CIString(k), v) })
           val authContext = AuthContext(headers, None)
           clientSession.updateAuthContext(authContext)
       }
-    }
-
-    override protected def handleAuthRequest(packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
-      F.pure(Some(RpcPacket(RPCPacketKind.RpcResponse, None, None, packet.id, None, None, None)))
     }
   }
 }

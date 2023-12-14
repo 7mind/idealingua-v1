@@ -6,34 +6,24 @@ import izumi.functional.bio.{Exit, F, IO2}
 import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
-import izumi.idealingua.runtime.rpc.http4s.IRTServicesContext.{InvokeMethodFailure, InvokeMethodResult}
-import izumi.idealingua.runtime.rpc.http4s.IRTServicesContextMultiplexor
+import izumi.idealingua.runtime.rpc.http4s.IRTServicesMultiplexor
+import izumi.idealingua.runtime.rpc.http4s.IRTServicesMultiplexor.{InvokeMethodFailure, InvokeMethodResult}
 import izumi.idealingua.runtime.rpc.http4s.ws.WsRpcHandler.WsResponder
 import logstage.LogIO2
 
 abstract class WsRpcHandler[F[+_, +_]: IO2](
-  muxer: IRTServicesContextMultiplexor[F],
+  muxer: IRTServicesMultiplexor[F, ?, ?],
   responder: WsResponder[F],
   logger: LogIO2[F],
 ) {
 
-  protected def handlePacket(packet: RpcPacket): F[Throwable, Unit]
-
-  protected def handleAuthRequest(packet: RpcPacket): F[Throwable, Option[RpcPacket]]
-
+  protected def updateAuthContext(packet: RpcPacket): F[Throwable, Unit]
   protected def getAuthContext: AuthContext
 
-  protected def handleAuthResponse(ref: RpcPacketId, packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
-    packet.discard()
-    responder.responseWith(ref, RawResponse.EmptyRawResponse()).as(None)
-  }
-
-  def processRpcMessage(
-    message: String
-  ): F[Throwable, Option[RpcPacket]] = {
+  def processRpcMessage(message: String): F[Throwable, Option[RpcPacket]] = {
     for {
       packet <- F.fromEither(io.circe.parser.decode[RpcPacket](message))
-      _      <- handlePacket(packet)
+      _      <- updateAuthContext(packet)
       response <- packet match {
         // auth
         case RpcPacket(RPCPacketKind.RpcRequest, None, _, _, _, _, _) =>
@@ -113,6 +103,15 @@ abstract class WsRpcHandler[F[+_, +_]: IO2](
         case Exit.Interruption(exception, allExceptions, trace) =>
           logger.error(s"WS request interrupted: $exception $allExceptions $trace").as(Some(onFail(exception.getMessage)))
       }
+  }
+
+  protected def handleAuthRequest(packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
+    F.pure(Some(RpcPacket(RPCPacketKind.RpcResponse, None, None, packet.id, None, None, None)))
+  }
+
+  protected def handleAuthResponse(ref: RpcPacketId, packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
+    packet.discard()
+    responder.responseWith(ref, RawResponse.EmptyRawResponse()).as(None)
   }
 }
 

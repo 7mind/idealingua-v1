@@ -7,7 +7,6 @@ import izumi.functional.bio.{F, IO2, Primitives2, Temporal2}
 import izumi.fundamentals.platform.time.IzTime
 import izumi.fundamentals.platform.uuid.UUIDGen
 import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
-import izumi.idealingua.runtime.rpc.http4s.IRTServicesContextMultiplexor
 import izumi.idealingua.runtime.rpc.http4s.ws.WsRpcHandler.WsResponder
 import izumi.idealingua.runtime.rpc.{IRTMethodId, RpcPacket, RpcPacketId}
 import logstage.LogIO2
@@ -27,8 +26,8 @@ trait WsClientSession[F[+_, +_]] extends WsResponder[F] {
 
   def updateAuthContext(newContext: AuthContext): F[Throwable, Unit]
 
-  def start(): F[Throwable, Unit]
-  def finish(): F[Throwable, Unit]
+  def start(onStart: AuthContext => F[Throwable, Unit]): F[Throwable, Unit]
+  def finish(onFinish: AuthContext => F[Throwable, Unit]): F[Throwable, Unit]
 }
 
 object WsClientSession {
@@ -36,7 +35,7 @@ object WsClientSession {
   class WsClientSessionImpl[F[+_, +_]: IO2: Temporal2: Primitives2](
     outQueue: Queue[F[Throwable, _], WebSocketFrame],
     initialContext: AuthContext,
-    muxer: IRTServicesContextMultiplexor[F],
+    wsSessionsContext: Set[WsContextSessions[F, ?, ?]],
     wsSessionStorage: WsSessionsStorage[F],
     logger: LogIO2[F],
     printer: Printer,
@@ -62,7 +61,7 @@ object WsClientSession {
         }
         (oldContext, updatedContext) = contexts
         _ <- F.when(oldContext != updatedContext) {
-          muxer.updateWsSession(sessionId, Some(updatedContext))
+          F.traverse_(wsSessionsContext)(_.updateSession(sessionId, Some(updatedContext)))
         }
       } yield ()
     }
@@ -87,16 +86,18 @@ object WsClientSession {
       requestState.responseWithData(id, data)
     }
 
-    override def finish(): F[Throwable, Unit] = {
+    override def finish(onFinish: AuthContext => F[Throwable, Unit]): F[Throwable, Unit] = {
       F.fromEither(WebSocketFrame.Close(1000)).flatMap(outQueue.offer(_)) *>
       requestState.clear() *>
       wsSessionStorage.deleteSession(sessionId) *>
-      muxer.updateWsSession(sessionId, None)
+      F.traverse_(wsSessionsContext)(_.updateSession(sessionId, None)) *>
+      onFinish(getAuthContext)
     }
 
-    override def start(): F[Throwable, Unit] = {
+    override def start(onStart: AuthContext => F[Throwable, Unit]): F[Throwable, Unit] = {
       wsSessionStorage.addSession(this) *>
-      muxer.updateWsSession(sessionId, Some(getAuthContext))
+      F.traverse_(wsSessionsContext)(_.updateSession(sessionId, Some(getAuthContext))) *>
+      onStart(getAuthContext)
     }
 
     override def toString: String = s"[$sessionId, ${duration().toSeconds}s]"

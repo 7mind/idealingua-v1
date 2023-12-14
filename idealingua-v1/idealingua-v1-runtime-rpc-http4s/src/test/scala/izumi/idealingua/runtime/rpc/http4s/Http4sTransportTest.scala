@@ -60,7 +60,14 @@ object Http4sTransportTest {
 
     final val demo = new TestServices[F](logger)
 
-    final val ioService = new HttpServer[F](demo.Server.contextMuxer, demo.Server.wsStorage, dsl, logger, printer)
+    final val ioService = new HttpServer[F](
+      servicesMuxer      = demo.Server.contextMuxer,
+      wsContextsSessions = demo.Server.wsContextsSessions,
+      wsSessionsStorage  = demo.Server.wsStorage,
+      dsl                = dsl,
+      logger             = logger,
+      printer            = printer,
+    )
 
     def badAuth(user: String): Header.ToRaw       = Authorization(BasicCredentials(user, "badpass"))
     def publicAuth(user: String): Header.ToRaw    = Authorization(BasicCredentials(user, "public"))
