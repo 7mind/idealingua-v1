@@ -72,18 +72,6 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
     F.unit
   }
 
-  protected def globalWsListener[Ctx, WsCtx]: WsSessionListener[F, Ctx, WsCtx] = new WsSessionListener[F, Ctx, WsCtx] {
-    override def onSessionOpened(sessionId: WsSessionId, reqCtx: Ctx, wsCtx: WsCtx): F[Throwable, Unit] = {
-      logger.debug(s"WS Session: $sessionId opened $wsCtx on $reqCtx.")
-    }
-    override def onSessionUpdated(sessionId: WsSessionId, reqCtx: Ctx, prevStx: WsCtx, newCtx: WsCtx): F[Throwable, Unit] = {
-      logger.debug(s"WS Session: $sessionId updated $newCtx from $prevStx on $reqCtx.")
-    }
-    override def onSessionClosed(sessionId: WsSessionId, wsCtx: WsCtx): F[Throwable, Unit] = {
-      logger.debug(s"WS Session: $sessionId closed $wsCtx .")
-    }
-  }
-
   protected def setupWs(
     request: Request[F[Throwable, _]],
     ws: WebSocketBuilder2[F[Throwable, _]],
@@ -150,7 +138,7 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
     val methodId = IRTMethodId(IRTServiceId(serviceName), IRTMethodName(methodName))
     (for {
       authContext <- F.syncThrowable(httpContextExtractor.extract(request))
-      parsedBody  <- F.fromEither(io.circe.parser.parse(body))
+      parsedBody  <- F.fromEither(io.circe.parser.parse(body)).leftMap(err => new IRTDecodingException(s"Can not parse JSON body '$body'.", Some(err)))
       invokeRes   <- muxer.invokeMethod(methodId)(authContext, parsedBody)
     } yield invokeRes).sandboxExit.flatMap(handleHttpResult(request, methodId))
   }
@@ -165,43 +153,43 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
         Ok(printer.print(res))
 
       case Error(err: IRTMissingHandlerException, _) =>
-        logger.warn(s"No service and method handler for $method: $err") *>
+        logger.warn(s"HTTP Request execution failed - no method handler for $method: $err") *>
         NotFound()
 
       case Error(error: circe.Error, trace) =>
-        logger.info(s"Parsing failure while handling $method: $error $trace") *>
+        logger.warn(s"HTTP Request execution failed - parsing failure while handling $method:\n${error.getMessage -> "error"}\n$trace") *>
         BadRequest()
 
       case Error(error: IRTDecodingException, trace) =>
-        logger.info(s"Parsing failure while handling $method: $error $trace") *>
+        logger.warn(s"HTTP Request execution failed - parsing failure while handling $method:\n$error\n$trace") *>
         BadRequest()
 
       case Error(error: IRTLimitReachedException, trace) =>
-        logger.debug(s"$Request failed because of request limit reached $method: $error $trace") *>
+        logger.debug(s"HTTP Request failed - request limit reached $method:\n$error\n$trace") *>
         TooManyRequests()
 
       case Error(error: IRTUnathorizedRequestContextException, trace) =>
-        logger.debug(s"$Request failed because of unexpected request context reached $method: $error $trace") *>
+        logger.debug(s"HTTP Request failed - unauthorized $method call:\n$error\n$trace") *>
         F.pure(Response(status = Status.Unauthorized))
 
       case Error(error, trace) =>
-        logger.info(s"Unexpected failure while handling $method: $error $trace") *>
+        logger.warn(s"HTTP Request unexpectedly failed while handling $method:\n$error\n$trace") *>
         InternalServerError()
 
       case Termination(_, (cause: IRTHttpFailureException) :: _, trace) =>
-        logger.debug(s"Request rejected, $method, $request, $cause, $trace") *>
+        logger.error(s"HTTP Request rejected - $method, $request:\n$cause\n$trace") *>
         F.pure(Response(status = cause.status))
 
       case Termination(_, (cause: RejectedExecutionException) :: _, trace) =>
-        logger.warn(s"Not enough capacity to handle $method: $cause $trace") *>
+        logger.warn(s"HTTP Request rejected - Not enough capacity to handle $method:\n$cause\n$trace") *>
         TooManyRequests()
 
       case Termination(cause, _, trace) =>
-        logger.error(s"Execution failed, termination, $method, $request, $cause, $trace") *>
+        logger.error(s"HTTP Request execution failed, termination, $method, $request:\n$cause\n$trace") *>
         InternalServerError()
 
       case Interruption(cause, _, trace) =>
-        logger.info(s"Unexpected interruption while handling $method: $cause $trace") *>
+        logger.error(s"HTTP Request unexpectedly interrupted while handling $method:\n$cause\n$trace") *>
         InternalServerError()
     }
   }

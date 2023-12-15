@@ -51,11 +51,11 @@ object IRTServerMultiplexor {
       for {
         requestBody <- F.syncThrowable(method.marshaller.decodeRequest[F].apply(IRTJsonBody(methodId, parsedBody))).flatten.sandbox.catchAll {
           case Exit.Interruption(decodingFailure, _, trace) =>
-            F.fail(new IRTDecodingException(s"$methodId: Failed to decode JSON ${parsedBody.toString()} $trace", Some(decodingFailure)))
+            F.fail(new IRTDecodingException(s"$methodId: Failed to decode JSON '${parsedBody.noSpaces}'.\nTrace: $trace", Some(decodingFailure)))
           case Exit.Termination(_, exceptions, trace) =>
-            F.fail(new IRTDecodingException(s"$methodId: Failed to decode JSON ${parsedBody.toString()} $trace", exceptions.headOption))
+            F.fail(new IRTDecodingException(s"$methodId: Failed to decode JSON '${parsedBody.noSpaces}'.\nTrace: $trace", exceptions.headOption))
           case Exit.Error(decodingFailure, trace) =>
-            F.fail(new IRTDecodingException(s"$methodId: Failed to decode JSON ${parsedBody.toString()} $trace", Some(decodingFailure)))
+            F.fail(new IRTDecodingException(s"$methodId: Failed to decode JSON '${parsedBody.noSpaces}'.\nTrace: $trace", Some(decodingFailure)))
         }
         result  <- F.syncThrowable(method.invoke(context, requestBody.value.asInstanceOf[method.signature.Input])).flatten
         encoded <- F.syncThrowable(method.marshaller.encodeResponse.apply(IRTResBody(result)))

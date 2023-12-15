@@ -30,27 +30,29 @@ object WsContextSessions {
 
   class WsContextSessionsImpl[F[+_, +_]: IO2, RequestCtx, WsCtx](
     wsSessionsStorage: WsSessionsStorage[F, ?],
+    globalWsListeners: Set[WsSessionListener[F, Any, Any]],
     wsSessionListeners: Set[WsSessionListener[F, RequestCtx, WsCtx]],
     wsIdExtractor: WsIdExtractor[RequestCtx, WsCtx],
   ) extends WsContextSessions[F, RequestCtx, WsCtx] {
-    private val sessionToId = new ConcurrentHashMap[WsSessionId, WsCtx]()
-    private val idToSession = new ConcurrentHashMap[WsCtx, WsSessionId]()
+    private[this] val allListeners = globalWsListeners ++ wsSessionListeners
+    private[this] val sessionToId  = new ConcurrentHashMap[WsSessionId, WsCtx]()
+    private[this] val idToSession  = new ConcurrentHashMap[WsCtx, WsSessionId]()
 
     override def updateSession(wsSessionId: WsSessionId, requestContext: Option[RequestCtx]): F[Throwable, Unit] = {
       updateCtx(wsSessionId, requestContext).flatMap {
         case (Some(ctx), Some(previous), Some(updated)) if previous != updated =>
-          F.traverse_(wsSessionListeners)(_.onSessionUpdated(wsSessionId, ctx, previous, updated))
+          F.traverse_(allListeners)(_.onSessionUpdated(wsSessionId, ctx, previous, updated))
         case (Some(ctx), None, Some(updated)) =>
-          F.traverse_(wsSessionListeners)(_.onSessionOpened(wsSessionId, ctx, updated))
+          F.traverse_(allListeners)(_.onSessionOpened(wsSessionId, ctx, updated))
         case (_, Some(prev), None) =>
-          F.traverse_(wsSessionListeners)(_.onSessionClosed(wsSessionId, prev))
+          F.traverse_(allListeners)(_.onSessionClosed(wsSessionId, prev))
         case _ =>
           F.unit
       }
     }
 
     override def dispatcherFor(ctx: WsCtx, codec: IRTClientMultiplexor[F], timeout: FiniteDuration): F[Throwable, Option[IRTDispatcher[F]]] = {
-      F.sync(Option(idToSession.get(ctx))).flatMap {
+      F.sync(synchronized(Option(idToSession.get(ctx)))).flatMap {
           F.traverse(_) {
             wsSessionsStorage.dispatcherForSession(_, codec, timeout)
           }
@@ -66,6 +68,7 @@ object WsContextSessions {
         val updated  = requestContext.flatMap(wsIdExtractor.extract)
         (updated, previous) match {
           case (Some(upd), _) =>
+            previous.map(idToSession.remove)
             sessionToId.put(wsSessionId, upd)
             idToSession.put(upd, wsSessionId)
             ()

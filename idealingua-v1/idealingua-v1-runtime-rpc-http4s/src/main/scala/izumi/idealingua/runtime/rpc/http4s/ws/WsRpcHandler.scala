@@ -19,8 +19,10 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
 
   def processRpcMessage(message: String): F[Throwable, Option[RpcPacket]] = {
     for {
-      packet <- F.fromEither(io.circe.parser.decode[RpcPacket](message))
-      _      <- updateRequestCtx(packet)
+      packet <- F
+        .fromEither(io.circe.parser.decode[RpcPacket](message))
+        .leftMap(err => new IRTDecodingException(s"Can not decode Rpc Packet '$message'.\nError: $err."))
+      _ <- updateRequestCtx(packet)
       response <- packet match {
         // auth
         case RpcPacket(RPCPacketKind.RpcRequest, None, _, _, _, _, _) =>
@@ -81,20 +83,35 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
       case Success(res) =>
         F.pure(Some(onSuccess(res)))
 
-      case Exit.Error(_: IRTMissingHandlerException, _) =>
-        logger.error(s"WS request errored: No service handler for $methodId.").as(Some(onFail("Service an method not found.")))
+      case Exit.Error(error: IRTMissingHandlerException, trace) =>
+        logger
+          .error(s"WS Request failed - no method handler for $methodId:\n$error\n$trace")
+          .as(Some(onFail("Not Found.")))
 
-      case Exit.Error(err: IRTUnathorizedRequestContextException, _) =>
-        logger.warn(s"WS request errored: unauthorized - ${err.getMessage -> "message"}.").as(Some(onFail("Unauthorized.")))
+      case Exit.Error(error: IRTUnathorizedRequestContextException, trace) =>
+        logger
+          .warn(s"WS Request failed - unauthorized $methodId call:\n$error\n$trace")
+          .as(Some(onFail("Unauthorized.")))
+
+      case Exit.Error(error: IRTDecodingException, trace) =>
+        logger
+          .warn(s"WS Request failed - decoding failed:\n$error\n$trace")
+          .as(Some(onFail("BadRequest.")))
 
       case Exit.Termination(exception, allExceptions, trace) =>
-        logger.error(s"WS request terminated: $exception, $allExceptions, $trace").as(Some(onFail(exception.getMessage)))
+        logger
+          .error(s"WS Request terminated:\n$exception\n$allExceptions\n$trace")
+          .as(Some(onFail(exception.getMessage)))
 
       case Exit.Error(exception, trace) =>
-        logger.error(s"WS request failed: $exception $trace").as(Some(onFail(exception.getMessage)))
+        logger
+          .error(s"WS Request unexpectedly failed:\n$exception\n$trace")
+          .as(Some(onFail(exception.getMessage)))
 
       case Exit.Interruption(exception, allExceptions, trace) =>
-        logger.error(s"WS request interrupted: $exception $allExceptions $trace").as(Some(onFail(exception.getMessage)))
+        logger
+          .error(s"WS Request unexpectedly interrupted:\n$exception\n$allExceptions\n$trace")
+          .as(Some(onFail(exception.getMessage)))
     }
   }
 

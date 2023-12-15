@@ -3,13 +3,13 @@ package izumi.idealingua.runtime.rpc.http4s.fixtures
 sealed trait TestContext
 
 final case class PrivateContext(user: String) extends TestContext {
-  override def toString: String = "private"
+  override def toString: String = s"private: $user"
 }
 
 final case class ProtectedContext(user: String) extends TestContext {
-  override def toString: String = "protected"
+  override def toString: String = s"protected: $user"
 }
 
 final case class PublicContext(user: String) extends TestContext {
-  override def toString: String = "public"
+  override def toString: String = s"public: $user"
 }

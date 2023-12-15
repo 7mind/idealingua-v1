@@ -20,7 +20,7 @@ import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsRequestState}
 import izumi.logstage.api.routing.{ConfigurableLogRouter, StaticLogRouter}
 import izumi.logstage.api.{IzLogger, Log}
 import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceMethods}
-import logstage.LogIO
+import logstage.LogIO2
 import org.http4s.*
 import org.http4s.blaze.server.*
 import org.http4s.dsl.Http4sDsl
@@ -48,8 +48,8 @@ object Http4sTransportTest {
     ),
   )
   final class Ctx[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRun2](implicit asyncThrowable: Async[F[Throwable, _]]) {
-    private val logger           = LogIO.fromLogger[F[Nothing, _]](makeLogger())
-    private val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
+    private val logger: LogIO2[F] = LogIO2.fromLogger(izLogger)
+    private val printer: Printer  = Printer.noSpaces.copy(dropNullValues = true)
 
     final val dsl     = Http4sDsl.apply[F[Throwable, _]]
     final val execCtx = HttpExecutionContext(global)
@@ -72,7 +72,7 @@ object Http4sTransportTest {
       printer              = printer,
     )
 
-    def badAuth(user: String): Header.ToRaw       = Authorization(BasicCredentials(user, "badpass"))
+    def badAuth(): Header.ToRaw                   = Authorization(Credentials.Token(AuthScheme.Bearer, "token"))
     def publicAuth(user: String): Header.ToRaw    = Authorization(BasicCredentials(user, "public"))
     def protectedAuth(user: String): Header.ToRaw = Authorization(BasicCredentials(user, "protected"))
     def privateAuth(user: String): Header.ToRaw   = Authorization(BasicCredentials(user, "private"))
@@ -96,10 +96,10 @@ object Http4sTransportTest {
     val router = ConfigurableLogRouter(
       Log.Level.Debug,
       levels = Map(
-        "io.netty"                      -> Log.Level.Info,
-        "org.http4s.blaze.channel.nio1" -> Log.Level.Info,
-        "org.http4s"                    -> Log.Level.Info,
-        "org.asynchttpclient"           -> Log.Level.Info,
+        "io.netty"                      -> Log.Level.Error,
+        "org.http4s.blaze.channel.nio1" -> Log.Level.Error,
+        "org.http4s"                    -> Log.Level.Error,
+        "org.asynchttpclient"           -> Log.Level.Error,
       ),
     )
 
@@ -175,10 +175,11 @@ abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2
         wsRpcClientDispatcher().use {
           dispatcher =>
             for {
-              publicHeaders    <- F.pure(Map("Authorization" -> publicAuth("user").values.head.value))
-              privateHeaders   <- F.pure(Map("Authorization" -> privateAuth("user").values.head.value))
-              protectedHeaders <- F.pure(Map("Authorization" -> protectedAuth("user").values.head.value))
-              badHeaders       <- F.pure(Map("Authorization" -> badAuth("user").values.head.value))
+              publicHeaders     <- F.pure(Map("Authorization" -> publicAuth("user").values.head.value))
+              privateHeaders    <- F.pure(Map("Authorization" -> privateAuth("user").values.head.value))
+              protectedHeaders  <- F.pure(Map("Authorization" -> protectedAuth("user").values.head.value))
+              protectedHeaders2 <- F.pure(Map("Authorization" -> protectedAuth("John").values.head.value))
+              badHeaders        <- F.pure(Map("Authorization" -> badAuth().values.head.value))
 
               publicClient    = new GreeterServiceClientWrapped[F](dispatcher)
               privateClient   = new PrivateTestServiceWrappedClient[F](dispatcher)
@@ -188,11 +189,21 @@ abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2
               _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
               _ <- demo.Server.privateWsSession.dispatcherFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
               _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+              // all listeners are empty
+              _ = assert(demo.Server.protectedWsListener.connected.isEmpty)
+              _ = assert(demo.Server.privateWsListener.connected.isEmpty)
+              _ = assert(demo.Server.publicWsListener.connected.isEmpty)
 
               // public authorization
               _ <- dispatcher.authorize(publicHeaders)
+              // protected and private listeners are empty
+              _ = assert(demo.Server.protectedWsListener.connected.isEmpty)
+              _ = assert(demo.Server.privateWsListener.connected.isEmpty)
+              _ = assert(demo.Server.publicWsListener.connected.contains(PublicContext("user")))
+              // protected and private sessions are empty
               _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
               _ <- demo.Server.privateWsSession.dispatcherFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+              // public dispatcher works as expected
               publicContextBuzzer <- demo.Server.publicWsSession
                 .dispatcherFor(PublicContext("user"), demo.Client.codec)
                 .fromOption(new RuntimeException("Missing Buzzer"))
@@ -204,6 +215,11 @@ abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2
 
               // re-authorize with private
               _ <- dispatcher.authorize(privateHeaders)
+              // protected listener is empty
+              _ = assert(demo.Server.protectedWsListener.connected.isEmpty)
+              _ = assert(demo.Server.privateWsListener.connected.contains(PrivateContext("user")))
+              _ = assert(demo.Server.publicWsListener.connected.contains(PublicContext("user")))
+              // protected sessions is empty
               _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
               _ <- demo.Server.privateWsSession.dispatcherFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
               _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
@@ -213,6 +229,11 @@ abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2
 
               // re-authorize with protected
               _ <- dispatcher.authorize(protectedHeaders)
+              // private listener is empty
+              _ = assert(demo.Server.protectedWsListener.connected.contains(ProtectedContext("user")))
+              _ = assert(demo.Server.privateWsListener.connected.isEmpty)
+              _ = assert(demo.Server.publicWsListener.connected.contains(PublicContext("user")))
+              // private sessions is empty
               _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
               _ <- demo.Server.privateWsSession.dispatcherFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
               _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
@@ -220,12 +241,23 @@ abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2
               _ <- publicClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
               _ <- checkAnauthorizedWsCall(privateClient.test(""))
 
-              // update auth and call service
+              // auth session context update
+              _ <- dispatcher.authorize(protectedHeaders2)
+              // session and listeners notified
+              _  = assert(demo.Server.protectedWsListener.connected.contains(ProtectedContext("John")))
+              _  = assert(demo.Server.protectedWsListener.connected.size == 1)
+              _  = assert(demo.Server.publicWsListener.connected.contains(PublicContext("John")))
+              _  = assert(demo.Server.publicWsListener.connected.size == 1)
+              _  = assert(demo.Server.privateWsListener.connected.isEmpty)
+              _ <- demo.Server.privateWsSession.dispatcherFor(PrivateContext("John"), demo.Client.codec).map(b => assert(b.isEmpty))
+              _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+              _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("John"), demo.Client.codec).map(b => assert(b.nonEmpty))
+              _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+              _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("John"), demo.Client.codec).map(b => assert(b.nonEmpty))
+
+              // bad authorization
               _ <- dispatcher.authorize(badHeaders)
-              _ <- F.sandboxExit(publicClient.alternative()).map {
-                case Termination(f: IRTGenericFailure, _, _) if f.getMessage.contains("""{"cause": "Unauthorized"}""") =>
-                case o => F.fail(s"Expected IRTGenericFailure with Unauthorized message but got $o")
-              }
+              _ <- checkAnauthorizedWsCall(publicClient.alternative())
             } yield ()
         }
       }

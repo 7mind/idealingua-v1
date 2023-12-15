@@ -78,7 +78,6 @@ object RpcPacketId {
   def random(): RpcPacketId = RpcPacketId(UUIDGen.getTimeUUID().toString)
 
   implicit def dec0: Decoder[RpcPacketId] = Decoder.decodeString.map(RpcPacketId.apply)
-
   implicit def enc0: Encoder[RpcPacketId] = Encoder.encodeString.contramap(_.v)
 }
 
@@ -118,7 +117,7 @@ object RpcPacket {
   }
 
   def rpcFail(ref: Option[RpcPacketId], cause: String): RpcPacket = {
-    RpcPacket(RPCPacketKind.RpcFail, Some(Map("cause" -> cause).asJson), None, ref, None, None, None)
+    RpcPacket(RPCPacketKind.RpcFail, Some(Json.obj("cause" -> Json.fromString(cause))), None, ref, None, None, None)
   }
 
   def buzzerRequest(id: RpcPacketId, method: IRTMethodId, data: Json): RpcPacket = {
@@ -130,6 +129,6 @@ object RpcPacket {
   }
 
   def buzzerFail(ref: Option[RpcPacketId], cause: String): RpcPacket = {
-    RpcPacket(RPCPacketKind.BuzzFailure, Some(Map("cause" -> cause).asJson), None, ref, None, None, None)
+    RpcPacket(RPCPacketKind.BuzzFailure, Some(Json.obj("cause" -> Json.fromString(cause))), None, ref, None, None, None)
   }
 }
