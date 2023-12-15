@@ -57,21 +57,6 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
     case request @ POST -> Root / service / method => request.decode[String](processHttpRequest(request, service, method))
   }
 
-  protected def handleWsClose(session: WsClientSession[F, AuthCtx]): F[Throwable, Unit] = {
-    logger.debug(s"WS Session: Websocket client disconnected ${session.sessionId}.") *>
-    session.finish(onWsDisconnected)
-  }
-
-  protected def onWsConnected(authContext: AuthCtx): F[Throwable, Unit] = {
-    authContext.discard()
-    F.unit
-  }
-
-  protected def onWsDisconnected(authContext: AuthCtx): F[Throwable, Unit] = {
-    authContext.discard()
-    F.unit
-  }
-
   protected def setupWs(
     request: Request[F[Throwable, _]],
     ws: WebSocketBuilder2[F[Throwable, _]],
@@ -125,8 +110,23 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
     new ServerWsRpcHandler(clientSession, muxer, wsContextExtractor, logger)
   }
 
+  protected def handleWsClose(session: WsClientSession[F, AuthCtx]): F[Throwable, Unit] = {
+    logger.debug(s"WS Session: Websocket client disconnected ${session.sessionId}.") *>
+    session.finish(onWsDisconnected)
+  }
+
+  protected def onWsConnected(authContext: AuthCtx): F[Throwable, Unit] = {
+    authContext.discard()
+    F.unit
+  }
+
   protected def onWsHeartbeat(requestTime: ZonedDateTime): F[Throwable, Unit] = {
     logger.debug(s"WS Session: pong frame at $requestTime")
+  }
+
+  protected def onWsDisconnected(authContext: AuthCtx): F[Throwable, Unit] = {
+    authContext.discard()
+    F.unit
   }
 
   protected def processHttpRequest(

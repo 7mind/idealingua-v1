@@ -3,7 +3,6 @@ package izumi.idealingua.runtime.rpc.http4s.fixtures
 import io.circe.Json
 import izumi.functional.bio.{F, IO2}
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.IRTServerMultiplexor.IRTServerMultiplexorImpl
 import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
 import izumi.idealingua.runtime.rpc.http4s.context.WsIdExtractor
 import izumi.idealingua.runtime.rpc.http4s.fixtures.defs.*
@@ -22,6 +21,16 @@ class TestServices[F[+_, +_]: IO2](
 ) {
 
   object Server {
+    def userBlacklistMiddleware[C <: TestContext](
+      rejectedNames: Set[String]
+    ): IRTServerMiddleware[F, C] = new IRTServerMiddleware[F, C] {
+      override def priority: Int = 0
+      override def prepare(methodId: IRTMethodId)(context: C, parsedBody: Json): F[Throwable, Unit] = {
+        F.when(rejectedNames.contains(context.user)) {
+          F.fail(new IRTUnathorizedRequestContextException(s"Rejected for users: $rejectedNames."))
+        }
+      }
+    }
     final val wsStorage: WsSessionsStorage[F, AuthContext] = new WsSessionsStorageImpl[F, AuthContext](logger)
     final val globalWsListeners = Set(
       new WsSessionListener[F, Any, Any] {
@@ -37,7 +46,7 @@ class TestServices[F[+_, +_]: IO2](
       }
     )
     // PRIVATE
-    private val privateAuth = new IRTAuthenticator[F, AuthContext, PrivateContext] {
+    final val privateAuth = new IRTAuthenticator[F, AuthContext, PrivateContext] {
       override def authenticate(authContext: AuthContext, body: Option[Json]): F[Nothing, Option[PrivateContext]] = F.sync {
         authContext.headers.get[Authorization].map(_.credentials).collect {
           case BasicCredentials(user, "private") => PrivateContext(user)
@@ -53,12 +62,13 @@ class TestServices[F[+_, +_]: IO2](
     })
     final val privateServices: IRTContextServices[F, AuthContext, PrivateContext, PrivateContext] = IRTContextServices(
       authenticator = privateAuth,
-      serverMuxer   = new IRTServerMultiplexorImpl(Set(privateService)),
+      serverMuxer   = new IRTServerMultiplexor.FromServices(Set(privateService)),
+      middlewares   = Set.empty,
       wsSessions    = privateWsSession,
     )
 
     // PROTECTED
-    private val protectedAuth = new IRTAuthenticator[F, AuthContext, ProtectedContext] {
+    final val protectedAuth = new IRTAuthenticator[F, AuthContext, ProtectedContext] {
       override def authenticate(authContext: AuthContext, body: Option[Json]): F[Nothing, Option[ProtectedContext]] = F.sync {
         authContext.headers.get[Authorization].map(_.credentials).collect {
           case BasicCredentials(user, "protected") => ProtectedContext(user)
@@ -74,7 +84,8 @@ class TestServices[F[+_, +_]: IO2](
     })
     final val protectedServices: IRTContextServices[F, AuthContext, ProtectedContext, ProtectedContext] = IRTContextServices(
       authenticator = protectedAuth,
-      serverMuxer   = new IRTServerMultiplexorImpl(Set(protectedService)),
+      serverMuxer   = new IRTServerMultiplexor.FromServices(Set(protectedService)),
+      middlewares   = Set.empty,
       wsSessions    = protectedWsSession,
     )
 
@@ -93,7 +104,8 @@ class TestServices[F[+_, +_]: IO2](
     final val publicService: IRTWrappedService[F, PublicContext] = new GreeterServiceServerWrapped(new AbstractGreeterServer.Impl[F, PublicContext])
     final val publicServices: IRTContextServices[F, AuthContext, PublicContext, PublicContext] = IRTContextServices(
       authenticator = publicAuth,
-      serverMuxer   = new IRTServerMultiplexorImpl(Set(publicService)),
+      serverMuxer   = new IRTServerMultiplexor.FromServices(Set(publicService)),
+      middlewares   = Set(userBlacklistMiddleware(Set("orc"))),
       wsSessions    = publicWsSession,
     )
 
@@ -111,6 +123,6 @@ class TestServices[F[+_, +_]: IO2](
       PrivateTestServiceWrappedClient,
     )
     val codec: IRTClientMultiplexorImpl[F]               = new IRTClientMultiplexorImpl[F](clients)
-    val buzzerMultiplexor: IRTServerMultiplexor[F, Unit] = new IRTServerMultiplexorImpl(dispatchers)
+    val buzzerMultiplexor: IRTServerMultiplexor[F, Unit] = new IRTServerMultiplexor.FromServices(dispatchers)
   }
 }

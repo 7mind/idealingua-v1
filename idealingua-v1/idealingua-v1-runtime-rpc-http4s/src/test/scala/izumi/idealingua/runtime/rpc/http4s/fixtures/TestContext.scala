@@ -1,6 +1,8 @@
 package izumi.idealingua.runtime.rpc.http4s.fixtures
 
-sealed trait TestContext
+sealed trait TestContext {
+  def user: String
+}
 
 final case class PrivateContext(user: String) extends TestContext {
   override def toString: String = s"private: $user"

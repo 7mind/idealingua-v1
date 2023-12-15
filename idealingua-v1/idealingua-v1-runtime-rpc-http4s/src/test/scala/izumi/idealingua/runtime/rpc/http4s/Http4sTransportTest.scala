@@ -125,45 +125,37 @@ abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2
           privateClient   <- F.sync(httpRpcClientDispatcher(Headers(privateAuth("user1"))))
           protectedClient <- F.sync(httpRpcClientDispatcher(Headers(protectedAuth("user2"))))
           publicClient    <- F.sync(httpRpcClientDispatcher(Headers(publicAuth("user3"))))
+          publicOrcClient <- F.sync(httpRpcClientDispatcher(Headers(publicAuth("orc"))))
 
           // Private API test
           _ <- new PrivateTestServiceWrappedClient(privateClient).test("test").map {
             res => assert(res.startsWith("Private"))
           }
-          _ <- F.sandboxExit(new PrivateTestServiceWrappedClient(protectedClient).test("test")).map {
-            case Termination(exception: IRTUnexpectedHttpStatus, _, _) => assert(exception.status == Status.Unauthorized)
-            case o                                                     => fail(s"Expected Unauthorized status but got $o")
-          }
-          _ <- F.sandboxExit(new ProtectedTestServiceWrappedClient(publicClient).test("test")).map {
-            case Termination(exception: IRTUnexpectedHttpStatus, _, _) => assert(exception.status == Status.Unauthorized)
-            case o                                                     => fail(s"Expected Unauthorized status but got $o")
-          }
+          _ <- checkUnauthorizedHttpCall(new PrivateTestServiceWrappedClient(protectedClient).test("test"))
+          _ <- checkUnauthorizedHttpCall(new ProtectedTestServiceWrappedClient(publicClient).test("test"))
 
           // Protected API test
           _ <- new ProtectedTestServiceWrappedClient(protectedClient).test("test").map {
             res => assert(res.startsWith("Protected"))
           }
-          _ <- F.sandboxExit(new ProtectedTestServiceWrappedClient(privateClient).test("test")).map {
-            case Termination(exception: IRTUnexpectedHttpStatus, _, _) => assert(exception.status == Status.Unauthorized)
-            case o                                                     => fail(s"Expected Unauthorized status but got $o")
-          }
-          _ <- F.sandboxExit(new ProtectedTestServiceWrappedClient(publicClient).test("test")).map {
-            case Termination(exception: IRTUnexpectedHttpStatus, _, _) => assert(exception.status == Status.Unauthorized)
-            case o                                                     => fail(s"Expected Unauthorized status but got $o")
-          }
+          _ <- checkUnauthorizedHttpCall(new ProtectedTestServiceWrappedClient(privateClient).test("test"))
+          _ <- checkUnauthorizedHttpCall(new ProtectedTestServiceWrappedClient(publicClient).test("test"))
 
           // Public API test
+          _ <- new GreeterServiceClientWrapped(protectedClient)
+            .greet("Protected", "Client")
+            .map(res => assert(res == "Hi, Protected Client!"))
+          _ <- new GreeterServiceClientWrapped(privateClient)
+            .greet("Protected", "Client")
+            .map(res => assert(res == "Hi, Protected Client!"))
           greaterClient = new GreeterServiceClientWrapped(publicClient)
-          _ <- new GreeterServiceClientWrapped(protectedClient).greet("Protected", "Client").map {
-            res => assert(res == "Hi, Protected Client!")
-          }
-          _ <- new GreeterServiceClientWrapped(privateClient).greet("Protected", "Client").map {
-            res => assert(res == "Hi, Protected Client!")
-          }
+          _            <- greaterClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
+          _            <- greaterClient.alternative().attempt.map(res => assert(res == Right("value")))
 
-          //
-          _ <- greaterClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
-          _ <- greaterClient.alternative().attempt.map(res => assert(res == Right("value")))
+          // middleware test
+          _ <- checkUnauthorizedHttpCall(new GreeterServiceClientWrapped(publicOrcClient).greet("Orc", "Smith"))
+
+          // bad body test
           _ <- checkBadBody("{}", publicClient)
           _ <- checkBadBody("{unparseable", publicClient)
         } yield ()
@@ -210,8 +202,8 @@ abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2
               _ <- new GreeterServiceClientWrapped(publicContextBuzzer).greet("John", "Buzzer").map(res => assert(res == "Hi, John Buzzer!"))
               _ <- publicClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
               _ <- publicClient.alternative().attempt.map(res => assert(res == Right("value")))
-              _ <- checkAnauthorizedWsCall(privateClient.test(""))
-              _ <- checkAnauthorizedWsCall(protectedClient.test(""))
+              _ <- checkUnauthorizedWsCall(privateClient.test(""))
+              _ <- checkUnauthorizedWsCall(protectedClient.test(""))
 
               // re-authorize with private
               _ <- dispatcher.authorize(privateHeaders)
@@ -225,7 +217,7 @@ abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2
               _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
               _ <- privateClient.test("test").map(res => assert(res.startsWith("Private")))
               _ <- publicClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
-              _ <- checkAnauthorizedWsCall(protectedClient.test(""))
+              _ <- checkUnauthorizedWsCall(protectedClient.test(""))
 
               // re-authorize with protected
               _ <- dispatcher.authorize(protectedHeaders)
@@ -239,7 +231,7 @@ abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2
               _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
               _ <- protectedClient.test("test").map(res => assert(res.startsWith("Protected")))
               _ <- publicClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
-              _ <- checkAnauthorizedWsCall(privateClient.test(""))
+              _ <- checkUnauthorizedWsCall(privateClient.test(""))
 
               // auth session context update
               _ <- dispatcher.authorize(protectedHeaders2)
@@ -257,7 +249,7 @@ abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2
 
               // bad authorization
               _ <- dispatcher.authorize(badHeaders)
-              _ <- checkAnauthorizedWsCall(publicClient.alternative())
+              _ <- checkUnauthorizedWsCall(publicClient.alternative())
             } yield ()
         }
       }
@@ -301,7 +293,16 @@ abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2
     }
   }
 
-  def checkAnauthorizedWsCall[E, A](call: F[E, A]): F[Throwable, Unit] = {
+  def checkUnauthorizedHttpCall[E, A](call: F[E, A]): F[Throwable, Unit] = {
+    call.sandboxExit.flatMap {
+      case Termination(exception: IRTUnexpectedHttpStatus, _, _) =>
+        F.sync(assert(exception.status == Status.Unauthorized)).void
+      case o =>
+        F.fail(new RuntimeException(s"Expected Unauthorized status but got $o"))
+    }
+  }
+
+  def checkUnauthorizedWsCall[E, A](call: F[E, A]): F[Throwable, Unit] = {
     call.sandboxExit.flatMap {
       case Termination(f: IRTGenericFailure, _, _) if f.getMessage.contains("""{"cause":"Unauthorized."}""") =>
         F.unit
