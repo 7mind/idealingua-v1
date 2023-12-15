@@ -16,7 +16,7 @@ trait IRTServerMultiplexor[F[+_, +_], C] {
     updateContext: (C2, Json) => F[Throwable, Option[C]]
   )(implicit io2: IO2[F]
   ): IRTServerMultiplexor[F, C2] = {
-    val mappedMethods = self.methods.view.mapValues(_.contramap(updateContext)).toMap
+    val mappedMethods = self.methods.map { case (k, v) => k -> v.contramap(updateContext) }
     new IRTServerMultiplexor.FromMethods(mappedMethods)
   }
 
@@ -41,5 +41,5 @@ object IRTServerMultiplexor {
   class FromMethods[F[+_, +_], C](val methods: Map[IRTMethodId, IRTServerMethod[F, C]]) extends IRTServerMultiplexor[F, C]
 
   class FromServices[F[+_, +_]: IO2, C](val services: Set[IRTWrappedService[F, C]])
-    extends FromMethods[F, C](services.flatMap(_.allMethods.view.mapValues(m => IRTServerMethod(m))).toMap)
+    extends FromMethods[F, C](services.flatMap(_.allMethods.map { case (k, v) => k -> IRTServerMethod(v) }).toMap)
 }

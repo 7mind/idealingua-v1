@@ -15,11 +15,10 @@ import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcDispatcher.IRTDispatch
 import izumi.idealingua.runtime.rpc.http4s.clients.{HttpRpcDispatcher, HttpRpcDispatcherFactory, WsRpcDispatcher, WsRpcDispatcherFactory}
 import izumi.idealingua.runtime.rpc.http4s.context.{HttpContextExtractor, WsContextExtractor}
 import izumi.idealingua.runtime.rpc.http4s.fixtures.TestServices
-import izumi.idealingua.runtime.rpc.http4s.fixtures.defs.{PrivateTestServiceWrappedClient, ProtectedTestServiceWrappedClient}
 import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsRequestState}
 import izumi.logstage.api.routing.{ConfigurableLogRouter, StaticLogRouter}
 import izumi.logstage.api.{IzLogger, Log}
-import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceMethods}
+import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceMethods, PrivateTestServiceWrappedClient, ProtectedTestServiceWrappedClient}
 import logstage.LogIO2
 import org.http4s.*
 import org.http4s.blaze.server.*

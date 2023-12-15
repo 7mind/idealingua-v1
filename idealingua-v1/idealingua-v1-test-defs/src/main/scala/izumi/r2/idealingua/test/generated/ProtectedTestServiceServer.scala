@@ -1,23 +1,24 @@
-package izumi.idealingua.runtime.rpc.http4s.fixtures.defs
+package izumi.r2.idealingua.test.generated
 
-import _root_.io.circe.syntax.*
-import _root_.io.circe.{DecodingFailure as IRTDecodingFailure, Json as IRTJson}
-import _root_.izumi.functional.bio.IO2 as IRTIO2
-import _root_.izumi.idealingua.runtime.rpc.*
+import io.circe.*
+import io.circe.generic.semiauto.*
+import io.circe.syntax.*
+import izumi.functional.bio.IO2 as IRTIO2
+import izumi.idealingua.runtime.rpc.*
 
-trait PrivateTestServiceServer[Or[+_, +_], C] {
+trait ProtectedTestServiceServer[Or[+_, +_], C] {
   type Just[+T] = Or[Nothing, T]
   def test(ctx: C, str: String): Just[String]
 }
 
-trait PrivateTestServiceClient[Or[+_, +_]] {
+trait ProtectedTestServiceClient[Or[+_, +_]] {
   type Just[+T] = Or[Nothing, T]
   def test(str: String): Just[String]
 }
 
-class PrivateTestServiceWrappedClient[Or[+_, +_]: IRTIO2](_dispatcher: IRTDispatcher[Or]) extends PrivateTestServiceClient[Or] {
+class ProtectedTestServiceWrappedClient[Or[+_, +_]: IRTIO2](_dispatcher: IRTDispatcher[Or]) extends ProtectedTestServiceClient[Or] {
   final val _F: IRTIO2[Or] = implicitly
-  import _root_.izumi.idealingua.runtime.rpc.http4s.fixtures.defs.PrivateTestService as _M
+  import izumi.r2.idealingua.test.generated.ProtectedTestService as _M
   def test(str: String): Just[String] = {
     _F.redeem(_dispatcher.dispatch(IRTMuxRequest(IRTReqBody(new _M.test.Input(str)), _M.test.id)))(
       {
@@ -27,7 +28,7 @@ class PrivateTestServiceWrappedClient[Or[+_, +_]: IRTIO2](_dispatcher: IRTDispat
         case IRTMuxResponse(IRTResBody(v: _M.test.Output), method) if method == _M.test.id =>
           _F.pure(v.value)
         case v =>
-          val id       = "PrivateTestService.PrivateTestServiceWrappedClient.test"
+          val id       = "ProtectedTestService.ProtectedTestServiceWrappedClient.test"
           val expected = classOf[_M.test.Input].toString
           _F.terminate(new IRTTypeMismatchException(s"Unexpected type in $id: $v, expected $expected got ${v.getClass}", v, None))
       },
@@ -35,22 +36,22 @@ class PrivateTestServiceWrappedClient[Or[+_, +_]: IRTIO2](_dispatcher: IRTDispat
   }
 }
 
-object PrivateTestServiceWrappedClient extends IRTWrappedClient {
+object ProtectedTestServiceWrappedClient extends IRTWrappedClient {
   val allCodecs: Map[IRTMethodId, IRTCirceMarshaller] = {
-    Map(PrivateTestService.test.id -> PrivateTestServiceCodecs.test)
+    Map(ProtectedTestService.test.id -> ProtectedTestServiceCodecs.test)
   }
 }
 
-class PrivateTestServiceWrappedServer[Or[+_, +_]: IRTIO2, C](_service: PrivateTestServiceServer[Or, C]) extends IRTWrappedService[Or, C] {
+class ProtectedTestServiceWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ProtectedTestServiceServer[Or, C]) extends IRTWrappedService[Or, C] {
   final val _F: IRTIO2[Or]          = implicitly
-  final val serviceId: IRTServiceId = PrivateTestService.serviceId
+  final val serviceId: IRTServiceId = ProtectedTestService.serviceId
   val allMethods: Map[IRTMethodId, IRTMethodWrapper[Or, C]] = {
     Seq[IRTMethodWrapper[Or, C]](test).map(m => m.signature.id -> m).toMap
   }
   object test extends IRTMethodWrapper[Or, C] {
-    import PrivateTestService.test.*
-    val signature: PrivateTestService.test.type        = PrivateTestService.test
-    val marshaller: PrivateTestServiceCodecs.test.type = PrivateTestServiceCodecs.test
+    import ProtectedTestService.test.*
+    val signature: ProtectedTestService.test.type        = ProtectedTestService.test
+    val marshaller: ProtectedTestServiceCodecs.test.type = ProtectedTestServiceCodecs.test
     def invoke(ctx: C, input: Input): Just[Output] = {
       assert(ctx.asInstanceOf[_root_.scala.AnyRef] != null && input.asInstanceOf[_root_.scala.AnyRef] != null)
       _F.map(_service.test(ctx, input.str))(v => new Output(v))
@@ -58,26 +59,22 @@ class PrivateTestServiceWrappedServer[Or[+_, +_]: IRTIO2, C](_service: PrivateTe
   }
 }
 
-object PrivateTestServiceWrappedServer
+object ProtectedTestServiceWrappedServer
 
-object PrivateTestService {
-  final val serviceId: IRTServiceId = IRTServiceId("PrivateTestService")
+object ProtectedTestService {
+  final val serviceId: IRTServiceId = IRTServiceId("ProtectedTestService")
   object test extends IRTMethodSignature {
     final val id: IRTMethodId = IRTMethodId(serviceId, IRTMethodName("test"))
     type Input  = TestInput
     type Output = TestOutput
   }
-  final case class TestInput(str: String) extends AnyVal
+  final case class TestInput(str: String)
   object TestInput {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
-    import _root_.io.circe.{Decoder, Encoder}
     implicit val encodeTestInput: Encoder.AsObject[TestInput] = deriveEncoder[TestInput]
     implicit val decodeTestInput: Decoder[TestInput]          = deriveDecoder[TestInput]
   }
-  final case class TestOutput(value: String) extends AnyVal
+  final case class TestOutput(value: String)
   object TestOutput {
-    import _root_.io.circe.*
-    import _root_.io.circe.syntax.*
     implicit val encodeUnwrappedTestOutput: Encoder[TestOutput] = Encoder.instance {
       v => v.value.asJson
     }
@@ -87,22 +84,22 @@ object PrivateTestService {
   }
 }
 
-object PrivateTestServiceCodecs {
+object ProtectedTestServiceCodecs {
   object test extends IRTCirceMarshaller {
-    import PrivateTestService.test.*
-    def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
+    import ProtectedTestService.test.*
+    def encodeRequest: PartialFunction[IRTReqBody, Json] = {
       case IRTReqBody(value: Input) =>
         value.asJson
     }
-    def decodeRequest[Or[+_, +_]: IRTIO2]: PartialFunction[IRTJsonBody, Or[IRTDecodingFailure, IRTReqBody]] = {
+    def decodeRequest[Or[+_, +_]: IRTIO2]: PartialFunction[IRTJsonBody, Or[DecodingFailure, IRTReqBody]] = {
       case IRTJsonBody(m, packet) if m == id =>
         this.decoded[Or, IRTReqBody](packet.as[Input].map(v => IRTReqBody(v)))
     }
-    def encodeResponse: PartialFunction[IRTResBody, IRTJson] = {
+    def encodeResponse: PartialFunction[IRTResBody, Json] = {
       case IRTResBody(value: Output) =>
         value.asJson
     }
-    def decodeResponse[Or[+_, +_]: IRTIO2]: PartialFunction[IRTJsonBody, Or[IRTDecodingFailure, IRTResBody]] = {
+    def decodeResponse[Or[+_, +_]: IRTIO2]: PartialFunction[IRTJsonBody, Or[DecodingFailure, IRTResBody]] = {
       case IRTJsonBody(m, packet) if m == id =>
         decoded[Or, IRTResBody](packet.as[Output].map(v => IRTResBody(v)))
     }

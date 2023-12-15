@@ -5,12 +5,11 @@ import izumi.functional.bio.{F, IO2}
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
 import izumi.idealingua.runtime.rpc.http4s.context.WsIdExtractor
-import izumi.idealingua.runtime.rpc.http4s.fixtures.defs.*
 import izumi.idealingua.runtime.rpc.http4s.ws.WsContextSessions.WsContextSessionsImpl
 import izumi.idealingua.runtime.rpc.http4s.ws.WsSessionsStorage.WsSessionsStorageImpl
 import izumi.idealingua.runtime.rpc.http4s.ws.{WsContextSessions, WsSessionId, WsSessionListener, WsSessionsStorage}
 import izumi.idealingua.runtime.rpc.http4s.{IRTAuthenticator, IRTContextServices}
-import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceServerWrapped}
+import izumi.r2.idealingua.test.generated.*
 import izumi.r2.idealingua.test.impls.AbstractGreeterServer
 import logstage.LogIO2
 import org.http4s.BasicCredentials
