@@ -8,11 +8,11 @@ import java.util.concurrent.{ConcurrentHashMap, TimeoutException}
 import scala.concurrent.duration.*
 import scala.jdk.CollectionConverters.*
 
-trait WsSessionsStorage[F[+_, +_]] {
-  def addSession(session: WsClientSession[F]): F[Throwable, WsClientSession[F]]
-  def deleteSession(sessionId: WsSessionId): F[Throwable, Option[WsClientSession[F]]]
-  def allSessions(): F[Throwable, Seq[WsClientSession[F]]]
-  def getSession(sessionId: WsSessionId): F[Throwable, Option[WsClientSession[F]]]
+trait WsSessionsStorage[F[+_, +_], RequestCtx] {
+  def addSession(session: WsClientSession[F, RequestCtx]): F[Throwable, WsClientSession[F, RequestCtx]]
+  def deleteSession(sessionId: WsSessionId): F[Throwable, Option[WsClientSession[F, RequestCtx]]]
+  def allSessions(): F[Throwable, Seq[WsClientSession[F, RequestCtx]]]
+  def getSession(sessionId: WsSessionId): F[Throwable, Option[WsClientSession[F, RequestCtx]]]
 
   def dispatcherForSession(
     sessionId: WsSessionId,
@@ -23,28 +23,28 @@ trait WsSessionsStorage[F[+_, +_]] {
 
 object WsSessionsStorage {
 
-  class WsSessionsStorageImpl[F[+_, +_]: IO2](logger: LogIO2[F]) extends WsSessionsStorage[F] {
-    protected val sessions = new ConcurrentHashMap[WsSessionId, WsClientSession[F]]()
+  class WsSessionsStorageImpl[F[+_, +_]: IO2, RequestCtx](logger: LogIO2[F]) extends WsSessionsStorage[F, RequestCtx] {
+    protected val sessions = new ConcurrentHashMap[WsSessionId, WsClientSession[F, RequestCtx]]()
 
-    override def addSession(session: WsClientSession[F]): F[Throwable, WsClientSession[F]] = {
+    override def addSession(session: WsClientSession[F, RequestCtx]): F[Throwable, WsClientSession[F, RequestCtx]] = {
       for {
         _ <- logger.debug(s"Adding a client with session - ${session.sessionId}")
         _ <- F.sync(sessions.put(session.sessionId, session))
       } yield session
     }
 
-    override def deleteSession(sessionId: WsSessionId): F[Throwable, Option[WsClientSession[F]]] = {
+    override def deleteSession(sessionId: WsSessionId): F[Throwable, Option[WsClientSession[F, RequestCtx]]] = {
       for {
         _   <- logger.debug(s"Deleting a client with session - $sessionId")
         res <- F.sync(Option(sessions.remove(sessionId)))
       } yield res
     }
 
-    override def getSession(sessionId: WsSessionId): F[Throwable, Option[WsClientSession[F]]] = {
+    override def getSession(sessionId: WsSessionId): F[Throwable, Option[WsClientSession[F, RequestCtx]]] = {
       F.sync(Option(sessions.get(sessionId)))
     }
 
-    override def allSessions(): F[Throwable, Seq[WsClientSession[F]]] = F.sync {
+    override def allSessions(): F[Throwable, Seq[WsClientSession[F, RequestCtx]]] = F.sync {
       sessions.values().asScala.toSeq
     }
 
@@ -52,13 +52,13 @@ object WsSessionsStorage {
       sessionId: WsSessionId,
       codec: IRTClientMultiplexor[F],
       timeout: FiniteDuration,
-    ): F[Throwable, Option[WsClientDispatcher[F]]] = F.sync {
+    ): F[Throwable, Option[WsClientDispatcher[F, RequestCtx]]] = F.sync {
       Option(sessions.get(sessionId)).map(new WsClientDispatcher(_, codec, logger, timeout))
     }
   }
 
-  class WsClientDispatcher[F[+_, +_]: IO2](
-    session: WsClientSession[F],
+  class WsClientDispatcher[F[+_, +_]: IO2, RequestCtx](
+    session: WsClientSession[F, RequestCtx],
     codec: IRTClientMultiplexor[F],
     logger: LogIO2[F],
     timeout: FiniteDuration,

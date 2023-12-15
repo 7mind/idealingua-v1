@@ -1,48 +1,64 @@
 package izumi.idealingua.runtime.rpc
 
 import io.circe.Json
-import izumi.functional.bio.{Exit, F, IO2}
+import izumi.functional.bio.{Error2, Exit, F, IO2}
 
 trait IRTServerMultiplexor[F[+_, +_], C] {
-  def services: Set[IRTWrappedService[F, C]]
-  def doInvoke(parsedBody: Json, context: C, toInvoke: IRTMethodId): F[Throwable, Option[Json]]
+  self =>
+  def allMethods: Set[IRTMethodId]
+
+  def invokeMethod(method: IRTMethodId)(context: C, parsedBody: Json): F[Throwable, Json]
+
+  final def contramap[C2](updateContext: (C2, Json) => F[Throwable, Option[C]])(implicit M: Error2[F]): IRTServerMultiplexor[F, C2] = new IRTServerMultiplexor[F, C2] {
+    override def allMethods: Set[IRTMethodId] = self.allMethods
+    override def invokeMethod(method: IRTMethodId)(context: C2, parsedBody: Json): F[Throwable, Json] = {
+      updateContext(context, parsedBody)
+        .fromOption(new IRTUnathorizedRequestContextException(s"Unauthorized $method call. Context: $context."))
+        .flatMap(self.invokeMethod(method)(_, parsedBody))
+    }
+  }
 }
 
 object IRTServerMultiplexor {
+
+  def combine[F[+_, +_]: Error2, C](multiplexors: Iterable[IRTServerMultiplexor[F, C]]): IRTServerMultiplexor[F, C] = new IRTServerMultiplexor[F, C] {
+    private val all: Map[IRTMethodId, IRTMethodId => (C, Json) => F[Throwable, Json]] = {
+      multiplexors.toList.flatMap {
+        muxer => muxer.allMethods.map(method => method -> muxer.invokeMethod)
+      }.toMap
+    }
+    override def allMethods: Set[IRTMethodId] = all.keySet
+    override def invokeMethod(method: IRTMethodId)(context: C, parsedBody: Json): F[Throwable, Json] = {
+      F.fromOption(new IRTMissingHandlerException(s"Method $method not found.", parsedBody))(all.get(method))
+        .flatMap(invoke => invoke.apply(method).apply(context, parsedBody))
+    }
+  }
+
   class IRTServerMultiplexorImpl[F[+_, +_]: IO2, C](
-    val services: Set[IRTWrappedService[F, C]]
+    services: Set[IRTWrappedService[F, C]]
   ) extends IRTServerMultiplexor[F, C] {
-    private val serviceToWrapped: Map[IRTServiceId, IRTWrappedService[F, C]] = {
-      services.map(s => s.serviceId -> s).toMap
+    private val methodToWrapped: Map[IRTMethodId, IRTMethodWrapper[F, C]] = services.flatMap(_.allMethods).toMap
+
+    override def allMethods: Set[IRTMethodId] = methodToWrapped.keySet
+
+    override def invokeMethod(method: IRTMethodId)(context: C, parsedBody: Json): F[Throwable, Json] = {
+      F.fromOption(new IRTMissingHandlerException(s"Method $method not found.", parsedBody))(methodToWrapped.get(method))
+        .flatMap(invoke(_)(context, parsedBody))
     }
 
-    def doInvoke(parsedBody: Json, context: C, toInvoke: IRTMethodId): F[Throwable, Option[Json]] = {
-      (for {
-        service <- serviceToWrapped.get(toInvoke.service)
-        method  <- service.allMethods.get(toInvoke)
-      } yield method) match {
-        case Some(value) =>
-          invoke(context, toInvoke, value, parsedBody).map(Some.apply)
-        case None =>
-          F.pure(None)
-      }
-    }
-
-    @inline private[this] def invoke(context: C, toInvoke: IRTMethodId, method: IRTMethodWrapper[F, C], parsedBody: Json): F[Throwable, Json] = {
+    @inline private[this] def invoke(method: IRTMethodWrapper[F, C])(context: C, parsedBody: Json): F[Throwable, Json] = {
+      val methodId = method.signature.id
       for {
-        decodeAction <- F.syncThrowable(method.marshaller.decodeRequest[F].apply(IRTJsonBody(toInvoke, parsedBody)))
-        safeDecoded <- decodeAction.sandbox.catchAll {
+        requestBody <- F.syncThrowable(method.marshaller.decodeRequest[F].apply(IRTJsonBody(methodId, parsedBody))).flatten.sandbox.catchAll {
           case Exit.Interruption(decodingFailure, _, trace) =>
-            F.fail(new IRTDecodingException(s"$toInvoke: Failed to decode JSON ${parsedBody.toString()} $trace", Some(decodingFailure)))
+            F.fail(new IRTDecodingException(s"$methodId: Failed to decode JSON ${parsedBody.toString()} $trace", Some(decodingFailure)))
           case Exit.Termination(_, exceptions, trace) =>
-            F.fail(new IRTDecodingException(s"$toInvoke: Failed to decode JSON ${parsedBody.toString()} $trace", exceptions.headOption))
+            F.fail(new IRTDecodingException(s"$methodId: Failed to decode JSON ${parsedBody.toString()} $trace", exceptions.headOption))
           case Exit.Error(decodingFailure, trace) =>
-            F.fail(new IRTDecodingException(s"$toInvoke: Failed to decode JSON ${parsedBody.toString()} $trace", Some(decodingFailure)))
+            F.fail(new IRTDecodingException(s"$methodId: Failed to decode JSON ${parsedBody.toString()} $trace", Some(decodingFailure)))
         }
-        casted        = safeDecoded.value.asInstanceOf[method.signature.Input]
-        resultAction <- F.syncThrowable(method.invoke(context, casted))
-        safeResult   <- resultAction
-        encoded      <- F.syncThrowable(method.marshaller.encodeResponse.apply(IRTResBody(safeResult)))
+        result  <- F.syncThrowable(method.invoke(context, requestBody.value.asInstanceOf[method.signature.Input])).flatten
+        encoded <- F.syncThrowable(method.marshaller.encodeResponse.apply(IRTResBody(result)))
       } yield encoded
     }
   }

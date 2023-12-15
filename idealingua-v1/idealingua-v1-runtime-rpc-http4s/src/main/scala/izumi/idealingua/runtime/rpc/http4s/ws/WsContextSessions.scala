@@ -1,43 +1,42 @@
 package izumi.idealingua.runtime.rpc.http4s.ws
 
-import izumi.functional.bio.{Exit, F, IO2}
-import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator
-import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
+import izumi.functional.bio.{F, IO2, Monad2}
+import izumi.idealingua.runtime.rpc.http4s.context.WsIdExtractor
 import izumi.idealingua.runtime.rpc.{IRTClientMultiplexor, IRTDispatcher}
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 trait WsContextSessions[F[+_, +_], RequestCtx, WsCtx] {
-  def updateSession(wsSessionId: WsSessionId, authContext: Option[AuthContext]): F[Throwable, Unit]
-  def updateSessionWith(wsSessionId: WsSessionId, requestContext: Option[RequestCtx]): F[Throwable, Unit]
+  self =>
+  def updateSession(wsSessionId: WsSessionId, requestContext: Option[RequestCtx]): F[Throwable, Unit]
   def dispatcherFor(ctx: WsCtx, codec: IRTClientMultiplexor[F], timeout: FiniteDuration = 20.seconds): F[Throwable, Option[IRTDispatcher[F]]]
+
+  final def contramap[C](updateCtx: C => F[Throwable, Option[RequestCtx]])(implicit M: Monad2[F]): WsContextSessions[F, C, WsCtx] = new WsContextSessions[F, C, WsCtx] {
+    override def updateSession(wsSessionId: WsSessionId, requestContext: Option[C]): F[Throwable, Unit] = {
+      F.traverse(requestContext)(updateCtx).flatMap(mbCtx => self.updateSession(wsSessionId, mbCtx.flatten))
+    }
+    override def dispatcherFor(ctx: WsCtx, codec: IRTClientMultiplexor[F], timeout: FiniteDuration): F[Throwable, Option[IRTDispatcher[F]]] = {
+      self.dispatcherFor(ctx, codec, timeout)
+    }
+  }
 }
 
 object WsContextSessions {
   def empty[F[+_, +_]: IO2, RequestCtx]: WsContextSessions[F, RequestCtx, Unit] = new WsContextSessions[F, RequestCtx, Unit] {
-    override def updateSession(wsSessionId: WsSessionId, authContext: Option[AuthContext]): F[Throwable, Unit]                             = F.unit
-    override def updateSessionWith(wsSessionId: WsSessionId, requestContext: Option[RequestCtx]): F[Throwable, Unit]                       = F.unit
+    override def updateSession(wsSessionId: WsSessionId, requestContext: Option[RequestCtx]): F[Throwable, Unit]                           = F.unit
     override def dispatcherFor(ctx: Unit, codec: IRTClientMultiplexor[F], timeout: FiniteDuration): F[Throwable, Option[IRTDispatcher[F]]] = F.pure(None)
   }
 
   class WsContextSessionsImpl[F[+_, +_]: IO2, RequestCtx, WsCtx](
-    authenticator: IRTAuthenticator[F, RequestCtx],
-    wsSessionsStorage: WsSessionsStorage[F],
+    wsSessionsStorage: WsSessionsStorage[F, ?],
     wsSessionListeners: Set[WsSessionListener[F, RequestCtx, WsCtx]],
-    wsContextExtractor: WsContextExtractor[RequestCtx, WsCtx],
+    wsIdExtractor: WsIdExtractor[RequestCtx, WsCtx],
   ) extends WsContextSessions[F, RequestCtx, WsCtx] {
     private val sessionToId = new ConcurrentHashMap[WsSessionId, WsCtx]()
     private val idToSession = new ConcurrentHashMap[WsCtx, WsSessionId]()
 
-    override def updateSession(wsSessionId: WsSessionId, authContext: Option[AuthContext]): F[Throwable, Unit] = {
-      F.traverse(authContext)(authenticator.authenticate(_, None)).map(_.flatten).sandboxExit.flatMap {
-        case Exit.Success(ctx)  => updateSessionWith(wsSessionId, ctx)
-        case _: Exit.Failure[_] => updateSessionWith(wsSessionId, None)
-      }
-    }
-
-    override def updateSessionWith(wsSessionId: WsSessionId, requestContext: Option[RequestCtx]): F[Throwable, Unit] = {
+    override def updateSession(wsSessionId: WsSessionId, requestContext: Option[RequestCtx]): F[Throwable, Unit] = {
       updateCtx(wsSessionId, requestContext).flatMap {
         case (Some(ctx), Some(previous), Some(updated)) if previous != updated =>
           F.traverse_(wsSessionListeners)(_.onSessionUpdated(wsSessionId, ctx, previous, updated))
@@ -64,7 +63,7 @@ object WsContextSessions {
     ): F[Nothing, (Option[RequestCtx], Option[WsCtx], Option[WsCtx])] = F.sync {
       synchronized {
         val previous = Option(sessionToId.get(wsSessionId))
-        val updated  = requestContext.flatMap(wsContextExtractor.extract)
+        val updated  = requestContext.flatMap(wsIdExtractor.extract)
         (updated, previous) match {
           case (Some(upd), _) =>
             sessionToId.put(wsSessionId, upd)

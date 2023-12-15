@@ -3,11 +3,14 @@ package izumi.idealingua.runtime.rpc.http4s.fixtures
 import io.circe.Json
 import izumi.functional.bio.{F, IO2}
 import izumi.idealingua.runtime.rpc.*
+import izumi.idealingua.runtime.rpc.IRTServerMultiplexor.IRTServerMultiplexorImpl
+import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
+import izumi.idealingua.runtime.rpc.http4s.context.WsIdExtractor
 import izumi.idealingua.runtime.rpc.http4s.fixtures.defs.*
 import izumi.idealingua.runtime.rpc.http4s.ws.WsContextSessions.WsContextSessionsImpl
 import izumi.idealingua.runtime.rpc.http4s.ws.WsSessionsStorage.WsSessionsStorageImpl
-import izumi.idealingua.runtime.rpc.http4s.ws.{WsContextExtractor, WsContextSessions, WsSessionsStorage}
-import izumi.idealingua.runtime.rpc.http4s.{IRTAuthenticator, IRTServicesMultiplexor}
+import izumi.idealingua.runtime.rpc.http4s.ws.{WsContextSessions, WsSessionsStorage}
+import izumi.idealingua.runtime.rpc.http4s.{IRTAuthenticator, IRTContextServices}
 import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceServerWrapped}
 import izumi.r2.idealingua.test.impls.AbstractGreeterServer
 import logstage.LogIO2
@@ -19,58 +22,61 @@ class TestServices[F[+_, +_]: IO2](
 ) {
 
   object Server {
-    final val wsStorage: WsSessionsStorage[F] = new WsSessionsStorageImpl[F](logger)
+    final val wsStorage: WsSessionsStorage[F, AuthContext] = new WsSessionsStorageImpl[F, AuthContext](logger)
 
     // PRIVATE
-    private val privateAuth = new IRTAuthenticator[F, PrivateContext] {
-      override def authenticate(authContext: IRTAuthenticator.AuthContext, body: Option[Json]): F[Nothing, Option[PrivateContext]] = F.sync {
+    private val privateAuth = new IRTAuthenticator[F, AuthContext, PrivateContext] {
+      override def authenticate(authContext: AuthContext, body: Option[Json]): F[Nothing, Option[PrivateContext]] = F.sync {
         authContext.headers.get[Authorization].map(_.credentials).collect {
           case BasicCredentials(user, "private") => PrivateContext(user)
         }
       }
     }
-    final val privateWsSession: WsContextSessions[F, PrivateContext, PrivateContext] = new WsContextSessionsImpl(privateAuth, wsStorage, Set.empty, WsContextExtractor.id)
+    final val privateWsSession: WsContextSessions[F, PrivateContext, PrivateContext] = new WsContextSessionsImpl(wsStorage, Set.empty, WsIdExtractor.id)
     final val privateService: IRTWrappedService[F, PrivateContext] = new PrivateTestServiceWrappedServer(new PrivateTestServiceServer[F, PrivateContext] {
       def test(ctx: PrivateContext, str: String): Just[String] = F.pure(s"Private: $str")
     })
-    final val privateServices: IRTServicesMultiplexor.SingleContext[F, PrivateContext, PrivateContext] = {
-      new IRTServicesMultiplexor.SingleContext.Impl(Set(privateService), privateAuth)
-    }
+    final val privateServices: IRTContextServices[F, AuthContext, PrivateContext, PrivateContext] = IRTContextServices(
+      authenticator = privateAuth,
+      serverMuxer         = new IRTServerMultiplexorImpl(Set(privateService)),
+      wsSessions    = privateWsSession,
+    )
 
     // PROTECTED
-    private val protectedAuth = new IRTAuthenticator[F, ProtectedContext] {
-      override def authenticate(authContext: IRTAuthenticator.AuthContext, body: Option[Json]): F[Nothing, Option[ProtectedContext]] = F.sync {
+    private val protectedAuth = new IRTAuthenticator[F, AuthContext, ProtectedContext] {
+      override def authenticate(authContext: AuthContext, body: Option[Json]): F[Nothing, Option[ProtectedContext]] = F.sync {
         authContext.headers.get[Authorization].map(_.credentials).collect {
           case BasicCredentials(user, "protected") => ProtectedContext(user)
         }
       }
     }
-    final val protectedWsSession: WsContextSessions[F, ProtectedContext, ProtectedContext] = {
-      new WsContextSessionsImpl(protectedAuth, wsStorage, Set.empty, WsContextExtractor.id)
-    }
+    final val protectedWsSession: WsContextSessions[F, ProtectedContext, ProtectedContext] = new WsContextSessionsImpl(wsStorage, Set.empty, WsIdExtractor.id)
     final val protectedService: IRTWrappedService[F, ProtectedContext] = new ProtectedTestServiceWrappedServer(new ProtectedTestServiceServer[F, ProtectedContext] {
       def test(ctx: ProtectedContext, str: String): Just[String] = F.pure(s"Protected: $str")
     })
-    final val protectedServices: IRTServicesMultiplexor.SingleContext[F, ProtectedContext, ProtectedContext] = {
-      new IRTServicesMultiplexor.SingleContext.Impl(Set(protectedService), protectedAuth)
-    }
+    final val protectedServices: IRTContextServices[F, AuthContext, ProtectedContext, ProtectedContext] = IRTContextServices(
+      authenticator = protectedAuth,
+      serverMuxer         = new IRTServerMultiplexorImpl(Set(protectedService)),
+      wsSessions    = protectedWsSession,
+    )
 
     // PUBLIC
-    private val publicAuth = new IRTAuthenticator[F, PublicContext] {
-      override def authenticate(authContext: IRTAuthenticator.AuthContext, body: Option[Json]): F[Nothing, Option[PublicContext]] = F.sync {
+    private val publicAuth = new IRTAuthenticator[F, AuthContext, PublicContext] {
+      override def authenticate(authContext: AuthContext, body: Option[Json]): F[Nothing, Option[PublicContext]] = F.sync {
         authContext.headers.get[Authorization].map(_.credentials).collect {
           case BasicCredentials(user, _) => PublicContext(user)
         }
       }
     }
-    final val publicWsSession: WsContextSessions[F, PublicContext, PublicContext] = new WsContextSessionsImpl(publicAuth, wsStorage, Set.empty, WsContextExtractor.id)
+    final val publicWsSession: WsContextSessions[F, PublicContext, PublicContext] = new WsContextSessionsImpl(wsStorage, Set.empty, WsIdExtractor.id)
     final val publicService: IRTWrappedService[F, PublicContext]                  = new GreeterServiceServerWrapped(new AbstractGreeterServer.Impl[F, PublicContext])
-    final val publicServices: IRTServicesMultiplexor.SingleContext[F, PublicContext, PublicContext] = {
-      new IRTServicesMultiplexor.SingleContext.Impl(Set(publicService), publicAuth)
-    }
+    final val publicServices: IRTContextServices[F, AuthContext, PublicContext, PublicContext] = IRTContextServices(
+      authenticator = publicAuth,
+      serverMuxer         = new IRTServerMultiplexorImpl(Set(publicService)),
+      wsSessions    = publicWsSession,
+    )
 
-    final val contextMuxer: IRTServicesMultiplexor[F, Unit, Unit] = new IRTServicesMultiplexor.MultiContext.Impl(Set(privateServices, protectedServices, publicServices))
-    final val wsContextsSessions: Set[WsContextSessions[F, ?, ?]] = Set(privateWsSession, protectedWsSession, publicWsSession)
+    final val contextServices: Set[IRTContextServices[F, AuthContext, ?, ?]] = Set(privateServices, protectedServices, publicServices)
   }
 
   object Client {
@@ -83,9 +89,7 @@ class TestServices[F[+_, +_]: IO2](
       ProtectedTestServiceWrappedClient,
       PrivateTestServiceWrappedClient,
     )
-    val codec: IRTClientMultiplexorImpl[F] = new IRTClientMultiplexorImpl[F](clients)
-    val buzzerMultiplexor: IRTServicesMultiplexor[F, Unit, Unit] = {
-      new IRTServicesMultiplexor.SingleContext.Impl(dispatchers, IRTAuthenticator.unit)
-    }
+    val codec: IRTClientMultiplexorImpl[F]               = new IRTClientMultiplexorImpl[F](clients)
+    val buzzerMultiplexor: IRTServerMultiplexor[F, Unit] = new IRTServerMultiplexorImpl(dispatchers)
   }
 }

@@ -5,25 +5,22 @@ import izumi.functional.bio.Exit.Success
 import izumi.functional.bio.{Exit, F, IO2}
 import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
-import izumi.idealingua.runtime.rpc.http4s.IRTServicesMultiplexor
-import izumi.idealingua.runtime.rpc.http4s.IRTServicesMultiplexor.{InvokeMethodFailure, InvokeMethodResult}
 import izumi.idealingua.runtime.rpc.http4s.ws.WsRpcHandler.WsResponder
 import logstage.LogIO2
 
-abstract class WsRpcHandler[F[+_, +_]: IO2](
-  muxer: IRTServicesMultiplexor[F, ?, ?],
+abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
+  muxer: IRTServerMultiplexor[F, RequestCtx],
   responder: WsResponder[F],
   logger: LogIO2[F],
 ) {
 
-  protected def updateAuthContext(packet: RpcPacket): F[Throwable, Unit]
-  protected def getAuthContext: AuthContext
+  protected def updateRequestCtx(packet: RpcPacket): F[Throwable, Unit]
+  protected def getRequestCtx: RequestCtx
 
   def processRpcMessage(message: String): F[Throwable, Option[RpcPacket]] = {
     for {
       packet <- F.fromEither(io.circe.parser.decode[RpcPacket](message))
-      _      <- updateAuthContext(packet)
+      _      <- updateRequestCtx(packet)
       response <- packet match {
         // auth
         case RpcPacket(RPCPacketKind.RpcRequest, None, _, _, _, _, _) =>
@@ -80,29 +77,25 @@ abstract class WsRpcHandler[F[+_, +_]: IO2](
   )(onSuccess: Json => RpcPacket,
     onFail: String => RpcPacket,
   ): F[Throwable, Option[RpcPacket]] = {
-    muxer
-      .invokeMethodWithAuth(methodId)(getAuthContext, data).sandboxExit.flatMap {
-        case Success(InvokeMethodResult(_, res)) =>
-          F.pure(Some(onSuccess(res)))
+    muxer.invokeMethod(methodId)(getRequestCtx, data).sandboxExit.flatMap {
+      case Success(res) =>
+        F.pure(Some(onSuccess(res)))
 
-        case Exit.Error(_: InvokeMethodFailure.ServiceNotFound, _) =>
-          logger.error(s"WS request errored: No service handler for $methodId.").as(Some(onFail("Service not found.")))
+      case Exit.Error(_: IRTMissingHandlerException, _) =>
+        logger.error(s"WS request errored: No service handler for $methodId.").as(Some(onFail("Service an method not found.")))
 
-        case Exit.Error(_: InvokeMethodFailure.MethodNotFound, _) =>
-          logger.error(s"WS request errored: No method handler for $methodId.").as(Some(onFail("Method not found.")))
+      case Exit.Error(err: IRTUnathorizedRequestContextException, _) =>
+        logger.warn(s"WS request errored: unauthorized - ${err.getMessage -> "message"}.").as(Some(onFail("Unauthorized.")))
 
-        case Exit.Error(err: InvokeMethodFailure.AuthFailed, _) =>
-          logger.warn(s"WS request errored: unauthorized - ${err.getMessage -> "message"}.").as(Some(onFail("Unauthorized.")))
+      case Exit.Termination(exception, allExceptions, trace) =>
+        logger.error(s"WS request terminated: $exception, $allExceptions, $trace").as(Some(onFail(exception.getMessage)))
 
-        case Exit.Termination(exception, allExceptions, trace) =>
-          logger.error(s"WS request terminated: $exception, $allExceptions, $trace").as(Some(onFail(exception.getMessage)))
+      case Exit.Error(exception, trace) =>
+        logger.error(s"WS request failed: $exception $trace").as(Some(onFail(exception.getMessage)))
 
-        case Exit.Error(exception, trace) =>
-          logger.error(s"WS request failed: $exception $trace").as(Some(onFail(exception.getMessage)))
-
-        case Exit.Interruption(exception, allExceptions, trace) =>
-          logger.error(s"WS request interrupted: $exception $allExceptions $trace").as(Some(onFail(exception.getMessage)))
-      }
+      case Exit.Interruption(exception, allExceptions, trace) =>
+        logger.error(s"WS request interrupted: $exception $allExceptions $trace").as(Some(onFail(exception.getMessage)))
+    }
   }
 
   protected def handleAuthRequest(packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {

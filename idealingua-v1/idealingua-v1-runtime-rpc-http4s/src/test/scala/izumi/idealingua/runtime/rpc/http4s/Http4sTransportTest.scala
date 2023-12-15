@@ -10,8 +10,10 @@ import izumi.fundamentals.platform.language.Quirks.*
 import izumi.fundamentals.platform.network.IzSockets
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.Http4sTransportTest.{Ctx, IO2R}
+import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
 import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcDispatcher.IRTDispatcherRaw
 import izumi.idealingua.runtime.rpc.http4s.clients.{HttpRpcDispatcher, HttpRpcDispatcherFactory, WsRpcDispatcher, WsRpcDispatcherFactory}
+import izumi.idealingua.runtime.rpc.http4s.context.{HttpContextExtractor, WsContextExtractor}
 import izumi.idealingua.runtime.rpc.http4s.fixtures.TestServices
 import izumi.idealingua.runtime.rpc.http4s.fixtures.defs.{PrivateTestServiceWrappedClient, ProtectedTestServiceWrappedClient}
 import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsRequestState}
@@ -60,13 +62,14 @@ object Http4sTransportTest {
 
     final val demo = new TestServices[F](logger)
 
-    final val ioService = new HttpServer[F](
-      servicesMuxer      = demo.Server.contextMuxer,
-      wsContextsSessions = demo.Server.wsContextsSessions,
-      wsSessionsStorage  = demo.Server.wsStorage,
-      dsl                = dsl,
-      logger             = logger,
-      printer            = printer,
+    final val ioService = new HttpServer[F, AuthContext](
+      contextServices      = demo.Server.contextServices,
+      httpContextExtractor = HttpContextExtractor.authContext,
+      wsContextExtractor   = WsContextExtractor.authContext,
+      wsSessionsStorage    = demo.Server.wsStorage,
+      dsl                  = dsl,
+      logger               = logger,
+      printer              = printer,
     )
 
     def badAuth(user: String): Header.ToRaw       = Authorization(BasicCredentials(user, "badpass"))
@@ -85,7 +88,7 @@ object Http4sTransportTest {
       new WsRpcDispatcherFactory[F](demo.Client.codec, printer, logger, izLogger)
     }
     def wsRpcClientDispatcher(): Lifecycle[F[Throwable, _], WsRpcDispatcher.IRTDispatcherWs[F]] = {
-      wsClientFactory.dispatcher(wsUri, demo.Client.buzzerMultiplexor)
+      wsClientFactory.dispatcher(wsUri, demo.Client.buzzerMultiplexor, WsContextExtractor.unit)
     }
   }
 
