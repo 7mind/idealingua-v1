@@ -12,6 +12,7 @@ trait IRTServerMultiplexor[F[+_, +_], C] {
       .flatMap(_.invoke(context, parsedBody))
   }
 
+  /** Contramap eval on context C2 -> C. If context is missing IRTUnathorizedRequestContextException will raise. */
   final def contramap[C2](
     updateContext: (C2, Json) => F[Throwable, Option[C]]
   )(implicit io2: IO2[F]
@@ -19,13 +20,13 @@ trait IRTServerMultiplexor[F[+_, +_], C] {
     val mappedMethods = self.methods.map { case (k, v) => k -> v.contramap(updateContext) }
     new IRTServerMultiplexor.FromMethods(mappedMethods)
   }
-
-  final def wrap(middleware: IRTServerMiddleware[F, C])(implicit io2: IO2[F]): IRTServerMultiplexor[F, C] = {
+  /** Wrap invocation with function '(Context, Body)(Method.Invoke) => Result' . */
+  final def wrap(middleware: IRTServerMiddleware[F, C]): IRTServerMultiplexor[F, C] = {
     val wrappedMethods = self.methods.map {
       case (methodId, method) =>
-        val wrappedMethod: IRTServerMethod[F, C] = method.contramap[C] {
+        val wrappedMethod: IRTServerMethod[F, C] = method.wrap {
           case (ctx, body) =>
-            middleware.prepare(methodId)(ctx, body).as(Some(ctx))
+            next => middleware(method.methodId)(ctx, body)(next)
         }
         methodId -> wrappedMethod
     }

@@ -8,12 +8,21 @@ trait IRTServerMethod[F[+_, +_], C] {
   def methodId: IRTMethodId
   def invoke(context: C, parsedBody: Json): F[Throwable, Json]
 
+  /** Contramap eval on context C2 -> C. If context is missing IRTUnathorizedRequestContextException will raise. */
   final def contramap[C2](updateContext: (C2, Json) => F[Throwable, Option[C]])(implicit E: Error2[F]): IRTServerMethod[F, C2] = new IRTServerMethod[F, C2] {
     override def methodId: IRTMethodId = self.methodId
     override def invoke(context: C2, parsedBody: Json): F[Throwable, Json] = {
       updateContext(context, parsedBody)
         .fromOption(new IRTUnathorizedRequestContextException(s"Unauthorized $methodId call. Context: $context."))
         .flatMap(self.invoke(_, parsedBody))
+    }
+  }
+
+  /** Wrap invocation with function '(Context, Body)(Method.Invoke) => Result' . */
+  final def wrap(middleware: (C, Json) => F[Throwable, Json] => F[Throwable, Json]): IRTServerMethod[F, C] = new IRTServerMethod[F, C] {
+    override def methodId: IRTMethodId = self.methodId
+    override def invoke(context: C, parsedBody: Json): F[Throwable, Json] = {
+      middleware(context, parsedBody)(self.invoke(context, parsedBody))
     }
   }
 }

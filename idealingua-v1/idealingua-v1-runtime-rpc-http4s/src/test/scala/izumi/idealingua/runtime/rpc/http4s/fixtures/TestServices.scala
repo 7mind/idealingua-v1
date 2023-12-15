@@ -24,10 +24,11 @@ class TestServices[F[+_, +_]: IO2](
       rejectedNames: Set[String]
     ): IRTServerMiddleware[F, C] = new IRTServerMiddleware[F, C] {
       override def priority: Int = 0
-      override def prepare(methodId: IRTMethodId)(context: C, parsedBody: Json): F[Throwable, Unit] = {
-        F.when(rejectedNames.contains(context.user)) {
-          F.fail(new IRTUnathorizedRequestContextException(s"Rejected for users: $rejectedNames."))
-        }
+      override def apply(methodId: IRTMethodId)(context: C, parsedBody: Json)(next: => F[Throwable, Json]): F[Throwable, Json] = {
+        F.ifThenElse(rejectedNames.contains(context.user))(
+          F.fail(new IRTUnathorizedRequestContextException(s"Rejected for users: $rejectedNames.")),
+          next,
+        )
       }
     }
     final val wsStorage: WsSessionsStorage[F, AuthContext] = new WsSessionsStorageImpl[F, AuthContext](logger)
