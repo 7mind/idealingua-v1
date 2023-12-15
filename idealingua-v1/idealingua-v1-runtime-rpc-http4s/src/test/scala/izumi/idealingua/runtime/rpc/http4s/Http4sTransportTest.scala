@@ -2,11 +2,11 @@ package izumi.idealingua.runtime.rpc.http4s
 
 import cats.effect.Async
 import io.circe.{Json, Printer}
-import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
+import izumi.functional.bio.Exit.{Error, Success, Termination}
 import izumi.functional.bio.UnsafeRun2.FailureHandler
+import izumi.functional.bio.impl.{AsyncZio, PrimitivesZio}
 import izumi.functional.bio.{Async2, Exit, F, Primitives2, Temporal2, UnsafeRun2}
 import izumi.functional.lifecycle.Lifecycle
-import izumi.fundamentals.platform.language.Quirks.*
 import izumi.fundamentals.platform.network.IzSockets
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.Http4sTransportTest.{Ctx, IO2R}
@@ -26,19 +26,25 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.Authorization
 import org.http4s.server.Router
 import org.scalatest.wordspec.AnyWordSpec
-import zio.IO
-import zio.interop.catz.*
 
+import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration.DurationInt
 
-final class Http4sTransportTest extends Http4sTransportTestBase[IO]
+final class Http4sTransportTest
+  extends Http4sTransportTestBase[zio.IO]()(
+    async2         = AsyncZio,
+    primitives2    = PrimitivesZio,
+    temporal2      = AsyncZio,
+    unsafeRun2     = IO2R,
+    asyncThrowable = zio.interop.catz.asyncInstance,
+  )
 
 object Http4sTransportTest {
   final val izLogger: IzLogger             = makeLogger()
   final val handler: FailureHandler.Custom = UnsafeRun2.FailureHandler.Custom(message => izLogger.trace(s"Fiber failed: $message"))
-  implicit val IO2R: UnsafeRun2[zio.IO] = UnsafeRun2.createZIO(
+  final val IO2R: UnsafeRun2[zio.IO] = UnsafeRun2.createZIO(
     handler = handler,
     customCpuPool = Some(
       zio.Executor.fromJavaExecutor(
@@ -46,22 +52,23 @@ object Http4sTransportTest {
       )
     ),
   )
+
   final class Ctx[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRun2](implicit asyncThrowable: Async[F[Throwable, _]]) {
     private val logger: LogIO2[F] = LogIO2.fromLogger(izLogger)
     private val printer: Printer  = Printer.noSpaces.copy(dropNullValues = true)
 
-    final val dsl     = Http4sDsl.apply[F[Throwable, _]]
-    final val execCtx = HttpExecutionContext(global)
+    val dsl: Http4sDsl[F[Throwable, _]] = Http4sDsl.apply[F[Throwable, _]]
+    val execCtx: HttpExecutionContext   = HttpExecutionContext(global)
 
-    final val addr    = IzSockets.temporaryServerAddress()
-    final val port    = addr.getPort
-    final val host    = addr.getHostName
-    final val baseUri = Uri(Some(Uri.Scheme.http), Some(Uri.Authority(host = Uri.RegName(host), port = Some(port))))
-    final val wsUri   = Uri.unsafeFromString(s"ws://$host:$port/ws")
+    val addr: InetSocketAddress = IzSockets.temporaryServerAddress()
+    val port: Int               = addr.getPort
+    val host: String            = addr.getHostName
+    val baseUri: Uri            = Uri(Some(Uri.Scheme.http), Some(Uri.Authority(host = Uri.RegName(host), port = Some(port))))
+    val wsUri: Uri              = Uri.unsafeFromString(s"ws://$host:$port/ws")
 
-    final val demo = new TestServices[F](logger)
+    val demo: TestServices[F] = new TestServices[F](logger)
 
-    final val ioService = new HttpServer[F, AuthContext](
+    val ioService: HttpServer[F, AuthContext] = new HttpServer[F, AuthContext](
       contextServices      = demo.Server.contextServices,
       httpContextExtractor = HttpContextExtractor.authContext,
       wsContextExtractor   = WsContextExtractor.authContext,
@@ -108,8 +115,13 @@ object Http4sTransportTest {
   }
 }
 
-abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2: UnsafeRun2](
-  implicit asyncThrowable: Async[F[Throwable, _]]
+abstract class Http4sTransportTestBase[F[+_, +_]](
+  implicit
+  async2: Async2[F],
+  primitives2: Primitives2[F],
+  temporal2: Temporal2[F],
+  unsafeRun2: UnsafeRun2[F],
+  asyncThrowable: Async[F[Throwable, _]],
 ) extends AnyWordSpec {
   private val ctx = new Ctx[F]
 
@@ -127,26 +139,22 @@ abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2
           publicOrcClient <- F.sync(httpRpcClientDispatcher(Headers(publicAuth("orc"))))
 
           // Private API test
-          _ <- new PrivateTestServiceWrappedClient(privateClient).test("test").map {
-            res => assert(res.startsWith("Private"))
-          }
+          _ <- new PrivateTestServiceWrappedClient(privateClient)
+            .test("test").map(res => assert(res.startsWith("Private")))
           _ <- checkUnauthorizedHttpCall(new PrivateTestServiceWrappedClient(protectedClient).test("test"))
           _ <- checkUnauthorizedHttpCall(new ProtectedTestServiceWrappedClient(publicClient).test("test"))
 
           // Protected API test
-          _ <- new ProtectedTestServiceWrappedClient(protectedClient).test("test").map {
-            res => assert(res.startsWith("Protected"))
-          }
+          _ <- new ProtectedTestServiceWrappedClient(protectedClient)
+            .test("test").map(res => assert(res.startsWith("Protected")))
           _ <- checkUnauthorizedHttpCall(new ProtectedTestServiceWrappedClient(privateClient).test("test"))
           _ <- checkUnauthorizedHttpCall(new ProtectedTestServiceWrappedClient(publicClient).test("test"))
 
           // Public API test
           _ <- new GreeterServiceClientWrapped(protectedClient)
-            .greet("Protected", "Client")
-            .map(res => assert(res == "Hi, Protected Client!"))
+            .greet("Protected", "Client").map(res => assert(res == "Hi, Protected Client!"))
           _ <- new GreeterServiceClientWrapped(privateClient)
-            .greet("Protected", "Client")
-            .map(res => assert(res == "Hi, Protected Client!"))
+            .greet("Protected", "Client").map(res => assert(res == "Hi, Protected Client!"))
           greaterClient = new GreeterServiceClientWrapped(publicClient)
           _            <- greaterClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
           _            <- greaterClient.alternative().attempt.map(res => assert(res == Right("value")))
@@ -274,54 +282,42 @@ abstract class Http4sTransportTestBase[F[+_, +_]: Async2: Primitives2: Temporal2
     }
   }
 
-  def withServer(f: F[Throwable, Any]): Unit = {
+  def withServer(f: F[Throwable, Unit]): Unit = {
     executeF {
       BlazeServerBuilder[F[Throwable, _]]
         .bindHttp(port, host)
         .withHttpWebSocketApp(ws => Router("/" -> ioService.service(ws)).orNotFound)
         .resource
         .use(_ => f)
-        .void
     }
   }
 
-  def executeF(io: F[Throwable, Any]): Unit = {
-    UnsafeRun2[F].unsafeRunSync(io.void) match {
+  def executeF(io: F[Throwable, Unit]): Unit = {
+    UnsafeRun2[F].unsafeRunSync(io) match {
       case Success(())              => ()
       case failure: Exit.Failure[?] => throw failure.trace.toThrowable
     }
   }
 
   def checkUnauthorizedHttpCall[E, A](call: F[E, A]): F[Throwable, Unit] = {
-    call.sandboxExit.flatMap {
-      case Termination(exception: IRTUnexpectedHttpStatus, _, _) =>
-        F.sync(assert(exception.status == Status.Unauthorized)).void
-      case o =>
-        F.fail(new RuntimeException(s"Expected Unauthorized status but got $o"))
-    }
+    call.sandboxExit.map {
+      case Termination(exception: IRTUnexpectedHttpStatus, _, _) => assert(exception.status == Status.Unauthorized)
+      case o                                                     => fail(s"Expected Unauthorized status but got $o")
+    }.void
   }
 
   def checkUnauthorizedWsCall[E, A](call: F[E, A]): F[Throwable, Unit] = {
-    call.sandboxExit.flatMap {
-      case Termination(f: IRTGenericFailure, _, _) if f.getMessage.contains("""{"cause":"Unauthorized."}""") =>
-        F.unit
-      case o =>
-        F.fail(new RuntimeException(s"Expected IRTGenericFailure with Unauthorized message but got $o"))
-    }
+    call.sandboxExit.map {
+      case Termination(f: IRTGenericFailure, _, _) => assert(f.getMessage.contains("""{"cause":"Unauthorized."}"""))
+      case o                                       => fail(s"Expected IRTGenericFailure with Unauthorized message but got $o")
+    }.void
   }
 
   def checkBadBody(body: String, disp: IRTDispatcherRaw[F]): F[Nothing, Unit] = {
-    disp.dispatchRaw(GreeterServiceMethods.greet.id, body).sandboxExit.map {
-      case Error(value: IRTUnexpectedHttpStatus, _) =>
-        assert(value.status == Status.BadRequest).discard()
-      case Error(value, _) =>
-        fail(s"Unexpected error: $value")
-      case Success(value) =>
-        fail(s"Unexpected success: $value")
-      case Termination(exception, _, _) =>
-        fail("Unexpected failure", exception)
-      case Interruption(value, _, _) =>
-        fail(s"Interrupted: $value")
-    }
+    disp
+      .dispatchRaw(GreeterServiceMethods.greet.id, body).sandboxExit.map {
+        case Error(value: IRTUnexpectedHttpStatus, _) => assert(value.status == Status.BadRequest)
+        case o                                        => fail(s"Expected IRTUnexpectedHttpStatus with BadRequest but got $o")
+      }.void
   }
 }

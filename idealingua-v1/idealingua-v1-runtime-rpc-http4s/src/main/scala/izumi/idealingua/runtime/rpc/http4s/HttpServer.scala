@@ -29,7 +29,7 @@ import java.util.concurrent.RejectedExecutionException
 import scala.concurrent.duration.DurationInt
 
 class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
-  val contextServices: Set[IRTContextServices[F, AuthCtx, ?, ?]],
+  val contextServices: Set[IRTContextServices.AnyContext[F, AuthCtx]],
   val httpContextExtractor: HttpContextExtractor[AuthCtx],
   val wsContextExtractor: WsContextExtractor[AuthCtx],
   val wsSessionsStorage: WsSessionsStorage[F, AuthCtx],

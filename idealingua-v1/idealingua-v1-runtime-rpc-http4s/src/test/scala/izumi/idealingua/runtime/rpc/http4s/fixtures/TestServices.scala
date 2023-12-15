@@ -52,19 +52,32 @@ class TestServices[F[+_, +_]: IO2](
         }
       }
     }
-    final val privateWsListener: LoggingWsListener[F, PrivateContext, PrivateContext] = new LoggingWsListener[F, PrivateContext, PrivateContext]
-    final val privateWsSession: WsContextSessions[F, PrivateContext, PrivateContext] = {
-      new WsContextSessionsImpl(wsStorage, globalWsListeners, Set(privateWsListener), WsIdExtractor.id[PrivateContext])
+    final val privateWsListener: LoggingWsListener[F, PrivateContext, PrivateContext] = {
+      new LoggingWsListener[F, PrivateContext, PrivateContext]
     }
-    final val privateService: IRTWrappedService[F, PrivateContext] = new PrivateTestServiceWrappedServer(new PrivateTestServiceServer[F, PrivateContext] {
-      def test(ctx: PrivateContext, str: String): Just[String] = F.pure(s"Private: $str")
-    })
-    final val privateServices: IRTContextServices[F, AuthContext, PrivateContext, PrivateContext] = IRTContextServices(
-      authenticator = privateAuth,
-      serverMuxer   = new IRTServerMultiplexor.FromServices(Set(privateService)),
-      middlewares   = Set.empty,
-      wsSessions    = privateWsSession,
-    )
+    final val privateWsSession: WsContextSessions[F, PrivateContext, PrivateContext] = {
+      new WsContextSessionsImpl(
+        wsSessionsStorage  = wsStorage,
+        globalWsListeners  = globalWsListeners,
+        wsSessionListeners = Set(privateWsListener),
+        wsIdExtractor      = WsIdExtractor.id[PrivateContext],
+      )
+    }
+    final val privateService: IRTWrappedService[F, PrivateContext] = {
+      new PrivateTestServiceWrappedServer[F, PrivateContext](
+        new PrivateTestServiceServer[F, PrivateContext] {
+          def test(ctx: PrivateContext, str: String): Just[String] = F.pure(s"Private: $str")
+        }
+      )
+    }
+    final val privateServices: IRTContextServices[F, AuthContext, PrivateContext, PrivateContext] = {
+      IRTContextServices[F, AuthContext, PrivateContext, PrivateContext](
+        authenticator = privateAuth,
+        serverMuxer   = new IRTServerMultiplexor.FromServices(Set(privateService)),
+        middlewares   = Set.empty,
+        wsSessions    = privateWsSession,
+      )
+    }
 
     // PROTECTED
     final val protectedAuth = new IRTAuthenticator[F, AuthContext, ProtectedContext] {
@@ -74,19 +87,32 @@ class TestServices[F[+_, +_]: IO2](
         }
       }
     }
-    final val protectedWsListener: LoggingWsListener[F, ProtectedContext, ProtectedContext] = new LoggingWsListener[F, ProtectedContext, ProtectedContext]
-    final val protectedWsSession: WsContextSessions[F, ProtectedContext, ProtectedContext] = {
-      new WsContextSessionsImpl(wsStorage, globalWsListeners, Set(protectedWsListener), WsIdExtractor.id)
+    final val protectedWsListener: LoggingWsListener[F, ProtectedContext, ProtectedContext] = {
+      new LoggingWsListener[F, ProtectedContext, ProtectedContext]
     }
-    final val protectedService: IRTWrappedService[F, ProtectedContext] = new ProtectedTestServiceWrappedServer(new ProtectedTestServiceServer[F, ProtectedContext] {
-      def test(ctx: ProtectedContext, str: String): Just[String] = F.pure(s"Protected: $str")
-    })
-    final val protectedServices: IRTContextServices[F, AuthContext, ProtectedContext, ProtectedContext] = IRTContextServices(
-      authenticator = protectedAuth,
-      serverMuxer   = new IRTServerMultiplexor.FromServices(Set(protectedService)),
-      middlewares   = Set.empty,
-      wsSessions    = protectedWsSession,
-    )
+    final val protectedWsSession: WsContextSessions[F, ProtectedContext, ProtectedContext] = {
+      new WsContextSessionsImpl[F, ProtectedContext, ProtectedContext](
+        wsSessionsStorage  = wsStorage,
+        globalWsListeners  = globalWsListeners,
+        wsSessionListeners = Set(protectedWsListener),
+        wsIdExtractor      = WsIdExtractor.id,
+      )
+    }
+    final val protectedService: IRTWrappedService[F, ProtectedContext] = {
+      new ProtectedTestServiceWrappedServer[F, ProtectedContext](
+        new ProtectedTestServiceServer[F, ProtectedContext] {
+          def test(ctx: ProtectedContext, str: String): Just[String] = F.pure(s"Protected: $str")
+        }
+      )
+    }
+    final val protectedServices: IRTContextServices[F, AuthContext, ProtectedContext, ProtectedContext] = {
+      IRTContextServices[F, AuthContext, ProtectedContext, ProtectedContext](
+        authenticator = protectedAuth,
+        serverMuxer   = new IRTServerMultiplexor.FromServices(Set(protectedService)),
+        middlewares   = Set.empty,
+        wsSessions    = protectedWsSession,
+      )
+    }
 
     // PUBLIC
     final val publicAuth = new IRTAuthenticator[F, AuthContext, PublicContext] {
@@ -96,32 +122,51 @@ class TestServices[F[+_, +_]: IO2](
         }
       }
     }
-    final val publicWsListener: LoggingWsListener[F, PublicContext, PublicContext] = new LoggingWsListener[F, PublicContext, PublicContext]
-    final val publicWsSession: WsContextSessions[F, PublicContext, PublicContext] = {
-      new WsContextSessionsImpl(wsStorage, globalWsListeners, Set(publicWsListener), WsIdExtractor.id)
+    final val publicWsListener: LoggingWsListener[F, PublicContext, PublicContext] = {
+      new LoggingWsListener[F, PublicContext, PublicContext]
     }
-    final val publicService: IRTWrappedService[F, PublicContext] = new GreeterServiceServerWrapped(new AbstractGreeterServer.Impl[F, PublicContext])
-    final val publicServices: IRTContextServices[F, AuthContext, PublicContext, PublicContext] = IRTContextServices(
-      authenticator = publicAuth,
-      serverMuxer   = new IRTServerMultiplexor.FromServices(Set(publicService)),
-      middlewares   = Set(userBlacklistMiddleware(Set("orc"))),
-      wsSessions    = publicWsSession,
-    )
+    final val publicWsSession: WsContextSessions[F, PublicContext, PublicContext] = {
+      new WsContextSessionsImpl(
+        wsSessionsStorage  = wsStorage,
+        globalWsListeners  = globalWsListeners,
+        wsSessionListeners = Set(publicWsListener),
+        wsIdExtractor      = WsIdExtractor.id,
+      )
+    }
+    final val publicService: IRTWrappedService[F, PublicContext] = {
+      new GreeterServiceServerWrapped[F, PublicContext](
+        new AbstractGreeterServer.Impl[F, PublicContext]
+      )
+    }
+    final val publicServices: IRTContextServices[F, AuthContext, PublicContext, PublicContext] = {
+      IRTContextServices[F, AuthContext, PublicContext, PublicContext](
+        authenticator = publicAuth,
+        serverMuxer   = new IRTServerMultiplexor.FromServices(Set(publicService)),
+        middlewares   = Set(userBlacklistMiddleware(Set("orc"))),
+        wsSessions    = publicWsSession,
+      )
+    }
 
-    final val contextServices: Set[IRTContextServices[F, AuthContext, ?, ?]] = Set(privateServices, protectedServices, publicServices)
+    final val contextServices: Set[IRTContextServices.AnyContext[F, AuthContext]] = {
+      Set[IRTContextServices.AnyContext[F, AuthContext]](
+        privateServices,
+        protectedServices,
+        publicServices,
+      )
+    }
   }
 
   object Client {
-    private val greeterService                               = new AbstractGreeterServer.Impl[F, Unit]
-    private val greeterDispatcher                            = new GreeterServiceServerWrapped(greeterService)
-    private val dispatchers: Set[IRTWrappedService[F, Unit]] = Set(greeterDispatcher)
+    private val greeterService: AbstractGreeterServer[F, Unit]          = new AbstractGreeterServer.Impl[F, Unit]
+    private val greeterDispatcher: GreeterServiceServerWrapped[F, Unit] = new GreeterServiceServerWrapped[F, Unit](greeterService)
+    private val dispatchers: Set[IRTWrappedService[F, Unit]]            = Set[IRTWrappedService[F, Unit]](greeterDispatcher)
 
-    private val clients: Set[IRTWrappedClient] = Set(
+    private val clients: Set[IRTWrappedClient] = Set[IRTWrappedClient](
       GreeterServiceClientWrapped,
       ProtectedTestServiceWrappedClient,
       PrivateTestServiceWrappedClient,
     )
     val codec: IRTClientMultiplexorImpl[F]               = new IRTClientMultiplexorImpl[F](clients)
-    val buzzerMultiplexor: IRTServerMultiplexor[F, Unit] = new IRTServerMultiplexor.FromServices(dispatchers)
+    val buzzerMultiplexor: IRTServerMultiplexor[F, Unit] = new IRTServerMultiplexor.FromServices[F, Unit](dispatchers)
   }
 }
