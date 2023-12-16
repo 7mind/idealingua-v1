@@ -93,8 +93,8 @@ object Http4sTransportTest {
     val wsClientFactory: WsRpcDispatcherFactory[F] = {
       new WsRpcDispatcherFactory[F](demo.Client.codec, printer, logger, izLogger)
     }
-    def wsRpcClientDispatcher(): Lifecycle[F[Throwable, _], WsRpcDispatcher.IRTDispatcherWs[F]] = {
-      wsClientFactory.dispatcher(wsUri, demo.Client.buzzerMultiplexor, WsContextExtractor.unit)
+    def wsRpcClientDispatcher(headers: Map[String, String] = Map.empty): Lifecycle[F[Throwable, _], WsRpcDispatcher.IRTDispatcherWs[F]] = {
+      wsClientFactory.dispatcherSimple(wsUri, demo.Client.buzzerMultiplexor, headers)
     }
   }
 
@@ -259,6 +259,32 @@ abstract class Http4sTransportTestBase[F[+_, +_]](
               _ <- checkUnauthorizedWsCall(publicClient.alternative())
             } yield ()
         }
+      }
+    }
+
+    "support websockets request auth" in {
+      withServer {
+        for {
+          privateHeaders <- F.pure(Map("Authorization" -> privateAuth("user").values.head.value))
+          _ <- wsRpcClientDispatcher(privateHeaders).use {
+            dispatcher =>
+              val publicClient    = new GreeterServiceClientWrapped[F](dispatcher)
+              val privateClient   = new PrivateTestServiceWrappedClient[F](dispatcher)
+              val protectedClient = new ProtectedTestServiceWrappedClient[F](dispatcher)
+              for {
+                _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+                _ <- demo.Server.privateWsSession.dispatcherFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
+                _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
+                _  = assert(demo.Server.protectedWsListener.connected.isEmpty)
+                _  = assert(demo.Server.privateWsListener.connected.size == 1)
+                _  = assert(demo.Server.publicWsListener.connected.size == 1)
+
+                _ <- privateClient.test("test").map(res => assert(res.startsWith("Private")))
+                _ <- publicClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
+                _ <- checkUnauthorizedWsCall(protectedClient.test(""))
+              } yield ()
+          }
+        } yield ()
       }
     }
 

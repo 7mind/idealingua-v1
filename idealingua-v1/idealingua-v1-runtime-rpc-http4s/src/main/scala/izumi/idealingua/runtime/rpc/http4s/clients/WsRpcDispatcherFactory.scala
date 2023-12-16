@@ -32,14 +32,20 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
     uri: Uri,
     serverMuxer: IRTServerMultiplexor[F, ServerContext],
     wsContextExtractor: WsContextExtractor[ServerContext],
+    headers: Map[String, String] = Map.empty,
   ): Lifecycle[F[Throwable, _], WsRpcClientConnection[F]] = {
     for {
-      client         <- WsRpcDispatcherFactory.asyncHttpClient[F]
+      client         <- createAsyncHttpClient()
       wsRequestState <- Lifecycle.liftF(F.syncThrowable(WsRequestState.create[F]))
       listener       <- Lifecycle.liftF(F.syncThrowable(createListener(serverMuxer, wsRequestState, wsContextExtractor, dispatcherLogger(uri, logger))))
       handler        <- Lifecycle.liftF(F.syncThrowable(new WebSocketUpgradeHandler(List(listener).asJava)))
       nettyWebSocket <- Lifecycle.make(
-        F.fromFutureJava(client.prepareGet(uri.toString()).execute(handler).toCompletableFuture)
+        F.fromFutureJava {
+          client
+            .prepareGet(uri.toString())
+            .setSingleHeaders(headers.asJava)
+            .execute(handler).toCompletableFuture
+        }
       )(nettyWebSocket => fromNettyFuture(nettyWebSocket.sendCloseFrame()).void)
       // fill promises before closing WS connection, potentially giving a chance to send out an error response before closing
       _ <- Lifecycle.make(F.unit)(_ => wsRequestState.clear())
@@ -48,20 +54,39 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
     }
   }
 
+  def connectSimple(
+    uri: Uri,
+    serverMuxer: IRTServerMultiplexor[F, Unit],
+    headers: Map[String, String] = Map.empty,
+  ): Lifecycle[F[Throwable, _], WsRpcClientConnection[F]] = {
+    connect(uri, serverMuxer, WsContextExtractor.unit, headers)
+  }
+
   def dispatcher[ServerContext](
     uri: Uri,
     serverMuxer: IRTServerMultiplexor[F, ServerContext],
     wsContextExtractor: WsContextExtractor[ServerContext],
+    headers: Map[String, String]         = Map.empty,
     tweakRequest: RpcPacket => RpcPacket = identity,
     timeout: FiniteDuration              = 30.seconds,
   ): Lifecycle[F[Throwable, _], IRTDispatcherWs[F]] = {
-    connect(uri, serverMuxer, wsContextExtractor).map {
+    connect(uri, serverMuxer, wsContextExtractor, headers).map {
       new WsRpcDispatcher(_, timeout, codec, dispatcherLogger(uri, logger)) {
         override protected def buildRequest(rpcPacketId: RpcPacketId, method: IRTMethodId, body: Json): RpcPacket = {
           tweakRequest(super.buildRequest(rpcPacketId, method, body))
         }
       }
     }
+  }
+
+  def dispatcherSimple(
+    uri: Uri,
+    serverMuxer: IRTServerMultiplexor[F, Unit],
+    headers: Map[String, String]         = Map.empty,
+    tweakRequest: RpcPacket => RpcPacket = identity,
+    timeout: FiniteDuration              = 30.seconds,
+  ): Lifecycle[F[Throwable, _], IRTDispatcherWs[F]] = {
+    dispatcher(uri, serverMuxer, WsContextExtractor.unit, headers, tweakRequest, timeout)
   }
 
   protected def wsHandler[ServerContext](
@@ -134,10 +159,8 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
         Some(RpcPacket.rpcCritical(message, None))
     }
   }
-}
 
-object WsRpcDispatcherFactory {
-  def asyncHttpClient[F[+_, +_]: IO2]: Lifecycle[F[Throwable, _], DefaultAsyncHttpClient] = {
+  protected def createAsyncHttpClient(): Lifecycle[F[Throwable, _], DefaultAsyncHttpClient] = {
     Lifecycle.fromAutoCloseable(F.syncThrowable {
       new DefaultAsyncHttpClient(
         new DefaultAsyncHttpClientConfig.Builder()
@@ -154,6 +177,9 @@ object WsRpcDispatcherFactory {
       )
     })
   }
+}
+
+object WsRpcDispatcherFactory {
 
   class ClientWsRpcHandler[F[+_, +_]: IO2, RequestCtx](
     muxer: IRTServerMultiplexor[F, RequestCtx],
@@ -171,7 +197,13 @@ object WsRpcDispatcherFactory {
       ()
     }
     override protected def getRequestCtx: RequestCtx = {
-      requestCtxRef.get().getOrElse(throw new IRTUnathorizedRequestContextException("Missing WS request context."))
+      requestCtxRef.get().getOrElse {
+        throw new IRTUnathorizedRequestContextException(
+          """Impossible - missing WS request context.
+            |Request context should be set with `updateRequestCtx`, before this method is called. (Ref: WsRpcHandler.scala:25)
+            |Please, report as a bug.""".stripMargin
+        )
+      }
     }
   }
 
