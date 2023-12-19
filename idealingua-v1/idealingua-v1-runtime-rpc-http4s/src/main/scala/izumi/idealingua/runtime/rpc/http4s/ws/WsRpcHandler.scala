@@ -14,26 +14,25 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
   logger: LogIO2[F],
 ) {
 
-  protected def updateRequestCtx(packet: RpcPacket): F[Throwable, Unit]
-  protected def getRequestCtx: RequestCtx
+  protected def updateRequestCtx(packet: RpcPacket): F[Throwable, RequestCtx]
 
   def processRpcMessage(message: String): F[Throwable, Option[RpcPacket]] = {
     for {
       packet <- F
         .fromEither(io.circe.parser.decode[RpcPacket](message))
         .leftMap(err => new IRTDecodingException(s"Can not decode Rpc Packet '$message'.\nError: $err."))
-      _ <- updateRequestCtx(packet)
+      requestCtx <- updateRequestCtx(packet)
       response <- packet match {
         // auth
         case RpcPacket(RPCPacketKind.RpcRequest, None, _, _, _, _, _) =>
-          handleAuthRequest(packet)
+          handleAuthRequest(requestCtx, packet)
 
         case RpcPacket(RPCPacketKind.RpcResponse, None, _, Some(ref), _, _, _) =>
           handleAuthResponse(ref, packet)
 
         // rpc
         case RpcPacket(RPCPacketKind.RpcRequest, Some(data), Some(id), _, Some(service), Some(method), _) =>
-          handleWsRequest(data, IRTMethodId(IRTServiceId(service), IRTMethodName(method)))(
+          handleWsRequest(IRTMethodId(IRTServiceId(service), IRTMethodName(method)), requestCtx, data)(
             onSuccess = RpcPacket.rpcResponse(id, _),
             onFail    = RpcPacket.rpcFail(Some(id), _),
           )
@@ -46,7 +45,7 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
 
         // buzzer
         case RpcPacket(RPCPacketKind.BuzzRequest, Some(data), Some(id), _, Some(service), Some(method), _) =>
-          handleWsRequest(data, IRTMethodId(IRTServiceId(service), IRTMethodName(method)))(
+          handleWsRequest(IRTMethodId(IRTServiceId(service), IRTMethodName(method)), requestCtx, data)(
             onSuccess = RpcPacket.buzzerResponse(id, _),
             onFail    = RpcPacket.buzzerFail(Some(id), _),
           )
@@ -74,12 +73,13 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
   }
 
   protected def handleWsRequest(
-    data: Json,
     methodId: IRTMethodId,
+    requestCtx: RequestCtx,
+    data: Json,
   )(onSuccess: Json => RpcPacket,
     onFail: String => RpcPacket,
   ): F[Throwable, Option[RpcPacket]] = {
-    muxer.invokeMethod(methodId)(getRequestCtx, data).sandboxExit.flatMap {
+    muxer.invokeMethod(methodId)(requestCtx, data).sandboxExit.flatMap {
       case Success(res) =>
         F.pure(Some(onSuccess(res)))
 
@@ -115,7 +115,8 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
     }
   }
 
-  protected def handleAuthRequest(packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
+  protected def handleAuthRequest(requestCtx: RequestCtx, packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
+    requestCtx.discard()
     F.pure(Some(RpcPacket(RPCPacketKind.RpcResponse, None, None, packet.id, None, None, None)))
   }
 

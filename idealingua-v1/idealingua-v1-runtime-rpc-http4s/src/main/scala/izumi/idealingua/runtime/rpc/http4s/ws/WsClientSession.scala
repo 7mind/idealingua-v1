@@ -20,11 +20,10 @@ import scala.concurrent.duration.*
 
 trait WsClientSession[F[+_, +_], RequestCtx] extends WsResponder[F] {
   def sessionId: WsSessionId
-  def getRequestCtx: RequestCtx
 
   def requestAndAwaitResponse(method: IRTMethodId, data: Json, timeout: FiniteDuration): F[Throwable, Option[RawResponse]]
 
-  def updateRequestCtx(newContext: RequestCtx): F[Throwable, Unit]
+  def updateRequestCtx(newContext: RequestCtx): F[Throwable, RequestCtx]
 
   def start(onStart: RequestCtx => F[Throwable, Unit]): F[Throwable, Unit]
   def finish(onFinish: RequestCtx => F[Throwable, Unit]): F[Throwable, Unit]
@@ -35,7 +34,7 @@ object WsClientSession {
   class WsClientSessionImpl[F[+_, +_]: IO2: Temporal2: Primitives2, RequestCtx](
     outQueue: Queue[F[Throwable, _], WebSocketFrame],
     initialContext: RequestCtx,
-    wsSessionsContext: Set[WsContextSessions[F, RequestCtx, ?]],
+    wsSessionsContext: Set[WsContextSessions.AnyContext[F, RequestCtx]],
     wsSessionStorage: WsSessionsStorage[F, RequestCtx],
     wsContextExtractor: WsContextExtractor[RequestCtx],
     logger: LogIO2[F],
@@ -47,9 +46,7 @@ object WsClientSession {
 
     override val sessionId: WsSessionId = WsSessionId(UUIDGen.getTimeUUID())
 
-    override def getRequestCtx: RequestCtx = requestCtxRef.get()
-
-    override def updateRequestCtx(newContext: RequestCtx): F[Throwable, Unit] = {
+    override def updateRequestCtx(newContext: RequestCtx): F[Throwable, RequestCtx] = {
       for {
         contexts <- F.sync {
           requestCtxRef.synchronized {
@@ -65,7 +62,7 @@ object WsClientSession {
         _ <- F.when(oldContext != updatedContext) {
           F.traverse_(wsSessionsContext)(_.updateSession(sessionId, Some(updatedContext)))
         }
-      } yield ()
+      } yield updatedContext
     }
 
     def requestAndAwaitResponse(method: IRTMethodId, data: Json, timeout: FiniteDuration): F[Throwable, Option[RawResponse]] = {
@@ -89,17 +86,19 @@ object WsClientSession {
     }
 
     override def finish(onFinish: RequestCtx => F[Throwable, Unit]): F[Throwable, Unit] = {
+      val requestCtx = requestCtxRef.get()
       F.fromEither(WebSocketFrame.Close(1000)).flatMap(outQueue.offer(_)) *>
       requestState.clear() *>
       wsSessionStorage.deleteSession(sessionId) *>
       F.traverse_(wsSessionsContext)(_.updateSession(sessionId, None)) *>
-      onFinish(getRequestCtx)
+      onFinish(requestCtx)
     }
 
     override def start(onStart: RequestCtx => F[Throwable, Unit]): F[Throwable, Unit] = {
+      val requestCtx = requestCtxRef.get()
       wsSessionStorage.addSession(this) *>
-      F.traverse_(wsSessionsContext)(_.updateSession(sessionId, Some(getRequestCtx))) *>
-      onStart(getRequestCtx)
+      F.traverse_(wsSessionsContext)(_.updateSession(sessionId, Some(requestCtx))) *>
+      onStart(requestCtx)
     }
 
     override def toString: String = s"[$sessionId, ${duration().toSeconds}s]"

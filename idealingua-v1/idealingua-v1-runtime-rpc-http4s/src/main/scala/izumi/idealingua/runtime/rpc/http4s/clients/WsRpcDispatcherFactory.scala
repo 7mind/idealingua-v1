@@ -187,22 +187,12 @@ object WsRpcDispatcherFactory {
     wsContextExtractor: WsContextExtractor[RequestCtx],
     logger: LogIO2[F],
   ) extends WsRpcHandler[F, RequestCtx](muxer, requestState, logger) {
-    private val requestCtxRef: AtomicReference[Option[RequestCtx]] = new AtomicReference(None)
-    override protected def updateRequestCtx(packet: RpcPacket): F[Throwable, Unit] = F.sync {
+    private val requestCtxRef: AtomicReference[RequestCtx] = new AtomicReference()
+    override protected def updateRequestCtx(packet: RpcPacket): F[Throwable, RequestCtx] = F.sync {
       val updated = wsContextExtractor.extract(packet)
       requestCtxRef.updateAndGet {
-        case None           => Some(updated)
-        case Some(previous) => Some(wsContextExtractor.merge(previous, updated))
-      }
-      ()
-    }
-    override protected def getRequestCtx: RequestCtx = {
-      requestCtxRef.get().getOrElse {
-        throw new IRTUnathorizedRequestContextException(
-          """Impossible - missing WS request context.
-            |Request context should be set with `updateRequestCtx`, before this method is called. (Ref: WsRpcHandler.scala:25)
-            |Please, report as a bug.""".stripMargin
-        )
+        case null     => updated
+        case previous => wsContextExtractor.merge(previous, updated)
       }
     }
   }

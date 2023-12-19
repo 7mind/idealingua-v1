@@ -40,8 +40,8 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
 ) {
   import dsl.*
 
-  private val muxer: IRTServerMultiplexor[F, AuthCtx]                   = IRTServerMultiplexor.combine(contextServices.map(_.authorizedMuxer))
-  private val wsContextsSessions: Set[WsContextSessions[F, AuthCtx, ?]] = contextServices.map(_.authorizedWsSessions)
+  protected val serverMuxer: IRTServerMultiplexor[F, AuthCtx]                     = IRTServerMultiplexor.combine(contextServices.map(_.authorizedMuxer))
+  protected val wsContextsSessions: Set[WsContextSessions.AnyContext[F, AuthCtx]] = contextServices.map(_.authorizedWsSessions)
 
   // WS Response attribute key, to differ from usual HTTP responses
   private val wsAttributeKey = UnsafeRun2[F].unsafeRun(Key.newKey[F[Throwable, _], WsResponseMarker.type])
@@ -107,7 +107,7 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
   }
 
   protected def wsHandler(clientSession: WsClientSession[F, AuthCtx]): WsRpcHandler[F, AuthCtx] = {
-    new ServerWsRpcHandler(clientSession, muxer, wsContextExtractor, logger)
+    new ServerWsRpcHandler(clientSession, serverMuxer, wsContextExtractor, logger)
   }
 
   protected def handleWsClose(session: WsClientSession[F, AuthCtx]): F[Throwable, Unit] = {
@@ -139,7 +139,7 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
     (for {
       authContext <- F.syncThrowable(httpContextExtractor.extract(request))
       parsedBody  <- F.fromEither(io.circe.parser.parse(body)).leftMap(err => new IRTDecodingException(s"Can not parse JSON body '$body'.", Some(err)))
-      invokeRes   <- muxer.invokeMethod(methodId)(authContext, parsedBody)
+      invokeRes   <- serverMuxer.invokeMethod(methodId)(authContext, parsedBody)
     } yield invokeRes).sandboxExit.flatMap(handleHttpResult(request, methodId))
   }
 
@@ -226,7 +226,8 @@ object HttpServer {
     wsContextExtractor: WsContextExtractor[AuthCtx],
     logger: LogIO2[F],
   ) extends WsRpcHandler[F, AuthCtx](muxer, clientSession, logger) {
-    override protected def getRequestCtx: AuthCtx                                  = clientSession.getRequestCtx
-    override protected def updateRequestCtx(packet: RpcPacket): F[Throwable, Unit] = clientSession.updateRequestCtx(wsContextExtractor.extract(packet))
+    override protected def updateRequestCtx(packet: RpcPacket): F[Throwable, AuthCtx] = {
+      clientSession.updateRequestCtx(wsContextExtractor.extract(packet))
+    }
   }
 }
