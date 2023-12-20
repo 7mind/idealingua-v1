@@ -227,7 +227,7 @@ object HttpServer {
     logger: LogIO2[F],
   ) extends WsRpcHandler[F, AuthCtx](muxer, clientSession, logger) {
     override protected def updateRequestCtx(packet: RpcPacket): F[Throwable, AuthCtx] = {
-      clientSession.updateRequestCtx(wsContextExtractor.extract(packet))
+      clientSession.updateRequestCtx(wsContextExtractor.extract(clientSession.sessionId, packet))
     }
   }
 }

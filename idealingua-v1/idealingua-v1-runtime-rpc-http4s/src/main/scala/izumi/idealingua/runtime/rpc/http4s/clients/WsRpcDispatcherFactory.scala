@@ -5,11 +5,12 @@ import io.circe.{Json, Printer}
 import izumi.functional.bio.{Async2, Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
 import izumi.functional.lifecycle.Lifecycle
 import izumi.fundamentals.platform.language.Quirks.Discarder
+import izumi.fundamentals.platform.uuid.UUIDGen
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcher.IRTDispatcherWs
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.{ClientWsRpcHandler, WsRpcClientConnection, fromNettyFuture}
 import izumi.idealingua.runtime.rpc.http4s.context.WsContextExtractor
-import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsRequestState, WsRpcHandler}
+import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsRequestState, WsRpcHandler, WsSessionId}
 import izumi.logstage.api.IzLogger
 import logstage.LogIO2
 import org.asynchttpclient.netty.ws.NettyWebSocket
@@ -187,9 +188,10 @@ object WsRpcDispatcherFactory {
     wsContextExtractor: WsContextExtractor[RequestCtx],
     logger: LogIO2[F],
   ) extends WsRpcHandler[F, RequestCtx](muxer, requestState, logger) {
+    private val wsSessionId: WsSessionId                   = WsSessionId(UUIDGen.getTimeUUID())
     private val requestCtxRef: AtomicReference[RequestCtx] = new AtomicReference()
     override protected def updateRequestCtx(packet: RpcPacket): F[Throwable, RequestCtx] = F.sync {
-      val updated = wsContextExtractor.extract(packet)
+      val updated = wsContextExtractor.extract(wsSessionId, packet)
       requestCtxRef.updateAndGet {
         case null     => updated
         case previous => wsContextExtractor.merge(previous, updated)
