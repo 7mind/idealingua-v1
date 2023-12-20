@@ -185,26 +185,26 @@ abstract class Http4sTransportTestBase[F[+_, +_]](
               protectedClient = new ProtectedTestServiceWrappedClient[F](dispatcher)
 
               // no dispatchers yet
-              _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
-              _ <- demo.Server.privateWsSession.dispatcherFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
-              _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+              _ <- demo.Server.protectedWsStorage.dispatchersFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+              _ <- demo.Server.privateWsStorage.dispatchersFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+              _ <- demo.Server.publicWsStorage.dispatchersFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
               // all listeners are empty
-              _ = assert(demo.Server.protectedWsListener.connected.isEmpty)
-              _ = assert(demo.Server.privateWsListener.connected.isEmpty)
-              _ = assert(demo.Server.publicWsListener.connected.isEmpty)
+              _ = assert(demo.Server.protectedWsListener.connectedContexts.isEmpty)
+              _ = assert(demo.Server.privateWsListener.connectedContexts.isEmpty)
+              _ = assert(demo.Server.publicWsListener.connectedContexts.isEmpty)
 
               // public authorization
               _ <- dispatcher.authorize(publicHeaders)
               // protected and private listeners are empty
-              _ = assert(demo.Server.protectedWsListener.connected.isEmpty)
-              _ = assert(demo.Server.privateWsListener.connected.isEmpty)
-              _ = assert(demo.Server.publicWsListener.connected.contains(PublicContext("user")))
+              _ = assert(demo.Server.protectedWsListener.connectedContexts.isEmpty)
+              _ = assert(demo.Server.privateWsListener.connectedContexts.isEmpty)
+              _ = assert(demo.Server.publicWsListener.connectedContexts.contains(PublicContext("user")))
               // protected and private sessions are empty
-              _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
-              _ <- demo.Server.privateWsSession.dispatcherFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+              _ <- demo.Server.protectedWsStorage.dispatchersFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+              _ <- demo.Server.privateWsStorage.dispatchersFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
               // public dispatcher works as expected
-              publicContextBuzzer <- demo.Server.publicWsSession
-                .dispatcherFor(PublicContext("user"), demo.Client.codec)
+              publicContextBuzzer <- demo.Server.publicWsStorage
+                .dispatchersFor(PublicContext("user"), demo.Client.codec).map(_.headOption)
                 .fromOption(new RuntimeException("Missing Buzzer"))
               _ <- new GreeterServiceClientWrapped(publicContextBuzzer).greet("John", "Buzzer").map(res => assert(res == "Hi, John Buzzer!"))
               _ <- publicClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
@@ -215,13 +215,13 @@ abstract class Http4sTransportTestBase[F[+_, +_]](
               // re-authorize with private
               _ <- dispatcher.authorize(privateHeaders)
               // protected listener is empty
-              _ = assert(demo.Server.protectedWsListener.connected.isEmpty)
-              _ = assert(demo.Server.privateWsListener.connected.contains(PrivateContext("user")))
-              _ = assert(demo.Server.publicWsListener.connected.contains(PublicContext("user")))
+              _ = assert(demo.Server.protectedWsListener.connectedContexts.isEmpty)
+              _ = assert(demo.Server.privateWsListener.connectedContexts.contains(PrivateContext("user")))
+              _ = assert(demo.Server.publicWsListener.connectedContexts.contains(PublicContext("user")))
               // protected sessions is empty
-              _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
-              _ <- demo.Server.privateWsSession.dispatcherFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
-              _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
+              _ <- demo.Server.protectedWsStorage.dispatchersFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+              _ <- demo.Server.privateWsStorage.dispatchersFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
+              _ <- demo.Server.publicWsStorage.dispatchersFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
               _ <- privateClient.test("test").map(res => assert(res.startsWith("Private")))
               _ <- publicClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
               _ <- checkUnauthorizedWsCall(protectedClient.test(""))
@@ -229,13 +229,13 @@ abstract class Http4sTransportTestBase[F[+_, +_]](
               // re-authorize with protected
               _ <- dispatcher.authorize(protectedHeaders)
               // private listener is empty
-              _ = assert(demo.Server.protectedWsListener.connected.contains(ProtectedContext("user")))
-              _ = assert(demo.Server.privateWsListener.connected.isEmpty)
-              _ = assert(demo.Server.publicWsListener.connected.contains(PublicContext("user")))
+              _ = assert(demo.Server.protectedWsListener.connectedContexts.contains(ProtectedContext("user")))
+              _ = assert(demo.Server.privateWsListener.connectedContexts.isEmpty)
+              _ = assert(demo.Server.publicWsListener.connectedContexts.contains(PublicContext("user")))
               // private sessions is empty
-              _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
-              _ <- demo.Server.privateWsSession.dispatcherFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
-              _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
+              _ <- demo.Server.protectedWsStorage.dispatchersFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
+              _ <- demo.Server.privateWsStorage.dispatchersFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+              _ <- demo.Server.publicWsStorage.dispatchersFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
               _ <- protectedClient.test("test").map(res => assert(res.startsWith("Protected")))
               _ <- publicClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
               _ <- checkUnauthorizedWsCall(privateClient.test(""))
@@ -243,16 +243,16 @@ abstract class Http4sTransportTestBase[F[+_, +_]](
               // auth session context update
               _ <- dispatcher.authorize(protectedHeaders2)
               // session and listeners notified
-              _  = assert(demo.Server.protectedWsListener.connected.contains(ProtectedContext("John")))
-              _  = assert(demo.Server.protectedWsListener.connected.size == 1)
-              _  = assert(demo.Server.publicWsListener.connected.contains(PublicContext("John")))
-              _  = assert(demo.Server.publicWsListener.connected.size == 1)
-              _  = assert(demo.Server.privateWsListener.connected.isEmpty)
-              _ <- demo.Server.privateWsSession.dispatcherFor(PrivateContext("John"), demo.Client.codec).map(b => assert(b.isEmpty))
-              _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
-              _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("John"), demo.Client.codec).map(b => assert(b.nonEmpty))
-              _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
-              _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("John"), demo.Client.codec).map(b => assert(b.nonEmpty))
+              _  = assert(demo.Server.protectedWsListener.connectedContexts.contains(ProtectedContext("John")))
+              _  = assert(demo.Server.protectedWsListener.connectedContexts.size == 1)
+              _  = assert(demo.Server.publicWsListener.connectedContexts.contains(PublicContext("John")))
+              _  = assert(demo.Server.publicWsListener.connectedContexts.size == 1)
+              _  = assert(demo.Server.privateWsListener.connectedContexts.isEmpty)
+              _ <- demo.Server.privateWsStorage.dispatchersFor(PrivateContext("John"), demo.Client.codec).map(b => assert(b.isEmpty))
+              _ <- demo.Server.publicWsStorage.dispatchersFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+              _ <- demo.Server.publicWsStorage.dispatchersFor(PublicContext("John"), demo.Client.codec).map(b => assert(b.nonEmpty))
+              _ <- demo.Server.protectedWsStorage.dispatchersFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+              _ <- demo.Server.protectedWsStorage.dispatchersFor(ProtectedContext("John"), demo.Client.codec).map(b => assert(b.nonEmpty))
 
               // bad authorization
               _ <- dispatcher.authorize(badHeaders)
@@ -272,16 +272,40 @@ abstract class Http4sTransportTestBase[F[+_, +_]](
               val privateClient   = new PrivateTestServiceWrappedClient[F](dispatcher)
               val protectedClient = new ProtectedTestServiceWrappedClient[F](dispatcher)
               for {
-                _ <- demo.Server.protectedWsSession.dispatcherFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
-                _ <- demo.Server.privateWsSession.dispatcherFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
-                _ <- demo.Server.publicWsSession.dispatcherFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
-                _  = assert(demo.Server.protectedWsListener.connected.isEmpty)
-                _  = assert(demo.Server.privateWsListener.connected.size == 1)
-                _  = assert(demo.Server.publicWsListener.connected.size == 1)
+                _ <- demo.Server.protectedWsStorage.dispatchersFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+                _ <- demo.Server.privateWsStorage.dispatchersFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
+                _ <- demo.Server.publicWsStorage.dispatchersFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.nonEmpty))
+                _  = assert(demo.Server.protectedWsListener.connectedContexts.isEmpty)
+                _  = assert(demo.Server.privateWsListener.connectedContexts.size == 1)
+                _  = assert(demo.Server.publicWsListener.connectedContexts.size == 1)
 
                 _ <- privateClient.test("test").map(res => assert(res.startsWith("Private")))
                 _ <- publicClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
                 _ <- checkUnauthorizedWsCall(protectedClient.test(""))
+              } yield ()
+          }
+        } yield ()
+      }
+    }
+
+    "support websockets multiple sessions on same context" in {
+      withServer {
+        for {
+          privateHeaders <- F.pure(Map("Authorization" -> privateAuth("user").values.head.value))
+          _ <- {
+            for {
+              c1 <- wsRpcClientDispatcher(privateHeaders)
+              c2 <- wsRpcClientDispatcher(privateHeaders)
+            } yield (c1, c2)
+          }.use {
+            case (_, _) =>
+              for {
+                _ <- demo.Server.protectedWsStorage.dispatchersFor(ProtectedContext("user"), demo.Client.codec).map(b => assert(b.isEmpty))
+                _ <- demo.Server.privateWsStorage.dispatchersFor(PrivateContext("user"), demo.Client.codec).map(b => assert(b.size == 2))
+                _ <- demo.Server.publicWsStorage.dispatchersFor(PublicContext("user"), demo.Client.codec).map(b => assert(b.size == 2))
+                _  = assert(demo.Server.protectedWsListener.connected.isEmpty)
+                _  = assert(demo.Server.privateWsListener.connected.size == 2)
+                _  = assert(demo.Server.publicWsListener.connected.size == 2)
               } yield ()
           }
         } yield ()

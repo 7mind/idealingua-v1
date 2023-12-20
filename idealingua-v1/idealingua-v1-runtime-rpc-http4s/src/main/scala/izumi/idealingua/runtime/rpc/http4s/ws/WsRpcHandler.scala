@@ -14,6 +14,9 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
   logger: LogIO2[F],
 ) {
 
+  /** Update context based on RpcPacket (or extract).
+    * Called on each RpcPacket messages before packet handling
+    */
   protected def updateRequestCtx(packet: RpcPacket): F[Throwable, RequestCtx]
 
   def processRpcMessage(message: String): F[Throwable, Option[RpcPacket]] = {

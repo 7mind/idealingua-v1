@@ -18,35 +18,35 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.*
 
-trait WsClientSession[F[+_, +_], RequestCtx] extends WsResponder[F] {
+trait WsClientSession[F[+_, +_], SessionCtx] extends WsResponder[F] {
   def sessionId: WsSessionId
 
   def requestAndAwaitResponse(method: IRTMethodId, data: Json, timeout: FiniteDuration): F[Throwable, Option[RawResponse]]
 
-  def updateRequestCtx(newContext: RequestCtx): F[Throwable, RequestCtx]
+  def updateRequestCtx(newContext: SessionCtx): F[Throwable, SessionCtx]
 
-  def start(onStart: RequestCtx => F[Throwable, Unit]): F[Throwable, Unit]
-  def finish(onFinish: RequestCtx => F[Throwable, Unit]): F[Throwable, Unit]
+  def start(onStart: SessionCtx => F[Throwable, Unit]): F[Throwable, Unit]
+  def finish(onFinish: SessionCtx => F[Throwable, Unit]): F[Throwable, Unit]
 }
 
 object WsClientSession {
 
-  class WsClientSessionImpl[F[+_, +_]: IO2: Temporal2: Primitives2, RequestCtx](
+  class WsClientSessionImpl[F[+_, +_]: IO2: Temporal2: Primitives2, SessionCtx](
     outQueue: Queue[F[Throwable, _], WebSocketFrame],
-    initialContext: RequestCtx,
-    wsSessionsContext: Set[WsContextSessions.AnyContext[F, RequestCtx]],
-    wsSessionStorage: WsSessionsStorage[F, RequestCtx],
-    wsContextExtractor: WsContextExtractor[RequestCtx],
+    initialContext: SessionCtx,
+    wsSessionsContext: Set[WsContextSessions.AnyContext[F, SessionCtx]],
+    wsSessionStorage: WsSessionsStorage[F, SessionCtx],
+    wsContextExtractor: WsContextExtractor[SessionCtx],
     logger: LogIO2[F],
     printer: Printer,
-  ) extends WsClientSession[F, RequestCtx] {
-    private val requestCtxRef                   = new AtomicReference[RequestCtx](initialContext)
+  ) extends WsClientSession[F, SessionCtx] {
+    private val requestCtxRef                   = new AtomicReference[SessionCtx](initialContext)
     private val openingTime: ZonedDateTime      = IzTime.utcNow
     private val requestState: WsRequestState[F] = WsRequestState.create[F]
 
     override val sessionId: WsSessionId = WsSessionId(UUIDGen.getTimeUUID())
 
-    override def updateRequestCtx(newContext: RequestCtx): F[Throwable, RequestCtx] = {
+    override def updateRequestCtx(newContext: SessionCtx): F[Throwable, SessionCtx] = {
       for {
         contexts <- F.sync {
           requestCtxRef.synchronized {
@@ -85,7 +85,7 @@ object WsClientSession {
       requestState.responseWithData(id, data)
     }
 
-    override def finish(onFinish: RequestCtx => F[Throwable, Unit]): F[Throwable, Unit] = {
+    override def finish(onFinish: SessionCtx => F[Throwable, Unit]): F[Throwable, Unit] = {
       val requestCtx = requestCtxRef.get()
       F.fromEither(WebSocketFrame.Close(1000)).flatMap(outQueue.offer(_)) *>
       requestState.clear() *>
@@ -94,7 +94,7 @@ object WsClientSession {
       onFinish(requestCtx)
     }
 
-    override def start(onStart: RequestCtx => F[Throwable, Unit]): F[Throwable, Unit] = {
+    override def start(onStart: SessionCtx => F[Throwable, Unit]): F[Throwable, Unit] = {
       val requestCtx = requestCtxRef.get()
       wsSessionStorage.addSession(this) *>
       F.traverse_(wsSessionsContext)(_.updateSession(sessionId, Some(requestCtx))) *>

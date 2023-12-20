@@ -5,9 +5,10 @@ import izumi.functional.bio.{F, IO2}
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
 import izumi.idealingua.runtime.rpc.http4s.context.WsIdExtractor
+import izumi.idealingua.runtime.rpc.http4s.ws.*
 import izumi.idealingua.runtime.rpc.http4s.ws.WsContextSessions.WsContextSessionsImpl
+import izumi.idealingua.runtime.rpc.http4s.ws.WsContextStorage.WsContextStorageImpl
 import izumi.idealingua.runtime.rpc.http4s.ws.WsSessionsStorage.WsSessionsStorageImpl
-import izumi.idealingua.runtime.rpc.http4s.ws.{WsContextSessions, WsSessionId, WsSessionListener, WsSessionsStorage}
 import izumi.idealingua.runtime.rpc.http4s.{IRTAuthenticator, IRTContextServices}
 import izumi.r2.idealingua.test.generated.*
 import izumi.r2.idealingua.test.impls.AbstractGreeterServer
@@ -53,15 +54,16 @@ class TestServices[F[+_, +_]: IO2](
         }
       }
     }
-    final val privateWsListener: LoggingWsListener[F, PrivateContext, PrivateContext] = {
-      new LoggingWsListener[F, PrivateContext, PrivateContext]
+    final val privateWsListener: LoggingWsListener[F, PrivateContext, TestContext] = {
+      new LoggingWsListener[F, PrivateContext, TestContext]
     }
+    final val privateWsStorage: WsContextStorage[F, PrivateContext] = new WsContextStorageImpl(wsStorage)
     final val privateWsSession: WsContextSessions[F, PrivateContext, PrivateContext] = {
       new WsContextSessionsImpl(
-        wsSessionsStorage  = wsStorage,
+        wsContextStorage   = privateWsStorage,
         globalWsListeners  = globalWsListeners,
         wsSessionListeners = Set(privateWsListener),
-        wsIdExtractor      = WsIdExtractor.id[PrivateContext],
+        wsIdExtractor      = WsIdExtractor.id,
       )
     }
     final val privateService: IRTWrappedService[F, PrivateContext] = {
@@ -88,12 +90,13 @@ class TestServices[F[+_, +_]: IO2](
         }
       }
     }
-    final val protectedWsListener: LoggingWsListener[F, ProtectedContext, ProtectedContext] = {
-      new LoggingWsListener[F, ProtectedContext, ProtectedContext]
+    final val protectedWsListener: LoggingWsListener[F, ProtectedContext, TestContext] = {
+      new LoggingWsListener[F, ProtectedContext, TestContext]
     }
+    final val protectedWsStorage: WsContextStorage[F, ProtectedContext] = new WsContextStorageImpl(wsStorage)
     final val protectedWsSession: WsContextSessions[F, ProtectedContext, ProtectedContext] = {
       new WsContextSessionsImpl[F, ProtectedContext, ProtectedContext](
-        wsSessionsStorage  = wsStorage,
+        wsContextStorage   = protectedWsStorage,
         globalWsListeners  = globalWsListeners,
         wsSessionListeners = Set(protectedWsListener),
         wsIdExtractor      = WsIdExtractor.id,
@@ -123,12 +126,13 @@ class TestServices[F[+_, +_]: IO2](
         }
       }
     }
-    final val publicWsListener: LoggingWsListener[F, PublicContext, PublicContext] = {
-      new LoggingWsListener[F, PublicContext, PublicContext]
+    final val publicWsListener: LoggingWsListener[F, PublicContext, TestContext] = {
+      new LoggingWsListener[F, PublicContext, TestContext]
     }
+    final val publicWsStorage: WsContextStorage[F, PublicContext] = new WsContextStorageImpl(wsStorage)
     final val publicWsSession: WsContextSessions[F, PublicContext, PublicContext] = {
       new WsContextSessionsImpl(
-        wsSessionsStorage  = wsStorage,
+        wsContextStorage   = publicWsStorage,
         globalWsListeners  = globalWsListeners,
         wsSessionListeners = Set(publicWsListener),
         wsIdExtractor      = WsIdExtractor.id,

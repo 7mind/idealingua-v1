@@ -6,19 +6,20 @@ import izumi.idealingua.runtime.rpc.http4s.ws.{WsSessionId, WsSessionListener}
 import scala.collection.mutable
 
 final class LoggingWsListener[F[+_, +_]: IO2, RequestCtx, WsCtx] extends WsSessionListener[F, RequestCtx, WsCtx] {
-  private val connections   = mutable.Set.empty[WsCtx]
-  def connected: Set[WsCtx] = connections.toSet
+  private val connections                  = mutable.Set.empty[(WsSessionId, WsCtx)]
+  def connected: Set[(WsSessionId, WsCtx)] = connections.toSet
+  def connectedContexts: Set[WsCtx]        = connections.map(_._2).toSet
 
   override def onSessionOpened(sessionId: WsSessionId, reqCtx: RequestCtx, wsCtx: WsCtx): F[Throwable, Unit] = F.sync {
-    connections.add(wsCtx)
+    connections.add(sessionId -> wsCtx)
   }.void
 
   override def onSessionUpdated(sessionId: WsSessionId, reqCtx: RequestCtx, prevStx: WsCtx, newCtx: WsCtx): F[Throwable, Unit] = F.sync {
-    connections.remove(prevStx)
-    connections.add(newCtx)
+    connections.remove(sessionId -> prevStx)
+    connections.add(sessionId    -> newCtx)
   }.void
 
   override def onSessionClosed(sessionId: WsSessionId, wsCtx: WsCtx): F[Throwable, Unit] = F.sync {
-    connections.remove(wsCtx)
+    connections.remove(sessionId -> wsCtx)
   }.void
 }
