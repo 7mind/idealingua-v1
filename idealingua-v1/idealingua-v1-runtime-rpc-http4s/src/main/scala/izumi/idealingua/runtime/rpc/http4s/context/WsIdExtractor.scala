@@ -7,4 +7,5 @@ trait WsIdExtractor[RequestCtx, WsCtx] {
 object WsIdExtractor {
   def id[C]: WsIdExtractor[C, C]              = (c, _) => Some(c)
   def widen[C, C0 >: C]: WsIdExtractor[C, C0] = (c, _) => Some(c)
+  def unit[C]: WsIdExtractor[C, Unit]         = (_, _) => Some(())
 }

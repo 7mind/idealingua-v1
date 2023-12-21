@@ -3,7 +3,7 @@ package izumi.idealingua.runtime.rpc.http4s.ws
 import cats.effect.std.Queue
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, Printer}
-import izumi.functional.bio.{F, IO2, Primitives2, Temporal2}
+import izumi.functional.bio.{Applicative2, F, IO2, Primitives2, Temporal2}
 import izumi.fundamentals.platform.time.IzTime
 import izumi.fundamentals.platform.uuid.UUIDGen
 import izumi.idealingua.runtime.rpc.http4s.context.WsContextExtractor
@@ -30,6 +30,16 @@ trait WsClientSession[F[+_, +_], SessionCtx] extends WsResponder[F] {
 }
 
 object WsClientSession {
+
+  def empty[F[+_, +_]: Applicative2, Ctx](wsSessionId: WsSessionId): WsClientSession[F, Ctx] = new WsClientSession[F, Ctx] {
+    override def sessionId: WsSessionId                                                                                               = wsSessionId
+    override def requestAndAwaitResponse(method: IRTMethodId, data: Json, timeout: FiniteDuration): F[Throwable, Option[RawResponse]] = F.pure(None)
+    override def updateRequestCtx(newContext: Ctx): F[Throwable, Ctx]                                                                 = F.pure(newContext)
+    override def start(onStart: Ctx => F[Throwable, Unit]): F[Throwable, Unit]                                                        = F.unit
+    override def finish(onFinish: Ctx => F[Throwable, Unit]): F[Throwable, Unit]                                                      = F.unit
+    override def responseWith(id: RpcPacketId, response: RawResponse): F[Throwable, Unit]                                             = F.unit
+    override def responseWithData(id: RpcPacketId, data: Json): F[Throwable, Unit]                                                    = F.unit
+  }
 
   class WsClientSessionImpl[F[+_, +_]: IO2: Temporal2: Primitives2, SessionCtx](
     outQueue: Queue[F[Throwable, _], WebSocketFrame],
