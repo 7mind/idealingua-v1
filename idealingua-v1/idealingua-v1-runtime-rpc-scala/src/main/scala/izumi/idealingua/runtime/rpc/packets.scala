@@ -93,6 +93,14 @@ case class RpcPacket(
   def withHeaders(h: Map[String, String]): RpcPacket = {
     copy(headers = Option(h).filter(_.nonEmpty))
   }
+  def methodId: Option[IRTMethodId] = {
+    for {
+      m <- method
+      s <- service
+    } yield {
+      IRTMethodId(IRTServiceId(s), IRTMethodName(m))
+    }
+  }
 }
 
 object RpcPacket {

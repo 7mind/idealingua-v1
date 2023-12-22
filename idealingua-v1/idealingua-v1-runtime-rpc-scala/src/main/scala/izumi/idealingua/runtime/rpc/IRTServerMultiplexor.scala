@@ -14,7 +14,7 @@ trait IRTServerMultiplexor[F[+_, +_], C] {
 
   /** Contramap eval on context C2 -> C. If context is missing IRTUnathorizedRequestContextException will raise. */
   final def contramap[C2](
-    updateContext: (C2, Json) => F[Throwable, Option[C]]
+    updateContext: (C2, Json, IRTMethodId) => F[Throwable, Option[C]]
   )(implicit io2: IO2[F]
   ): IRTServerMultiplexor[F, C2] = {
     val mappedMethods = self.methods.map { case (k, v) => k -> v.contramap(updateContext) }

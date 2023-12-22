@@ -48,7 +48,7 @@ class TestServices[F[+_, +_]: IO2](
     )
     // PRIVATE
     final val privateAuth = new IRTAuthenticator[F, AuthContext, PrivateContext] {
-      override def authenticate(authContext: AuthContext, body: Option[Json]): F[Nothing, Option[PrivateContext]] = F.sync {
+      override def authenticate(authContext: AuthContext, body: Option[Json], method: Option[IRTMethodId]): F[Nothing, Option[PrivateContext]] = F.sync {
         authContext.headers.get[Authorization].map(_.credentials).collect {
           case BasicCredentials(user, "private") => PrivateContext(user)
         }
@@ -84,7 +84,7 @@ class TestServices[F[+_, +_]: IO2](
 
     // PROTECTED
     final val protectedAuth = new IRTAuthenticator[F, AuthContext, ProtectedContext] {
-      override def authenticate(authContext: AuthContext, body: Option[Json]): F[Nothing, Option[ProtectedContext]] = F.sync {
+      override def authenticate(authContext: AuthContext, body: Option[Json], method: Option[IRTMethodId]): F[Nothing, Option[ProtectedContext]] = F.sync {
         authContext.headers.get[Authorization].map(_.credentials).collect {
           case BasicCredentials(user, "protected") => ProtectedContext(user)
         }
@@ -120,7 +120,7 @@ class TestServices[F[+_, +_]: IO2](
 
     // PUBLIC
     final val publicAuth = new IRTAuthenticator[F, AuthContext, PublicContext] {
-      override def authenticate(authContext: AuthContext, body: Option[Json]): F[Nothing, Option[PublicContext]] = F.sync {
+      override def authenticate(authContext: AuthContext, body: Option[Json], method: Option[IRTMethodId]): F[Nothing, Option[PublicContext]] = F.sync {
         authContext.headers.get[Authorization].map(_.credentials).collect {
           case BasicCredentials(user, _) => PublicContext(user)
         }

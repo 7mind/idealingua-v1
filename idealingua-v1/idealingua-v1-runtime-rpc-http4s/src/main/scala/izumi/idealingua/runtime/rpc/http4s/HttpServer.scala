@@ -22,6 +22,7 @@ import org.http4s.*
 import org.http4s.dsl.Http4sDsl
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.websocket.WebSocketFrame
+import org.typelevel.ci.CIString
 import org.typelevel.vault.Key
 
 import java.time.ZonedDateTime
@@ -83,7 +84,12 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
             }
           }
       }
-      response <- ws.withOnClose(handleWsClose(clientSession)).build(outStream, inStream)
+      wsSessionIdHeader = Header.Raw(HttpServer.`X-Ws-Session-Id`, clientSession.sessionId.sessionId.toString)
+
+      response <- ws
+        .withOnClose(handleWsClose(clientSession))
+        .withHeaders(Headers(wsSessionIdHeader))
+        .build(outStream, inStream)
     } yield {
       response.withAttribute(wsAttributeKey, WsResponseMarker)
     }
@@ -219,6 +225,7 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
 }
 
 object HttpServer {
+  val `X-Ws-Session-Id`: CIString = CIString("X-Ws-Session-Id")
   case object WsResponseMarker
   class ServerWsRpcHandler[F[+_, +_]: IO2, AuthCtx](
     clientSession: WsClientSession[F, AuthCtx],

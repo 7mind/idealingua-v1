@@ -15,14 +15,14 @@ trait IRTContextServices[F[+_, +_], AuthCtx, RequestCtx, WsCtx] {
       case (muxer, middleware) => muxer.wrap(middleware)
     }
     val authorized: IRTServerMultiplexor[F, AuthCtx] = withMiddlewares.contramap {
-      case (authCtx, body) => authenticator.authenticate(authCtx, Some(body))
+      case (authCtx, body, methodId) => authenticator.authenticate(authCtx, Some(body), Some(methodId))
     }
     authorized
   }
   def authorizedWsSessions(implicit M: Monad2[F]): WsContextSessions[F, AuthCtx, WsCtx] = {
     val authorized: WsContextSessions[F, AuthCtx, WsCtx] = wsSessions.contramap {
       authCtx =>
-        authenticator.authenticate(authCtx, None)
+        authenticator.authenticate(authCtx, None, None)
     }
     authorized
   }

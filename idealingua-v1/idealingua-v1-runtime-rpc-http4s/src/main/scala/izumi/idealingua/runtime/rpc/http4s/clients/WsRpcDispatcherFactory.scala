@@ -7,6 +7,7 @@ import izumi.functional.lifecycle.Lifecycle
 import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.fundamentals.platform.uuid.UUIDGen
 import izumi.idealingua.runtime.rpc.*
+import izumi.idealingua.runtime.rpc.http4s.HttpServer
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcher.IRTDispatcherWs
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.{ClientWsRpcHandler, WsRpcClientConnection, fromNettyFuture}
 import izumi.idealingua.runtime.rpc.http4s.context.WsContextExtractor
@@ -18,9 +19,11 @@ import org.asynchttpclient.ws.{WebSocket, WebSocketListener, WebSocketUpgradeHan
 import org.asynchttpclient.{DefaultAsyncHttpClient, DefaultAsyncHttpClientConfig}
 import org.http4s.Uri
 
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.jdk.CollectionConverters.*
+import scala.util.Try
 
 class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRun2](
   codec: IRTClientMultiplexor[F],
@@ -48,10 +51,12 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
             .execute(handler).toCompletableFuture
         }
       )(nettyWebSocket => fromNettyFuture(nettyWebSocket.sendCloseFrame()).void)
+      sessionId = Option(nettyWebSocket.getUpgradeHeaders.get(HttpServer.`X-Ws-Session-Id`.toString))
+        .flatMap(str => Try(WsSessionId(UUID.fromString(str))).toOption)
       // fill promises before closing WS connection, potentially giving a chance to send out an error response before closing
       _ <- Lifecycle.make(F.unit)(_ => wsRequestState.clear())
     } yield {
-      new WsRpcClientConnection.Netty(nettyWebSocket, wsRequestState, printer)
+      new WsRpcClientConnection.Netty(nettyWebSocket, wsRequestState, printer, sessionId)
     }
   }
 
@@ -201,6 +206,7 @@ object WsRpcDispatcherFactory {
 
   trait WsRpcClientConnection[F[_, _]] {
     private[clients] def requestAndAwait(id: RpcPacketId, packet: RpcPacket, method: Option[IRTMethodId], timeout: FiniteDuration): F[Throwable, Option[RawResponse]]
+    def sessionId: Option[WsSessionId]
     def authorize(headers: Map[String, String], timeout: FiniteDuration = 30.seconds): F[Throwable, Unit]
   }
   object WsRpcClientConnection {
@@ -208,6 +214,7 @@ object WsRpcDispatcherFactory {
       nettyWebSocket: NettyWebSocket,
       requestState: WsRequestState[F],
       printer: Printer,
+      val sessionId: Option[WsSessionId],
     ) extends WsRpcClientConnection[F] {
 
       override def authorize(headers: Map[String, String], timeout: FiniteDuration): F[Throwable, Unit] = {

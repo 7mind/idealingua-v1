@@ -9,10 +9,10 @@ trait IRTServerMethod[F[+_, +_], C] {
   def invoke(context: C, parsedBody: Json): F[Throwable, Json]
 
   /** Contramap eval on context C2 -> C. If context is missing IRTUnathorizedRequestContextException will raise. */
-  final def contramap[C2](updateContext: (C2, Json) => F[Throwable, Option[C]])(implicit E: Error2[F]): IRTServerMethod[F, C2] = new IRTServerMethod[F, C2] {
+  final def contramap[C2](updateContext: (C2, Json, IRTMethodId) => F[Throwable, Option[C]])(implicit E: Error2[F]): IRTServerMethod[F, C2] = new IRTServerMethod[F, C2] {
     override def methodId: IRTMethodId = self.methodId
     override def invoke(context: C2, parsedBody: Json): F[Throwable, Json] = {
-      updateContext(context, parsedBody)
+      updateContext(context, parsedBody, methodId)
         .fromOption(new IRTUnathorizedRequestContextException(s"Unauthorized $methodId call. Context: $context."))
         .flatMap(self.invoke(_, parsedBody))
     }

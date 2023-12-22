@@ -30,7 +30,7 @@ object WsContextSessions {
   ) extends WsContextSessions[F, RequestCtx, WsCtx] {
     override def updateSession(wsSessionId: WsSessionId, requestContext: Option[RequestCtx]): F[Throwable, Unit] = {
       for {
-        ctxUpdate <- wsContextStorage.updateCtx(wsSessionId) {
+        ctxUpdate <- wsContextStorage.updateContext(wsSessionId) {
           mbPrevCtx =>
             requestContext.flatMap(wsIdExtractor.extract(_, mbPrevCtx))
         }

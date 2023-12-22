@@ -1,11 +1,12 @@
 package izumi.idealingua.runtime.rpc.http4s.ws
 
 import izumi.functional.bio.{F, IO2}
-import izumi.idealingua.runtime.rpc.http4s.ws.WsContextStorage.WsCtxUpdate
+import izumi.idealingua.runtime.rpc.http4s.ws.WsContextStorage.{WsContextSessionId, WsCtxUpdate}
 import izumi.idealingua.runtime.rpc.{IRTClientMultiplexor, IRTDispatcher}
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.jdk.CollectionConverters.*
 
 /** Sessions storage based on WS context.
   * Supports [one session - one context] and [one context - many sessions mapping]
@@ -13,10 +14,10 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
   * but in such case we would able to choose one from many to update session context data.
   */
 trait WsContextStorage[F[+_, +_], WsCtx] {
-  def getCtx(wsSessionId: WsSessionId): Option[WsCtx]
-
+  def getContext(wsSessionId: WsSessionId): Option[WsCtx]
+  def allSessions(): Set[WsContextSessionId[WsCtx]]
   /** Updates session context using [updateCtx] function (maybeOldContext => maybeNewContext) */
-  def updateCtx(wsSessionId: WsSessionId)(updateCtx: Option[WsCtx] => Option[WsCtx]): F[Nothing, WsCtxUpdate[WsCtx]]
+  def updateContext(wsSessionId: WsSessionId)(updateCtx: Option[WsCtx] => Option[WsCtx]): F[Nothing, WsCtxUpdate[WsCtx]]
 
   def getSessions(ctx: WsCtx): F[Throwable, List[WsClientSession[F, ?]]]
   def dispatchersFor(ctx: WsCtx, codec: IRTClientMultiplexor[F], timeout: FiniteDuration = 20.seconds): F[Throwable, List[IRTDispatcher[F]]]
@@ -24,6 +25,7 @@ trait WsContextStorage[F[+_, +_], WsCtx] {
 
 object WsContextStorage {
   final case class WsCtxUpdate[WsCtx](previous: Option[WsCtx], updated: Option[WsCtx])
+  final case class WsContextSessionId[WsCtx](sessionId: WsSessionId, ctx: WsCtx)
 
   class WsContextStorageImpl[F[+_, +_]: IO2, WsCtx](
     wsSessionsStorage: WsSessionsStorage[F, ?]
@@ -31,11 +33,15 @@ object WsContextStorage {
     private[this] val sessionToId  = new ConcurrentHashMap[WsSessionId, WsCtx]()
     private[this] val idToSessions = new ConcurrentHashMap[WsCtx, Set[WsSessionId]]()
 
-    override def getCtx(wsSessionId: WsSessionId): Option[WsCtx] = {
+    override def allSessions(): Set[WsContextSessionId[WsCtx]] = {
+      sessionToId.asScala.map { case (s, c) => WsContextSessionId(s, c) }.toSet
+    }
+
+    override def getContext(wsSessionId: WsSessionId): Option[WsCtx] = {
       Option(sessionToId.get(wsSessionId))
     }
 
-    override def updateCtx(wsSessionId: WsSessionId)(updateCtx: Option[WsCtx] => Option[WsCtx]): F[Nothing, WsCtxUpdate[WsCtx]] = {
+    override def updateContext(wsSessionId: WsSessionId)(updateCtx: Option[WsCtx] => Option[WsCtx]): F[Nothing, WsCtxUpdate[WsCtx]] = {
       updateCtxImpl(wsSessionId)(updateCtx)
     }
 
