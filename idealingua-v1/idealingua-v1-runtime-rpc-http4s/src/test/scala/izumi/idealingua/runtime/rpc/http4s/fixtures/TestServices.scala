@@ -74,7 +74,7 @@ class TestServices[F[+_, +_]: IO2](
       )
     }
     final val privateServices: IRTContextServices[F, AuthContext, PrivateContext, PrivateContext] = {
-      IRTContextServices[F, AuthContext, PrivateContext, PrivateContext](
+      IRTContextServices.tagged[F, AuthContext, PrivateContext, PrivateContext](
         authenticator = privateAuth,
         serverMuxer   = new IRTServerMultiplexor.FromServices(Set(privateService)),
         middlewares   = Set.empty,
@@ -110,7 +110,7 @@ class TestServices[F[+_, +_]: IO2](
       )
     }
     final val protectedServices: IRTContextServices[F, AuthContext, ProtectedContext, ProtectedContext] = {
-      IRTContextServices[F, AuthContext, ProtectedContext, ProtectedContext](
+      IRTContextServices.tagged[F, AuthContext, ProtectedContext, ProtectedContext](
         authenticator = protectedAuth,
         serverMuxer   = new IRTServerMultiplexor.FromServices(Set(protectedService)),
         middlewares   = Set.empty,
@@ -144,7 +144,7 @@ class TestServices[F[+_, +_]: IO2](
       )
     }
     final val publicServices: IRTContextServices[F, AuthContext, PublicContext, PublicContext] = {
-      IRTContextServices[F, AuthContext, PublicContext, PublicContext](
+      IRTContextServices.tagged[F, AuthContext, PublicContext, PublicContext](
         authenticator = publicAuth,
         serverMuxer   = new IRTServerMultiplexor.FromServices(Set(publicService)),
         middlewares   = Set(userBlacklistMiddleware(Set("orc"))),

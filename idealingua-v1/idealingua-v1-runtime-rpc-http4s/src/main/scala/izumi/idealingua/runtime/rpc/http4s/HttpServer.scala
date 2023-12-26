@@ -16,7 +16,6 @@ import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.HttpServer.{ServerWsRpcHandler, WsResponseMarker}
 import izumi.idealingua.runtime.rpc.http4s.context.{HttpContextExtractor, WsContextExtractor}
 import izumi.idealingua.runtime.rpc.http4s.ws.*
-import izumi.idealingua.runtime.rpc.http4s.ws.WsClientSession.WsClientSessionImpl
 import logstage.LogIO2
 import org.http4s.*
 import org.http4s.dsl.Http4sDsl
@@ -71,7 +70,7 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
     for {
       outQueue     <- Queue.unbounded[F[Throwable, _], WebSocketFrame]
       authContext  <- F.syncThrowable(httpContextExtractor.extract(request))
-      clientSession = new WsClientSessionImpl(outQueue, authContext, wsContextsSessions, wsSessionsStorage, wsContextExtractor, logger, printer)
+      clientSession = new WsClientSession.Queued(outQueue, authContext, wsContextsSessions, wsSessionsStorage, wsContextExtractor, logger, printer)
       _            <- clientSession.start(onWsConnected)
 
       outStream = Stream.fromQueueUnterminated(outQueue).merge(pingStream)

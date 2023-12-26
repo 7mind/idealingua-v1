@@ -41,20 +41,21 @@ object WsClientSession {
     override def responseWithData(id: RpcPacketId, data: Json): F[Throwable, Unit]                                                    = F.unit
   }
 
-  class WsClientSessionImpl[F[+_, +_]: IO2: Temporal2: Primitives2, SessionCtx](
-    outQueue: Queue[F[Throwable, _], WebSocketFrame],
+  abstract class Base[F[+_, +_]: IO2: Temporal2: Primitives2, SessionCtx](
     initialContext: SessionCtx,
     wsSessionsContext: Set[WsContextSessions.AnyContext[F, SessionCtx]],
     wsSessionStorage: WsSessionsStorage[F, SessionCtx],
     wsContextExtractor: WsContextExtractor[SessionCtx],
     logger: LogIO2[F],
-    printer: Printer,
   ) extends WsClientSession[F, SessionCtx] {
     private val requestCtxRef                   = new AtomicReference[SessionCtx](initialContext)
     private val openingTime: ZonedDateTime      = IzTime.utcNow
     private val requestState: WsRequestState[F] = WsRequestState.create[F]
 
     override val sessionId: WsSessionId = WsSessionId(UUIDGen.getTimeUUID())
+
+    protected def sendMessage(message: RpcPacket): F[Throwable, Unit]
+    protected def sendCloseMessage(): F[Throwable, Unit]
 
     override def updateRequestCtx(newContext: SessionCtx): F[Throwable, SessionCtx] = {
       for {
@@ -79,11 +80,9 @@ object WsClientSession {
       val id      = RpcPacketId.random()
       val request = RpcPacket.buzzerRequest(id, method, data)
       for {
-        _ <- logger.debug(s"WS Session: enqueue $request with $id to request state & send queue.")
-        response <- requestState.requestAndAwait(id, Some(method), timeout) {
-          outQueue.offer(Text(printer.print(request.asJson)))
-        }
-        _ <- logger.debug(s"WS Session: $method, ${id -> "id"}: cleaning request state.")
+        _        <- logger.debug(s"WS Session: enqueue $request with $id to request state & send queue.")
+        response <- requestState.requestAndAwait(id, Some(method), timeout)(sendMessage(request))
+        _        <- logger.debug(s"WS Session: $method, ${id -> "id"}: cleaning request state.")
       } yield response
     }
 
@@ -97,7 +96,7 @@ object WsClientSession {
 
     override def finish(onFinish: SessionCtx => F[Throwable, Unit]): F[Throwable, Unit] = {
       val requestCtx = requestCtxRef.get()
-      F.fromEither(WebSocketFrame.Close(1000)).flatMap(outQueue.offer(_)) *>
+      sendCloseMessage() *>
       requestState.clear() *>
       wsSessionStorage.deleteSession(sessionId) *>
       F.traverse_(wsSessionsContext)(_.updateSession(sessionId, None)) *>
@@ -117,6 +116,34 @@ object WsClientSession {
       val now = IzTime.utcNow
       val d   = java.time.Duration.between(openingTime, now)
       FiniteDuration(d.toNanos, TimeUnit.NANOSECONDS)
+    }
+  }
+
+  final class Dummy[F[+_, +_]: IO2: Temporal2: Primitives2, SessionCtx](
+    initialContext: SessionCtx,
+    wsSessionsContext: Set[WsContextSessions.AnyContext[F, SessionCtx]],
+    wsSessionStorage: WsSessionsStorage[F, SessionCtx],
+    wsContextExtractor: WsContextExtractor[SessionCtx],
+    logger: LogIO2[F],
+  ) extends Base[F, SessionCtx](initialContext, wsSessionsContext, wsSessionStorage, wsContextExtractor, logger) {
+    override protected def sendMessage(message: RpcPacket): F[Throwable, Unit] = F.unit
+    override protected def sendCloseMessage(): F[Throwable, Unit]              = F.unit
+  }
+
+  final class Queued[F[+_, +_]: IO2: Temporal2: Primitives2, SessionCtx](
+    outQueue: Queue[F[Throwable, _], WebSocketFrame],
+    initialContext: SessionCtx,
+    wsSessionsContext: Set[WsContextSessions.AnyContext[F, SessionCtx]],
+    wsSessionStorage: WsSessionsStorage[F, SessionCtx],
+    wsContextExtractor: WsContextExtractor[SessionCtx],
+    logger: LogIO2[F],
+    printer: Printer,
+  ) extends Base[F, SessionCtx](initialContext, wsSessionsContext, wsSessionStorage, wsContextExtractor, logger) {
+    override protected def sendMessage(message: RpcPacket): F[Throwable, Unit] = {
+      outQueue.offer(Text(printer.print(message.asJson)))
+    }
+    override protected def sendCloseMessage(): F[Throwable, Unit] = {
+      F.fromEither(WebSocketFrame.Close(1000)).flatMap(outQueue.offer(_))
     }
   }
 }

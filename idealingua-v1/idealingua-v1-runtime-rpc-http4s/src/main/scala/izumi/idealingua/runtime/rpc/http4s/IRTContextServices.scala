@@ -31,17 +31,33 @@ trait IRTContextServices[F[+_, +_], AuthCtx, RequestCtx, WsCtx] {
 }
 
 object IRTContextServices {
-  type AnyContext[F[+_, +_], AuthCtx] = IRTContextServices[F, AuthCtx, ?, ?]
+  type AnyContext[F[+_, +_], AuthCtx]               = IRTContextServices[F, AuthCtx, ?, ?]
   type AnyWsContext[F[+_, +_], AuthCtx, RequestCtx] = IRTContextServices[F, AuthCtx, RequestCtx, ?]
 
-  def apply[F[+_, +_], AuthCtx, RequestCtx: Tag, WsCtx: Tag](
+  def tagged[F[+_, +_], AuthCtx, RequestCtx: Tag, WsCtx: Tag](
     authenticator: IRTAuthenticator[F, AuthCtx, RequestCtx],
     serverMuxer: IRTServerMultiplexor[F, RequestCtx],
     middlewares: Set[IRTServerMiddleware[F, RequestCtx]],
     wsSessions: WsContextSessions[F, RequestCtx, WsCtx],
-  ): Default[F, AuthCtx, RequestCtx, WsCtx] = Default(authenticator, serverMuxer, middlewares, wsSessions)
+  ): Tagged[F, AuthCtx, RequestCtx, WsCtx] = Tagged(authenticator, serverMuxer, middlewares, wsSessions)
 
-  final case class Default[F[+_, +_], AuthCtx, RequestCtx: Tag, WsCtx: Tag](
+  def named[F[+_, +_], AuthCtx, RequestCtx, WsCtx](
+    name: String
+  )(authenticator: IRTAuthenticator[F, AuthCtx, RequestCtx],
+    serverMuxer: IRTServerMultiplexor[F, RequestCtx],
+    middlewares: Set[IRTServerMiddleware[F, RequestCtx]],
+    wsSessions: WsContextSessions[F, RequestCtx, WsCtx],
+  ): Named[F, AuthCtx, RequestCtx, WsCtx] = Named(name, authenticator, serverMuxer, middlewares, wsSessions)
+
+  final case class Named[F[+_, +_], AuthCtx, RequestCtx, WsCtx](
+    name: String,
+    authenticator: IRTAuthenticator[F, AuthCtx, RequestCtx],
+    serverMuxer: IRTServerMultiplexor[F, RequestCtx],
+    middlewares: Set[IRTServerMiddleware[F, RequestCtx]],
+    wsSessions: WsContextSessions[F, RequestCtx, WsCtx],
+  ) extends IRTContextServices[F, AuthCtx, RequestCtx, WsCtx]
+
+  final case class Tagged[F[+_, +_], AuthCtx, RequestCtx: Tag, WsCtx: Tag](
     authenticator: IRTAuthenticator[F, AuthCtx, RequestCtx],
     serverMuxer: IRTServerMultiplexor[F, RequestCtx],
     middlewares: Set[IRTServerMiddleware[F, RequestCtx]],
