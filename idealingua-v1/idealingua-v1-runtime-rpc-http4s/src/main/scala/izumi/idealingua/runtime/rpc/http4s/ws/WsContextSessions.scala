@@ -1,6 +1,6 @@
 package izumi.idealingua.runtime.rpc.http4s.ws
 
-import izumi.functional.bio.{F, IO2, Monad2}
+import izumi.functional.bio.{Applicative2, F, IO2, Monad2}
 import izumi.idealingua.runtime.rpc.http4s.context.WsIdExtractor
 
 trait WsContextSessions[F[+_, +_], RequestCtx, WsCtx] {
@@ -18,7 +18,9 @@ trait WsContextSessions[F[+_, +_], RequestCtx, WsCtx] {
 object WsContextSessions {
   type AnyContext[F[+_, +_], RequestCtx] = WsContextSessions[F, RequestCtx, ?]
 
-  def empty[F[+_, +_]: IO2, RequestCtx]: WsContextSessions[F, RequestCtx, Unit] = new WsContextSessions[F, RequestCtx, Unit] {
+  def unit[F[+_, +_]: Applicative2, RequestCtx]: WsContextSessions[F, RequestCtx, Unit] = new Empty
+
+  final class Empty[F[+_, +_]: Applicative2, RequestCtx, WsCtx] extends WsContextSessions[F, RequestCtx, WsCtx] {
     override def updateSession(wsSessionId: WsSessionId, requestContext: Option[RequestCtx]): F[Throwable, Unit] = F.unit
   }
 
