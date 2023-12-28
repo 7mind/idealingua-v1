@@ -15,10 +15,10 @@ import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcDispatcher.IRTDispatch
 import izumi.idealingua.runtime.rpc.http4s.clients.{HttpRpcDispatcher, HttpRpcDispatcherFactory, WsRpcDispatcher, WsRpcDispatcherFactory}
 import izumi.idealingua.runtime.rpc.http4s.context.{HttpContextExtractor, WsContextExtractor}
 import izumi.idealingua.runtime.rpc.http4s.fixtures.TestServices
-import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsRequestState}
+import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsClientSession, WsRequestState}
 import izumi.logstage.api.routing.{ConfigurableLogRouter, StaticLogRouter}
 import izumi.logstage.api.{IzLogger, Log}
-import izumi.r2.idealingua.test.generated.{GreeterServiceClientWrapped, GreeterServiceMethods, PrivateTestServiceWrappedClient, ProtectedTestServiceWrappedClient}
+import izumi.r2.idealingua.test.generated.*
 import logstage.LogIO2
 import org.http4s.*
 import org.http4s.blaze.server.*
@@ -368,6 +368,39 @@ abstract class Http4sTransportTestBase[F[+_, +_]](
           res <- rs.awaitResponse(id2, 5.seconds)
           _    = assert(res.nonEmpty)
         } yield ()
+      }
+    }
+
+    "support dummy ws client" in {
+      // server not used here
+      // but we need to construct test contexts
+      withServer {
+        ctx =>
+          import ctx.testServices.{Client, Server}
+          val client = new WsClientSession.Dummy[F, AuthContext](
+            AuthContext(Headers(publicAuth("user")), None),
+            Client.buzzerMultiplexor,
+            Server.contextServices.map(_.authorizedWsSessions),
+            Server.wsStorage,
+            WsContextExtractor.authContext,
+            ctx.logger,
+          )
+          for {
+            _ <- client.start(_ => F.unit)
+            _  = assert(Server.protectedWsListener.connected.isEmpty)
+            _  = assert(Server.privateWsListener.connected.isEmpty)
+            _  = assert(Server.publicWsListener.connected.size == 1)
+            dispatcher <- Server.publicWsStorage
+              .dispatchersFor(PublicContext("user"), Client.codec).map(_.headOption)
+              .fromOption(new RuntimeException("Missing dispatcher"))
+            _ <- new GreeterServiceClientWrapped(dispatcher)
+              .greet("John", "Buzzer")
+              .map(res => assert(res == "Hi, John Buzzer!"))
+            _ <- client.finish(_ => F.unit)
+            _  = assert(Server.protectedWsListener.connected.isEmpty)
+            _  = assert(Server.privateWsListener.connected.isEmpty)
+            _  = assert(Server.publicWsListener.connected.isEmpty)
+          } yield ()
       }
     }
   }

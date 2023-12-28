@@ -24,6 +24,12 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
       packet <- F
         .fromEither(io.circe.parser.decode[RpcPacket](message))
         .leftMap(err => new IRTDecodingException(s"Can not decode Rpc Packet '$message'.\nError: $err."))
+      response <- processRpcPacket(packet)
+    } yield response
+  }
+
+  def processRpcPacket(packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
+    for {
       requestCtx <- updateRequestCtx(packet)
       response <- packet match {
         // auth

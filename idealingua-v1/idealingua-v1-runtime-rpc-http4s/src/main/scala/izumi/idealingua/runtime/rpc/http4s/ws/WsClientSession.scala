@@ -6,9 +6,10 @@ import io.circe.{Json, Printer}
 import izumi.functional.bio.{Applicative2, F, IO2, Primitives2, Temporal2}
 import izumi.fundamentals.platform.time.IzTime
 import izumi.fundamentals.platform.uuid.UUIDGen
+import izumi.idealingua.runtime.rpc.*
+import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.ClientWsRpcHandler
 import izumi.idealingua.runtime.rpc.http4s.context.WsContextExtractor
 import izumi.idealingua.runtime.rpc.http4s.ws.WsRpcHandler.WsResponder
-import izumi.idealingua.runtime.rpc.{IRTMethodId, RpcPacket, RpcPacketId}
 import logstage.LogIO2
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.Text
@@ -48,14 +49,14 @@ object WsClientSession {
     wsContextExtractor: WsContextExtractor[SessionCtx],
     logger: LogIO2[F],
   ) extends WsClientSession[F, SessionCtx] {
-    private val requestCtxRef                   = new AtomicReference[SessionCtx](initialContext)
-    private val openingTime: ZonedDateTime      = IzTime.utcNow
-    private val requestState: WsRequestState[F] = WsRequestState.create[F]
+    private val requestCtxRef              = new AtomicReference[SessionCtx](initialContext)
+    private val openingTime: ZonedDateTime = IzTime.utcNow
 
-    override val sessionId: WsSessionId = WsSessionId(UUIDGen.getTimeUUID())
-
+    protected val requestState: WsRequestState[F] = WsRequestState.create[F]
     protected def sendMessage(message: RpcPacket): F[Throwable, Unit]
     protected def sendCloseMessage(): F[Throwable, Unit]
+
+    override val sessionId: WsSessionId = WsSessionId(UUIDGen.getTimeUUID())
 
     override def updateRequestCtx(newContext: SessionCtx): F[Throwable, SessionCtx] = {
       for {
@@ -121,13 +122,23 @@ object WsClientSession {
 
   final class Dummy[F[+_, +_]: IO2: Temporal2: Primitives2, SessionCtx](
     initialContext: SessionCtx,
+    muxer: IRTServerMultiplexor[F, Unit],
     wsSessionsContext: Set[WsContextSessions.AnyContext[F, SessionCtx]],
     wsSessionStorage: WsSessionsStorage[F, SessionCtx],
     wsContextExtractor: WsContextExtractor[SessionCtx],
     logger: LogIO2[F],
   ) extends Base[F, SessionCtx](initialContext, wsSessionsContext, wsSessionStorage, wsContextExtractor, logger) {
-    override protected def sendMessage(message: RpcPacket): F[Throwable, Unit] = F.unit
-    override protected def sendCloseMessage(): F[Throwable, Unit]              = F.unit
+    private val clientHandler = new ClientWsRpcHandler(muxer, requestState, WsContextExtractor.unit, logger)
+    override protected def sendMessage(message: RpcPacket): F[Throwable, Unit] = {
+      clientHandler.processRpcPacket(message).flatMap {
+        case Some(RpcPacket(_, Some(json), None, Some(ref), _, _, _)) =>
+          // discard any errors here (it's only possible to fail if the packet reference is missing)
+          requestState.responseWithData(ref, json).attempt.void
+        case _ =>
+          F.unit
+      }
+    }
+    override protected def sendCloseMessage(): F[Throwable, Unit] = F.unit
   }
 
   final class Queued[F[+_, +_]: IO2: Temporal2: Primitives2, SessionCtx](
