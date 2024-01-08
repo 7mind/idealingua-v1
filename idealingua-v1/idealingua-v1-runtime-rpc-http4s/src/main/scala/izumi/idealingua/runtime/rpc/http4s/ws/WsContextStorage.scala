@@ -14,10 +14,10 @@ import scala.jdk.CollectionConverters.*
   * but in such case we would able to choose one from many to update session context data.
   */
 trait WsContextStorage[F[+_, +_], WsCtx] {
-  def getContext(wsSessionId: WsSessionId): Option[WsCtx]
-  def allSessions(): Set[WsContextSessionId[WsCtx]]
+  def getContext(wsSessionId: WsSessionId): F[Throwable, Option[WsCtx]]
+  def allSessions(): F[Throwable, Set[WsContextSessionId[WsCtx]]]
   /** Updates session context using [updateCtx] function (maybeOldContext => maybeNewContext) */
-  def updateContext(wsSessionId: WsSessionId)(updateCtx: Option[WsCtx] => Option[WsCtx]): F[Nothing, WsCtxUpdate[WsCtx]]
+  def updateContext(wsSessionId: WsSessionId)(updateCtx: Option[WsCtx] => Option[WsCtx]): F[Throwable, WsCtxUpdate[WsCtx]]
 
   def getSessions(ctx: WsCtx): F[Throwable, List[WsClientSession[F, ?]]]
   def dispatchersFor(ctx: WsCtx, codec: IRTClientMultiplexor[F], timeout: FiniteDuration = 20.seconds): F[Throwable, List[IRTDispatcher[F]]]
@@ -33,11 +33,11 @@ object WsContextStorage {
     private[this] val sessionToId  = new ConcurrentHashMap[WsSessionId, WsCtx]()
     private[this] val idToSessions = new ConcurrentHashMap[WsCtx, Set[WsSessionId]]()
 
-    override def allSessions(): Set[WsContextSessionId[WsCtx]] = {
+    override def allSessions(): F[Throwable, Set[WsContextSessionId[WsCtx]]] = F.sync {
       sessionToId.asScala.map { case (s, c) => WsContextSessionId(s, c) }.toSet
     }
 
-    override def getContext(wsSessionId: WsSessionId): Option[WsCtx] = {
+    override def getContext(wsSessionId: WsSessionId): F[Throwable, Option[WsCtx]] = F.sync {
       Option(sessionToId.get(wsSessionId))
     }
 
