@@ -1,53 +1,46 @@
 package izumi.idealingua.runtime.rpc
 
 import io.circe.Json
-import izumi.functional.bio.{Exit, F, IO2}
+import izumi.functional.bio.{Error2, F, IO2}
 
-trait ContextExtender[-Ctx, +Ctx2] {
-  def extend(context: Ctx, body: Json, irtMethodId: IRTMethodId): Ctx2
-}
+trait IRTServerMultiplexor[F[+_, +_], C] {
+  self =>
+  def methods: Map[IRTMethodId, IRTServerMethod[F, C]]
 
-object ContextExtender {
-  def id[Ctx]: ContextExtender[Ctx, Ctx] = (context, _, _) => context
-}
+  def invokeMethod(method: IRTMethodId)(context: C, parsedBody: Json)(implicit E: Error2[F]): F[Throwable, Json] = {
+    F.fromOption(new IRTMissingHandlerException(s"Method $method not found.", parsedBody))(methods.get(method))
+      .flatMap(_.invoke(context, parsedBody))
+  }
 
-trait IRTServerMultiplexor[F[+_, +_], -C] {
-  def doInvoke(parsedBody: Json, context: C, toInvoke: IRTMethodId): F[Throwable, Option[Json]]
-}
-
-class IRTServerMultiplexorImpl[F[+_, +_]: IO2, -C, -C2](
-  list: Set[IRTWrappedService[F, C2]],
-  extender: ContextExtender[C, C2],
-) extends IRTServerMultiplexor[F, C] {
-  val services: Map[IRTServiceId, IRTWrappedService[F, C2]] = list.map(s => s.serviceId -> s).toMap
-
-  def doInvoke(parsedBody: Json, context: C, toInvoke: IRTMethodId): F[Throwable, Option[Json]] = {
-    (for {
-      service <- services.get(toInvoke.service)
-      method  <- service.allMethods.get(toInvoke)
-    } yield method) match {
-      case Some(value) =>
-        invoke(extender.extend(context, parsedBody, toInvoke), toInvoke, value, parsedBody).map(Some.apply)
-      case None =>
-        F.pure(None)
+  /** Contramap eval on context C2 -> C. If context is missing IRTUnathorizedRequestContextException will raise. */
+  final def contramap[C2](
+    updateContext: (C2, Json, IRTMethodId) => F[Throwable, Option[C]]
+  )(implicit io2: IO2[F]
+  ): IRTServerMultiplexor[F, C2] = {
+    val mappedMethods = self.methods.map { case (k, v) => k -> v.contramap(updateContext) }
+    new IRTServerMultiplexor.FromMethods(mappedMethods)
+  }
+  /** Wrap invocation with function '(Context, Body)(Method.Invoke) => Result' . */
+  final def wrap(middleware: IRTServerMiddleware[F, C]): IRTServerMultiplexor[F, C] = {
+    val wrappedMethods = self.methods.map {
+      case (methodId, method) =>
+        val wrappedMethod: IRTServerMethod[F, C] = method.wrap {
+          case (ctx, body) =>
+            next => middleware(method.methodId)(ctx, body)(next)
+        }
+        methodId -> wrappedMethod
     }
+    new IRTServerMultiplexor.FromMethods(wrappedMethods)
+  }
+}
+
+object IRTServerMultiplexor {
+  def combine[F[+_, +_], C](multiplexors: Iterable[IRTServerMultiplexor[F, C]]): IRTServerMultiplexor[F, C] = {
+    new FromMethods(multiplexors.flatMap(_.methods).toMap)
   }
 
-  @inline private[this] def invoke(context: C2, toInvoke: IRTMethodId, method: IRTMethodWrapper[F, C2], parsedBody: Json): F[Throwable, Json] = {
-    for {
-      decodeAction <- F.syncThrowable(method.marshaller.decodeRequest[F].apply(IRTJsonBody(toInvoke, parsedBody)))
-      safeDecoded <- decodeAction.sandbox.catchAll {
-        case Exit.Interruption(decodingFailure, _, trace) =>
-          F.fail(new IRTDecodingException(s"$toInvoke: Failed to decode JSON ${parsedBody.toString()} $trace", Some(decodingFailure)))
-        case Exit.Termination(_, exceptions, trace) =>
-          F.fail(new IRTDecodingException(s"$toInvoke: Failed to decode JSON ${parsedBody.toString()} $trace", exceptions.headOption))
-        case Exit.Error(decodingFailure, trace) =>
-          F.fail(new IRTDecodingException(s"$toInvoke: Failed to decode JSON ${parsedBody.toString()} $trace", Some(decodingFailure)))
-      }
-      casted        = safeDecoded.value.asInstanceOf[method.signature.Input]
-      resultAction <- F.syncThrowable(method.invoke(context, casted))
-      safeResult   <- resultAction
-      encoded      <- F.syncThrowable(method.marshaller.encodeResponse.apply(IRTResBody(safeResult)))
-    } yield encoded
-  }
+  class FromMethods[F[+_, +_], C](val methods: Map[IRTMethodId, IRTServerMethod[F, C]]) extends IRTServerMultiplexor[F, C]
+
+  class FromServices[F[+_, +_]: IO2, C](val services: Set[IRTWrappedService[F, C]])
+    extends FromMethods[F, C](services.flatMap(_.allMethods.map { case (k, v) => k -> IRTServerMethod(v) }).toMap)
 }

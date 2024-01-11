@@ -5,7 +5,7 @@ import izumi.functional.bio.{Clock1, Clock2, F, IO2, Primitives2, Promise2, Temp
 import izumi.fundamentals.platform.language.Quirks.*
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.ws.RawResponse.BadRawResponse
-import izumi.idealingua.runtime.rpc.http4s.ws.WsRpcHandler.WsClientResponder
+import izumi.idealingua.runtime.rpc.http4s.ws.WsRpcHandler.WsResponder
 
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
@@ -14,7 +14,7 @@ import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.*
 
-trait WsRequestState[F[_, _]] extends WsClientResponder[F] {
+trait WsRequestState[F[_, _]] extends WsResponder[F] {
   def requestAndAwait[A](
     id: RpcPacketId,
     methodId: Option[IRTMethodId],

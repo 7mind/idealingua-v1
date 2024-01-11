@@ -5,7 +5,7 @@ import izumi.functional.bio.{Async2, F, Temporal2}
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcher.IRTDispatcherWs
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.WsRpcClientConnection
-import izumi.idealingua.runtime.rpc.http4s.ws.RawResponse
+import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsSessionId}
 import logstage.LogIO2
 
 import java.util.concurrent.TimeoutException
@@ -17,6 +17,10 @@ class WsRpcDispatcher[F[+_, +_]: Async2](
   codec: IRTClientMultiplexor[F],
   logger: LogIO2[F],
 ) extends IRTDispatcherWs[F] {
+
+  override def sessionId: Option[WsSessionId] = {
+    connection.sessionId
+  }
 
   override def authorize(headers: Map[String, String]): F[Throwable, Unit] = {
     connection.authorize(headers, timeout)
@@ -62,6 +66,7 @@ class WsRpcDispatcher[F[+_, +_]: Async2](
 
 object WsRpcDispatcher {
   trait IRTDispatcherWs[F[_, _]] extends IRTDispatcher[F] {
+    def sessionId: Option[WsSessionId]
     def authorize(headers: Map[String, String]): F[Throwable, Unit]
   }
 }

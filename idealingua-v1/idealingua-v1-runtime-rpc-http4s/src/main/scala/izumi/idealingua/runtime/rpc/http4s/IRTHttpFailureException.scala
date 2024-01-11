@@ -7,8 +7,7 @@ abstract class IRTHttpFailureException(
   message: String,
   val status: Status,
   cause: Option[Throwable] = None,
-) extends RuntimeException(message, cause.orNull)
-  with IRTTransportException
+) extends IRTTransportException(message, cause)
 
 case class IRTUnexpectedHttpStatus(override val status: Status) extends IRTHttpFailureException(s"Unexpected http status: $status", status)
 case class IRTNoCredentialsException(override val status: Status) extends IRTHttpFailureException("No valid credentials", status)

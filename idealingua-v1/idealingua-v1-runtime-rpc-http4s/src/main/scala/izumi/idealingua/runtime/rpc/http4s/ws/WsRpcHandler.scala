@@ -5,39 +5,43 @@ import izumi.functional.bio.Exit.Success
 import izumi.functional.bio.{Exit, F, IO2}
 import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.idealingua.runtime.rpc.*
-import izumi.idealingua.runtime.rpc.http4s.ws.WsRpcHandler.WsClientResponder
+import izumi.idealingua.runtime.rpc.http4s.ws.WsRpcHandler.WsResponder
 import logstage.LogIO2
 
 abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
   muxer: IRTServerMultiplexor[F, RequestCtx],
-  responder: WsClientResponder[F],
+  responder: WsResponder[F],
   logger: LogIO2[F],
 ) {
 
-  protected def handlePacket(packet: RpcPacket): F[Throwable, Unit]
-  protected def handleAuthRequest(packet: RpcPacket): F[Throwable, Option[RpcPacket]]
-  protected def extractContext(packet: RpcPacket): F[Throwable, RequestCtx]
-
-  protected def handleAuthResponse(ref: RpcPacketId, packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
-    packet.discard()
-    responder.responseWith(ref, RawResponse.EmptyRawResponse()).as(None)
-  }
+  /** Update context based on RpcPacket (or extract).
+    * Called on each RpcPacket messages before packet handling
+    */
+  protected def updateRequestCtx(packet: RpcPacket): F[Throwable, RequestCtx]
 
   def processRpcMessage(message: String): F[Throwable, Option[RpcPacket]] = {
     for {
-      packet <- F.fromEither(io.circe.parser.decode[RpcPacket](message))
-      _      <- handlePacket(packet)
+      packet <- F
+        .fromEither(io.circe.parser.decode[RpcPacket](message))
+        .leftMap(err => new IRTDecodingException(s"Can not decode Rpc Packet '$message'.\nError: $err."))
+      response <- processRpcPacket(packet)
+    } yield response
+  }
+
+  def processRpcPacket(packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
+    for {
+      requestCtx <- updateRequestCtx(packet)
       response <- packet match {
         // auth
         case RpcPacket(RPCPacketKind.RpcRequest, None, _, _, _, _, _) =>
-          handleAuthRequest(packet)
+          handleAuthRequest(requestCtx, packet)
 
         case RpcPacket(RPCPacketKind.RpcResponse, None, _, Some(ref), _, _, _) =>
           handleAuthResponse(ref, packet)
 
         // rpc
         case RpcPacket(RPCPacketKind.RpcRequest, Some(data), Some(id), _, Some(service), Some(method), _) =>
-          handleWsRequest(packet, data, IRTMethodId(IRTServiceId(service), IRTMethodName(method)))(
+          handleWsRequest(IRTMethodId(IRTServiceId(service), IRTMethodName(method)), requestCtx, data)(
             onSuccess = RpcPacket.rpcResponse(id, _),
             onFail    = RpcPacket.rpcFail(Some(id), _),
           )
@@ -50,7 +54,7 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
 
         // buzzer
         case RpcPacket(RPCPacketKind.BuzzRequest, Some(data), Some(id), _, Some(service), Some(method), _) =>
-          handleWsRequest(packet, data, IRTMethodId(IRTServiceId(service), IRTMethodName(method)))(
+          handleWsRequest(IRTMethodId(IRTServiceId(service), IRTMethodName(method)), requestCtx, data)(
             onSuccess = RpcPacket.buzzerResponse(id, _),
             onFail    = RpcPacket.buzzerFail(Some(id), _),
           )
@@ -78,36 +82,61 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
   }
 
   protected def handleWsRequest(
-    input: RpcPacket,
-    data: Json,
     methodId: IRTMethodId,
+    requestCtx: RequestCtx,
+    data: Json,
   )(onSuccess: Json => RpcPacket,
     onFail: String => RpcPacket,
   ): F[Throwable, Option[RpcPacket]] = {
-    for {
-      userCtx <- extractContext(input)
-      res <- muxer.doInvoke(data, userCtx, methodId).sandboxExit.flatMap {
-        case Success(Some(res)) =>
-          F.pure(Some(onSuccess(res)))
+    muxer.invokeMethod(methodId)(requestCtx, data).sandboxExit.flatMap {
+      case Success(res) =>
+        F.pure(Some(onSuccess(res)))
 
-        case Success(None) =>
-          logger.error(s"WS request errored: No rpc handler for $methodId").as(Some(onFail("No rpc handler.")))
+      case Exit.Error(error: IRTMissingHandlerException, trace) =>
+        logger
+          .error(s"WS Request failed - no method handler for $methodId:\n$error\n$trace")
+          .as(Some(onFail("Not Found.")))
 
-        case Exit.Termination(exception, allExceptions, trace) =>
-          logger.error(s"WS request terminated, $exception, $allExceptions, $trace").as(Some(onFail(exception.getMessage)))
+      case Exit.Error(error: IRTUnathorizedRequestContextException, trace) =>
+        logger
+          .warn(s"WS Request failed - unauthorized $methodId call:\n$error\n$trace")
+          .as(Some(onFail("Unauthorized.")))
 
-        case Exit.Error(exception, trace) =>
-          logger.error(s"WS request failed, $exception $trace").as(Some(onFail(exception.getMessage)))
+      case Exit.Error(error: IRTDecodingException, trace) =>
+        logger
+          .warn(s"WS Request failed - decoding failed:\n$error\n$trace")
+          .as(Some(onFail("BadRequest.")))
 
-        case Exit.Interruption(exception, allExceptions, trace) =>
-          logger.error(s"WS request interrupted, $exception $allExceptions $trace").as(Some(onFail(exception.getMessage)))
-      }
-    } yield res
+      case Exit.Termination(exception, allExceptions, trace) =>
+        logger
+          .error(s"WS Request terminated:\n$exception\n$allExceptions\n$trace")
+          .as(Some(onFail(exception.getMessage)))
+
+      case Exit.Error(exception, trace) =>
+        logger
+          .error(s"WS Request unexpectedly failed:\n$exception\n$trace")
+          .as(Some(onFail(exception.getMessage)))
+
+      case Exit.Interruption(exception, allExceptions, trace) =>
+        logger
+          .error(s"WS Request unexpectedly interrupted:\n$exception\n$allExceptions\n$trace")
+          .as(Some(onFail(exception.getMessage)))
+    }
+  }
+
+  protected def handleAuthRequest(requestCtx: RequestCtx, packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
+    requestCtx.discard()
+    F.pure(Some(RpcPacket(RPCPacketKind.RpcResponse, None, None, packet.id, None, None, None)))
+  }
+
+  protected def handleAuthResponse(ref: RpcPacketId, packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
+    packet.discard()
+    responder.responseWith(ref, RawResponse.EmptyRawResponse()).as(None)
   }
 }
 
 object WsRpcHandler {
-  trait WsClientResponder[F[_, _]] {
+  trait WsResponder[F[_, _]] {
     def responseWith(id: RpcPacketId, response: RawResponse): F[Throwable, Unit]
     def responseWithData(id: RpcPacketId, data: Json): F[Throwable, Unit]
   }
