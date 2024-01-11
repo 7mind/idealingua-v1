@@ -5,10 +5,13 @@ import io.circe.{Json, Printer}
 import izumi.functional.bio.{Async2, Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
 import izumi.functional.lifecycle.Lifecycle
 import izumi.fundamentals.platform.language.Quirks.Discarder
+import izumi.fundamentals.platform.uuid.UUIDGen
 import izumi.idealingua.runtime.rpc.*
+import izumi.idealingua.runtime.rpc.http4s.HttpServer
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcher.IRTDispatcherWs
-import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.{ClientWsRpcHandler, WsRpcClientConnection, WsRpcContextProvider, fromNettyFuture}
-import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsRequestState, WsRpcHandler}
+import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.{ClientWsRpcHandler, WsRpcClientConnection, fromNettyFuture}
+import izumi.idealingua.runtime.rpc.http4s.context.WsContextExtractor
+import izumi.idealingua.runtime.rpc.http4s.ws.{RawResponse, WsRequestState, WsRpcHandler, WsSessionId}
 import izumi.logstage.api.IzLogger
 import logstage.LogIO2
 import org.asynchttpclient.netty.ws.NettyWebSocket
@@ -16,9 +19,11 @@ import org.asynchttpclient.ws.{WebSocket, WebSocketListener, WebSocketUpgradeHan
 import org.asynchttpclient.{DefaultAsyncHttpClient, DefaultAsyncHttpClientConfig}
 import org.http4s.Uri
 
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.jdk.CollectionConverters.*
+import scala.util.Try
 
 class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRun2](
   codec: IRTClientMultiplexor[F],
@@ -29,32 +34,49 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
 
   def connect[ServerContext](
     uri: Uri,
-    muxer: IRTServerMultiplexor[F, ServerContext],
-    contextProvider: WsRpcContextProvider[ServerContext],
+    serverMuxer: IRTServerMultiplexor[F, ServerContext],
+    wsContextExtractor: WsContextExtractor[ServerContext],
+    headers: Map[String, String] = Map.empty,
   ): Lifecycle[F[Throwable, _], WsRpcClientConnection[F]] = {
     for {
-      client       <- WsRpcDispatcherFactory.asyncHttpClient[F]
-      requestState <- Lifecycle.liftF(F.syncThrowable(WsRequestState.create[F]))
-      listener     <- Lifecycle.liftF(F.syncThrowable(createListener(muxer, contextProvider, requestState, dispatcherLogger(uri, logger))))
-      handler      <- Lifecycle.liftF(F.syncThrowable(new WebSocketUpgradeHandler(List(listener).asJava)))
+      client         <- createAsyncHttpClient()
+      wsRequestState <- Lifecycle.liftF(F.syncThrowable(WsRequestState.create[F]))
+      listener       <- Lifecycle.liftF(F.syncThrowable(createListener(serverMuxer, wsRequestState, wsContextExtractor, dispatcherLogger(uri, logger))))
+      handler        <- Lifecycle.liftF(F.syncThrowable(new WebSocketUpgradeHandler(List(listener).asJava)))
       nettyWebSocket <- Lifecycle.make(
-        F.fromFutureJava(client.prepareGet(uri.toString()).execute(handler).toCompletableFuture)
+        F.fromFutureJava {
+          client
+            .prepareGet(uri.toString())
+            .setSingleHeaders(headers.asJava)
+            .execute(handler).toCompletableFuture
+        }
       )(nettyWebSocket => fromNettyFuture(nettyWebSocket.sendCloseFrame()).void)
+      sessionId = Option(nettyWebSocket.getUpgradeHeaders.get(HttpServer.`X-Ws-Session-Id`.toString))
+        .flatMap(str => Try(WsSessionId(UUID.fromString(str))).toOption)
       // fill promises before closing WS connection, potentially giving a chance to send out an error response before closing
-      _ <- Lifecycle.make(F.unit)(_ => requestState.clear())
+      _ <- Lifecycle.make(F.unit)(_ => wsRequestState.clear())
     } yield {
-      new WsRpcClientConnection.Netty(nettyWebSocket, requestState, printer)
+      new WsRpcClientConnection.Netty(nettyWebSocket, wsRequestState, printer, sessionId)
     }
+  }
+
+  def connectSimple(
+    uri: Uri,
+    serverMuxer: IRTServerMultiplexor[F, Unit],
+    headers: Map[String, String] = Map.empty,
+  ): Lifecycle[F[Throwable, _], WsRpcClientConnection[F]] = {
+    connect(uri, serverMuxer, WsContextExtractor.unit, headers)
   }
 
   def dispatcher[ServerContext](
     uri: Uri,
-    muxer: IRTServerMultiplexor[F, ServerContext],
-    contextProvider: WsRpcContextProvider[ServerContext],
+    serverMuxer: IRTServerMultiplexor[F, ServerContext],
+    wsContextExtractor: WsContextExtractor[ServerContext],
+    headers: Map[String, String]         = Map.empty,
     tweakRequest: RpcPacket => RpcPacket = identity,
     timeout: FiniteDuration              = 30.seconds,
   ): Lifecycle[F[Throwable, _], IRTDispatcherWs[F]] = {
-    connect(uri, muxer, contextProvider).map {
+    connect(uri, serverMuxer, wsContextExtractor, headers).map {
       new WsRpcDispatcher(_, timeout, codec, dispatcherLogger(uri, logger)) {
         override protected def buildRequest(rpcPacketId: RpcPacketId, method: IRTMethodId, body: Json): RpcPacket = {
           tweakRequest(super.buildRequest(rpcPacketId, method, body))
@@ -63,22 +85,32 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
     }
   }
 
+  def dispatcherSimple(
+    uri: Uri,
+    serverMuxer: IRTServerMultiplexor[F, Unit],
+    headers: Map[String, String]         = Map.empty,
+    tweakRequest: RpcPacket => RpcPacket = identity,
+    timeout: FiniteDuration              = 30.seconds,
+  ): Lifecycle[F[Throwable, _], IRTDispatcherWs[F]] = {
+    dispatcher(uri, serverMuxer, WsContextExtractor.unit, headers, tweakRequest, timeout)
+  }
+
   protected def wsHandler[ServerContext](
+    serverMuxer: IRTServerMultiplexor[F, ServerContext],
+    wsRequestState: WsRequestState[F],
+    wsContextExtractor: WsContextExtractor[ServerContext],
     logger: LogIO2[F],
-    muxer: IRTServerMultiplexor[F, ServerContext],
-    contextProvider: WsRpcContextProvider[ServerContext],
-    requestState: WsRequestState[F],
   ): WsRpcHandler[F, ServerContext] = {
-    new ClientWsRpcHandler(muxer, requestState, contextProvider, logger)
+    new ClientWsRpcHandler(serverMuxer, wsRequestState, wsContextExtractor, logger)
   }
 
   protected def createListener[ServerContext](
-    muxer: IRTServerMultiplexor[F, ServerContext],
-    contextProvider: WsRpcContextProvider[ServerContext],
-    requestState: WsRequestState[F],
+    serverMuxer: IRTServerMultiplexor[F, ServerContext],
+    wsRequestState: WsRequestState[F],
+    wsContextExtractor: WsContextExtractor[ServerContext],
     logger: LogIO2[F],
   ): WebSocketListener = new WebSocketListener() {
-    private val handler   = wsHandler(logger, muxer, contextProvider, requestState)
+    private val handler   = wsHandler(serverMuxer, wsRequestState, wsContextExtractor, logger)
     private val socketRef = new AtomicReference[Option[WebSocket]](None)
 
     override def onOpen(websocket: WebSocket): Unit = {
@@ -102,7 +134,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
     override def onTextFrame(payload: String, finalFragment: Boolean, rsv: Int): Unit = {
       UnsafeRun2[F].unsafeRunAsync(handler.processRpcMessage(payload)) {
         exit =>
-          val maybeResponse = exit match {
+          val maybeResponse: Option[RpcPacket] = exit match {
             case Exit.Success(response)         => response
             case Exit.Error(error, _)           => handleWsError(List(error), "errored")
             case Exit.Termination(error, _, _)  => handleWsError(List(error), "terminated")
@@ -133,10 +165,8 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
         Some(RpcPacket.rpcCritical(message, None))
     }
   }
-}
 
-object WsRpcDispatcherFactory {
-  def asyncHttpClient[F[+_, +_]: IO2]: Lifecycle[F[Throwable, _], DefaultAsyncHttpClient] = {
+  protected def createAsyncHttpClient(): Lifecycle[F[Throwable, _], DefaultAsyncHttpClient] = {
     Lifecycle.fromAutoCloseable(F.syncThrowable {
       new DefaultAsyncHttpClient(
         new DefaultAsyncHttpClientConfig.Builder()
@@ -153,26 +183,30 @@ object WsRpcDispatcherFactory {
       )
     })
   }
+}
 
-  class ClientWsRpcHandler[F[+_, +_]: IO2, ServerCtx](
-    muxer: IRTServerMultiplexor[F, ServerCtx],
+object WsRpcDispatcherFactory {
+
+  class ClientWsRpcHandler[F[+_, +_]: IO2, RequestCtx](
+    muxer: IRTServerMultiplexor[F, RequestCtx],
     requestState: WsRequestState[F],
-    contextProvider: WsRpcContextProvider[ServerCtx],
+    wsContextExtractor: WsContextExtractor[RequestCtx],
     logger: LogIO2[F],
-  ) extends WsRpcHandler[F, ServerCtx](muxer, requestState, logger) {
-    override def handlePacket(packet: RpcPacket): F[Throwable, Unit] = {
-      F.unit
-    }
-    override def handleAuthRequest(packet: RpcPacket): F[Throwable, Option[RpcPacket]] = {
-      F.pure(None)
-    }
-    override def extractContext(packet: RpcPacket): F[Throwable, ServerCtx] = {
-      F.sync(contextProvider.toContext(packet))
+  ) extends WsRpcHandler[F, RequestCtx](muxer, requestState, logger) {
+    private val wsSessionId: WsSessionId                   = WsSessionId(UUIDGen.getTimeUUID())
+    private val requestCtxRef: AtomicReference[RequestCtx] = new AtomicReference()
+    override protected def updateRequestCtx(packet: RpcPacket): F[Throwable, RequestCtx] = F.sync {
+      val updated = wsContextExtractor.extract(wsSessionId, packet)
+      requestCtxRef.updateAndGet {
+        case null     => updated
+        case previous => wsContextExtractor.merge(previous, updated)
+      }
     }
   }
 
   trait WsRpcClientConnection[F[_, _]] {
     private[clients] def requestAndAwait(id: RpcPacketId, packet: RpcPacket, method: Option[IRTMethodId], timeout: FiniteDuration): F[Throwable, Option[RawResponse]]
+    def sessionId: Option[WsSessionId]
     def authorize(headers: Map[String, String], timeout: FiniteDuration = 30.seconds): F[Throwable, Unit]
   }
   object WsRpcClientConnection {
@@ -180,6 +214,7 @@ object WsRpcDispatcherFactory {
       nettyWebSocket: NettyWebSocket,
       requestState: WsRequestState[F],
       printer: Printer,
+      val sessionId: Option[WsSessionId],
     ) extends WsRpcClientConnection[F] {
 
       override def authorize(headers: Map[String, String], timeout: FiniteDuration): F[Throwable, Unit] = {
@@ -203,13 +238,6 @@ object WsRpcDispatcherFactory {
         }
       }
     }
-  }
-
-  trait WsRpcContextProvider[Ctx] {
-    def toContext(packet: RpcPacket): Ctx
-  }
-  object WsRpcContextProvider {
-    def unit: WsRpcContextProvider[Unit] = _ => ()
   }
 
   private def fromNettyFuture[F[+_, +_]: Async2, A](mkNettyFuture: => io.netty.util.concurrent.Future[A]): F[Throwable, A] = {
