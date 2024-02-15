@@ -189,8 +189,11 @@ abstract class Http4sTransportTestBase[F[+_, +_]](
             _            <- greaterClient.greet("John", "Smith").map(res => assert(res == "Hi, John Smith!"))
             _            <- greaterClient.alternative().attempt.map(res => assert(res == Right("value")))
 
-            // middleware test
+            // server middleware test
             _ <- checkUnauthorizedHttpCall(new GreeterServiceClientWrapped(publicOrcClient).greet("Orc", "Smith"))
+
+            // output middleware test
+            _ <- greaterClient.greet("bad", "good").map(res => assert(res == "Hi, *** good!"))
 
             // bad body test
             _ <- checkBadBody("{}", publicClient)

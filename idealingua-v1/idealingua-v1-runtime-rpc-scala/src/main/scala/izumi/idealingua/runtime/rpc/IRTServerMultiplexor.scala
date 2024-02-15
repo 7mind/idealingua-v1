@@ -41,6 +41,8 @@ object IRTServerMultiplexor {
 
   class FromMethods[F[+_, +_], C](val methods: Map[IRTMethodId, IRTServerMethod[F, C]]) extends IRTServerMultiplexor[F, C]
 
-  class FromServices[F[+_, +_]: IO2, C](val services: Set[IRTWrappedService[F, C]])
-    extends FromMethods[F, C](services.flatMap(_.allMethods.map { case (k, v) => k -> IRTServerMethod(v) }).toMap)
+  class FromServices[F[+_, +_]: IO2, C](
+    val services: Set[IRTWrappedService[F, C]],
+    middleware: IRTOutputMiddleware[F, C],
+  ) extends FromMethods[F, C](services.flatMap(_.allMethods.map { case (k, v) => k -> IRTServerMethod(v, middleware) }).toMap)
 }

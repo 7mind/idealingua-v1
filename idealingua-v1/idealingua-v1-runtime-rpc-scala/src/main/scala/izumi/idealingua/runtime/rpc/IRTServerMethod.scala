@@ -28,9 +28,15 @@ trait IRTServerMethod[F[+_, +_], C] {
 }
 
 object IRTServerMethod {
-  def apply[F[+_, +_]: IO2, C](method: IRTMethodWrapper[F, C]): IRTServerMethod[F, C] = FromWrapper.apply(method)
+  def apply[F[+_, +_]: IO2, C](
+    method: IRTMethodWrapper[F, C],
+    middleware: IRTOutputMiddleware[F, C],
+  ): IRTServerMethod[F, C] = FromWrapper.apply(method, middleware)
 
-  final case class FromWrapper[F[+_, +_]: IO2, C](method: IRTMethodWrapper[F, C]) extends IRTServerMethod[F, C] {
+  final case class FromWrapper[F[+_, +_]: IO2, C](
+    method: IRTMethodWrapper[F, C],
+    middleware: IRTOutputMiddleware[F, C],
+  ) extends IRTServerMethod[F, C] {
     override def methodId: IRTMethodId = method.signature.id
     @inline override def invoke(context: C, parsedBody: Json): F[Throwable, Json] = {
       val methodId = method.signature.id
@@ -44,8 +50,10 @@ object IRTServerMethod {
             F.fail(new IRTDecodingException(s"$methodId: Failed to decode JSON '${parsedBody.noSpaces}'.\nTrace: $trace", Some(decodingFailure)))
         }
         result  <- F.syncThrowable(method.invoke(context, requestBody.value.asInstanceOf[method.signature.Input])).flatten
+        response = IRTResBody(result)
         encoded <- F.syncThrowable(method.marshaller.encodeResponse.apply(IRTResBody(result)))
-      } yield encoded
+        result  <- middleware.apply(methodId)(context, response, encoded)
+      } yield result
     }
   }
 }
