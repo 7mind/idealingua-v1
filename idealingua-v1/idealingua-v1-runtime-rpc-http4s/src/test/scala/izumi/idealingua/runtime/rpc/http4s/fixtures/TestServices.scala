@@ -1,6 +1,7 @@
 package izumi.idealingua.runtime.rpc.http4s.fixtures
 
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import izumi.functional.bio.{F, IO2}
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.IRTAuthenticator.AuthContext
@@ -21,6 +22,23 @@ class TestServices[F[+_, +_]: IO2](
 ) {
 
   object Server {
+    def censoringOutputMiddleware[C <: TestContext](
+      censor: Set[String]
+    ): IRTOutputMiddleware[F, C] = new IRTOutputMiddleware[F, C] {
+      override def apply(methodId: IRTMethodId)(context: C, response: IRTResBody, encodedResponse: Json): F[Throwable, Json] = F.sync {
+        response.value match {
+          case GreeterServiceMethods.greet.Output(str) =>
+            val res = censor.foldLeft(str) {
+              case (r, c) =>
+                r.replace(c, (1 to c.length).map(_ => "*").mkString(""))
+            }
+            GreeterServiceMethods.greet.Output(res).asJson
+          case _ =>
+            encodedResponse
+        }
+      }
+    }
+
     def userBlacklistMiddleware[C <: TestContext](
       rejectedNames: Set[String]
     ): IRTServerMiddleware[F, C] = new IRTServerMiddleware[F, C] {
@@ -76,7 +94,7 @@ class TestServices[F[+_, +_]: IO2](
     final val privateServices: IRTContextServices[F, AuthContext, PrivateContext, PrivateContext] = {
       IRTContextServices.tagged[F, AuthContext, PrivateContext, PrivateContext](
         authenticator = privateAuth,
-        serverMuxer   = new IRTServerMultiplexor.FromServices(Set(privateService)),
+        serverMuxer   = new IRTServerMultiplexor.FromServices(Set(privateService), IRTOutputMiddleware.empty),
         middlewares   = Set.empty,
         wsSessions    = privateWsSession,
       )
@@ -112,7 +130,7 @@ class TestServices[F[+_, +_]: IO2](
     final val protectedServices: IRTContextServices[F, AuthContext, ProtectedContext, ProtectedContext] = {
       IRTContextServices.tagged[F, AuthContext, ProtectedContext, ProtectedContext](
         authenticator = protectedAuth,
-        serverMuxer   = new IRTServerMultiplexor.FromServices(Set(protectedService)),
+        serverMuxer   = new IRTServerMultiplexor.FromServices(Set(protectedService), IRTOutputMiddleware.empty),
         middlewares   = Set.empty,
         wsSessions    = protectedWsSession,
       )
@@ -146,7 +164,7 @@ class TestServices[F[+_, +_]: IO2](
     final val publicServices: IRTContextServices[F, AuthContext, PublicContext, PublicContext] = {
       IRTContextServices.tagged[F, AuthContext, PublicContext, PublicContext](
         authenticator = publicAuth,
-        serverMuxer   = new IRTServerMultiplexor.FromServices(Set(publicService)),
+        serverMuxer   = new IRTServerMultiplexor.FromServices(Set(publicService), censoringOutputMiddleware(Set("bad"))),
         middlewares   = Set(userBlacklistMiddleware(Set("orc"))),
         wsSessions    = publicWsSession,
       )
@@ -172,6 +190,6 @@ class TestServices[F[+_, +_]: IO2](
       PrivateTestServiceWrappedClient,
     )
     val codec: IRTClientMultiplexorImpl[F]               = new IRTClientMultiplexorImpl[F](clients)
-    val buzzerMultiplexor: IRTServerMultiplexor[F, Unit] = new IRTServerMultiplexor.FromServices[F, Unit](dispatchers)
+    val buzzerMultiplexor: IRTServerMultiplexor[F, Unit] = new IRTServerMultiplexor.FromServices[F, Unit](dispatchers, IRTOutputMiddleware.empty)
   }
 }
