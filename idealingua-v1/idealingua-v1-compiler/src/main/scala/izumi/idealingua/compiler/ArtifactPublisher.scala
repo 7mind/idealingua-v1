@@ -89,7 +89,6 @@ class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, 
       Seq("echo", s"Setting NPM registry for scope $scope to $repoName using user & _password method..."),
       Seq("npm", "config", "set", s"$scope:registry", s"${creds.npmRepo}"),
       Seq("npm", "config", "set", s"//$repoName:email", s"${creds.npmEmail}"),
-      Seq("npm", "config", "set", s"//$repoName:always-auth", "true"),
       Seq("npm", "config", "set", s"//$repoName:username", s"${creds.npmUser}"),
       Seq("npm", "config", "set", s"//$repoName:_password", (Seq("echo", "-n", s"${creds.npmPassword}") #| Seq("openssl", "base64")).!!),
     )
