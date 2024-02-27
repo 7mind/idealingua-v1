@@ -136,7 +136,7 @@ object Idealingua {
   import Deps._
 
   // DON'T REMOVE, these variables are read from CI build (build.sh)
-  final val scala212 = ScalaVersion("2.12.18")
+  final val scala212 = ScalaVersion("2.12.19")
   final val scala213 = ScalaVersion("2.13.12")
   final val scala300 = ScalaVersion("3.3.1")
 
@@ -186,7 +186,7 @@ object Idealingua {
   object Projects {
 
     final val plugins = Plugins(
-      Seq(Plugin("IzumiPlugin")),
+      Seq(Plugin("IzumiPlugin"))
     )
 
     implicit class VersionOptionExt(version: Option[Version]) {
@@ -213,7 +213,7 @@ object Idealingua {
     object root {
       final val id = ArtifactId("idealingua-v1")
       final val plugins = Plugins(
-        enabled  = Seq(Plugin("SbtgenVerificationPlugin")),
+        enabled = Seq(Plugin("SbtgenVerificationPlugin"))
       )
       final val settings = Seq(
         "libraryDependencySchemes" in SettingScope.Build += s""""io.circe" %% "circe-core" % VersionScheme.Always""".raw,
@@ -402,7 +402,7 @@ object Idealingua {
           Projects.idealingua.testDefs,
         ).map(_ in Scope.Compile.all),
         platforms = Targets.jvm2,
-        settings = Seq.empty,
+        settings  = Seq.empty,
       ),
     ),
     pathPrefix       = Projects.idealingua.basePath,
@@ -424,8 +424,8 @@ object Idealingua {
       ScopedLibrary(projector, FullDependencyScope(Scope.Compile, Platform.All, ScalaVersionScope.AllScala2), compilerPlugin = true),
       scalatest,
     ),
-    rootPlugins         = Projects.root.plugins,
-    globalPlugins       = Projects.plugins,
+    rootPlugins   = Projects.root.plugins,
+    globalPlugins = Projects.plugins,
     appendPlugins = Defaults.SbtGenPlugins ++ Seq(
       SbtPlugin("com.github.sbt", "sbt-pgp", PV.sbt_pgp),
       SbtPlugin("org.scoverage", "sbt-scoverage", PV.sbt_scoverage),
