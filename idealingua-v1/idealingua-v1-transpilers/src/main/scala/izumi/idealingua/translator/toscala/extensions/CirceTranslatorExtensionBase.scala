@@ -200,7 +200,7 @@ trait CirceTranslatorExtensionBase extends ScalaTranslatorExtension {
         false
     }
 
-    val base = Init(circeRuntimePkg.conv.toScala[IRTTimeInstances].typeAbsolute, Name.Anonymous(), List.empty)
+    val base = Init(circeRuntimePkg.conv.toScala[IRTTimeInstances].typeAbsolute, Name.Anonymous(), Seq.empty)
 
     if (unwrap) {
       val singleField = struct.all.head.field
@@ -301,6 +301,6 @@ object CirceDerivationTranslatorExtension extends CirceTranslatorExtensionBase {
     }
   }
 
-  private[this] lazy val scala2Import = q""" import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder} """
-  private[this] lazy val scala3Import = q""" import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder} """
+  private lazy val scala2Import = q""" import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder} """
+  private lazy val scala3Import = q""" import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder} """
 }

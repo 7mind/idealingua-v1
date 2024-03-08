@@ -23,32 +23,32 @@ final case class ScalaTypeImpl(
   override def termAbsolute: Term = if (termArgs.isEmpty) {
     termAbsoluteBase
   } else {
-    Term.Apply(termAbsoluteBase, termArgs)
+    Term.Apply(termAbsoluteBase, Term.ArgClause(termArgs))
   }
 
   override def typeAbsolute: Type = if (typeArgs.isEmpty) {
     typeAbsoluteBase
   } else {
-    Type.Apply(typeAbsoluteBase, typeArgs)
+    Type.Apply(typeAbsoluteBase, Type.ArgClause(typeArgs))
   }
 
   def termFull: Term = if (termArgs.isEmpty) {
     termBase
   } else {
-    Term.Apply(termBase, termArgs)
+    Term.Apply(termBase, Term.ArgClause(termArgs))
   }
 
   def typeFull: Type = if (typeArgs.isEmpty) {
     typeBase
   } else {
-    Type.Apply(typeBase, typeArgs)
+    Type.Apply(typeBase, Type.ArgClause(typeArgs))
   }
 
   def init(constructorArgs: Term*): Init = {
     val cargs = if (constructorArgs.isEmpty) {
       List.empty
     } else {
-      List(constructorArgs.toList)
+      List(Term.ArgClause(constructorArgs.toList))
     }
 
     Init(typeFull, Name.Anonymous(), cargs)

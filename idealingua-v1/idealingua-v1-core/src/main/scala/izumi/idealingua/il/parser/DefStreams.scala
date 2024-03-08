@@ -29,5 +29,5 @@ class DefStreams(context: IDLParserContext) {
   def streamsBlock[$: P]: P[RawTopLevelDefn.TLDStreams] = P(metaAgg.cblock(kw.streams, streams)).map {
     case (c, i, v) => RawStreams(i.toStreamsId, v.toList, c)
   }
-    .map(RawTopLevelDefn.TLDStreams)
+    .map(RawTopLevelDefn.TLDStreams.apply)
 }

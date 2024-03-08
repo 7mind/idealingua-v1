@@ -4,7 +4,7 @@ import cats.effect.std.Queue
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, Printer}
 import izumi.functional.bio.{Applicative2, F, IO2, Primitives2, Temporal2}
-import izumi.fundamentals.platform.time.IzTime
+import izumi.functional.bio.Clock1
 import izumi.fundamentals.platform.uuid.UUIDGen
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.ClientWsRpcHandler
@@ -50,7 +50,7 @@ object WsClientSession {
     logger: LogIO2[F],
   ) extends WsClientSession[F, SessionCtx] {
     private val requestCtxRef              = new AtomicReference[SessionCtx](initialContext)
-    private val openingTime: ZonedDateTime = IzTime.utcNow
+    private val openingTime: ZonedDateTime = Clock1.Standard.nowZoned()
 
     protected val requestState: WsRequestState[F] = WsRequestState.create[F]
     protected def sendMessage(message: RpcPacket): F[Throwable, Unit]
@@ -113,8 +113,8 @@ object WsClientSession {
 
     override def toString: String = s"[$sessionId, ${duration().toSeconds}s]"
 
-    private[this] def duration(): FiniteDuration = {
-      val now = IzTime.utcNow
+    private def duration(): FiniteDuration = {
+      val now = Clock1.Standard.nowZoned()
       val d   = java.time.Duration.between(openingTime, now)
       FiniteDuration(d.toNanos, TimeUnit.NANOSECONDS)
     }

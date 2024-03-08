@@ -49,7 +49,7 @@ class ModelResolver(rules: Seq[VerificationRule]) {
       }
     } catch {
       case t: Throwable =>
-        Left(LoadedDomain.VerificationFailed(ts.domain.meta.origin, ts.domain.id, IDLDiagnostics(Vector(VerificationException(t.stackTrace)))))
+        Left(LoadedDomain.VerificationFailed(ts.domain.meta.origin, ts.domain.id, IDLDiagnostics(Vector(VerificationException(t.stacktraceString)))))
     }
   }
 

@@ -30,8 +30,8 @@ object WsContextStorage {
   class WsContextStorageImpl[F[+_, +_]: IO2, WsCtx](
     wsSessionsStorage: WsSessionsStorage[F, ?]
   ) extends WsContextStorage[F, WsCtx] {
-    private[this] val sessionToId  = new ConcurrentHashMap[WsSessionId, WsCtx]()
-    private[this] val idToSessions = new ConcurrentHashMap[WsCtx, Set[WsSessionId]]()
+    private val sessionToId  = new ConcurrentHashMap[WsSessionId, WsCtx]()
+    private val idToSessions = new ConcurrentHashMap[WsCtx, Set[WsSessionId]]()
 
     override def allSessions(): F[Throwable, Set[WsContextSessionId[WsCtx]]] = F.sync {
       sessionToId.asScala.map { case (s, c) => WsContextSessionId(s, c) }.toSet

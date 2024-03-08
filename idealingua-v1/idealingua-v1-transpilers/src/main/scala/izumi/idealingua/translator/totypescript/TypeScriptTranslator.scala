@@ -1,21 +1,22 @@
 package izumi.idealingua.translator.totypescript
 
-import izumi.fundamentals.collections.IzCollections._
 import izumi.fundamentals.platform.language.Quirks
-import izumi.fundamentals.platform.strings.IzString._
-import izumi.idealingua.model.common.TypeId._
-import izumi.idealingua.model.common._
+import izumi.fundamentals.platform.strings.IzString.*
+import izumi.idealingua.model.common.TypeId.*
+import izumi.idealingua.model.common.*
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.{Algebraic, Alternative, Singular, Struct, Void}
-import izumi.idealingua.model.il.ast.typed.TypeDef._
-import izumi.idealingua.model.il.ast.typed.{DefMethod, _}
+import izumi.idealingua.model.il.ast.typed.TypeDef.*
+import izumi.idealingua.model.il.ast.typed.{DefMethod, *}
 import izumi.idealingua.model.output.Module
 import izumi.idealingua.model.publishing.manifests.TypeScriptProjectLayout
 import izumi.idealingua.model.typespace.Typespace
-import izumi.idealingua.translator.CompilerOptions._
+import izumi.idealingua.translator.CompilerOptions.*
 import izumi.idealingua.translator.totypescript.extensions.{EnumHelpersExtension, IntrospectionExtension}
-import izumi.idealingua.translator.totypescript.products.CogenProduct._
+import izumi.idealingua.translator.totypescript.products.CogenProduct.*
 import izumi.idealingua.translator.totypescript.products.RenderableCogenProduct
 import izumi.idealingua.translator.{Translated, Translator}
+
+import scala.annotation.nowarn
 
 object TypeScriptTranslator {
   final val defaultExtensions = Seq(
@@ -24,7 +25,10 @@ object TypeScriptTranslator {
   )
 }
 
+@nowarn("msg=Unused import")
 class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) extends Translator {
+  import izumi.fundamentals.collections.IzCollections._
+
   protected val ctx: TSTContext = new TSTContext(ts, options.manifest, options.extensions)
 
   import ctx._

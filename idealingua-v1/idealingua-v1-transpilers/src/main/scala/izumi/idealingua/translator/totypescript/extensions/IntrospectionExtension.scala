@@ -1,18 +1,22 @@
 package izumi.idealingua.translator.totypescript.extensions
 
-import izumi.fundamentals.collections.IzCollections._
-import izumi.fundamentals.platform.strings.IzString._
-import izumi.idealingua.model.common.TypeId._
+import izumi.fundamentals.platform.strings.IzString.*
+import izumi.idealingua.model.common.TypeId.*
 import izumi.idealingua.model.common.{Generic, Primitive, TypeId}
 import izumi.idealingua.model.il.ast.typed.TypeDef.{DTO, Interface}
 import izumi.idealingua.model.il.ast.typed.{Field, TypeDef}
 import izumi.idealingua.model.publishing.manifests.TypeScriptProjectLayout
 import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.totypescript.TSTContext
-import izumi.idealingua.translator.totypescript.products.CogenProduct._
+import izumi.idealingua.translator.totypescript.products.CogenProduct.*
 import izumi.idealingua.translator.totypescript.types.TypeScriptTypeConverter
 
+import scala.annotation.nowarn
+
+@nowarn("msg=Unused import")
 object IntrospectionExtension extends TypeScriptTranslatorExtension {
+  import izumi.fundamentals.collections.IzCollections._
+
   private def unwindType(id: TypeId)(implicit ts: Typespace): String = id match {
     case Primitive.TBool   => "{intro: IntrospectorTypes.Bool}"
     case Primitive.TString => "{intro: IntrospectorTypes.Str}"

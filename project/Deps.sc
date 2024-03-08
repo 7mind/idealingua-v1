@@ -1,4 +1,4 @@
-import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.99`
+import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.100`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
 
@@ -136,13 +136,12 @@ object Idealingua {
   import Deps._
 
   // DON'T REMOVE, these variables are read from CI build (build.sh)
-  final val scala212 = ScalaVersion("2.12.18")
-  final val scala213 = ScalaVersion("2.13.12")
-  final val scala300 = ScalaVersion("3.3.3")
+  final val scala212 = ScalaVersion("2.12.19")
+  final val scala213 = ScalaVersion("2.13.13")
+  final val scala300 = ScalaVersion("3.4.0")
 
   object Groups {
-    final val fundamentals = Set(Group("fundamentals"))
-    final val idealingua   = Set(Group("idealingua"))
+    final val idealingua = Set(Group("idealingua"))
   }
 
   object Targets {
@@ -280,6 +279,8 @@ object Idealingua {
           SettingKey.Default := Const.EmptySeq,
         ),
         "scalacOptions" -= "-Wconf:any:error",
+        "scalacOptions" += "-Wconf:msg=nowarn:silent",
+        "scalacOptions" += "-Wconf:msg=pattern var charIn:silent",
       )
 
     }

@@ -38,7 +38,7 @@ class InterfaceRenderer(ctx: STContext) {
   def mkTrait(supers: Interfaces, t: ScalaType, fields: ScalaStruct): Defn.Trait = {
     val decls = fields.all.map {
       f =>
-        Decl.Def(List.empty, f.name, List.empty, List.empty, f.fieldType)
+        Decl.Def(List.empty, f.name, List.empty, f.fieldType)
     }
 
     val ifDecls = (rt.generated +: supers.map(conv.toScala)).map(_.init())

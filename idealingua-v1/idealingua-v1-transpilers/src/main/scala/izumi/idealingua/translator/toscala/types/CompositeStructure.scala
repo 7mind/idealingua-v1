@@ -2,11 +2,14 @@ package izumi.idealingua.translator.toscala.types
 
 import izumi.idealingua.model.il.ast.typed.Interfaces
 import izumi.idealingua.translator.toscala.STContext
-import izumi.fundamentals.collections.IzCollections._
 
-import scala.meta._
+import scala.annotation.nowarn
+import scala.meta.*
 
+@nowarn("msg=Unused import")
 class CompositeStructure(ctx: STContext, val fields: ScalaStruct) {
+  import izumi.fundamentals.collections.IzCollections._
+
   val t: ScalaType = ctx.conv.toScala(fields.id)
 
   import ScalaField._

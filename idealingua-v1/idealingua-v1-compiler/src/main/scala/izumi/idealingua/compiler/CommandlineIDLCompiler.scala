@@ -264,7 +264,7 @@ object CommandlineIDLCompiler {
 
   private def getExt(lang: IDLLanguage, filter: List[String]): Seq[TranslatorExtension] = {
     val descriptor = TypespaceCompilerBaseFacade.descriptor(lang)
-    val negative   = filter.filter(_.startsWith("-")).map(_.substring(1)).map(ExtensionId).toSet
+    val negative   = filter.filter(_.startsWith("-")).map(_.substring(1)).map(ExtensionId.apply).toSet
     descriptor.defaultExtensions.filterNot(e => negative.contains(e.id))
   }
 }

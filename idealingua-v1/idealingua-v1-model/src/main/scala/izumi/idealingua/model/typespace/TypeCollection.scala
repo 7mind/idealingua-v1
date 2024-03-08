@@ -1,11 +1,13 @@
 package izumi.idealingua.model.typespace
 
 import izumi.idealingua.model.common.TypeId
-import izumi.idealingua.model.common.TypeId._
+import izumi.idealingua.model.common.TypeId.*
 import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.model.il.ast.typed.DefMethod.{Output, RPCMethod}
-import izumi.idealingua.model.il.ast.typed.TypeDef._
-import izumi.idealingua.model.il.ast.typed._
+import izumi.idealingua.model.il.ast.typed.TypeDef.*
+import izumi.idealingua.model.il.ast.typed.*
+
+import scala.annotation.nowarn
 
 class CMap[K, V](context: AnyRef, val underlying: Map[K, V]) {
   def contains(key: K): Boolean = underlying.contains(key)
@@ -42,9 +44,12 @@ trait TypeCollectionData {
   def buzzerEphemerals: Seq[TypeDef]
 }
 
+@nowarn("msg=Unused import")
 class TypeCollection(ts: Typespace) extends TypeCollectionData {
-  val services: Map[ServiceId, Service] = ts.domain.services.groupBy(_.id).mapValues(_.head).toMap // 2.13 compat
-  val buzzers: Map[BuzzerId, Buzzer]    = ts.domain.buzzers.groupBy(_.id).mapValues(_.head).toMap // 2.13 compat
+  import scala.collection.compat.*
+
+  val services: Map[ServiceId, Service] = ts.domain.services.groupBy(_.id).view.mapValues(_.head).toMap
+  val buzzers: Map[BuzzerId, Buzzer]    = ts.domain.buzzers.groupBy(_.id).view.mapValues(_.head).toMap
 
   val serviceEphemerals: Seq[TypeDef] = {
     makeServiceEphemerals(services.values)
