@@ -44,9 +44,9 @@ object WsRequestState {
 
   class Default[F[+_, +_]: IO2: Temporal2: Primitives2] extends WsRequestState[F] {
     // using custom clock to no allow to override it
-    private[this] val clock: Clock2[F]                                             = Clock1.fromImpure(Clock1.Standard)
-    private[this] val requests: ConcurrentHashMap[RpcPacketId, IRTMethodId]        = new ConcurrentHashMap[RpcPacketId, IRTMethodId]()
-    private[this] val responses: ConcurrentHashMap[RpcPacketId, RequestHandler[F]] = new ConcurrentHashMap[RpcPacketId, RequestHandler[F]]()
+    private val clock: Clock2[F]                                             = Clock1.fromImpure(Clock1.Standard)
+    private val requests: ConcurrentHashMap[RpcPacketId, IRTMethodId]        = new ConcurrentHashMap[RpcPacketId, IRTMethodId]()
+    private val responses: ConcurrentHashMap[RpcPacketId, RequestHandler[F]] = new ConcurrentHashMap[RpcPacketId, RequestHandler[F]]()
 
     override def requestAndAwait[A](
       id: RpcPacketId,
@@ -104,12 +104,12 @@ object WsRequestState {
       }.flatMap(_.promise.await.timeout(timeout))
     }
 
-    private[this] def forget(id: RpcPacketId): F[Nothing, Unit] = F.sync {
+    private def forget(id: RpcPacketId): F[Nothing, Unit] = F.sync {
       requests.remove(id)
       responses.remove(id).discard()
     }
 
-    private[this] def forgetExpired(now: OffsetDateTime): F[Nothing, Unit] = {
+    private def forgetExpired(now: OffsetDateTime): F[Nothing, Unit] = {
       F.suspendSafe {
         val removed = mutable.ArrayBuffer.empty[RequestHandler[F]]
         // it should be synchronized on node remove

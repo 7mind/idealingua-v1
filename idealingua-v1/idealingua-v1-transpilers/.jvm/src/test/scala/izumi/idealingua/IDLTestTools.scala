@@ -1,6 +1,6 @@
 package izumi.idealingua
 
-import izumi.fundamentals.platform.build.{ExposedTestScope, MacroParameters}
+import izumi.fundamentals.platform.build.MacroParameters
 import izumi.fundamentals.platform.files.IzFiles
 import izumi.fundamentals.platform.jvm.IzJvm
 import izumi.fundamentals.platform.language.Quirks
@@ -33,7 +33,6 @@ import java.nio.file._
 import scala.sys.process._
 import scala.util.Try
 
-@ExposedTestScope
 final case class CompilerOutput(targetDir: Path, allFiles: Seq[Path]) {
   def absoluteTargetDir: Path = targetDir.toAbsolutePath
 
@@ -44,7 +43,6 @@ final case class CompilerOutput(targetDir: Path, allFiles: Seq[Path]) {
   def relativeOutputs: Seq[String] = allFiles.map(p => absoluteTargetDir.relativize(p.toAbsolutePath).toString)
 }
 
-@ExposedTestScope
 object IDLTestTools {
   def hasDocker: Boolean = IzFiles.haveExecutables("docker")
 
@@ -362,7 +360,7 @@ object IDLTestTools {
       .filter(f => f.isDirectory && f.getName.startsWith(stablePrefix) && !f.getName.startsWith(vmPrefix))
       .foreach {
         f =>
-          Quirks.discard(Try(IzFiles.removeDir(f.toPath)))
+          Quirks.discard(Try(IzFiles.erase(f.toPath)))
       }
   }
 

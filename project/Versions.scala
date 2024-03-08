@@ -11,7 +11,7 @@ object V {
 
   val scala_xml = "2.2.0"
 
-  val kind_projector = "0.13.2"
+  val kind_projector = "0.13.3"
 
   val circe_derivation     = "0.13.0-M5"
   val circe_generic_extras = "0.14.3"

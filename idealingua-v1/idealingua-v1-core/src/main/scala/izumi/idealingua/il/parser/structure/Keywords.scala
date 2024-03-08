@@ -15,7 +15,7 @@ trait Keywords extends Separators {
   def include[$: P]: P[Unit] = kw("include")
   def `import`[$: P]: P[Unit] = kw("import")
 
-  def enum[$: P]: P[Unit] = kw("enum")
+  def `enum`[$: P]: P[Unit] = kw("enum")
   def adt[$: P]: P[Unit] = kw("adt", "choice")
   def alias[$: P]: P[Unit] = kw("alias", "type", "using")
   def newtype[$: P]: P[Unit] = kw("clone", "newtype", "copy")

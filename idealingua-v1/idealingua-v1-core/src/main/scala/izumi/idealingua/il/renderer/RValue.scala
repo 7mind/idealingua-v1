@@ -4,7 +4,11 @@ import izumi.functional.Renderable
 import izumi.idealingua.model.common.TypeId
 import izumi.idealingua.model.il.ast.typed.ConstValue
 
+import scala.annotation.nowarn
+
+@nowarn("msg=Unused import")
 class RValue(context: IDLRenderingContext) extends Renderable[ConstValue] {
+  import scala.collection.compat.*
   import context._
 
   override def render(v: ConstValue): String = {
@@ -39,7 +43,7 @@ class RValue(context: IDLRenderingContext) extends Renderable[ConstValue] {
         typed(typeId, value.value.map(render).mkString("[", ", ", "]"))
 
       case ConstValue.CTypedObject(typeId, value) =>
-        typed(typeId, value.value.mapValues(render).mkString("[", ",", "]"))
+        typed(typeId, value.value.view.mapValues(render).mkString("[", ",", "]"))
 
       case ConstValue.CTyped(typeId, value) =>
         typed(typeId, render(value))

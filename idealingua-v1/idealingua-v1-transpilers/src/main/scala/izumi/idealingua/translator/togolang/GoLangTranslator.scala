@@ -1,28 +1,32 @@
 package izumi.idealingua.translator.togolang
 
-import izumi.fundamentals.collections.IzCollections._
 import izumi.fundamentals.platform.language.Quirks
-import izumi.fundamentals.platform.strings.IzString._
-import izumi.idealingua.model.common.TypeId.{DTOId, _}
-import izumi.idealingua.model.common._
+import izumi.fundamentals.platform.strings.IzString.*
+import izumi.idealingua.model.common.TypeId.{DTOId, *}
+import izumi.idealingua.model.common.*
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.{Algebraic, Alternative, Singular, Struct, Void}
-import izumi.idealingua.model.il.ast.typed.TypeDef._
-import izumi.idealingua.model.il.ast.typed.{DefMethod, _}
+import izumi.idealingua.model.il.ast.typed.TypeDef.*
+import izumi.idealingua.model.il.ast.typed.{DefMethod, *}
 import izumi.idealingua.model.output.Module
 import izumi.idealingua.model.publishing.manifests.GoLangBuildManifest
 import izumi.idealingua.model.typespace.Typespace
-import izumi.idealingua.translator.CompilerOptions._
-import izumi.idealingua.translator.togolang.products.CogenProduct._
+import izumi.idealingua.translator.CompilerOptions.*
+import izumi.idealingua.translator.togolang.products.CogenProduct.*
 import izumi.idealingua.translator.togolang.products.RenderableCogenProduct
-import izumi.idealingua.translator.togolang.types._
+import izumi.idealingua.translator.togolang.types.*
 import izumi.idealingua.translator.{Translated, Translator}
+
+import scala.annotation.nowarn
 
 object GoLangTranslator {
   final val defaultExtensions = Seq(
   )
 }
 
+@nowarn("msg=Unused import")
 class GoLangTranslator(ts: Typespace, options: GoTranslatorOptions) extends Translator {
+  import izumi.fundamentals.collections.IzCollections._
+
   protected val ctx: GLTContext = new GLTContext(ts, options.extensions)
 
   import ctx._

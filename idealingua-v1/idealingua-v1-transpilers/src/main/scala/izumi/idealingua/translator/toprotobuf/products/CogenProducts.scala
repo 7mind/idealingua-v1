@@ -29,15 +29,15 @@ object CogenProducts {
       )
     }
 
-    private[this] def methodInputType(method: ProtobufMethod) = {
+    private def methodInputType(method: ProtobufMethod) = {
       ProtobufType(Seq.empty, s"$name${method.name.capitalize}Input")
     }
 
-    private[this] def methodOutputType(method: ProtobufMethod) = {
+    private def methodOutputType(method: ProtobufMethod) = {
       ProtobufType(Seq.empty, s"$name${method.name.capitalize}Output")
     }
 
-    private[this] def cogenMethodMessages(method: ProtobufMethod): Seq[RenderableCogenProduct] = {
+    private def cogenMethodMessages(method: ProtobufMethod): Seq[RenderableCogenProduct] = {
       def cogenNonAlternativeOutputs(tpe: ProtobufType, outputs: ProtobufMethod.NonAlternativeOutput): RenderableCogenProduct = {
         outputs match {
           case ProtobufMethod.Void              => Message(tpe, Nil)

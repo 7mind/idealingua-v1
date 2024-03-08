@@ -1,19 +1,20 @@
 package izumi.idealingua.model.il.ast
 
 import izumi.fundamentals.platform.exceptions.IzThrowable
-import izumi.fundamentals.platform.strings.IzString._
+import izumi.fundamentals.platform.strings.IzString.*
 import izumi.idealingua.model.common
-import izumi.idealingua.model.common.TypeId._
-import izumi.idealingua.model.common.{AbstractIndefiniteId, _}
+import izumi.idealingua.model.common.TypeId.*
+import izumi.idealingua.model.common.{AbstractIndefiniteId, *}
 import izumi.idealingua.model.il.ast.raw.defns.RawTypeDef.{ForeignType, NewType}
 import izumi.idealingua.model.il.ast.raw.defns.RawVal.RawValScalar
-import izumi.idealingua.model.il.ast.raw.defns._
+import izumi.idealingua.model.il.ast.raw.defns.*
 import izumi.idealingua.model.il.ast.raw.domains.{DomainMeshLoaded, DomainMeshResolved, SingleImport}
-import izumi.idealingua.model.il.ast.typed._
+import izumi.idealingua.model.il.ast.typed.*
 import izumi.idealingua.model.problems.{IDLDiagnostics, IDLException, TyperError}
 
+import scala.annotation.nowarn
 import scala.collection.mutable
-import scala.reflect._
+import scala.reflect.*
 
 class IDLTyper(defn: DomainMeshResolved) {
   def perform(): Either[IDLDiagnostics, typed.DomainDefinition] = {
@@ -22,7 +23,7 @@ class IDLTyper(defn: DomainMeshResolved) {
     } catch {
       case t: Throwable =>
         import IzThrowable._
-        Left(IDLDiagnostics(Vector(TyperError.TyperException(t.stackTrace))))
+        Left(IDLDiagnostics(Vector(TyperError.TyperException(t.stacktraceString))))
     }
   }
 }
@@ -73,7 +74,10 @@ class IDLPretyper(defn: DomainMeshResolved) {
   }
 }
 
+@nowarn("msg=Unused import")
 class IDLPostTyper(defn: DomainMeshLoaded) {
+  import scala.collection.compat.*
+
   final val domainId: DomainId = defn.id
 
   private val domainCache = mutable.HashMap[DomainId, IDLPostTyper]()
@@ -225,7 +229,7 @@ class IDLPostTyper(defn: DomainMeshLoaded) {
             ConstValue.CBool(value)
         }
       case RawVal.CMap(value) =>
-        ConstValue.CMap(value.mapValues(translateValue).toMap)
+        ConstValue.CMap(value.view.mapValues(translateValue).toMap)
 
       case RawVal.CList(value) =>
         ConstValue.CList(value.map(translateValue))
@@ -242,14 +246,14 @@ class IDLPostTyper(defn: DomainMeshLoaded) {
         ConstValue.CTyped(tpe, typedValue)
       case RawVal.CTypedObject(typeId, value) =>
         val tpe = makeDefinite(typeId)
-        val obj = ConstValue.CMap(value.mapValues(translateValue).toMap)
+        val obj = ConstValue.CMap(value.view.mapValues(translateValue).toMap)
         // TODO: verify structure
         ConstValue.CTypedObject(tpe, obj)
     }
   }
 
   protected def fixAnno(v: RawAnno): Anno = {
-    Anno(v.name, v.values.value.mapValues(translateValue).toMap, v.position)
+    Anno(v.name, v.values.value.view.mapValues(translateValue).toMap, v.position)
   }
 
   protected def fixMeta(meta: RawNodeMeta): NodeMeta = {
