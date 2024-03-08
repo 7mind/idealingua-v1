@@ -34,8 +34,8 @@ object IdTest {
       case "Engineering" => Engineering
       case "Sales"       => Sales
     }
-    final case object Engineering extends DepartmentEnum { override def toString: String = "Engineering" }
-    final case object Sales extends DepartmentEnum { override def toString: String = "Sales" }
+    case object Engineering extends DepartmentEnum { override def toString: String = "Engineering" }
+    case object Sales extends DepartmentEnum { override def toString: String = "Sales" }
   }
 
   final case class UserWithEnumId(value: UUID, company: UUID, dept: DepartmentEnum) extends IDLGeneratedType with IDLIdentifier {
