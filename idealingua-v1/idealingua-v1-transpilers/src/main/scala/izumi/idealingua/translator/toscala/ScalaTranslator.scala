@@ -1,16 +1,17 @@
 package izumi.idealingua.translator.toscala
 
-import izumi.idealingua.model.il.ast.typed.TypeDef._
+import izumi.idealingua.model.il.ast.typed.TypeDef.*
 import izumi.idealingua.model.il.ast.typed.{Buzzer, Service, TypeDef}
 import izumi.idealingua.model.output.Module
 import izumi.idealingua.model.typespace.Typespace
-import izumi.idealingua.translator.CompilerOptions._
-import izumi.idealingua.translator.toscala.extensions._
-import izumi.idealingua.translator.toscala.products._
+import izumi.idealingua.translator.CompilerOptions.*
+import izumi.idealingua.translator.toscala.extensions.*
+import izumi.idealingua.translator.toscala.products.*
 import izumi.idealingua.translator.toscala.types.ClassSource
 import izumi.idealingua.translator.{Translated, Translator}
 
-import scala.meta._
+import scala.annotation.nowarn
+import scala.meta.*
 
 object ScalaTranslator {
   final val defaultExtensions = Seq(
@@ -22,7 +23,10 @@ object ScalaTranslator {
   )
 }
 
+@nowarn("msg=Unused import")
 class ScalaTranslator(ts: Typespace, options: ScalaTranslatorOptions) extends Translator {
+  import scala.collection.compat.*
+
   protected val ctx: STContext = new STContext(ts, options.extensions, options.manifest.sbt)
 
   def translate(): Translated = {
@@ -31,7 +35,7 @@ class ScalaTranslator(ts: Typespace, options: ScalaTranslatorOptions) extends Tr
       case a: Alias =>
         ctx.modules.toModuleId(a) -> renderAlias(a)
     }.toMultimap
-      .mapValues(_.flatten.toSeq)
+      .view.mapValues(_.flatten.toSeq)
 
     val packageObjects = aliases.map {
       case (id, content) =>

@@ -147,7 +147,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
       Module(ModuleId(Seq.empty, "package.json"), fullRootJson.toString()),
       Module(ModuleId(Seq.empty, "tsconfig.json"), tsconfig),
       Module(ModuleId(Seq.empty, "tsconfig.es.json"), tsconfigEs),
-    ).map(ExtendedModule.RuntimeModule)
+    ).map(ExtendedModule.RuntimeModule.apply)
   }
 
   private def toScopedId(id: ModuleId): ModuleId = {

@@ -124,7 +124,7 @@ class DefConst(context: IDLParserContext) extends Identifiers {
   private def literal[$: P]: P[Aux.Just] = {
     import Literals.Literals._
     NoCut(P(
-      ("-".? ~ Float).!.map(_.toDouble).map(RawVal.CFloat) |
+      ("-".? ~ Float).!.map(_.toDouble).map(RawVal.CFloat.apply) |
         ("-".? ~ Int).!.map { v =>
           if (v.toUpperCase.endsWith("L")) {
             RawVal.CLong(v.toLong)
@@ -132,9 +132,9 @@ class DefConst(context: IDLParserContext) extends Identifiers {
             RawVal.CInt(v.toInt)
           }
         } |
-        Bool.!.map(_.toBoolean).map(RawVal.CBool) |
-        Str.map(RawVal.CString)
-    )).map(Aux.Just)
+        Bool.!.map(_.toBoolean).map(RawVal.CBool.apply) |
+        Str.map(RawVal.CString.apply)
+    )).map(Aux.Just.apply)
   }
 
   private def objdef[$: P]: P[Aux.ObjAux] = enclosedConsts.map {

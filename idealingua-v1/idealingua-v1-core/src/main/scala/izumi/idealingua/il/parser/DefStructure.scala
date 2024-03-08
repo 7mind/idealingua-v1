@@ -28,9 +28,9 @@ class DefStructure(context: IDLParserContext) extends Separators {
     }
 
   object Struct {
-    def plus[$: P]: P[StructOp.Extend] = P(("&" ~ "&&".?) ~/ (inline ~ ids.identifier)).map(_.toParentId).map(StructOp.Extend)
+    def plus[$: P]: P[StructOp.Extend] = P(("&" ~ "&&".?) ~/ (inline ~ ids.identifier)).map(_.toParentId).map(StructOp.Extend.apply)
 
-    def embed[$: P]: P[StructOp.Mix] = P((("+" ~ "++".?) | "...") ~/ (inline ~ ids.identifier)).map(_.toMixinId).map(StructOp.Mix)
+    def embed[$: P]: P[StructOp.Mix] = P((("+" ~ "++".?) | "...") ~/ (inline ~ ids.identifier)).map(_.toMixinId).map(StructOp.Mix.apply)
 
     def minus[$: P]: P[StructOp] = P(("-" ~ "--".?) ~/ (inline ~ (field | ids.identifier))).map {
       id =>
@@ -42,7 +42,7 @@ class DefStructure(context: IDLParserContext) extends Separators {
         }
     }
 
-    def plusField[$: P]: P[StructOp.AddField] = field.map(StructOp.AddField)
+    def plusField[$: P]: P[StructOp.AddField] = field.map(StructOp.AddField.apply)
 
     def anyPart[$: P]: P[StructOp] = P(plusField | plus | embed | minus)
 
@@ -54,9 +54,9 @@ class DefStructure(context: IDLParserContext) extends Separators {
   }
 
   object SimpleStruct {
-    def embed[$: P]: P[StructOp.Mix] = P((("+" ~ "++".?) | "...") ~/ (any ~ ids.identifier)).map(_.toMixinId).map(StructOp.Mix)
+    def embed[$: P]: P[StructOp.Mix] = P((("+" ~ "++".?) | "...") ~/ (any ~ ids.identifier)).map(_.toMixinId).map(StructOp.Mix.apply)
 
-    def plusField[$: P]: P[StructOp.AddField] = field.map(StructOp.AddField)
+    def plusField[$: P]: P[StructOp.AddField] = field.map(StructOp.AddField.apply)
 
     def anyPart[$: P]: P[StructOp] = P(plusField | embed)
 
@@ -99,18 +99,18 @@ class DefStructure(context: IDLParserContext) extends Separators {
     .map(_.toList).map(RawAdt.apply)
 
   object Enum {
-    def embed[$: P]: P[EnumOp.Extend] = P((("+" ~ "++".?) | "...") ~/ (inline ~ ids.identifier)).map(_.toEnumId).map(EnumOp.Extend)
+    def embed[$: P]: P[EnumOp.Extend] = P((("+" ~ "++".?) | "...") ~/ (inline ~ ids.identifier)).map(_.toEnumId).map(EnumOp.Extend.apply)
 
     def enumMember[$: P]: P[EnumOp.AddMember] = P(metaAgg.withMeta(ids.symbol ~ (inline ~ "=" ~/ inline ~ defConst.constValue).?)).map {
       case (meta, (name, const)) =>
         EnumOp.AddMember(RawEnumMember(name, const.map(_.value), meta))
     }
 
-    def minus[$: P]: P[EnumOp.RemoveMember] = P(("-" ~ "--".?) ~/ (inline ~ ids.symbol)).map(EnumOp.RemoveMember)
+    def minus[$: P]: P[EnumOp.RemoveMember] = P(("-" ~ "--".?) ~/ (inline ~ ids.symbol)).map(EnumOp.RemoveMember.apply)
 
     def anyPart[$: P]: P[EnumOp] = P(enumMember | minus | embed)
 
-    def enum[$: P](sep: => P[Unit]): P[RawEnum] = P(anyPart.rep(min = 1, sep = sep)).map(RawEnum.Aux.apply).map(_.structure)
+    def `enum`[$: P](sep: => P[Unit]): P[RawEnum] = P(anyPart.rep(min = 1, sep = sep)).map(RawEnum.Aux.apply).map(_.structure)
   }
 
   def imports[$: P](sep: => P[Unit]): P[Seq[ImportedId]] = P(importMember.rep(min = 1, sep = sep))
@@ -133,7 +133,7 @@ class DefStructure(context: IDLParserContext) extends Separators {
       case (meta, (i, v)) =>
         ForeignType(i, v, meta)
     }
-    .map(RawTopLevelDefn.TLDForeignType)
+    .map(RawTopLevelDefn.TLDForeignType.apply)
 
   def idBlock[$: P]: P[Identifier] = P(metaAgg.cblock(kw.id, aggregate))
     .map {
@@ -156,7 +156,7 @@ class DefStructure(context: IDLParserContext) extends Separators {
       case (c, src, (target, struct)) =>
         NewType(target, src.toIndefinite, struct.map(_.structure), c)
     }
-    .map(TLDNewtype)
+    .map(TLDNewtype.apply)
 
   def adtFreeForm[$: P]: P[RawAdt] = P(any ~ "=" ~/ any ~ sepAdtFreeForm.? ~ any ~ adt(sepAdtFreeForm))
 
@@ -168,12 +168,12 @@ class DefStructure(context: IDLParserContext) extends Separators {
         Adt(i.toAdtId, v.alternatives, c)
     }
 
-  def enumFreeForm[$: P]: P[RawEnum] = P(any ~ "=" ~/ any ~ sepEnumFreeForm.? ~ any ~ Enum.enum(sepEnumFreeForm))
+  def enumFreeForm[$: P]: P[RawEnum] = P(any ~ "=" ~/ any ~ sepEnumFreeForm.? ~ any ~ Enum.`enum`(sepEnumFreeForm))
 
-  def enumEnclosed[$: P]: P[RawEnum] = P(NoCut(aggregates.enclosed(Enum.enum(sepEnum) ~ sepEnum.?)) | aggregates.enclosed(Enum.enum(sepEnumFreeForm)))
+  def enumEnclosed[$: P]: P[RawEnum] = P(NoCut(aggregates.enclosed(Enum.`enum`(sepEnum) ~ sepEnum.?)) | aggregates.enclosed(Enum.`enum`(sepEnumFreeForm)))
 
 
-  def enumBlock[$: P]: P[Enumeration] = P(metaAgg.cstarting(kw.enum, enumEnclosed | enumFreeForm))
+  def enumBlock[$: P]: P[Enumeration] = P(metaAgg.cstarting(kw.`enum`, enumEnclosed | enumFreeForm))
     .map {
       case (c, i, v) =>
         Enumeration(i.toEnumId, v, c)

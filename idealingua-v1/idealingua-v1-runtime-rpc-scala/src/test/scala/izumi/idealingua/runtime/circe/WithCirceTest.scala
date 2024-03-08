@@ -83,7 +83,7 @@ object WithCirceTest {
   }
 
   // workaround https://github.com/milessabin/shapeless/issues/837
-  private[this] object codecs extends IRTWithCirce[Nested]
+  private object codecs extends IRTWithCirce[Nested]
 
   sealed trait Enum
   object Enum extends IRTWithCirce[Enum]

@@ -11,7 +11,7 @@ import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
 import izumi.functional.bio.{Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.language.Quirks.Discarder
-import izumi.fundamentals.platform.time.IzTime
+import izumi.functional.bio.Clock1
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.HttpServer.{ServerWsRpcHandler, WsResponseMarker}
 import izumi.idealingua.runtime.rpc.http4s.context.{HttpContextExtractor, WsContextExtractor}
@@ -77,7 +77,7 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
       inStream = {
         (inputStream: Stream[F[Throwable, _], WebSocketFrame]) =>
           inputStream.evalMap {
-            processWsRequest(clientSession, IzTime.utcNow)(_).flatMap {
+            processWsRequest(clientSession, Clock1.Standard.nowZoned())(_).flatMap {
               case Some(v) => outQueue.offer(WebSocketFrame.Text(v))
               case None    => F.unit
             }

@@ -21,7 +21,7 @@ class DefMember(context: IDLParserContext) extends Aggregates {
     defStructure.mixinBlock |
     defStructure.dtoBlock
   )
-    .map(TLDBaseType)
+    .map(TLDBaseType.apply)
 
   def typeMember[$: P]: P[RawTopLevelDefn.TypeDefn] = P(
     defStructure.foreignBlock |
@@ -40,8 +40,8 @@ class DefMember(context: IDLParserContext) extends Aggregates {
     baseTypeMember |
     typeMember |
     otherMember
-  ).map(ModelMember.MMTopLevelDefn)
+  ).map(ModelMember.MMTopLevelDefn.apply)
 
-  def anyMember[$: P]: P[ModelMember] = P(topLevelDefn | inclusion.map(ModelMember.MMInclusion))
+  def anyMember[$: P]: P[ModelMember] = P(topLevelDefn | inclusion.map(ModelMember.MMInclusion.apply))
 
 }
