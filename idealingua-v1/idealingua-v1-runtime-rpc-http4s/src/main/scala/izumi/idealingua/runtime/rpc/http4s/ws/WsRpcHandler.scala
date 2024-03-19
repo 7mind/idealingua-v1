@@ -116,11 +116,6 @@ abstract class WsRpcHandler[F[+_, +_]: IO2, RequestCtx](
         logger
           .error(s"WS Request unexpectedly failed:\n$exception\n$trace")
           .as(Some(onFail(exception.getMessage)))
-
-      case Exit.Interruption(exception, allExceptions, trace) =>
-        logger
-          .error(s"WS Request unexpectedly interrupted:\n$exception\n$allExceptions\n$trace")
-          .as(Some(onFail(exception.getMessage)))
     }
   }
 
