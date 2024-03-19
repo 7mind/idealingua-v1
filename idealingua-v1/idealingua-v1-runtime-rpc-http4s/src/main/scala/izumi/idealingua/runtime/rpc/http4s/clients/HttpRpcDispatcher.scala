@@ -98,11 +98,6 @@ class HttpRpcDispatcher[F[+_, +_]: IO2](
           logger
             .info(s"$method: decoder failed on $body: $f $trace")
             .as(new IRTUnparseableDataException(s"$method: decoder failed on body=$body: f=$f trace=$trace", Option(f)))
-
-        case Exit.Interruption(error, _, trace) =>
-          logger
-            .info(s"$method: decoder interrupted on $body: $error $trace")
-            .as(new IRTUnparseableDataException(s"$method: decoder interrupted on body=$body: error=$error trace=$trace", Option(error)))
       }
     } yield res
   }

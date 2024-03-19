@@ -42,8 +42,6 @@ object IRTServerMethod {
       val methodId = method.signature.id
       for {
         requestBody <- F.syncThrowable(method.marshaller.decodeRequest[F].apply(IRTJsonBody(methodId, parsedBody))).flatten.sandbox.catchAll {
-          case Exit.Interruption(decodingFailure, _, trace) =>
-            F.fail(new IRTDecodingException(s"$methodId: Failed to decode JSON '${parsedBody.noSpaces}'.\nTrace: $trace", Some(decodingFailure)))
           case Exit.Termination(_, exceptions, trace) =>
             F.fail(new IRTDecodingException(s"$methodId: Failed to decode JSON '${parsedBody.noSpaces}'.\nTrace: $trace", exceptions.headOption))
           case Exit.Error(decodingFailure, trace) =>
