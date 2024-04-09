@@ -4,7 +4,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-addSbtPlugin("io.7mind.izumi.sbt" % "sbt-izumi" % "0.0.100")
+addSbtPlugin("io.7mind.izumi.sbt" % "sbt-izumi" % "0.0.101")
 
 addSbtPlugin("com.github.sbt" % "sbt-pgp" % PV.sbt_pgp)
 
