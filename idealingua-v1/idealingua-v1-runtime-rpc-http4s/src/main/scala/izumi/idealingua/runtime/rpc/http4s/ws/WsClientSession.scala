@@ -3,8 +3,7 @@ package izumi.idealingua.runtime.rpc.http4s.ws
 import cats.effect.std.Queue
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, Printer}
-import izumi.functional.bio.{Applicative2, F, IO2, Primitives2, Temporal2}
-import izumi.functional.bio.Clock1
+import izumi.functional.bio.{Applicative2, Clock1, F, IO2, Primitives2, Temporal2}
 import izumi.fundamentals.platform.uuid.UUIDGen
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.ClientWsRpcHandler
@@ -28,18 +27,24 @@ trait WsClientSession[F[+_, +_], SessionCtx] extends WsResponder[F] {
 
   def start(onStart: SessionCtx => F[Throwable, Unit]): F[Throwable, Unit]
   def finish(onFinish: SessionCtx => F[Throwable, Unit]): F[Throwable, Unit]
+
+  def heartbeat(at: ZonedDateTime): F[Nothing, Unit]
+  def lastHeartbeat(): F[Nothing, Option[ZonedDateTime]]
 }
 
 object WsClientSession {
 
   def empty[F[+_, +_]: Applicative2, Ctx](wsSessionId: WsSessionId): WsClientSession[F, Ctx] = new WsClientSession[F, Ctx] {
-    override def sessionId: WsSessionId                                                                                               = wsSessionId
+    private val heartbeatTimestamp      = new AtomicReference[Option[ZonedDateTime]](None)
+    override def sessionId: WsSessionId = wsSessionId
     override def requestAndAwaitResponse(method: IRTMethodId, data: Json, timeout: FiniteDuration): F[Throwable, Option[RawResponse]] = F.pure(None)
     override def updateRequestCtx(newContext: Ctx): F[Throwable, Ctx]                                                                 = F.pure(newContext)
     override def start(onStart: Ctx => F[Throwable, Unit]): F[Throwable, Unit]                                                        = F.unit
     override def finish(onFinish: Ctx => F[Throwable, Unit]): F[Throwable, Unit]                                                      = F.unit
     override def responseWith(id: RpcPacketId, response: RawResponse): F[Throwable, Unit]                                             = F.unit
     override def responseWithData(id: RpcPacketId, data: Json): F[Throwable, Unit]                                                    = F.unit
+    override def heartbeat(at: ZonedDateTime): F[Nothing, Unit]     = F.pure(heartbeatTimestamp.set(Some(at)))
+    override def lastHeartbeat(): F[Nothing, Option[ZonedDateTime]] = F.pure(heartbeatTimestamp.get())
   }
 
   abstract class Base[F[+_, +_]: IO2: Temporal2: Primitives2, SessionCtx](
@@ -49,6 +54,7 @@ object WsClientSession {
     wsContextExtractor: WsContextExtractor[SessionCtx],
     logger: LogIO2[F],
   ) extends WsClientSession[F, SessionCtx] {
+    private val heartbeatTimestamp         = new AtomicReference[Option[ZonedDateTime]](None)
     private val requestCtxRef              = new AtomicReference[SessionCtx](initialContext)
     private val openingTime: ZonedDateTime = Clock1.Standard.nowZoned()
 
@@ -110,6 +116,10 @@ object WsClientSession {
       F.traverse_(wsSessionsContext)(_.updateSession(sessionId, Some(requestCtx))) *>
       onStart(requestCtx)
     }
+
+    override def heartbeat(at: ZonedDateTime): F[Nothing, Unit] = F.sync(heartbeatTimestamp.set(Some(at)))
+
+    override def lastHeartbeat(): F[Nothing, Option[ZonedDateTime]] = F.sync(heartbeatTimestamp.get())
 
     override def toString: String = s"[$sessionId, ${duration().toSeconds}s]"
 
