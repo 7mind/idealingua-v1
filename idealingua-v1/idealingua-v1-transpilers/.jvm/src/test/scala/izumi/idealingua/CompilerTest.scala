@@ -15,7 +15,7 @@ class CompilerTest extends AnyWordSpec {
 
     "be able to compile into scala" in {
       if (!useDockerForLocalScalaTest) {
-        requireForCI("coursier")
+        requireForCI("cs")
       }
 
       assert(compilesScala(s"$id-plain", loadDefs(), ScalaProjectLayout.PLAIN, useDockerForLocalScalaTest))
@@ -44,14 +44,14 @@ class CompilerTest extends AnyWordSpec {
     }
 
     "be able to compile into golang" ignore { // go bitrotted.
-      require("go")
+      requireOptional("go")
       assert(compilesGolang(s"$id-repository", loadDefs(), GoProjectLayout.REPOSITORY))
       assert(compilesGolang(s"$id-plain", loadDefs(), GoProjectLayout.PLAIN))
       assert(compilesGolang(s"$id-plain-nested", loadDefs("/defs/nested/test"), GoProjectLayout.PLAIN))
     }
 
     "be able to compile into csharp" in {
-      require("csc", "nunit-console", "nuget", "msbuild")
+      requireOptional("csc", "nunit-console", "nuget", "msbuild")
       assert(compilesCSharp(s"$id-plain", loadDefs(), CSharpProjectLayout.PLAIN))
     }
 
@@ -61,19 +61,19 @@ class CompilerTest extends AnyWordSpec {
     }
 
     "be able to compile into protobuf" in {
-      require("protoc")
+      requireOptional("protoc")
       assert(compilesProtobuf(s"$id-plain", loadDefs(), Map("optimize_for" -> "CODE_SIZE")))
     }
   }
 
-  private def require(tools: String*): Unit = {
-    assume(IzFiles.haveExecutables(tools: _*), s"One of required tools is not available: $tools")
+  private def requireOptional(tools: String*): Unit = {
+    assume(IzFiles.haveExecutables(tools*), s"One of required tools is not available: $tools")
   }
   private def requireForCI(tools: String*): Unit = {
     if (isCI) {
-      assert(IzFiles.haveExecutables(tools: _*), s"One of required tools is not available: $tools")
+      assert(IzFiles.haveExecutables(tools*), s"One of required tools is not available: $tools")
     } else {
-      assume(IzFiles.haveExecutables(tools: _*), s"One of required tools is not available: $tools")
+      assume(IzFiles.haveExecutables(tools*), s"One of required tools is not available: $tools")
     }
   }
 }
