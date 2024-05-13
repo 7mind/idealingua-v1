@@ -166,7 +166,7 @@ object IDLTestTools {
   private def directRun(out: CompilerOutput, classpath: String) = {
     val currentScalaVersion = Properties.versionNumberString
     Seq(
-      "coursier",
+      "cs",
       "launch",
       s"scalac:$currentScalaVersion",
       "--",
