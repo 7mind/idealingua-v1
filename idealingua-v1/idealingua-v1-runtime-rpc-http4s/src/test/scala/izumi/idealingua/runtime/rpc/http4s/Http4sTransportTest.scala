@@ -115,7 +115,7 @@ object Http4sTransportTest {
     val httpClientFactory: HttpRpcDispatcherFactory[F] = {
       new HttpRpcDispatcherFactory[F](testServices.Client.codec, execCtx, printer, logger)
     }
-    def httpRpcClientDispatcher(headers: Headers): HttpRpcDispatcher.IRTDispatcherRaw[F] = {
+    def httpRpcClientDispatcher(headers: Headers): Lifecycle[F[Throwable, _], HttpRpcDispatcher.IRTDispatcherRaw[F]] = {
       httpClientFactory.dispatcher(baseUri, headers)
     }
 
@@ -161,13 +161,13 @@ abstract class Http4sTransportTestBase[F[+_, +_]](
     "support http" in {
       withServer {
         ctx =>
-          for {
+          (for {
             // with credentials
-            privateClient   <- F.sync(ctx.httpRpcClientDispatcher(Headers(privateAuth("user1"))))
-            protectedClient <- F.sync(ctx.httpRpcClientDispatcher(Headers(protectedAuth("user2"))))
-            publicClient    <- F.sync(ctx.httpRpcClientDispatcher(Headers(publicAuth("user3"))))
-            publicOrcClient <- F.sync(ctx.httpRpcClientDispatcher(Headers(publicAuth("orc"))))
-
+            privateClient   <- ctx.httpRpcClientDispatcher(Headers(privateAuth("user1")))
+            protectedClient <- ctx.httpRpcClientDispatcher(Headers(protectedAuth("user2")))
+            publicClient    <- ctx.httpRpcClientDispatcher(Headers(publicAuth("user3")))
+            publicOrcClient <- ctx.httpRpcClientDispatcher(Headers(publicAuth("orc")))
+          } yield for {
             // Private API test
             _ <- new PrivateTestServiceWrappedClient(privateClient)
               .test("test").map(res => assert(res.startsWith("Private")))
@@ -198,7 +198,7 @@ abstract class Http4sTransportTestBase[F[+_, +_]](
             // bad body test
             _ <- checkBadBody("{}", publicClient)
             _ <- checkBadBody("{unparseable", publicClient)
-          } yield ()
+          } yield ()).useEffect
       }
     }
 
