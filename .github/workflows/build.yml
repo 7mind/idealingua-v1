@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu:23.10
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         java: [ '11' ]
@@ -35,7 +35,7 @@ jobs:
           # files: cobertura.xml,scoverage.xml
           # flags: unittests
   checksecret:
-    runs-on: ubuntu:23.10
+    runs-on: ubuntu-latest
     outputs:
       HAVE_SECRETS: ${{ steps.checksecret_job.outputs.HAVE_SECRETS }}
     steps:
@@ -46,7 +46,7 @@ jobs:
         run: |
           echo "HAVE_SECRETS=${{ env.OPENSSL_IV != '' && env.OPENSSL_KEY != '' }}" >> $GITHUB_OUTPUT
   publish-alien:
-    runs-on: ubuntu:23.10
+    runs-on: ubuntu-latest
     needs: [ 'checksecret' ]
     if: needs.checksecret.outputs.HAVE_SECRETS == 'true'
     steps:
@@ -62,7 +62,7 @@ jobs:
         run: |
           bash .build.sh 2.12 secrets publishIDL
   publish-artifacts:
-    runs-on: ubuntu:23.10
+    runs-on: ubuntu-latest
     needs: [ 'build', 'checksecret' ]
     if: needs.checksecret.outputs.HAVE_SECRETS == 'true'
     strategy:
@@ -82,7 +82,7 @@ jobs:
           bash .build.sh ${{ matrix.scala }} secrets publishScala
   all-good:
     if: always()
-    runs-on: ubuntu:23.10
+    runs-on: ubuntu-latest
     needs: [ 'build', 'publish-alien', 'publish-artifacts' ]
     steps:
       - name: Decide whether the needed jobs succeeded or failed
