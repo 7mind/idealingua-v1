@@ -60,7 +60,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
     }
   }
 
-  def connectSimple(
+  final def connectSimple(
     uri: Uri,
     serverMuxer: IRTServerMultiplexor[F, Unit],
     headers: Map[String, String] = Map.empty,
@@ -85,7 +85,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
     }
   }
 
-  def dispatcherSimple(
+  final def dispatcherSimple(
     uri: Uri,
     serverMuxer: IRTServerMultiplexor[F, Unit],
     headers: Map[String, String]         = Map.empty,

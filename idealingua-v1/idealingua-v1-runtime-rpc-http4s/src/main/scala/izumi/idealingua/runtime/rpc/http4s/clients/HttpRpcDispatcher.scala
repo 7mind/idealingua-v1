@@ -5,30 +5,28 @@ import fs2.Stream
 import io.circe
 import io.circe.parser.parse
 import izumi.functional.bio.{Exit, F, IO2}
-import izumi.functional.lifecycle.Lifecycle
 import izumi.idealingua.runtime.rpc.*
+import izumi.idealingua.runtime.rpc.http4s.IRTUnexpectedHttpStatus
 import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcDispatcher.IRTDispatcherRaw
-import izumi.idealingua.runtime.rpc.http4s.{HttpExecutionContext, IRTUnexpectedHttpStatus}
 import logstage.LogIO2
-import org.http4s.*
-import org.http4s.blaze.client.*
 import org.http4s.client.Client
+import org.http4s.{Request, Response, Status, Uri}
 
 class HttpRpcDispatcher[F[+_, +_]: IO2](
+  blazeClient: Client[F[Throwable, _]],
   uri: Uri,
   codec: IRTClientMultiplexor[F],
-  executionContext: HttpExecutionContext,
   printer: circe.Printer,
   logger: LogIO2[F],
 )(implicit AT: Async[F[Throwable, _]]
 ) extends IRTDispatcherRaw[F] {
 
   override def dispatchRaw(method: IRTMethodId, request: String): F[Throwable, IRTMuxResponse] = {
-    blazeClient.use(dispatchRawWith(uri, codec)(method, request))
+    dispatchRawWith(uri, codec)(method, request)
   }
 
   override def dispatch(input: IRTMuxRequest): F[Throwable, IRTMuxResponse] = {
-    blazeClient.use(dispatchWith(uri, codec)(input))
+    dispatchWith(uri, codec)(input)
   }
 
   protected def dispatchRawWith(
@@ -36,12 +34,11 @@ class HttpRpcDispatcher[F[+_, +_]: IO2](
     codec: IRTClientMultiplexor[F],
   )(method: IRTMethodId,
     request: String,
-  )(client: Client[F[Throwable, _]]
   ): F[Throwable, IRTMuxResponse] = {
     for {
       req <- F.sync(buildRequest(uri)(method, request.getBytes))
       _   <- logger.trace(s"$method: Prepared request $req")
-      res <- client.run(req).use(handleResponse(codec, method))
+      res <- blazeClient.run(req).use(handleResponse(codec, method))
     } yield res
   }
 
@@ -49,26 +46,12 @@ class HttpRpcDispatcher[F[+_, +_]: IO2](
     uri: Uri,
     codec: IRTClientMultiplexor[F],
   )(request: IRTMuxRequest
-  )(client: Client[F[Throwable, _]]
   ): F[Throwable, IRTMuxResponse] = {
     for {
       _       <- logger.trace(s"${request.method -> "method"}: Going to perform $request")
       encoded <- codec.encode(request)
-      res     <- dispatchRawWith(uri, codec)(request.method, printer.print(encoded))(client)
+      res     <- dispatchRawWith(uri, codec)(request.method, printer.print(encoded))
     } yield res
-  }
-
-  protected def blazeClient: Lifecycle[F[Throwable, _], Client[F[Throwable, _]]] = {
-    Lifecycle.fromCats {
-      blazeClientBuilder {
-        BlazeClientBuilder[F[Throwable, _]]
-          .withExecutionContext(executionContext.clientExecutionContext)
-      }.resource
-    }
-  }
-
-  protected def blazeClientBuilder(defaultBuilder: BlazeClientBuilder[F[Throwable, _]]): BlazeClientBuilder[F[Throwable, _]] = {
-    defaultBuilder
   }
 
   protected def handleResponse(

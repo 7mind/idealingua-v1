@@ -3,14 +3,15 @@ package izumi.idealingua.runtime.rpc.http4s.clients
 import cats.effect.Async
 import io.circe
 import izumi.functional.bio.{F, IO2}
+import izumi.functional.lifecycle.Lifecycle
 import izumi.fundamentals.platform.language.Quirks.Discarder
-import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.HttpExecutionContext
-import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcDispatcher.IRTDispatcherRaw
+import izumi.idealingua.runtime.rpc.{IRTClientMultiplexor, IRTMethodId, IRTMuxRequest, IRTMuxResponse}
 import logstage.LogIO2
-import org.http4s.*
 import org.http4s.blaze.client.BlazeClientBuilder
-import org.typelevel.ci.*
+import org.http4s.client.Client
+import org.http4s.{Header, Headers, Request, Uri}
+import org.typelevel.ci.CIString
 
 class HttpRpcDispatcherFactory[F[+_, +_]: IO2](
   codec: IRTClientMultiplexor[F],
@@ -20,23 +21,23 @@ class HttpRpcDispatcherFactory[F[+_, +_]: IO2](
 )(implicit AT: Async[F[Throwable, _]]
 ) {
   self =>
+
   def dispatcher(
     uri: Uri,
     tweakRequest: Request[F[Throwable, _]] => Request[F[Throwable, _]] = (req: Request[F[Throwable, _]]) => req,
     resourceCheck: F[Throwable, Unit]                                  = F.unit,
-  ): IRTDispatcherRaw[F] = {
-    new HttpRpcDispatcher[F](uri, codec, executionContext, printer, dispatcherLogger(uri, logger)) {
-      override def dispatch(input: IRTMuxRequest): F[Throwable, IRTMuxResponse] = {
-        resourceCheck *> super.dispatch(input)
-      }
-      override def dispatchRaw(method: IRTMethodId, request: String): F[Throwable, IRTMuxResponse] = {
-        resourceCheck *> super.dispatchRaw(method, request)
-      }
-      override protected def buildRequest(baseUri: Uri)(method: IRTMethodId, body: Array[Byte]): Request[F[Throwable, _]] = {
-        tweakRequest(super.buildRequest(baseUri)(method, body))
-      }
-      override protected def blazeClientBuilder(defaultBuilder: BlazeClientBuilder[F[Throwable, *]]): BlazeClientBuilder[F[Throwable, *]] = {
-        self.blazeClientBuilder(super.blazeClientBuilder(defaultBuilder))
+  ): Lifecycle[F[Throwable, _], HttpRpcDispatcher[F]] = {
+    blazeClient.map {
+      new HttpRpcDispatcher[F](_, uri, codec, printer, dispatcherLogger(uri, logger)) {
+        override def dispatch(input: IRTMuxRequest): F[Throwable, IRTMuxResponse] = {
+          resourceCheck *> super.dispatch(input)
+        }
+        override def dispatchRaw(method: IRTMethodId, request: String): F[Throwable, IRTMuxResponse] = {
+          resourceCheck *> super.dispatchRaw(method, request)
+        }
+        override protected def buildRequest(baseUri: Uri)(method: IRTMethodId, body: Array[Byte]): Request[F[Throwable, _]] = {
+          tweakRequest(super.buildRequest(baseUri)(method, body))
+        }
       }
     }
   }
@@ -44,18 +45,16 @@ class HttpRpcDispatcherFactory[F[+_, +_]: IO2](
   final def dispatcher(
     uri: Uri,
     headers: Headers,
-  ): IRTDispatcherRaw[F] = {
-    val tweakRequest = (req: Request[F[Throwable, _]]) => req.withHeaders(headers)
-    dispatcher(uri, tweakRequest)
+  ): Lifecycle[F[Throwable, _], HttpRpcDispatcher[F]] = {
+    dispatcher(uri, tweakRequest = _.withHeaders(headers))
   }
 
   final def dispatcher(
     uri: Uri,
     headers: Map[String, String],
-  ): IRTDispatcherRaw[F] = {
-    val httpHeaders  = new Headers(headers.map { case (k, v) => Header.Raw(CIString(k), v) }.toList)
-    val tweakRequest = (req: Request[F[Throwable, _]]) => req.withHeaders(httpHeaders)
-    dispatcher(uri, tweakRequest)
+  ): Lifecycle[F[Throwable, _], HttpRpcDispatcher[F]] = {
+    val httpHeaders = new Headers(headers.iterator.map { case (k, v) => Header.Raw(CIString(k), v) }.toList)
+    dispatcher(uri, headers = httpHeaders)
   }
 
   protected def dispatcherLogger(uri: Uri, logger: LogIO2[F]): LogIO2[F] = {
@@ -63,7 +62,17 @@ class HttpRpcDispatcherFactory[F[+_, +_]: IO2](
     logger
   }
 
+  protected def blazeClient: Lifecycle[F[Throwable, _], Client[F[Throwable, _]]] = {
+    Lifecycle.fromCats {
+      blazeClientBuilder {
+        BlazeClientBuilder[F[Throwable, _]]
+          .withExecutionContext(executionContext.clientExecutionContext)
+      }.resource
+    }
+  }
+
   protected def blazeClientBuilder(defaultBuilder: BlazeClientBuilder[F[Throwable, _]]): BlazeClientBuilder[F[Throwable, _]] = {
     defaultBuilder
   }
+
 }
