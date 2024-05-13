@@ -20,9 +20,12 @@ jobs:
       - uses: 7mind/github-env@main
         with:
           java-version: ${{ matrix.java }}
-      - uses: actions/setup-go@v5
+#      - uses: actions/setup-go@v5
+#        with:
+#          go-version: '1.21.4' # The Go version to download (if necessary) and use.
+      - uses: actions/setup-dotnet@v4
         with:
-          go-version: '1.21.1' # The Go version to download (if necessary) and use.
+          dotnet-version: 6.x
       - name: Build and Test
         run: |
           bash sbtgen.sc --js
