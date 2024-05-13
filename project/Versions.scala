@@ -7,7 +7,7 @@ object V {
   val http4s_blaze = "0.23.16"
 
   val scalameta = "4.9.4" // Not available for Scala 3 yet
-  val fastparse = "3.0.2" // 3.0.0 is available for Scala 3
+  val fastparse = "3.1.0" // 3.0.0 is available for Scala 3
 
   val scala_xml = "2.2.0"
 
