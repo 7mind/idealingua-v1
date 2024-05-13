@@ -15,7 +15,7 @@ class CompilerTest extends AnyWordSpec {
 
     "be able to compile into scala" in {
       if (!useDockerForLocalScalaTest) {
-        require("scalac")
+        require("coursier")
       }
 
       assert(compilesScala(s"$id-plain", loadDefs(), ScalaProjectLayout.PLAIN, useDockerForLocalScalaTest))
