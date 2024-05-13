@@ -85,4 +85,7 @@ jobs:
     runs-on: ubuntu:23.10
     needs: [ 'build', 'publish-alien', 'publish-artifacts' ]
     steps:
-      - run: 'echo "No build required"'
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
