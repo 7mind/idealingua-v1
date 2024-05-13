@@ -5,15 +5,15 @@ import izumi.fundamentals.platform.files.IzFiles
 import izumi.fundamentals.platform.jvm.IzJvm
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.resources.IzResourcesDirty
-import izumi.fundamentals.platform.strings.IzString._
-import izumi.fundamentals.platform.time.IzTime._
+import izumi.fundamentals.platform.strings.IzString.*
+import izumi.fundamentals.platform.time.IzTime.*
 import izumi.fundamentals.platform.time.Timed
-import izumi.idealingua.il.loader._
+import izumi.idealingua.il.loader.*
 import izumi.idealingua.il.renderer.{IDLRenderer, IDLRenderingOptions}
 import izumi.idealingua.model.loader.LoadedDomain
 import izumi.idealingua.model.publishing.BuildManifest
-import izumi.idealingua.model.publishing.manifests._
-import izumi.idealingua.translator._
+import izumi.idealingua.model.publishing.manifests.*
+import izumi.idealingua.translator.*
 import izumi.idealingua.translator.tocsharp.CSharpTranslator
 import izumi.idealingua.translator.tocsharp.extensions.CSharpTranslatorExtension
 import izumi.idealingua.translator.tocsharp.layout.CSharpNamingConvention
@@ -29,9 +29,9 @@ import izumi.idealingua.translator.totypescript.extensions.TypeScriptTranslatorE
 import java.io.File
 import java.lang.management.ManagementFactory
 import java.nio.charset.StandardCharsets
-import java.nio.file._
-import scala.sys.process._
-import scala.util.Try
+import java.nio.file.*
+import scala.sys.process.*
+import scala.util.{Properties, Try}
 
 final case class CompilerOutput(targetDir: Path, allFiles: Seq[Path]) {
   def absoluteTargetDir: Path = targetDir.toAbsolutePath
@@ -164,8 +164,12 @@ object IDLTestTools {
   }
 
   private def directRun(out: CompilerOutput, classpath: String) = {
+    val currentScalaVersion = Properties.versionNumberString
     Seq(
-      "scalac",
+      "coursier",
+      "launch",
+      s"scalac:$currentScalaVersion",
+      "--",
       "-deprecation",
       "-opt-warnings:_",
       "-d",
