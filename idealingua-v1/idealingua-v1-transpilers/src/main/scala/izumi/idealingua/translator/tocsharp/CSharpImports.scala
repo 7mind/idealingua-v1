@@ -75,7 +75,7 @@ object CSharpImports {
       case Primitive.TTs   => return Seq("System", "IRT", "System.Globalization")
       case Primitive.TTsTz => return Seq("System", "IRT", "System.Globalization")
       case Primitive.TTsU  => return Seq("System", "IRT", "System.Globalization")
-      case Primitive.TDate => return Seq("System")
+      case Primitive.TDate => return Seq("System", "IRT", "System.Globalization")
       case Primitive.TUUID => return Seq("System")
       case Primitive.TBLOB => ???
       case g: Generic =>
