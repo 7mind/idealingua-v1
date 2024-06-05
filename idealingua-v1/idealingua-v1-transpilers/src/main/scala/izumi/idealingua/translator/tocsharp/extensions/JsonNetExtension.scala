@@ -169,12 +169,10 @@ object JsonNetExtension extends CSharpTranslatorExtension {
                 case Primitive.TDouble => s"writer.WriteValue($src);"
                 case Primitive.TBLOB   => ???
                 case Primitive.TUUID   => s"writer.WriteValue($src.ToString());"
-                case Primitive.TTime =>
-                  s"""writer.WriteValue(string.Format("{0:00}:{1:00}:{2:00}.{3:000}", (int)$src.TotalHours, $src.Minutes, $src.Seconds, $src.Milliseconds));"""
-                case Primitive.TDate => s"""writer.WriteValue($src.ToString("yyyy-MM-dd"));"""
+                case Primitive.TTime => s"""writer.WriteValue(string.Format("{0:00}:{1:00}:{2:00}.{3:000}", (int)$src.TotalHours, $src.Minutes, $src.Seconds, $src.Milliseconds));"""
+                case Primitive.TDate => s"""writer.WriteValue($src.ToString("yyyy-MM-dd"), CultureInfo.InvariantCulture);"""
                 case Primitive.TTs   => s"""writer.WriteValue($src.ToString(JsonNetTimeFormats.TslDefault, CultureInfo.InvariantCulture));"""
-                case Primitive.TTsTz =>
-                  s"""writer.WriteValue($src.ToString($src.Kind == DateTimeKind.Utc ? JsonNetTimeFormats.TsuDefault : JsonNetTimeFormats.TszDefault, CultureInfo.InvariantCulture));"""
+                case Primitive.TTsTz => s"""writer.WriteValue($src.ToString($src.Kind == DateTimeKind.Utc ? JsonNetTimeFormats.TsuDefault : JsonNetTimeFormats.TszDefault, CultureInfo.InvariantCulture));"""
                 case Primitive.TTsU => s"""writer.WriteValue($src.ToUniversalTime().ToString(JsonNetTimeFormats.TsuDefault, CultureInfo.InvariantCulture));"""
               }
 
@@ -335,7 +333,7 @@ object JsonNetExtension extends CSharpTranslatorExtension {
           case Primitive.TBLOB   => ???
           case Primitive.TUUID   => s"new System.Guid($src.Value<string>())"
           case Primitive.TTime   => s"TimeSpan.Parse($src.Value<string>())"
-          case Primitive.TDate   => s"DateTime.Parse($src.Value<string>())"
+          case Primitive.TDate   => s"DateTime.Parse($src.Value<string>(), CultureInfo.InvariantCulture)"
           case Primitive.TTs     => s"DateTime.ParseExact($src.Value<string>(), JsonNetTimeFormats.Tsl, CultureInfo.InvariantCulture, DateTimeStyles.None)"
           case Primitive.TTsTz   => s"DateTime.ParseExact($src.Value<string>(), JsonNetTimeFormats.Tsz, CultureInfo.InvariantCulture, DateTimeStyles.None)"
           case Primitive.TTsU    => s"DateTime.ParseExact($src.Value<string>(), JsonNetTimeFormats.Tsu, CultureInfo.InvariantCulture, DateTimeStyles.None)"
