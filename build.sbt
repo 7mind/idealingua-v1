@@ -1843,7 +1843,7 @@ lazy val `idealingua-v1` = (project in file("."))
     ThisBuild / scalacOptions += """-Xmacro-settings:sbt-js-version=1.0.2""",
     ThisBuild / scalacOptions += """-Xmacro-settings:crossproject-version=1.3.2""",
     ThisBuild / scalacOptions += s"-Xmacro-settings:is-ci=${insideCI.value}",
-    libraryDependencies += "io.7mind.izumi.sbt" % "sbtgen_2.13" % "0.0.101" % Provided,
+    libraryDependencies += "io.7mind.izumi.sbt" % "sbtgen_2.13" % "0.0.102" % Provided,
     ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
   )
   .enablePlugins(IzumiPlugin)
