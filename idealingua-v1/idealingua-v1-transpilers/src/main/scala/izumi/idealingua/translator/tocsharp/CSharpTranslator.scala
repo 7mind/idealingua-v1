@@ -111,33 +111,33 @@ class CSharpTranslator(ts: Typespace, options: CSharpTranslatorOptions) extends 
     // it has no ambiguous name with regards to the rest. However, methods for adt will
     // have the same name making it ambiguous, so we bail out here by providing
     // an FQN
-    val nonambName = if (needsFQN.isDefined && needsFQN.get.usingName == "") CSharpType(member.typeId).renderType(true) else s"_${member.wireId}"
+    val nonambName = if (needsFQN.isDefined && needsFQN.get.usingName == "") CSharpType(member.typeId).renderType(true) else s"_${member.typename}"
     val operators =
-      s"""    public static explicit operator $nonambName(${member.wireId} m) {
+      s"""    public static explicit operator $nonambName(${member.typename} m) {
          |        return m.Value;
          |    }
          |
-         |    public static explicit operator ${member.wireId}($nonambName m) {
-         |        return new ${member.wireId}(m);
+         |    public static explicit operator ${member.typename}($nonambName m) {
+         |        return new ${member.typename}(m);
          |    }
        """.stripMargin
 
     val operatorsDummy =
       s"""    // We would normally want to have an operator, but unfortunately if it is an interface,
          |    // it will fail on "user-defined conversions to or from an interface are not allowed".
-         |    // public static explicit operator $nonambName(${member.wireId} m) {
+         |    // public static explicit operator $nonambName(${member.typename} m) {
          |    //     return m.Value;
          |    // }
          |    //
-         |    // public static explicit operator ${member.wireId}($nonambName m) {
-         |    //     return new ${member.wireId}(m);
+         |    // public static explicit operator ${member.typename}($nonambName m) {
+         |    //     return new ${member.typename}(m);
          |    // }
        """.stripMargin
 
     //    val memberType = CSharpType(member.typeId)
-    s"""public sealed class ${member.wireId}: $adtName {
+    s"""public sealed class ${member.typename}: $adtName {
        |    public $nonambName Value { get; private set; }
-       |    public ${member.wireId}($nonambName value) {
+       |    public ${member.typename}($nonambName value) {
        |        this.Value = value;
        |    }
        |
@@ -151,7 +151,7 @@ class CSharpTranslator(ts: Typespace, options: CSharpTranslatorOptions) extends 
   }
 
   protected def renderAdtUsings(m: AdtMember)(implicit im: CSharpImports, ts: Typespace): String = {
-    s"using _${m.wireId} = ${CSharpType(m.typeId).renderType(true)};"
+    s"using _${m.typename} = ${CSharpType(m.typeId).renderType(true)};"
   }
 
   protected def renderAdtImpl(adtName: String, members: List[AdtMember], renderUsings: Boolean = true)(implicit im: CSharpImports, ts: Typespace): String = {
@@ -162,7 +162,7 @@ class CSharpTranslator(ts: Typespace, options: CSharpTranslatorOptions) extends 
        |${ext.preModelEmit(ctx, adt)}
        |public abstract class $adtName {
        |    public interface I${adtName}Visitor {
-       |${members.map(m => s"        void Visit(${m.wireId} visitor);").mkString("\n")}
+       |${members.map(m => s"        void Visit(${m.typename} visitor);").mkString("\n")}
        |    }
        |
        |    public abstract void Visit(I${adtName}Visitor visitor);
