@@ -4,10 +4,10 @@ import izumi.fundamentals.platform.language.Quirks.discard
 import izumi.fundamentals.platform.strings.IzString._
 import izumi.idealingua.model.common.TypeId._
 import izumi.idealingua.model.common.{Generic, Primitive, TypeId}
-import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.{Alternative, Singular}
 import izumi.idealingua.model.il.ast.typed.TypeDef._
+import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.tocsharp.types.{CSharpClass, CSharpField, CSharpType}
 import izumi.idealingua.translator.tocsharp.{CSTContext, CSharpImports}
@@ -412,9 +412,9 @@ object JsonNetExtension extends CSharpTranslatorExtension {
        |    public override void WriteJson(JsonWriter writer, ${i.id.name} al, JsonSerializer serializer) {
        |        writer.WriteStartObject();
        |${i.alternatives
-        .map(m => s"""if (al is ${i.id.name}.${m.wireId}) {
+        .map(m => s"""if (al is ${i.id.name}.${m.typename}) {
                      |    writer.WritePropertyName("${m.wireId}");
-                     |    var v = (al as ${i.id.name}.${m.wireId}).Value;
+                     |    var v = (al as ${i.id.name}.${m.typename}).Value;
                      |${renderSerialize(m.typeId, "v").shift(4)}
                      |} else""".stripMargin).mkString("\n").shift(8)}
        |        {
@@ -430,7 +430,7 @@ object JsonNetExtension extends CSharpTranslatorExtension {
        |${i.alternatives
         .map(m => s"""case "${m.wireId}": {
                      |    var v = serializer.Deserialize<${CSharpType(m.typeId).renderType(true)}>(kv.Value.CreateReader());
-                     |    return new ${i.id.name}.${m.wireId}(v);
+                     |    return new ${i.id.name}.${m.typename}(v);
                      |}
            """.stripMargin).mkString("\n").shift(12)}
        |            default:
