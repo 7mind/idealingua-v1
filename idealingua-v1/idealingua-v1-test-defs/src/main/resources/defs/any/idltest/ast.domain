@@ -102,8 +102,17 @@ mixin TIfNode {
   + TypeInfo
 }
 
+// Aliased (with reserved keywords as aliases)
+adt AliasedAdt {
+    EventData as event
+    PublicData as public
+}
 
+data EventData {
+}
 
+data PublicData {
+}
 
 
 
