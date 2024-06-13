@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 
 import io.circe
 import io.circe.Codec
-import io.circe.syntax._
+import io.circe.syntax.*
 import izumi.idealingua.runtime.circe.WithCirceTest.{Cba, Enum, Enum1, Enum2, Nested, Sealed}
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -36,7 +36,7 @@ final class WithCirceTest extends AnyWordSpec {
     "WithCirce always uses IRTTimeInstances codecs, even when they're not in surrounding scope" in {
       final case class TimeCirce(zonedDateTime: ZonedDateTime)
       object TimeCirce {
-        implicit val codec: Codec.AsObject[TimeCirce] = circe.generic.semiauto.deriveCodec
+        implicit lazy val codec: Codec.AsObject[TimeCirce] = circe.generic.semiauto.deriveCodec[TimeCirce]
       }
 
       final case class TimeIRT(zonedDateTime: ZonedDateTime)
