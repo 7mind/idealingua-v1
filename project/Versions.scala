@@ -16,7 +16,7 @@ object V {
   val circe_derivation     = "0.13.0-M5"
   val circe_generic_extras = "0.14.3"
 
-  val scala_java_time = "2.5.0"
+  val scala_java_time = "2.6.0"
 
   // java-only dependencies below
   // java, we need it bcs http4s ws client isn't ready yet
