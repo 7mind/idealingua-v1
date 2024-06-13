@@ -64,7 +64,6 @@ object Idealingua {
     final val fundamentals_collections = Library("io.7mind.izumi", "fundamentals-collections", V.izumi, LibraryType.Auto)
     final val fundamentals_platform    = Library("io.7mind.izumi", "fundamentals-platform", V.izumi, LibraryType.Auto)
     final val fundamentals_functional  = Library("io.7mind.izumi", "fundamentals-functional", V.izumi, LibraryType.Auto)
-    final val fundamentals_reflection  = Library("io.7mind.izumi", "fundamentals-reflection", V.izumi, LibraryType.Auto)
     final val fundamentals_bio         = Library("io.7mind.izumi", "fundamentals-bio", V.izumi, LibraryType.Auto)
     final val logstage_core            = Library("io.7mind.izumi", "logstage-core", V.izumi, LibraryType.Auto)
     final val logstage_adapter_slf4j   = Library("io.7mind.izumi", "logstage-adapter-slf4j", V.izumi, LibraryType.Auto)
@@ -324,7 +323,7 @@ object Idealingua {
       ),
       Artifact(
         name      = Projects.idealingua.core,
-        libs      = Seq(fastparse) ++ Seq(Deps.fundamentals_reflection in Scope.Compile.all),
+        libs      = Seq(fastparse) ++ Seq(Deps.fundamentals_platform in Scope.Compile.all),
         depends   = Seq(Projects.idealingua.model).map(_ in Scope.Compile.all),
         platforms = Targets.cross2,
       ),
