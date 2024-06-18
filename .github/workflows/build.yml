@@ -10,8 +10,19 @@ on:
     branches: [ "develop" ]
 
 jobs:
+  checksecret:
+    runs-on: ubuntu-latest
+    outputs:
+      HAVE_SECRETS: ${{ steps.checksecret_job.outputs.HAVE_SECRETS }}
+    steps:
+      - id: checksecret_job
+        env:
+          TOKEN_BITWARDEN_SM: ${{ secrets.TOKEN_BITWARDEN_SM }}
+        run: |
+          echo "HAVE_SECRETS=${{ env.TOKEN_BITWARDEN_SM != '' }}" >> $GITHUB_OUTPUT
   build:
     runs-on: ubuntu-latest
+    needs: [ 'checksecret' ]
     strategy:
       matrix:
         java: [ '11' ]
@@ -45,16 +56,6 @@ jobs:
           # TODO: do we need scoverage.xml? If so files: may be just omitted
           # files: cobertura.xml,scoverage.xml
           # flags: unittests
-  checksecret:
-    runs-on: ubuntu-latest
-    outputs:
-      HAVE_SECRETS: ${{ steps.checksecret_job.outputs.HAVE_SECRETS }}
-    steps:
-      - id: checksecret_job
-        env:
-          TOKEN_BITWARDEN_SM: ${{ secrets.TOKEN_BITWARDEN_SM }}
-        run: |
-          echo "HAVE_SECRETS=${{ env.TOKEN_BITWARDEN_SM != '' }}" >> $GITHUB_OUTPUT
   publish-alien:
     runs-on: ubuntu-latest
     needs: [ 'checksecret' ]
