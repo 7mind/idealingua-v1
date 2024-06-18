@@ -30,10 +30,15 @@ jobs:
         run: |
           bash sbtgen.sc --js
           bash .build.sh ${{ matrix.scala }} coverage
+      - uses: bitwarden/sm-action@v1.0.0
+        with:
+          access_token: ${{ secrets.TOKEN_BITWARDEN_SM }}
+          secrets: |
+            5e21669e-48b4-49ce-82f0-b193010a2ded > TOKEN_CODECOV
       - uses: codecov/codecov-action@v3
         if: needs.checksecret.outputs.HAVE_SECRETS == 'true'
         with:
-          token: ${{ secrets.TOKEN_CODECOV }} # not required for public repos but works unreliable without it
+          token: ${{ TOKEN_CODECOV }} # not required for public repos but works unreliable without it
           verbose: true # optional (default = false)
           fail_ci_if_error: true
           files: cobertura.xml
@@ -47,10 +52,9 @@ jobs:
     steps:
       - id: checksecret_job
         env:
-          OPENSSL_IV: ${{ secrets.OPENSSL_IV }}
-          OPENSSL_KEY: ${{ secrets.OPENSSL_KEY }}
+          TOKEN_BITWARDEN_SM: ${{ secrets.TOKEN_BITWARDEN_SM }}
         run: |
-          echo "HAVE_SECRETS=${{ env.OPENSSL_IV != '' && env.OPENSSL_KEY != '' }}" >> $GITHUB_OUTPUT
+          echo "HAVE_SECRETS=${{ env.TOKEN_BITWARDEN_SM != '' }}" >> $GITHUB_OUTPUT
   publish-alien:
     runs-on: ubuntu-latest
     needs: [ 'checksecret' ]
@@ -59,14 +63,15 @@ jobs:
       - uses: 7mind/github-env@main
         with:
           java-version: 11
+      - uses: bitwarden/sm-action@v1.0.0
+        with:
+          access_token: ${{ secrets.TOKEN_BITWARDEN_SM }}
+          secrets: |
+            637c5cad-a680-4ea3-ac8b-b193010bee40 > TOKEN_NUGET
+            aa0a790c-4030-4126-bc77-b193010a0f04 > TOKEN_NPM
       - name: Publish alien artifacts
-        env:
-          OPENSSL_IV: ${{ secrets.OPENSSL_IV }}
-          OPENSSL_KEY: ${{ secrets.OPENSSL_KEY }}
-          TOKEN_NUGET: ${{ secrets.TOKEN_NUGET }}
-          TOKEN_NPM: ${{ secrets.TOKEN_NPM }}
         run: |
-          bash .build.sh 2.12 secrets publishIDL
+          bash .build.sh 2.12 publishIDL
   publish-artifacts:
     runs-on: ubuntu-latest
     needs: [ 'build', 'checksecret' ]
@@ -79,10 +84,14 @@ jobs:
       - uses: 7mind/github-env@main
         with:
           java-version: ${{ matrix.java }}
+      - uses: bitwarden/sm-action@v1.0.0
+        with:
+          access_token: ${{ secrets.TOKEN_BITWARDEN_SM }}
+          secrets: |
+            994f97a2-97a4-4fe1-806a-b1930104435f > SONATYPE_CREDENTIALS_FILE
+            749f4227-9f11-4ceb-9121-b1930110c3a9 > OPENSSL_KEY
+            a2fe5b5b-5f3f-47f8-961c-b1930110cea7 > OPENSSL_IV
       - name: Build and Publish to Sonatype
-        env:
-          OPENSSL_IV: ${{ secrets.OPENSSL_IV }}
-          OPENSSL_KEY: ${{ secrets.OPENSSL_KEY }}
         run: |
           bash sbtgen.sc --js
           bash .build.sh ${{ matrix.scala }} secrets publishScala
