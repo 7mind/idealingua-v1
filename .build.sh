@@ -7,6 +7,8 @@ set -xe
 # and https://github.com/sbt/sbt/pull/3995/files
 # TL;DR strict aggregation in sbt is broken; this is a workaround
 
+SONATYPE_SECRET=.secrets/credentials.sonatype-nexus.properties
+
 function scala3 {
   echo "Using Scala 3..."
   VERSION_COMMAND="++ $SCALA3"
