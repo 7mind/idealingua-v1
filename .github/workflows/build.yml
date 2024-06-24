@@ -42,6 +42,7 @@ jobs:
           bash sbtgen.sc --js
           bash .build.sh ${{ matrix.scala }} coverage
       - uses: bitwarden/sm-action@v2
+        if: needs.checksecret.outputs.HAVE_SECRETS == 'true'
         with:
           access_token: ${{ secrets.TOKEN_BITWARDEN_SM }}
           secrets: |
