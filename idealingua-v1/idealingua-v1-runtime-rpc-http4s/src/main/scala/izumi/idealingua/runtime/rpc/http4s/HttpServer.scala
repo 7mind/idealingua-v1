@@ -39,7 +39,7 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
 ) {
   import dsl.*
   // WS Response attribute key, to differ from usual HTTP responses
-  private val wsAttributeKey = UnsafeRun2[F].unsafeRun(Key.newKey[F[Throwable, _], WsResponseMarker.type])
+  protected final val wsAttributeKey = UnsafeRun2[F].unsafeRun(Key.newKey[F[Throwable, _], WsResponseMarker.type])
 
   protected val serverMuxer: IRTServerMultiplexor[F, AuthCtx]                     = IRTServerMultiplexor.combine(contextServices.map(_.authorizedMuxer))
   protected val wsContextsSessions: Set[WsContextSessions.AnyContext[F, AuthCtx]] = contextServices.map(_.authorizedWsSessions)
@@ -233,8 +233,8 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
                 logger.info(s"${req.method.name -> "method"} ${req.pathInfo -> "uri"}: rejection, ${resp.status.code -> "code"} ${resp.status.reason -> "reason"}")
             }
           } yield resp).tapError {
-            cause =>
-              logger.error(s"${req.method.name -> "method"} ${req.pathInfo -> "path"}: failure, $cause")
+            case cause: InvalidBodyException => logger.debug(s"${req.method.name -> "method"} ${req.pathInfo -> "path"}: invalid body, $cause")
+            case cause                       => logger.error(s"${req.method.name -> "method"} ${req.pathInfo -> "path"}: failure, $cause")
           }
         }
     }
