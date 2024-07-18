@@ -13,7 +13,7 @@ import org.http4s.client.Client
 import org.http4s.{Request, Response, Status, Uri}
 
 class HttpRpcDispatcher[F[+_, +_]: IO2](
-  blazeClient: Client[F[Throwable, _]],
+  client: Client[F[Throwable, _]],
   uri: Uri,
   codec: IRTClientMultiplexor[F],
   printer: circe.Printer,
@@ -38,7 +38,7 @@ class HttpRpcDispatcher[F[+_, +_]: IO2](
     for {
       req <- F.sync(buildRequest(uri)(method, request.getBytes))
       _   <- logger.trace(s"$method: Prepared request $req")
-      res <- blazeClient.run(req).use(handleResponse(codec, method))
+      res <- client.run(req).use(handleResponse(codec, method))
     } yield res
   }
 
