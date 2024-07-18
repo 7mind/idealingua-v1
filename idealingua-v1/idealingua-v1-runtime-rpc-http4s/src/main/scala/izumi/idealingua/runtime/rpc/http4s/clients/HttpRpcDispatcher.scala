@@ -1,7 +1,6 @@
 package izumi.idealingua.runtime.rpc.http4s.clients
 
 import cats.effect.Async
-import fs2.Stream
 import io.circe
 import io.circe.parser.parse
 import izumi.functional.bio.{Exit, F, IO2}
@@ -10,7 +9,8 @@ import izumi.idealingua.runtime.rpc.http4s.IRTUnexpectedHttpStatus
 import izumi.idealingua.runtime.rpc.http4s.clients.HttpRpcDispatcher.IRTDispatcherRaw
 import logstage.LogIO2
 import org.http4s.client.Client
-import org.http4s.{Request, Response, Status, Uri}
+import org.http4s.{Entity, Request, Response, Status, Uri}
+import scodec.bits.ByteVector
 
 class HttpRpcDispatcher[F[+_, +_]: IO2](
   client: Client[F[Throwable, _]],
@@ -92,7 +92,7 @@ class HttpRpcDispatcher[F[+_, +_]: IO2](
   ): Request[F[Throwable, _]] = {
     val uri = baseUri / method.service.value / method.methodId.value
     if (body.nonEmpty) {
-      Request[F[Throwable, _]](org.http4s.Method.POST, uri, body = Stream.emits[F[Throwable, _], Byte](body))
+      Request[F[Throwable, _]](org.http4s.Method.POST, uri, entity = Entity.strict(ByteVector.view(body)))
     } else {
       Request[F[Throwable, _]](org.http4s.Method.GET, uri)
     }

@@ -3,8 +3,8 @@ object V {
 
   val scalatest = "3.2.18"
 
-  val http4s       = "0.23.27"
-  val http4s_ember = "0.23.27"
+  val http4s       = "1.0.0-M41"
+  val http4s_ember = "1.0.0-M41"
 
   val scalameta = "4.9.5" // Not available for Scala 3 yet
   val fastparse = "3.1.0" // 3.0.0 is available for Scala 3

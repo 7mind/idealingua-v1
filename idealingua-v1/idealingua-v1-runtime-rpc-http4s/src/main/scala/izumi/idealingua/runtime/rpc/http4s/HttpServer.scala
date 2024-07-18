@@ -18,7 +18,7 @@ import izumi.idealingua.runtime.rpc.http4s.ws.*
 import logstage.LogIO2
 import org.http4s.*
 import org.http4s.dsl.Http4sDsl
-import org.http4s.server.websocket.WebSocketBuilder2
+import org.http4s.server.websocket.WebSocketBuilder
 import org.http4s.websocket.WebSocketFrame
 import org.typelevel.ci.CIString
 import org.typelevel.vault.Key
@@ -46,20 +46,20 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
   protected val wsHeartbeatTimeout: FiniteDuration                                = 1.minute
   protected val wsHeartbeatInterval: FiniteDuration                               = 10.seconds
 
-  def service(ws: WebSocketBuilder2[F[Throwable, _]]): HttpRoutes[F[Throwable, _]] = {
+  def service(ws: WebSocketBuilder[F[Throwable, _]]): HttpRoutes[F[Throwable, _]] = {
     val svc = HttpRoutes.of(router(ws))
     loggingMiddle(svc)
   }
 
-  protected def router(ws: WebSocketBuilder2[F[Throwable, _]]): PartialFunction[Request[F[Throwable, _]], F[Throwable, Response[F[Throwable, _]]]] = {
+  protected def router(ws: WebSocketBuilder[F[Throwable, _]]): PartialFunction[Request[F[Throwable, _]], F[Throwable, Response[F[Throwable, _]]]] = {
     case request @ GET -> Root / "ws"              => setupWs(request, ws)
     case request @ GET -> Root / service / method  => processHttpRequest(request, service, method)("{}")
-    case request @ POST -> Root / service / method => request.decode[String](processHttpRequest(request, service, method))
+    case request @ POST -> Root / service / method => request.decode(processHttpRequest(request, service, method))
   }
 
   protected def setupWs(
     request: Request[F[Throwable, _]],
-    ws: WebSocketBuilder2[F[Throwable, _]],
+    ws: WebSocketBuilder[F[Throwable, _]],
   ): F[Throwable, Response[F[Throwable, _]]] = {
     Quirks.discard(request)
     def pingStream(clientSession: WsClientSession[F, AuthCtx]): Stream[F[Throwable, _], WebSocketFrame] = {
