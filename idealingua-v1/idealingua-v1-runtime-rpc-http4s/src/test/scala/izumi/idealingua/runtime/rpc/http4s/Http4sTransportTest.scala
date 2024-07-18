@@ -1,6 +1,7 @@
 package izumi.idealingua.runtime.rpc.http4s
 
 import cats.effect.Async
+import com.comcast.ip4s.{Host, Port}
 import io.circe.{Json, Printer}
 import izumi.functional.bio.Exit.{Error, Success, Termination}
 import izumi.functional.bio.UnsafeRun2.FailureHandler
@@ -21,8 +22,8 @@ import izumi.logstage.api.{IzLogger, Log}
 import izumi.r2.idealingua.test.generated.*
 import logstage.LogIO2
 import org.http4s.*
-import org.http4s.blaze.server.*
 import org.http4s.dsl.Http4sDsl
+import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.headers.Authorization
 import org.http4s.server.Router
 import org.scalatest.wordspec.AnyWordSpec
@@ -83,10 +84,12 @@ object Http4sTransportTest {
           port  = addr.getPort
           host  = addr.getHostName
           _ <- Lifecycle.fromCats {
-            BlazeServerBuilder[F[Throwable, _]]
-              .bindHttp(port, host)
+            EmberServerBuilder
+              .default[F[Throwable, _]]
+              .withPort(Port.fromInt(port).get)
+              .withHost(Host.fromString(host).get)
               .withHttpWebSocketApp(ws => Router("/" -> ioService.service(ws)).orNotFound)
-              .resource
+              .build
           }
           execCtx = HttpExecutionContext(global)
           baseUri = Uri(Some(Uri.Scheme.http), Some(Uri.Authority(host = Uri.RegName(host), port = Some(port))))
@@ -113,7 +116,7 @@ object Http4sTransportTest {
   )(implicit asyncThrowable: Async[F[Throwable, _]]
   ) {
     val httpClientFactory: HttpRpcDispatcherFactory[F] = {
-      new HttpRpcDispatcherFactory[F](testServices.Client.codec, execCtx, printer, logger)
+      new HttpRpcDispatcherFactory[F](testServices.Client.codec, printer, logger)
     }
     def httpRpcClientDispatcher(headers: Headers): Lifecycle[F[Throwable, _], HttpRpcDispatcher.IRTDispatcherRaw[F]] = {
       httpClientFactory.dispatcher(baseUri, headers)
