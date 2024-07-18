@@ -84,6 +84,8 @@ object Http4sTransportTest {
           port  = addr.getPort
           host  = addr.getHostName
           _ <- Lifecycle.fromCats {
+            implicit def _logger: LogIO2[F] = logger
+            import HttpRpcDispatcherFactory._hacky_loggerFactory
             EmberServerBuilder
               .default[F[Throwable, _]]
               .withPort(Port.fromInt(port).get)

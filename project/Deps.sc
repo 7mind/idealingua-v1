@@ -135,7 +135,6 @@ object Idealingua {
   import Deps._
 
   // DON'T REMOVE, these variables are read from CI build (build.sh)
-  final val scala212 = ScalaVersion("2.12.19")
   final val scala213 = ScalaVersion("2.13.14")
   final val scala300 = ScalaVersion("3.4.2")
 
@@ -145,9 +144,8 @@ object Idealingua {
 
   object Targets {
     // switch order to use 2.13 in IDEA
-//    val targetScala = Seq(scala212, scala213)
-    val targetScala2 = Seq(scala213, scala212)
-    val targetScala3 = Seq(scala300, scala213, scala212)
+    val targetScala2 = Seq(scala213)
+    val targetScala3 = Seq(scala300, scala213)
     private val jvmPlatform2 = PlatformEnv(
       platform = Platform.Jvm,
       language = targetScala2,
@@ -265,7 +263,6 @@ object Idealingua {
         "testOptions" in SettingScope.Test += """Tests.Argument("-oDF")""".raw,
         // "testOptions" in (SettingScope.Test, Platform.Jvm) ++= s"""Seq(Tests.Argument("-u"), Tests.Argument(s"$${target.value}/junit-xml-$${scalaVersion.value}"))""".raw,
         "scalacOptions" ++= Seq(
-          SettingKey(Some(scala212), None) := Defaults.Scala212Options,
           SettingKey(Some(scala213), None) := Defaults.Scala213Options,
           SettingKey(Some(scala300), None) := Defaults.Scala3Options,
           SettingKey.Default := Const.EmptySeq,
