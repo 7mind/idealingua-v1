@@ -14,7 +14,7 @@ object V {
   val kind_projector = "0.13.3"
 
   val circe_derivation     = "0.13.0-M5"
-  val circe_generic_extras = "0.14.3"
+  val circe_generic_extras = "0.14.4"
 
   val scala_java_time = "2.6.0"
 
