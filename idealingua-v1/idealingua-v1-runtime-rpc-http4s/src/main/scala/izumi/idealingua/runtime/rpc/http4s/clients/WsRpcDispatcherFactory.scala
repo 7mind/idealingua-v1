@@ -19,6 +19,7 @@ import org.asynchttpclient.ws.{WebSocket, WebSocketListener, WebSocketUpgradeHan
 import org.asynchttpclient.{DefaultAsyncHttpClient, DefaultAsyncHttpClientConfig}
 import org.http4s.Uri
 
+import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -174,11 +175,11 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
           .setWebSocketMaxFrameSize(64 * 1024 * 1024 * 8) // increase frame size for 64MB
           .setKeepAlive(true)
           .setSoKeepAlive(true)
-          .setRequestTimeout(30 * 1000) // 60 seconds is default
-          .setPooledConnectionIdleTimeout(60 * 1000) // 60 seconds is default
-          .setConnectTimeout(30 * 1000) // 5 seconds is default
-          .setReadTimeout(60 * 1000) // 60 seconds is default
-          .setShutdownTimeout(15 * 1000) // 15 seconds is default
+          .setRequestTimeout(Duration.ofSeconds(30)) // 60 seconds is default
+          .setPooledConnectionIdleTimeout(Duration.ofSeconds(60)) // 60 seconds is default
+          .setConnectTimeout(Duration.ofSeconds(30)) // 5 seconds is default
+          .setReadTimeout(Duration.ofSeconds(60)) // 60 seconds is default
+          .setShutdownTimeout(Duration.ofSeconds(15)) // 15 seconds is default
           .build()
       )
     })
