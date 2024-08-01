@@ -57,7 +57,7 @@ export class HttpServerGeneric<C> {
     protected requestHandler(request: http.IncomingMessage, response: http.ServerResponse) {
         const { method, url, headers } = request;
 
-        let respHeaders = {};
+        let respHeaders: any = {};
         // IE8 does not allow domains to be specified, just the *
         // headers["Access-Control-Allow-Origin"] = req.headers.origin;
         respHeaders['Access-Control-Allow-Origin'] = '*';

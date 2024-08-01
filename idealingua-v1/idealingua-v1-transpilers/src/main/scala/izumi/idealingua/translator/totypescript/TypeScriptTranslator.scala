@@ -338,7 +338,7 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
        |
        |    public static deserialize(data: ${name}Serialized): $name {
        |        const id = Object.keys(data)[0];
-       |        const content = data[id];
+       |        const content = (data as any)[id];
        |        switch (id) {
        |            case 'Success': return new EitherRight<$leftTypeName, $rightTypeName>($rightTypeDeserialize);
        |            case 'Failure': return new EitherLeft<$leftTypeName, $rightTypeName>($leftTypeDeserialize);
@@ -425,7 +425,7 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
             }
         ).mkString(" | ")}}): $name {
        |        const id = Object.keys(data)[0];
-       |        const content = data[id];
+       |        const content = (data as any)[id];
        |        switch (id) {
        |${alternatives.map(a => "case '" + a.wireId + "': return " + conv.deserializeType("content", a.typeId, typespace, asAny = true) + ";").mkString("\n").shift(12)}
        |            default:
