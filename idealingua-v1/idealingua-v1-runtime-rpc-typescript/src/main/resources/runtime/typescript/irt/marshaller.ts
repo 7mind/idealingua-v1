@@ -20,7 +20,8 @@ export class JSONMarshallerImpl implements JSONMarshaller {
             return toRaw ? {} : '{}';
         }
 
-        const serialized = typeof data['serialize'] === 'function' ? data['serialize']() : data;
+        const dataAny = data as any;
+        const serialized = typeof dataAny['serialize'] === 'function' ? dataAny['serialize']() : data;
         if (toRaw) {
             return serialized;
         }
