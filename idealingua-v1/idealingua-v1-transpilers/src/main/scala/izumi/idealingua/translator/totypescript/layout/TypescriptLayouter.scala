@@ -88,7 +88,8 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
                   "ignoreDeprecations": "5.0",
                   "experimentalDecorators": true,
                   "removeComments": true,
-                 "preserveConstEnums": true
+                  "preserveConstEnums": true,
+                  "skipLibCheck": true
                 },
                 "compileOnSave": false
               }
@@ -123,7 +124,8 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
                   "ignoreDeprecations": "5.0",
                   "experimentalDecorators": true,
                   "removeComments": true,
-                 "preserveConstEnums": true
+                  "preserveConstEnums": true,
+                  "skipLibCheck": true
                 },
                 "compileOnSave": false
               }
