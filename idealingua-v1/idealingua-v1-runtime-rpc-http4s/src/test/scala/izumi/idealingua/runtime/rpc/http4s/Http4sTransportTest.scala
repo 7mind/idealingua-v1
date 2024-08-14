@@ -5,8 +5,9 @@ import io.circe.{Json, Printer}
 import izumi.functional.bio.Exit.{Error, Success, Termination}
 import izumi.functional.bio.UnsafeRun2.FailureHandler
 import izumi.functional.bio.impl.{AsyncZio, PrimitivesZio}
-import izumi.functional.bio.{Async2, Exit, F, Primitives2, Temporal2, UnsafeRun2}
+import izumi.functional.bio.{Async2, Entropy1, Entropy2, Exit, F, Primitives2, SyncSafe1, Temporal2, UnsafeRun2}
 import izumi.functional.lifecycle.Lifecycle
+import izumi.fundamentals.platform.functional.Identity
 import izumi.fundamentals.platform.network.IzSockets
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.Http4sTransportTest.{Ctx, IO2R}
@@ -38,6 +39,8 @@ final class Http4sTransportTest
     temporal2      = AsyncZio,
     unsafeRun2     = IO2R,
     asyncThrowable = zio.interop.catz.asyncInstance,
+    entropy2       = Entropy1.fromImpureEntropy(using Entropy1.Standard, SyncSafe1.fromBIO(using AsyncZio)),
+    entropy1       = Entropy1.Standard,
   )
 
 object Http4sTransportTest {
@@ -52,7 +55,11 @@ object Http4sTransportTest {
     ),
   )
 
-  final class Ctx[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRun2](implicit asyncThrowable: Async[F[Throwable, _]]) {
+  final class Ctx[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRun2](
+    implicit asyncThrowable: Async[F[Throwable, _]],
+    entropy2: Entropy2[F],
+    entropy1: Entropy1[Identity],
+  ) {
     private val logger: LogIO2[F]               = LogIO2.fromLogger(izLogger)
     private val printer: Printer                = Printer.noSpaces.copy(dropNullValues = true)
     private val dsl: Http4sDsl[F[Throwable, _]] = Http4sDsl.apply[F[Throwable, _]]
@@ -76,6 +83,7 @@ object Http4sTransportTest {
                 dsl                  = dsl,
                 logger               = logger,
                 printer              = printer,
+                entropy1             = entropy1,
               )
             }
           }
@@ -91,7 +99,7 @@ object Http4sTransportTest {
           execCtx = HttpExecutionContext(global)
           baseUri = Uri(Some(Uri.Scheme.http), Some(Uri.Authority(host = Uri.RegName(host), port = Some(port))))
           wsUri   = Uri.unsafeFromString(s"ws://$host:$port/ws")
-        } yield HttpServerContext(baseUri, wsUri, testServices, execCtx, printer, logger)).use(f)
+        } yield HttpServerContext(baseUri, wsUri, testServices, execCtx, printer, logger, entropy2, entropy1)).use(f)
       }
     }
 
@@ -110,6 +118,8 @@ object Http4sTransportTest {
     execCtx: HttpExecutionContext,
     printer: Printer,
     logger: LogIO2[F],
+    entropy2: Entropy2[F],
+    entropy1: Entropy1[Identity],
   )(implicit asyncThrowable: Async[F[Throwable, _]]
   ) {
     val httpClientFactory: HttpRpcDispatcherFactory[F] = {
@@ -120,7 +130,7 @@ object Http4sTransportTest {
     }
 
     val wsClientFactory: WsRpcDispatcherFactory[F] = {
-      new WsRpcDispatcherFactory[F](testServices.Client.codec, printer, logger, izLogger)
+      new WsRpcDispatcherFactory[F](testServices.Client.codec, printer, logger, izLogger, entropy2, entropy1)
     }
     def wsRpcClientDispatcher(headers: Map[String, String] = Map.empty): Lifecycle[F[Throwable, _], WsRpcDispatcher.IRTDispatcherWs[F]] = {
       wsClientFactory.dispatcherSimple(wsUri, testServices.Client.buzzerMultiplexor, headers)
@@ -151,6 +161,8 @@ abstract class Http4sTransportTestBase[F[+_, +_]](
   temporal2: Temporal2[F],
   unsafeRun2: UnsafeRun2[F],
   asyncThrowable: Async[F[Throwable, _]],
+  entropy2: Entropy2[F],
+  entropy1: Entropy1[Identity],
 ) extends AnyWordSpec {
   private val ctx = new Ctx[F]
 
@@ -359,8 +371,8 @@ abstract class Http4sTransportTestBase[F[+_, +_]](
       executeF {
         val rs = new WsRequestState.Default[F]()
         for {
-          id1 <- F.pure(RpcPacketId.random())
-          id2 <- F.pure(RpcPacketId.random())
+          id1 <- RpcPacketId.random(entropy2)
+          id2 <- RpcPacketId.random(entropy2)
           _   <- rs.registerRequest(id1, None, 0.minutes)
           _   <- rs.registerRequest(id2, None, 5.minutes)
           _ <- F.attempt(rs.awaitResponse(id1, 5.seconds)).map {
@@ -387,6 +399,7 @@ abstract class Http4sTransportTestBase[F[+_, +_]](
             Server.wsStorage,
             WsContextExtractor.authContext,
             ctx.logger,
+            entropy1,
           )
           for {
             _ <- client.start(_ => F.unit)

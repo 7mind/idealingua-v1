@@ -3,8 +3,8 @@ package izumi.idealingua.runtime.rpc.http4s.ws
 import cats.effect.std.Queue
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, Printer}
-import izumi.functional.bio.{Applicative2, Clock1, F, IO2, Primitives2, Temporal2}
-import izumi.fundamentals.platform.uuid.UUIDGen
+import izumi.functional.bio.{Applicative2, Clock1, Entropy1, Entropy2, F, IO2, Primitives2, Temporal2}
+import izumi.fundamentals.platform.functional.Identity
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.ClientWsRpcHandler
 import izumi.idealingua.runtime.rpc.http4s.context.WsContextExtractor
@@ -53,6 +53,7 @@ object WsClientSession {
     wsSessionStorage: WsSessionsStorage[F, SessionCtx],
     wsContextExtractor: WsContextExtractor[SessionCtx],
     logger: LogIO2[F],
+    entropy1: Entropy1[Identity],
   ) extends WsClientSession[F, SessionCtx] {
     private val heartbeatTimestamp         = new AtomicReference[Option[ZonedDateTime]](None)
     private val requestCtxRef              = new AtomicReference[SessionCtx](initialContext)
@@ -62,7 +63,7 @@ object WsClientSession {
     protected def sendMessage(message: RpcPacket): F[Throwable, Unit]
     protected def sendCloseMessage(): F[Throwable, Unit]
 
-    override val sessionId: WsSessionId = WsSessionId(UUIDGen.getTimeUUID())
+    override val sessionId: WsSessionId = WsSessionId(entropy1.nextTimeUUID())
 
     override def updateRequestCtx(newContext: SessionCtx): F[Throwable, SessionCtx] = {
       for {
@@ -84,9 +85,9 @@ object WsClientSession {
     }
 
     def requestAndAwaitResponse(method: IRTMethodId, data: Json, timeout: FiniteDuration): F[Throwable, Option[RawResponse]] = {
-      val id      = RpcPacketId.random()
-      val request = RpcPacket.buzzerRequest(id, method, data)
       for {
+        id       <- RpcPacketId.random(Entropy2[F])
+        request   = RpcPacket.buzzerRequest(id, method, data)
         _        <- logger.debug(s"WS Session: enqueue $request with $id to request state & send queue.")
         response <- requestState.requestAndAwait(id, Some(method), timeout)(sendMessage(request))
         _        <- logger.debug(s"WS Session: $method, ${id -> "id"}: cleaning request state.")
@@ -137,8 +138,9 @@ object WsClientSession {
     wsSessionStorage: WsSessionsStorage[F, SessionCtx],
     wsContextExtractor: WsContextExtractor[SessionCtx],
     logger: LogIO2[F],
-  ) extends Base[F, SessionCtx](initialContext, wsSessionsContext, wsSessionStorage, wsContextExtractor, logger) {
-    private val clientHandler = new ClientWsRpcHandler(muxer, requestState, WsContextExtractor.unit, logger)
+    entropy1: Entropy1[Identity],
+  ) extends Base[F, SessionCtx](initialContext, wsSessionsContext, wsSessionStorage, wsContextExtractor, logger, entropy1) {
+    private val clientHandler = new ClientWsRpcHandler(muxer, requestState, WsContextExtractor.unit, logger, entropy1)
     override protected def sendMessage(message: RpcPacket): F[Throwable, Unit] = {
       clientHandler.processRpcPacket(message).flatMap {
         case Some(RpcPacket(_, Some(json), None, Some(ref), _, _, _)) =>
@@ -159,7 +161,8 @@ object WsClientSession {
     wsContextExtractor: WsContextExtractor[SessionCtx],
     logger: LogIO2[F],
     printer: Printer,
-  ) extends Base[F, SessionCtx](initialContext, wsSessionsContext, wsSessionStorage, wsContextExtractor, logger) {
+    entropy1: Entropy1[Identity],
+  ) extends Base[F, SessionCtx](initialContext, wsSessionsContext, wsSessionStorage, wsContextExtractor, logger, entropy1) {
     override protected def sendMessage(message: RpcPacket): F[Throwable, Unit] = {
       outQueue.offer(Text(printer.print(message.asJson)))
     }

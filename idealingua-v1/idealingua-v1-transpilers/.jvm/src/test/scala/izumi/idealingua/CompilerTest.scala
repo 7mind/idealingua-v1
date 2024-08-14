@@ -1,6 +1,7 @@
 package izumi.idealingua
 
 import izumi.fundamentals.platform.files.IzFiles
+import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.idealingua.model.publishing.manifests.{CSharpProjectLayout, GoProjectLayout, ScalaProjectLayout, TypeScriptProjectLayout}
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -67,13 +68,13 @@ class CompilerTest extends AnyWordSpec {
   }
 
   private def requireOptional(tools: String*): Unit = {
-    assume(IzFiles.haveExecutables(tools*), s"One of required tools is not available: $tools")
+    assume(IzFiles.haveExecutables(tools*), s"One of required tools is not available: $tools").discard()
   }
   private def requireForCI(tools: String*): Unit = {
     if (isCI) {
-      assert(IzFiles.haveExecutables(tools*), s"One of required tools is not available: $tools")
+      assert(IzFiles.haveExecutables(tools*), s"One of required tools is not available: $tools").discard()
     } else {
-      assume(IzFiles.haveExecutables(tools*), s"One of required tools is not available: $tools")
+      assume(IzFiles.haveExecutables(tools*), s"One of required tools is not available: $tools").discard()
     }
   }
 }

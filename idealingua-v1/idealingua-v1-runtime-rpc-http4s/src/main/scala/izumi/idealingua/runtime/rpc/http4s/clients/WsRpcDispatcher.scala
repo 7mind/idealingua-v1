@@ -1,7 +1,7 @@
 package izumi.idealingua.runtime.rpc.http4s.clients
 
 import io.circe.Json
-import izumi.functional.bio.{Async2, F, Temporal2}
+import izumi.functional.bio.{Async2, Entropy2, F, Temporal2}
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcher.IRTDispatcherWs
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcherFactory.WsRpcClientConnection
@@ -16,6 +16,7 @@ class WsRpcDispatcher[F[+_, +_]: Async2](
   timeout: FiniteDuration,
   codec: IRTClientMultiplexor[F],
   logger: LogIO2[F],
+  entropy2: Entropy2[F],
 ) extends IRTDispatcherWs[F] {
 
   override def sessionId: Option[WsSessionId] = {
@@ -37,10 +38,10 @@ class WsRpcDispatcher[F[+_, +_]: Async2](
   )(request: IRTMuxRequest
   ): F[Throwable, IRTMuxResponse] = {
     for {
-      _          <- logger.trace(s"${request.method -> "method"}: Going to perform $request")
-      encoded    <- codec.encode(request)
-      rpcPacketId = RpcPacketId.random()
-      rpcPacket   = buildRequest(rpcPacketId, request.method, encoded)
+      _           <- logger.trace(s"${request.method -> "method"}: Going to perform $request")
+      encoded     <- codec.encode(request)
+      rpcPacketId <- RpcPacketId.random(entropy2)
+      rpcPacket    = buildRequest(rpcPacketId, request.method, encoded)
       res <- connection.requestAndAwait(rpcPacketId, rpcPacket, Some(request.method), timeout).flatMap {
         case Some(value: RawResponse.EmptyRawResponse) =>
           F.fail(new IRTGenericFailure(s"${request.method -> "method"}, $rpcPacketId: empty response: $value"))
