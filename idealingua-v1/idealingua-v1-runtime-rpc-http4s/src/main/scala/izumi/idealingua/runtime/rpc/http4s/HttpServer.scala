@@ -8,7 +8,8 @@ import io.circe
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, Printer}
 import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
-import izumi.functional.bio.{Clock1, Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
+import izumi.functional.bio.{Clock1, Entropy1, Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
+import izumi.fundamentals.platform.functional.Identity
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.idealingua.runtime.rpc.*
@@ -35,6 +36,7 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
   dsl: Http4sDsl[F[Throwable, _]],
   logger: LogIO2[F],
   printer: Printer,
+  entropy1: Entropy1[Identity],
 )(implicit val AT: Async[F[Throwable, _]]
 ) {
   import dsl.*
@@ -85,7 +87,7 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
     for {
       outQueue     <- Queue.unbounded[F[Throwable, _], WebSocketFrame]
       authContext  <- F.syncThrowable(httpContextExtractor.extract(request))
-      clientSession = new WsClientSession.Queued(outQueue, authContext, wsContextsSessions, wsSessionsStorage, wsContextExtractor, logger, printer)
+      clientSession = new WsClientSession.Queued(outQueue, authContext, wsContextsSessions, wsSessionsStorage, wsContextExtractor, logger, printer, entropy1)
       _            <- clientSession.start(onWsConnected)
 
       outStream = Stream.fromQueueUnterminated(outQueue).merge(pingStream(clientSession))

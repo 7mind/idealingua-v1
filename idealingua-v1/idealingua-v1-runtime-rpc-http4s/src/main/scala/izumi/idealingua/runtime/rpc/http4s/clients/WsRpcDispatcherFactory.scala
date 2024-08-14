@@ -2,10 +2,10 @@ package izumi.idealingua.runtime.rpc.http4s.clients
 
 import io.circe.syntax.*
 import io.circe.{Json, Printer}
-import izumi.functional.bio.{Async2, Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
+import izumi.functional.bio.{Async2, Entropy1, Entropy2, Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
 import izumi.functional.lifecycle.Lifecycle
+import izumi.fundamentals.platform.functional.Identity
 import izumi.fundamentals.platform.language.Quirks.Discarder
-import izumi.fundamentals.platform.uuid.UUIDGen
 import izumi.idealingua.runtime.rpc.*
 import izumi.idealingua.runtime.rpc.http4s.HttpServer
 import izumi.idealingua.runtime.rpc.http4s.clients.WsRpcDispatcher.IRTDispatcherWs
@@ -31,6 +31,8 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
   printer: Printer,
   logger: LogIO2[F],
   izLogger: IzLogger,
+  entropy2: Entropy2[F],
+  entropy1: Entropy1[Identity],
 ) {
 
   def connect[ServerContext](
@@ -57,7 +59,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
       // fill promises before closing WS connection, potentially giving a chance to send out an error response before closing
       _ <- Lifecycle.make(F.unit)(_ => wsRequestState.clear())
     } yield {
-      new WsRpcClientConnection.Netty(nettyWebSocket, wsRequestState, printer, sessionId)
+      new WsRpcClientConnection.Netty(nettyWebSocket, wsRequestState, printer, sessionId, entropy2)
     }
   }
 
@@ -78,7 +80,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
     timeout: FiniteDuration              = 30.seconds,
   ): Lifecycle[F[Throwable, _], IRTDispatcherWs[F]] = {
     connect(uri, serverMuxer, wsContextExtractor, headers).map {
-      new WsRpcDispatcher(_, timeout, codec, dispatcherLogger(uri, logger)) {
+      new WsRpcDispatcher(_, timeout, codec, dispatcherLogger(uri, logger), entropy2) {
         override protected def buildRequest(rpcPacketId: RpcPacketId, method: IRTMethodId, body: Json): RpcPacket = {
           tweakRequest(super.buildRequest(rpcPacketId, method, body))
         }
@@ -102,7 +104,7 @@ class WsRpcDispatcherFactory[F[+_, +_]: Async2: Temporal2: Primitives2: UnsafeRu
     wsContextExtractor: WsContextExtractor[ServerContext],
     logger: LogIO2[F],
   ): WsRpcHandler[F, ServerContext] = {
-    new ClientWsRpcHandler(serverMuxer, wsRequestState, wsContextExtractor, logger)
+    new ClientWsRpcHandler(serverMuxer, wsRequestState, wsContextExtractor, logger, entropy1)
   }
 
   protected def createListener[ServerContext](
@@ -193,8 +195,9 @@ object WsRpcDispatcherFactory {
     requestState: WsRequestState[F],
     wsContextExtractor: WsContextExtractor[RequestCtx],
     logger: LogIO2[F],
+    entropy1: Entropy1[Identity],
   ) extends WsRpcHandler[F, RequestCtx](muxer, requestState, logger) {
-    private val wsSessionId: WsSessionId                   = WsSessionId(UUIDGen.getTimeUUID())
+    private val wsSessionId: WsSessionId                   = WsSessionId(entropy1.nextTimeUUID())
     private val requestCtxRef: AtomicReference[RequestCtx] = new AtomicReference()
     override protected def updateRequestCtx(packet: RpcPacket): F[Throwable, RequestCtx] = F.sync {
       val updated = wsContextExtractor.extract(wsSessionId, packet)
@@ -216,15 +219,18 @@ object WsRpcDispatcherFactory {
       requestState: WsRequestState[F],
       printer: Printer,
       val sessionId: Option[WsSessionId],
+      entropy2: Entropy2[F],
     ) extends WsRpcClientConnection[F] {
 
       override def authorize(headers: Map[String, String], timeout: FiniteDuration): F[Throwable, Unit] = {
-        val packetId = RpcPacketId.random()
-        requestAndAwait(packetId, RpcPacket.auth(packetId, headers), None, timeout).flatMap {
-          case Some(_: RawResponse.GoodRawResponse)    => F.unit
-          case Some(_: RawResponse.EmptyRawResponse)   => F.unit
-          case Some(value: RawResponse.BadRawResponse) => F.fail(new IRTGenericFailure(s"Authorization failed: ${value.error}."))
-          case None                                    => F.fail(new IRTGenericFailure("Unable to authorize."))
+        RpcPacketId.random(entropy2).flatMap {
+          packetId =>
+            requestAndAwait(packetId, RpcPacket.auth(packetId, headers), None, timeout).flatMap {
+              case Some(_: RawResponse.GoodRawResponse)    => F.unit
+              case Some(_: RawResponse.EmptyRawResponse)   => F.unit
+              case Some(value: RawResponse.BadRawResponse) => F.fail(new IRTGenericFailure(s"Authorization failed: ${value.error}."))
+              case None                                    => F.fail(new IRTGenericFailure("Unable to authorize."))
+            }
         }
       }
 
