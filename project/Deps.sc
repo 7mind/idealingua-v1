@@ -137,7 +137,7 @@ object Idealingua {
   // DON'T REMOVE, these variables are read from CI build (build.sh)
   final val scala212 = ScalaVersion("2.12.19")
   final val scala213 = ScalaVersion("2.13.14")
-  final val scala300 = ScalaVersion("3.3.4-RC1")
+  final val scala300 = ScalaVersion("3.3.4-RC3")
 
   object Groups {
     final val idealingua = Set(Group("idealingua"))
