@@ -77,7 +77,7 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.19") => Seq(
+      case (_, "2.12.20") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -120,7 +120,7 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.14") => Seq(
+      case (_, "2.13.15") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -142,7 +142,7 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.4-RC1") => Seq(
+      case (_, "3.3.4") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -167,17 +167,17 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "3.3.4-RC1",
-      "2.13.14",
-      "2.12.19"
+      "3.3.4",
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "3.3.4-RC1",
-      "2.13.14",
-      "2.12.19"
+      "3.3.4",
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := false,
@@ -252,7 +252,7 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.19") => Seq(
+      case (_, "2.12.20") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -295,7 +295,7 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.14") => Seq(
+      case (_, "2.13.15") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -317,7 +317,7 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.4-RC1") => Seq(
+      case (_, "3.3.4") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -342,15 +342,15 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "2.13.14",
-      "2.12.19"
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "2.13.14",
-      "2.12.19"
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := false,
@@ -440,7 +440,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.19") => Seq(
+      case (_, "2.12.20") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -483,7 +483,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.14") => Seq(
+      case (_, "2.13.15") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -505,7 +505,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.4-RC1") => Seq(
+      case (_, "3.3.4") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -530,17 +530,17 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "3.3.4-RC1",
-      "2.13.14",
-      "2.12.19"
+      "3.3.4",
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "3.3.4-RC1",
-      "2.13.14",
-      "2.12.19"
+      "3.3.4",
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := false,
@@ -578,9 +578,9 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.4-RC1",
-      "2.13.14",
-      "2.12.19"
+      "3.3.4",
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -633,7 +633,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.19") => Seq(
+      case (_, "2.12.20") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -676,7 +676,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.14") => Seq(
+      case (_, "2.13.15") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -698,7 +698,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.4-RC1") => Seq(
+      case (_, "3.3.4") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -802,7 +802,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.19") => Seq(
+      case (_, "2.12.20") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -845,7 +845,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.14") => Seq(
+      case (_, "2.13.15") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -867,7 +867,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.4-RC1") => Seq(
+      case (_, "3.3.4") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -892,16 +892,16 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "2.13.14",
-      "2.12.19"
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head,
     Test / fork := true
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "2.13.14",
-      "2.12.19"
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := false,
@@ -939,9 +939,9 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.4-RC1",
-      "2.13.14",
-      "2.12.19"
+      "3.3.4",
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -994,7 +994,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.19") => Seq(
+      case (_, "2.12.20") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -1037,7 +1037,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.14") => Seq(
+      case (_, "2.13.15") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -1059,7 +1059,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.4-RC1") => Seq(
+      case (_, "3.3.4") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -1095,9 +1095,9 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.4-RC1",
-      "2.13.14",
-      "2.12.19"
+      "3.3.4",
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -1150,7 +1150,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.19") => Seq(
+      case (_, "2.12.20") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -1193,7 +1193,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.14") => Seq(
+      case (_, "2.13.15") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -1215,7 +1215,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.4-RC1") => Seq(
+      case (_, "3.3.4") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -1251,9 +1251,9 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.4-RC1",
-      "2.13.14",
-      "2.12.19"
+      "3.3.4",
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -1306,7 +1306,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.19") => Seq(
+      case (_, "2.12.20") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -1349,7 +1349,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.14") => Seq(
+      case (_, "2.13.15") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -1371,7 +1371,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.4-RC1") => Seq(
+      case (_, "3.3.4") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -1407,9 +1407,9 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.4-RC1",
-      "2.13.14",
-      "2.12.19"
+      "3.3.4",
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -1462,7 +1462,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.19") => Seq(
+      case (_, "2.12.20") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -1505,7 +1505,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.14") => Seq(
+      case (_, "2.13.15") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -1527,7 +1527,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.4-RC1") => Seq(
+      case (_, "3.3.4") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -1572,8 +1572,8 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.13.14",
-      "2.12.19"
+      "2.13.15",
+      "2.12.20"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -1626,7 +1626,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.19") => Seq(
+      case (_, "2.12.20") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3",
@@ -1669,7 +1669,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "2.13.14") => Seq(
+      case (_, "2.13.15") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -1691,7 +1691,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.4-RC1") => Seq(
+      case (_, "3.3.4") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
