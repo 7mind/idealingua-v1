@@ -39,14 +39,18 @@ function publishIDL {
     return 0
   fi
 
-  if [[ ! -f .secrets/credentials.sonatype-nexus.properties ]] ; then
-    return 0
-  fi
-
-  if [[ ! ("$CI_BRANCH" == "develop" || "$CI_BRANCH" == "zio-RC16" || "$CI_BRANCH_TAG" =~ ^v.*$ ) ]] ; then
+  if [[ ! ("$CI_BRANCH" == "develop" || "$CI_BRANCH_TAG" =~ ^v.*$ ) ]] ; then
     return 0
   fi
   #copypaste
+
+  if [[ ! -z "$NPM_TOKEN" ]] ; then
+    return 0
+  fi
+
+  if [[ ! -z "$NUGET_TOKEN" ]] ; then
+    return 0
+  fi
 
   echo "PUBLISH IDL RUNTIMES..."
 
