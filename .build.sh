@@ -44,11 +44,11 @@ function publishIDL {
   fi
   #copypaste
 
-  if [[ ! -z "$NPM_TOKEN" ]] ; then
+  if [[ -z "$NPM_TOKEN" ]] ; then
     return 0
   fi
 
-  if [[ ! -z "$NUGET_TOKEN" ]] ; then
+  if [[ -z "$NUGET_TOKEN" ]] ; then
     return 0
   fi
 
