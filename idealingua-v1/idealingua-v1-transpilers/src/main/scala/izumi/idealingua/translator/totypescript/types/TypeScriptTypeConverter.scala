@@ -103,7 +103,7 @@ class TypeScriptTypeConverter() {
 
   def deserializeGenericType(variable: String, target: Generic, ts: Typespace, asAny: Boolean = false): String = target match {
     case gm: Generic.TMap =>
-      s"Object.keys($variable).reduce<any>((previous, current) => {previous[current] = ${deserializeType(s"$variable[current]", gm.valueType, ts, asAny)}; return previous; }, {})"
+      s"Object.keys($variable).reduce<any>((previous, current) => {previous[current] = ${deserializeType(s"$variable[current as any]", gm.valueType, ts, asAny)}; return previous; }, {})"
     case gl: Generic.TList =>
       gl.valueType match {
         case _: Primitive => s"$variable.slice()"
@@ -239,7 +239,7 @@ class TypeScriptTypeConverter() {
 
   def serializeGeneric(name: String, id: TypeId, ts: Typespace, asAny: Boolean = false): String = id match {
     case m: Generic.TMap =>
-      s"Object.keys($name).reduce<any>((previous, current) => {previous[current] = ${serializeValue(s"$name[current]", m.valueType, ts, nonMember = true)}; return previous; }, {})"
+      s"Object.keys($name).reduce<any>((previous, current) => {previous[current] = ${serializeValue(s"$name[current as any]", m.valueType, ts, nonMember = true)}; return previous; }, {})"
     case s: Generic.TSet =>
       s.valueType match {
         case _: Primitive => s"$name.slice()"
