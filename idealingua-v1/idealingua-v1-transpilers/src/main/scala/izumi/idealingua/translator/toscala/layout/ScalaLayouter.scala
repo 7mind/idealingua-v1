@@ -197,7 +197,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
   }
 
   private def crossScalaVersionsSetting: String = {
-    val asString = options.manifest.sbt.scalaVersions.map(v => s"\"$v\"").mkString(", ")
+    val asString = options.manifest.sbt.scalaVersions.map(v => s""""$v"""" ).mkString(", ")
     s"crossScalaVersions := Seq($asString),"
   }
 
@@ -205,10 +205,10 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
     val versions    = options.manifest.sbt.scalaVersions
     val defaultCase = "case _ => Seq.empty"
     val perScalaVersionOptions =
-      versions.flatMap {
+      (versions.flatMap {
         case v if v.startsWith("2") => Some(s"""case "$v" => Seq("-Xsource:3-cross")""".stripMargin)
         case _ => None
-      }.appended(defaultCase).mkString("    ", "\n    ", "")
+      } :+ defaultCase).mkString("    ", "\n    ", "")
 
     s"""scalacOptions ++= { scalaVersion.value match {
        |$perScalaVersionOptions

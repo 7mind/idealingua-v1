@@ -240,9 +240,8 @@ object CommandlineIDLCompiler {
           case Right(b) if b.isBoolean => k -> b.asBoolean.get
           case Right(s) if s.isString  => k -> s.asString.get
           case _ =>
-            val args           = v.split(";")
-            val isArgumentList = args.length > 1
-            if (isArgumentList) {
+            if (k == "sbt.scalaVersions") {
+              val args           = v.split(";")
               k -> new util.ArrayList[String](args.toList.asJava)
             } else k -> v
         }
