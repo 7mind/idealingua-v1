@@ -23,7 +23,7 @@
         packages = rec {
           idealingua-v1 = sbt.lib.mkSbtDerivation {
             pkgs = pkgs;
-            version = "1.3.22";
+            version = "1.4.0";
             pname = "idealingua-v1";
             src = ./.;
             depsSha256 = "sha256-zfBdWVlSj0aSWxUmHcA0igLuBLYzxmCebR7/7jorX1o=";
