@@ -20,7 +20,7 @@ trait CirceTranslatorExtensionBase extends ScalaTranslatorExtension {
 
   protected case class CirceTrait(name: String, defn: Defn.Trait)
 
-  protected def classDeriverImports(scalaVersion: Option[String]): List[Import]
+  protected def classDeriverImports(scalaVersion: List[String]): List[Import]
 
   private val circeRuntimePkg = runtime.Pkg.of[IRTTimeInstances]
 
@@ -255,7 +255,7 @@ trait CirceTranslatorExtensionBase extends ScalaTranslatorExtension {
       )
     } else {
       // FIXME: Generate manual codec for Scala 3 AnyVals, since they're unsupported by circe deriver right now
-      if (AnyvalExtension.structCanBeAnyVal(ctx, sc.struct.fields) && ctx.sbtOptions.scalaVersion.exists(_.startsWith("3"))) {
+      if (AnyvalExtension.structCanBeAnyVal(ctx, sc.struct.fields) && ctx.sbtOptions.scalaVersions.exists(_.startsWith("3"))) {
         val field = sc.struct.all.head
         CirceTrait(
           s"${name}Circe",
@@ -275,7 +275,7 @@ trait CirceTranslatorExtensionBase extends ScalaTranslatorExtension {
         CirceTrait(
           s"${name}Circe",
           q"""trait ${Type.Name(s"${name}Circe")} extends $base {
-            ..${classDeriverImports(ctx.sbtOptions.scalaVersion)}
+            ..${classDeriverImports(ctx.sbtOptions.scalaVersions)}
             import _root_.io.circe.{Encoder, Decoder}
 
             implicit val ${Pat.Var(Term.Name(s"encode$name"))}: Encoder.AsObject[$tpe] = deriveEncoder[$tpe]
@@ -293,7 +293,7 @@ trait CirceTranslatorExtensionBase extends ScalaTranslatorExtension {
   * Doesn't support sealed traits hierarchies
   */
 object CirceDerivationTranslatorExtension extends CirceTranslatorExtensionBase {
-  override protected def classDeriverImports(scalaVersion: Option[String]): List[Import] = {
+  override protected def classDeriverImports(scalaVersion: List[String]): List[Import] = {
     if (scalaVersion.exists(_.startsWith("3"))) {
       List(scala3Import)
     } else {
