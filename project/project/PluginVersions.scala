@@ -3,5 +3,5 @@ object PV {
   val packager = "1.11.1"
 
   val sbt_scoverage = "2.2.2"
-  val sbt_pgp       = "2.3.0"
+  val sbt_pgp       = "2.3.1"
 }
