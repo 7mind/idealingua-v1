@@ -65,7 +65,7 @@ class ScalaTranslator(ts: Typespace, options: ScalaTranslatorOptions) extends Tr
       definition.id.domain,
       ctx.modules.toModuleId(definition.id),
       ctx.serviceRenderer.renderService(definition.asService),
-      ctx.sbtOptions.scalaVersion,
+      ctx.sbtOptions.scalaVersions,
     )
   }
 
@@ -74,7 +74,7 @@ class ScalaTranslator(ts: Typespace, options: ScalaTranslatorOptions) extends Tr
       definition.id.domain,
       ctx.modules.toModuleId(definition.id),
       ctx.serviceRenderer.renderService(definition),
-      ctx.sbtOptions.scalaVersion,
+      ctx.sbtOptions.scalaVersions,
     )
   }
 
@@ -94,7 +94,7 @@ class ScalaTranslator(ts: Typespace, options: ScalaTranslatorOptions) extends Tr
         RenderableCogenProduct.empty
     }
 
-    ctx.modules.toSource(definition.id.path.domain, ctx.modules.toModuleId(definition), defns, ctx.sbtOptions.scalaVersion)
+    ctx.modules.toSource(definition.id.path.domain, ctx.modules.toModuleId(definition), defns, ctx.sbtOptions.scalaVersions)
   }
 
   protected def renderAlias(i: Alias): Seq[Defn] = {

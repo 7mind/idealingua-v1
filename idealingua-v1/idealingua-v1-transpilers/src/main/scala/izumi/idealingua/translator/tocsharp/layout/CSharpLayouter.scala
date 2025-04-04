@@ -67,12 +67,12 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
         val csdeps = t.typespace.domain.meta.directImports.map {
           i =>
             val id         = i.id
-            val prjDirName = s"${naming.projectDirName(id)}"
-            val prjName    = prjDirName
+            val prjDirName = naming.projectDirName(id)
+            val prjName    = naming.projectId(id)
             s"src/$prjDirName/$prjName.csproj"
         } ++ Seq(s"src/${naming.irtDir}/${naming.irtDir}.csproj")
 
-        val src = mainSrcs ++ csproj(prjDir, csdeps, basicDeps)
+        val src = mainSrcs ++ csproj(prjId, csdeps, basicDeps)
 
         val testDeps         = pkgMf.nuget.dependencies ++ pkgMf.nuget.testDependencies ++ Seq(ManifestDependency(naming.projectId(t.typespace.domain.id), mfVersion))
         val pkgMfTest        = pkgMf.copy(nuget = pkgMf.nuget.copy(dependencies = testDeps))
@@ -82,13 +82,13 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
         val csdepsTest = t.typespace.domain.meta.directImports.map {
           i =>
             val id          = i.id
-            val prjDirName  = s"${naming.projectDirName(id)}"
+            val prjDirName  = naming.projectDirName(id)
             val prjTestName = s"${naming.projectDirName(id)}.Test"
 
             s"tests/$prjDirName/$prjTestName.csproj"
         }
 
-        val tests = testsSrcs ++ csproj(s"$prjDir.Test", csdepsTest ++ Seq(s"src/$prjDir/$prjDir.csproj"), basicTestDeps)
+        val tests = testsSrcs ++ csproj(s"$prjDir.Test", csdepsTest ++ Seq(s"src/$prjDir/${naming.projectId(t.typespace.domain.id)}.csproj"), basicTestDeps)
 
         val nuspecs = Seq(nuspecModule, nuspecTestModule)
         addPrefix(src, Seq(s"src", prjDir)) ++
@@ -135,8 +135,8 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
       out =>
         val id = out.typespace.domain.id
 
-        val prjDirName  = s"${naming.projectDirName(id)}"
-        val prjName     = prjDirName
+        val prjDirName  = naming.projectDirName(id)
+        val prjName     = naming.projectId(id)
         val prjTestName = s"$prjDirName.Test"
 
         Seq(
@@ -320,7 +320,7 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
        """.stripMargin.trim
 
     Seq(
-      ExtendedModule.RuntimeModule(Module(ModuleId(Seq.empty, s"${naming.pkgId}.sln"), sln)),
+      ExtendedModule.RuntimeModule(Module(ModuleId(Seq.empty, s"project.sln"), sln)),
       ExtendedModule.RuntimeModule(Module(ModuleId(Seq.empty, s"Directory.Build.props"), format(props))),
       ExtendedModule.RuntimeModule(Module(ModuleId(Seq.empty, s"README.md"), readme)),
     )

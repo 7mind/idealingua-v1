@@ -23,20 +23,23 @@
         packages = rec {
           idealingua-v1 = sbt.lib.mkSbtDerivation {
             pkgs = pkgs;
-            version = "1.3.19";
+            version = "1.4.0";
             pname = "idealingua-v1";
             src = ./.;
-            depsSha256 = "sha256-d9sTBvQbLwXH9aqy6N+a79jD8SIn9+/87KWZ3gXXW/I=";
+            depsSha256 = "sha256-zfBdWVlSj0aSWxUmHcA0igLuBLYzxmCebR7/7jorX1o=";
             nativeBuildInputs = with pkgs; [
               coursier
               libarchive
+              ammonite_2_13
             ];
             depsWarmupCommand = ''
-              ./sbtgen.sc
+              #export COURSIER_ARCHIVE_CACHE="$${COURSIER_CACHE}/arc"
+              amm --home $$TMP --tmp-output-directory --no-home-predef ./sbtgen.sc
               sbt "++2.13 clean" "++2.13 compile"
             '';
             buildPhase = ''
-              ./sbtgen.sc
+              #export COURSIER_ARCHIVE_CACHE="$${COURSIER_CACHE}/arc"
+              amm --home $$TMP --tmp-output-directory --no-home-predef ./sbtgen.sc
               sbt "++2.13 clean" "++2.13 Universal/packageBin"
             '';
             installPhase = ''
@@ -53,6 +56,7 @@
 
             graalvm-ce
             coursier
+            ammonite_2_13
             pkgs.buildPackages.sbt
 
             dotnet-sdk_6
