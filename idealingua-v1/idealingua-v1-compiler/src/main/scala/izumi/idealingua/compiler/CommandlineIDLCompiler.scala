@@ -18,6 +18,7 @@ import izumi.idealingua.translator.*
 
 import java.nio.file.*
 import java.time.{ZoneId, ZonedDateTime}
+import java.util
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
@@ -238,7 +239,11 @@ object CommandlineIDLCompiler {
         io.circe.parser.parse(v) match {
           case Right(b) if b.isBoolean => k -> b.asBoolean.get
           case Right(s) if s.isString  => k -> s.asString.get
-          case _                       => k -> v
+          case _ =>
+            if (k == "sbt.scalaVersions") {
+              val args           = v.split(";")
+              k -> new util.ArrayList[String](args.toList.asJava)
+            } else k -> v
         }
     }
     valToJson(ConfigFactory.parseMap(updatedEnv.asJava).root().unwrapped())
@@ -246,19 +251,15 @@ object CommandlineIDLCompiler {
 
   private def valToJson(v: AnyRef): Json = {
     import io.circe.syntax.*
-
     (v: @unchecked) match {
       case m: java.util.HashMap[?, ?] =>
         m.asScala.map {
           case (k, value) =>
             k.toString -> valToJson(value.asInstanceOf[AnyRef])
         }.asJson
-
-      case s: String =>
-        s.asJson
-
-      case b: java.lang.Boolean =>
-        b.asJson
+      case l: java.util.ArrayList[?] => l.asScala.map(v => valToJson(v.asInstanceOf[AnyRef])).toArray.asJson
+      case s: String                 => s.asJson
+      case b: java.lang.Boolean      => b.asJson
     }
   }
 
