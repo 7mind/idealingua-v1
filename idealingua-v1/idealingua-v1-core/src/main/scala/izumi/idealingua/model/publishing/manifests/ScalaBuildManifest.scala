@@ -12,17 +12,19 @@ case class ScalaBuildManifest(
 case class SbtOptions(
   projectNaming: ProjectNamingRule,
   enableScalaJs: Boolean,
-  scalaVersion: Option[String],
+  scalaVersions: List[String],
   sbtVersion: Option[String],
   enableDocs: Option[Boolean],
-)
+) {
+  def isCrossBuild: Boolean = scalaVersions.size > 1
+}
 
 object SbtOptions {
   def example: SbtOptions = {
     SbtOptions(
       projectNaming = ProjectNamingRule.example,
       enableScalaJs = true,
-      scalaVersion  = None,
+      scalaVersions = Nil,
       sbtVersion    = None,
       enableDocs    = None,
     )
