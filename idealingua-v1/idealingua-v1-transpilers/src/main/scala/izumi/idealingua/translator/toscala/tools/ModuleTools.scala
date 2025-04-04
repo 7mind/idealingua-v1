@@ -11,8 +11,8 @@ import izumi.idealingua.translator.toscala.products.RenderableCogenProduct
 import scala.meta.Tree
 import scala.meta.internal.prettyprinters.TreeSyntax
 
-class ModuleTools() {
-  def toSource(id: DomainId, moduleId: ModuleId, product: RenderableCogenProduct, scalaVersion: Option[String]): Seq[Module] = {
+class ModuleTools {
+  def toSource(id: DomainId, moduleId: ModuleId, product: RenderableCogenProduct, scalaVersion: List[String]): Seq[Module] = {
     product match {
       case p if p.isEmpty =>
         Seq.empty
@@ -23,7 +23,6 @@ class ModuleTools() {
         val content: String = withPackage(id.toPackage, code)
         Seq(Module(moduleId, content))
     }
-
   }
 
   def withPackage(pkg: idealingua.model.common.Package, code: String): String = {
