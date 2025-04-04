@@ -23,10 +23,10 @@
         packages = rec {
           idealingua-v1 = sbt.lib.mkSbtDerivation {
             pkgs = pkgs;
-            version = "1.4.0";
+            version = "1.4.1";
             pname = "idealingua-v1";
             src = ./.;
-            depsSha256 = "sha256-zfBdWVlSj0aSWxUmHcA0igLuBLYzxmCebR7/7jorX1o=";
+            depsSha256 = "sha256-27zdbd7WGQE1jdUmZPEold8vB21PkiGsDEay0lL3bz0=";
             nativeBuildInputs = with pkgs; [
               coursier
               libarchive
