@@ -72,7 +72,8 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
         val rootSettings =
           if (options.manifest.sbt.isCrossBuild) {
             s""".settings(
-               |   crossScalaVersions := Nil
+               |   crossScalaVersions := Nil,
+               |   publish / skip := true
                |)""".stripMargin
           } else ""
 
