@@ -53,7 +53,23 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
         val projIds = projects.keys.toList.sorted
 
-        val moduleSettings = crossModuleSettings
+        val idlVersion = options.manifest.common.izumiVersion
+
+        val renderer = new SbtRenderer()
+
+        val projectDeps = renderer.renderOp {
+          val versionOp = if (options.manifest.sbt.enableScalaJs) "%%%" else "%%"
+
+          "libraryDependencies" -> Append(
+            Seq(
+              RawExpr(s""" "$idlcGroupId" $versionOp "idealingua-v1-runtime-rpc-scala" % "$idlVersion" """),
+              RawExpr(s""" "$idlcGroupId" $versionOp "idealingua-v1-model" % "$idlVersion" """),
+            ),
+            List(Scope.Project),
+          )
+        }
+
+        val moduleSettings = crossModuleSettings(projectDeps)
 
         val projDefs = projIds.map {
           id =>
@@ -104,15 +120,6 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
         val bundle = s"lazy val `$bundleId` = ${crossProject(bundleId)}$depends$moduleSettings"
 
-        val idlVersion = options.manifest.common.izumiVersion
-        val deps = Seq(
-          "libraryDependencies" -> Append(
-            Seq(
-              RawExpr(s""" "$idlcGroupId" %% "idealingua-v1-runtime-rpc-scala" % "$idlVersion" """),
-              RawExpr(s""" "$idlcGroupId" %% "idealingua-v1-model" % "$idlVersion" """),
-            )
-          )
-        )
         // Workaround for sbt error due to circe-core version 0.14+ being too far away from required by circe-derivation 0.13.0-M5
         val circeDerivationWorkaround = Seq(
           "libraryDependencySchemes" -> Append(
@@ -141,8 +148,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
           "licenses"     -> Append(options.manifest.common.licenses),
         )
 
-        val renderer = new SbtRenderer()
-        val keys     = (docs ++ metadata ++ resolvers ++ deps ++ circeDerivationWorkaround).map(renderer.renderOp)
+        val keys = (docs ++ metadata ++ resolvers ++ circeDerivationWorkaround).map(renderer.renderOp)
 
         val content = keys ++ projDefs ++ Seq(bundle, root)
 
@@ -199,19 +205,20 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
     }
   }
 
-  private def crossModuleSettings: String = {
+  private def crossModuleSettings(depsSetting: String): String = {
     if (options.manifest.sbt.isCrossBuild) {
       s""".settings(
-         |  $crossScalaVersionsSetting
+         |  $crossScalaVersionsSetting,
          |  scalaVersion := crossScalaVersions.value.head,
-         |  $scalacOptions
+         |  $scalacOptions,
+         |  $depsSetting,
          |)""".stripMargin
     } else ""
   }
 
   private def crossScalaVersionsSetting: String = {
     val asString = options.manifest.sbt.scalaVersions.map(v => s""""$v"""").mkString(", ")
-    s"crossScalaVersions := Seq($asString),"
+    s"crossScalaVersions := Seq($asString)"
   }
 
   private def scalacOptions: String = {
@@ -225,6 +232,6 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
     s"""scalacOptions ++= { scalaVersion.value match {
        |$perScalaVersionOptions
-       |  }},""".stripMargin
+       |  }}""".stripMargin
   }
 }
