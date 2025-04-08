@@ -14,12 +14,15 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
   private val idlcGroupId = MacroParameters.projectGroupId().getOrElse("UNSET-GROUP-ID")
 
   override def layout(outputs: Seq[Translated]): Layouted = {
-    def project(id: String): String = {
+    def regularProject(id: String): String = {
+      s"""(project in file("$id"))"""
+    }
+
+    def crossProject(id: String): String = {
       if (options.manifest.sbt.enableScalaJs) {
         s"""(crossProject(JVMPlatform, JSPlatform).crossType(CrossType.Pure).in(file("$id")))"""
-
       } else {
-        s"""(project in file("$id"))"""
+        regularProject(id)
       }
     }
 
@@ -63,34 +66,43 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
               ""
             }
 
-            s"""lazy val `$id` = ${project(id)}$depends$moduleSettings"""
+            s"""lazy val `$id` = ${crossProject(id)}$depends$moduleSettings"""
         }
 
         val bundleId = naming.bundleId
-        val rootId   = naming.pkgId
 
-        val rootSettings =
-          if (options.manifest.sbt.isCrossBuild) {
+        val root = {
+          val rootId = naming.pkgId
+          val rootSettings = if (options.manifest.sbt.isCrossBuild) {
             s""".settings(
                |   crossScalaVersions := Nil,
                |   publish / skip := true
                |)""".stripMargin
           } else ""
+          val aggregatedProjects = (projIds ++ Seq(bundleId))
+            .flatMap(
+              id =>
+                if (options.manifest.sbt.enableScalaJs) {
+                  Seq(s"`$id`.js", s"`$id`.jvm")
+                } else {
+                  Seq(s"`$id`")
+                }
+            ).mkString(",\n    ")
 
-        val root =
           s"""
-             |lazy val `$rootId` = ${project(".")}
+             |lazy val `$rootId` = ${regularProject(".")}
              |  .aggregate(
-             |    ${(projIds ++ Seq(bundleId)).map(id => s"`$id`").mkString(",\n    ")}
+             |    $aggregatedProjects
              |  )$rootSettings
-         """.stripMargin
+             |         """.stripMargin
+        }
 
         val allDeps = projIds.map(i => s"`$i`")
         val depends = if (allDeps.nonEmpty) {
           allDeps.mkString("\n  .dependsOn(\n    ", ",\n    ", "\n  )")
         } else ""
 
-        val bundle = s"lazy val `$bundleId` = ${project(bundleId)}$depends$moduleSettings"
+        val bundle = s"lazy val `$bundleId` = ${crossProject(bundleId)}$depends$moduleSettings"
 
         val idlVersion = options.manifest.common.izumiVersion
         val deps = Seq(
@@ -198,7 +210,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
   }
 
   private def crossScalaVersionsSetting: String = {
-    val asString = options.manifest.sbt.scalaVersions.map(v => s""""$v"""" ).mkString(", ")
+    val asString = options.manifest.sbt.scalaVersions.map(v => s""""$v"""").mkString(", ")
     s"crossScalaVersions := Seq($asString),"
   }
 
@@ -208,7 +220,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
     val perScalaVersionOptions =
       (versions.flatMap {
         case v if v.startsWith("2") => Some(s"""case "$v" => Seq("-Xsource:3-cross")""".stripMargin)
-        case _ => None
+        case _                      => None
       } :+ defaultCase).mkString("    ", "\n    ", "")
 
     s"""scalacOptions ++= { scalaVersion.value match {
