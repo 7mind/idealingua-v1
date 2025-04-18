@@ -32,7 +32,7 @@ jobs:
       - name: Build and Test
         env:
           SCALA_VERSION: ${{ matrix.scala }}
-        run: ./build.sh nix gen coverage
+        run: ./run --nix :gen :coverage
       - uses: bitwarden/sm-action@v2
         if: needs.checksecret.outputs.HAVE_SECRETS == 'true'
         with:
@@ -59,7 +59,7 @@ jobs:
           SCALA_VERSION: ${{ matrix.scala }}
         run: |
           if [[ "$CI_BRANCH_TAG" =~ ^v.*$ && "$CI_PULL_REQUEST" == "false" ]] ; then
-            ./build.sh nix flake-validate
+            ./run --nix :flake-refresh --validate
           fi
 
 
@@ -69,14 +69,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [ 'test-scala', 'test-cs', 'test-ts', 'test-pb' ]
+        test: [ ':test-scala', ':test-cs', ':test-ts', ':test-pb' ]
         scala: [ '2.12', '2.13' ]
     steps:
       - uses: 7mind/github-env@minimal
       - name: Test compiler
         env:
           SCALA_VERSION: ${{ matrix.scala }}
-        run: ./build.sh nix gen ${{ matrix.test }}
+        run: ./run --nix :gen ${{ matrix.test }}
       - uses: dorny/test-reporter@v1
         if: (needs.checksecret.outputs.HAVE_SECRETS == 'true') && (success() || failure())
         with:
@@ -98,7 +98,7 @@ jobs:
           secrets: |
             aa0a790c-4030-4126-bc77-b193010a0f04 > TOKEN_NPM
       - name: Publish NPM artifacts
-        run: ./build.sh nix publish-npm
+        run: ./run --nix :publish-npm
 
   publish-nuget:
     runs-on: ubuntu-latest
@@ -114,7 +114,7 @@ jobs:
           secrets: |
             637c5cad-a680-4ea3-ac8b-b193010bee40 > TOKEN_NUGET
       - name: Publish Nuget artifacts
-        run: ./build.sh nix publish-nuget
+        run: ./run --nix :publish-nuget
 
   publish-scala:
     runs-on: ubuntu-latest
@@ -146,7 +146,7 @@ jobs:
             openssl aes-256-cbc -K ${OPENSSL_KEY} -iv ${OPENSSL_IV} -in secrets.tar.enc -out secrets.tar -d
             tar xvf secrets.tar
           fi
-          ./build.sh nix gen publish-scala
+          ./run --nix :gen :publish-scala
 
   all-good:
     if: always()
