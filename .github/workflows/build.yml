@@ -98,6 +98,8 @@ jobs:
           secrets: |
             aa0a790c-4030-4126-bc77-b193010a0f04 > TOKEN_NPM
       - name: Publish NPM artifacts
+        env:
+          SCALA_VERSION: 2.13 # not used        
         run: ./run --nix :publish-npm
 
   publish-nuget:
@@ -114,6 +116,8 @@ jobs:
           secrets: |
             637c5cad-a680-4ea3-ac8b-b193010bee40 > TOKEN_NUGET
       - name: Publish Nuget artifacts
+        env:
+          SCALA_VERSION: 2.13 # not used        
         run: ./run --nix :publish-nuget
 
   publish-scala:
