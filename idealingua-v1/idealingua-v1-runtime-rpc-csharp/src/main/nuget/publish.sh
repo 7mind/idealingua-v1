@@ -12,7 +12,7 @@ cd $THISDIR/solution
 [[ -z "$TOKEN_NUGET" ]] && exit 0
 [[ -z "$CI_BUILD_UNIQ_SUFFIX" ]] && exit 0
 
-sed -i 's/0.0.1-build.0/'${IDEALINGUA_VERSION}'/g' Izumi.RPC.Runtime.CS.IRT/Izumi.RPC.Runtime.CS.IRT.csproj
+sed -i 's/0.0.1-build.0/'${PROJECT_VERSION}'/g' Izumi.RPC.Runtime.CS.IRT/Izumi.RPC.Runtime.CS.IRT.csproj
 
 if [[ "$CI_BRANCH_TAG" =~ ^v.*$ ]] ; then
     dotnet build -c Release
