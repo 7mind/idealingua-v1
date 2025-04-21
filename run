@@ -5,11 +5,12 @@ set -euo pipefail
 read_trimmed_string() { [[ -s "$1" ]] && sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' "$1" || echo "$2"; }
 
 export CACHE_DIR="${XDG_CACHE_HOME:-"${HOME}/.cache"}"
-export MOBALA_CACHE="${CACHE_DIR}/mobala.sh"
-export MOBALA_CACHE_TMP="${CACHE_DIR}/mobala.sh.tmp"
+export MOBALA_CACHE_MAIN="${CACHE_DIR}/mobala.sh"
+export MOBALA_CACHE_LIB="${CACHE_DIR}/mobala-lib.sh"
 export MOBALA_VERSION=$(read_trimmed_string ".mobala/version.txt" "release")
 export MOBALA_BASE="https://raw.githubusercontent.com/7mind/mobala/refs/heads/${MOBALA_VERSION}"
 export MOBALA_FILE="${MOBALA_BASE}/mobala.sh"
+export MOBALA_LIB_ILE="${MOBALA_BASE}/mobala-lib.sh"
 
 script_path="$(realpath "$0")"
 script_dirname="$(dirname "$script_path")"
@@ -22,10 +23,10 @@ export MOBALA_MODS=${MOBALA_MODS:-"${MOBALA_PATH}/${MOBALA_SUBDIR}/mods"}
 export MOBALA_PARAMS=${MOBALA_PARAMS:-"${MOBALA_PATH}/${MOBALA_SUBDIR}/params"}
 
 function check-cache() {
-    if [[ -f "${MOBALA_CACHE}" ]]; then
-        echo "[info] Mobala.sh cache found at '${MOBALA_CACHE}'"
+    if [[ -f "${MOBALA_CACHE_MAIN}" && -f "${MOBALA_CACHE_LIB}" ]]; then
+        echo "[info] mobala.sh cache found at '${MOBALA_CACHE}'"
     else
-        echo "[info] Mobala.sh cache not found at '${MOBALA_CACHE}'"
+        echo "[info] mobala.sh cache not found at '${MOBALA_CACHE}'"
     fi
 }
 
@@ -49,12 +50,17 @@ function download-file() {
 
 
 function update-cache() {
-    download-file "${MOBALA_FILE}" "${MOBALA_CACHE}"
+    download-file "${MOBALA_LIB_FILE}" "${MOBALA_CACHE_LIB}"
+    download-file "${MOBALA_FILE}" "${MOBALA_CACHE_MAIN}"
 }
 
 function verify-cache() {
-    if ! [[ -f "${MOBALA_CACHE}" ]]; then
-        >&2 echo "[error] Mobala.sh cache not found."
+    if ! [[ -f "${MOBALA_CACHE_MAIN}" ]]; then
+        >&2 echo "[error] mobala.sh cache not found."
+        exit 1
+    fi
+    if ! [[ -f "${MOBALA_CACHE_LIB}" ]]; then
+        >&2 echo "[error] mobala-lib.sh cache not found."
         exit 1
     fi
 }
