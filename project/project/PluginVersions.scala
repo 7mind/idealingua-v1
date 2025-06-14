@@ -4,4 +4,6 @@ object PV {
 
   val sbt_scoverage = "2.3.1"
   val sbt_pgp       = "2.3.1"
+
+  val scala_js_version = "1.19.0"
 }

@@ -58,7 +58,7 @@ object Idealingua {
   val settings = GlobalSettings(
     groupId        = "io.7mind.izumi",
     sbtVersion     = None,
-    scalaJsVersion = Version.VConst("1.17.0"),
+    scalaJsVersion = PV.scala_js_version,
   )
 
   object Deps {
