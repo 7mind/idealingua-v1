@@ -1,4 +1,4 @@
-import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.104`
+import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.107`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
 
@@ -226,35 +226,44 @@ object Idealingua {
       final val rootSettings = Defaults.SbtMetaRootOptions ++ Defaults.RootOptions ++ Seq(
         "crossScalaVersions" := "Nil".raw,
         "organization" in SettingScope.Build := "io.7mind.izumi",
-        "sonatypeProfileName" := "io.7mind",
-        "sonatypeSessionName" := """s"[sbt-sonatype] ${name.value} ${version.value} ${java.util.UUID.randomUUID}"""".raw,
         "publishTo" in SettingScope.Build :=
-          """
-            |(if (!isSnapshot.value) {
-            |    sonatypePublishToBundle.value
+          """{
+            |  // https://github.com/sbt/sbt/issues/8131
+            |  if (isSnapshot.value) {
+            |    Some(
+            |      "central-snapshots" at "https://central.sonatype.com/repository/maven-snapshots/"
+            |    )
             |  } else {
-            |    Some(Opts.resolver.sonatypeSnapshots)
-            |})
+            |    localStaging.value
+            |  }
+            |}
             |""".stripMargin.raw,
         "credentials" in SettingScope.Build ++=
-          """
-            |{
-            |val credTarget = Path.userHome / ".sbt" / "secrets" / "credentials.sonatype-nexus.properties"
-            |if (credTarget.exists) {
-            |  Seq(Credentials(credTarget))
-            |} else {
-            |  Seq.empty
-            |}
+          """{
+            |  val credTarget = Path.userHome / ".sbt" / "secrets" / "credentials.sonatype-new.properties"
+            |  if (credTarget.exists) {
+            |    Seq(Credentials(credTarget))
+            |  } else {
+            |    Seq.empty
+            |  }
             |}""".stripMargin.raw,
         "credentials" in SettingScope.Build ++=
-          """
-            |{
-            |val credTarget = file(".") / ".secrets" / "credentials.sonatype-nexus.properties"
-            |if (credTarget.exists) {
-            |  Seq(Credentials(credTarget))
-            |} else {
-            |  Seq.empty
-            |}
+          """{
+            |  val credTarget = Path.userHome / ".sbt" / "secrets" / "credentials.sonatype-nexus.properties"
+            |  if (credTarget.exists) {
+            |    Seq(Credentials(credTarget))
+            |  } else {
+            |    Seq.empty
+            |  }
+            |}""".stripMargin.raw,
+        "credentials" in SettingScope.Build ++=
+          """{
+            |  val credTarget = file(".") / ".secrets" / "credentials.sonatype-nexus.properties"
+            |  if (credTarget.exists) {
+            |    Seq(Credentials(credTarget))
+            |  } else {
+            |    Seq.empty
+            |  }
             |}""".stripMargin.raw,
         "refreshFlakeTask" := """{
           val log = streams.value.log
