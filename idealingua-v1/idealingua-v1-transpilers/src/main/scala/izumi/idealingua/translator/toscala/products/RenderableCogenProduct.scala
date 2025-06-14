@@ -45,7 +45,7 @@ trait AccompaniedCogenProduct[T <: Defn] extends MultipleCogenProduct[T] {
     defns.filterNot(p => isEmpty(p.templ))
   }
 
-  private def isEmpty(t: Template): Boolean = t.stats.isEmpty && t.inits.isEmpty
+  private def isEmpty(t: Template): Boolean = t.body.stats.isEmpty && t.inits.isEmpty
 
   override def render: List[Defn] = {
     super.render ++ filterEmptyObjects(List(companion))
