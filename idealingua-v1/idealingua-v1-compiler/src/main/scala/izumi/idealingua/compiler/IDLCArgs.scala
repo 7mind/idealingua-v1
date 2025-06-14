@@ -2,10 +2,9 @@ package izumi.idealingua.compiler
 
 import java.io.File
 import java.nio.file.{Path, Paths}
-
-import izumi.fundamentals.platform.cli.model.raw.RawEntrypointParams
-import izumi.fundamentals.platform.cli.model.schema._
-import izumi.fundamentals.platform.cli.{CLIParserImpl, ParserFailureHandler}
+import izumi.fundamentals.platform.cli.model.EntrypointArgs
+import izumi.fundamentals.platform.cli.model.schema.*
+import izumi.fundamentals.platform.cli.{CLIParserImpl, MultiModalArgsParserImpl, ParserFailureHandler, SubArgsParserImpl}
 
 case class LanguageOpts(
   id: String,
@@ -65,7 +64,7 @@ object IDLCArgs {
   object IP extends ParserDef
 
   def parseUnsafe(args: Array[String]): IDLCArgs = {
-    val parsed = new CLIParserImpl().parse(args) match {
+    val parsed = new CLIParserImpl(new MultiModalArgsParserImpl, new SubArgsParserImpl).parse(args) match {
       case Left(value) =>
         ParserFailureHandler.TerminatingHandler.onParserError(value)
       case Right(value) =>
@@ -93,7 +92,7 @@ object IDLCArgs {
 
     val init = parsed.roles.find(_.role == "init").map {
       r =>
-        new File(r.freeArgs.head).toPath
+        new File(r.roleParameters.freeArgs.head).toPath
     }
 
     val parameters = parsed.globalParameters
@@ -144,7 +143,7 @@ object IDLCArgs {
     )
   }
 
-  private def parseDefs(parameters: RawEntrypointParams, argDef: ParserDef.ArgDef): Map[String, String] = {
+  private def parseDefs(parameters: EntrypointArgs, argDef: ParserDef.ArgDef): Map[String, String] = {
     parameters
       .findValues(argDef).map {
         v =>

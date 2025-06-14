@@ -26,14 +26,14 @@ trait ScalaMetaTools {
       }
     }
 
-    def modifyDefinitions(modify: (List[Stat]) => List[Stat]): T = {
+    def modifyDefinitions(modify: List[Stat] => List[Stat]): T = {
       val extended = (defn: @unchecked) match {
         case o: Defn.Object =>
-          o.copy(templ = o.templ.copy(stats = modify(o.templ.stats)))
+          o.copy(templ = o.templ.copy(stats = modify(o.templ.body.stats)))
         case o: Defn.Class =>
-          o.copy(templ = o.templ.copy(stats = modify(o.templ.stats)))
+          o.copy(templ = o.templ.copy(stats = modify(o.templ.body.stats)))
         case o: Defn.Trait =>
-          o.copy(templ = o.templ.copy(stats = modify(o.templ.stats)))
+          o.copy(templ = o.templ.copy(stats = modify(o.templ.body.stats)))
       }
       extended.asInstanceOf[T]
     }
