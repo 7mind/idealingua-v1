@@ -23,7 +23,7 @@ function run-publish-scala() {
       "$VERSION_COMMAND clean" \
       "$VERSION_COMMAND package" \
       "$VERSION_COMMAND publishSigned" \
-      sonatypeBundleRelease || exit 1
+      sonaUpload sonaRelease || exit 1
   fi
 
 }

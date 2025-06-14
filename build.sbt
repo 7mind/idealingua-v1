@@ -30,7 +30,7 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.5",
+      "3.3.6",
       "2.13.16",
       "2.12.20"
     ),
@@ -158,7 +158,7 @@ lazy val `idealingua-v1-model` = project.in(file("idealingua-v1/idealingua-v1-mo
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.5") => Seq(
+      case (_, "3.3.6") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -326,7 +326,7 @@ lazy val `idealingua-v1-core` = project.in(file("idealingua-v1/idealingua-v1-cor
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.5") => Seq(
+      case (_, "3.3.6") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -382,7 +382,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.5",
+      "3.3.6",
       "2.13.16",
       "2.12.20"
     ),
@@ -510,7 +510,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = project.in(file("idealingua-v1/idea
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.5") => Seq(
+      case (_, "3.3.6") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -557,7 +557,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.5",
+      "3.3.6",
       "2.13.16",
       "2.12.20"
     ),
@@ -685,7 +685,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.5") => Seq(
+      case (_, "3.3.6") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -872,7 +872,7 @@ lazy val `idealingua-v1-transpilers` = project.in(file("idealingua-v1/idealingua
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.5") => Seq(
+      case (_, "3.3.6") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -914,7 +914,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.5",
+      "3.3.6",
       "2.13.16",
       "2.12.20"
     ),
@@ -1042,7 +1042,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.5") => Seq(
+      case (_, "3.3.6") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -1078,7 +1078,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.5",
+      "3.3.6",
       "2.13.16",
       "2.12.20"
     ),
@@ -1206,7 +1206,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.5") => Seq(
+      case (_, "3.3.6") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -1242,7 +1242,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.5",
+      "3.3.6",
       "2.13.16",
       "2.12.20"
     ),
@@ -1370,7 +1370,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.5") => Seq(
+      case (_, "3.3.6") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -1406,7 +1406,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.5",
+      "3.3.6",
       "2.13.16",
       "2.12.20"
     ),
@@ -1534,7 +1534,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.5") => Seq(
+      case (_, "3.3.6") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -1706,7 +1706,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.5") => Seq(
+      case (_, "3.3.6") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
@@ -1811,32 +1811,40 @@ lazy val `idealingua-v1` = (project in file("."))
     ),
     crossScalaVersions := Nil,
     ThisBuild / organization := "io.7mind.izumi",
-    sonatypeProfileName := "io.7mind",
-    sonatypeSessionName := s"[sbt-sonatype] ${name.value} ${version.value} ${java.util.UUID.randomUUID}",
-    ThisBuild / publishTo := 
-    (if (!isSnapshot.value) {
-        sonatypePublishToBundle.value
+    ThisBuild / publishTo := {
+      // https://github.com/sbt/sbt/issues/8131
+      if (isSnapshot.value) {
+        Some(
+          "central-snapshots" at "https://central.sonatype.com/repository/maven-snapshots/"
+        )
       } else {
-        Some(Opts.resolver.sonatypeSnapshots)
-    })
+        localStaging.value
+      }
+    }
     ,
-    ThisBuild / credentials ++= 
-    {
-    val credTarget = Path.userHome / ".sbt" / "secrets" / "credentials.sonatype-nexus.properties"
-    if (credTarget.exists) {
-      Seq(Credentials(credTarget))
-    } else {
-      Seq.empty
-    }
+    ThisBuild / credentials ++= {
+      val credTarget = Path.userHome / ".sbt" / "secrets" / "credentials.sonatype-new.properties"
+      if (credTarget.exists) {
+        Seq(Credentials(credTarget))
+      } else {
+        Seq.empty
+      }
     },
-    ThisBuild / credentials ++= 
-    {
-    val credTarget = file(".") / ".secrets" / "credentials.sonatype-nexus.properties"
-    if (credTarget.exists) {
-      Seq(Credentials(credTarget))
-    } else {
-      Seq.empty
-    }
+    ThisBuild / credentials ++= {
+      val credTarget = Path.userHome / ".sbt" / "secrets" / "credentials.sonatype-nexus.properties"
+      if (credTarget.exists) {
+        Seq(Credentials(credTarget))
+      } else {
+        Seq.empty
+      }
+    },
+    ThisBuild / credentials ++= {
+      val credTarget = file(".") / ".secrets" / "credentials.sonatype-nexus.properties"
+      if (credTarget.exists) {
+        Seq(Credentials(credTarget))
+      } else {
+        Seq.empty
+      }
     },
     refreshFlakeTask := {
               val log = streams.value.log
@@ -1871,7 +1879,7 @@ lazy val `idealingua-v1` = (project in file("."))
     ThisBuild / scalacOptions += """-Xmacro-settings:sbt-js-version=1.0.2""",
     ThisBuild / scalacOptions += """-Xmacro-settings:crossproject-version=1.3.2""",
     ThisBuild / scalacOptions += s"-Xmacro-settings:is-ci=${insideCI.value}",
-    libraryDependencies += "io.7mind.izumi.sbt" % "sbtgen_2.13" % "0.0.104" % Provided,
+    libraryDependencies += "io.7mind.izumi.sbt" % "sbtgen_2.13" % "0.0.107" % Provided,
     ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
   )
   .enablePlugins(IzumiPlugin)
