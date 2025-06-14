@@ -1862,7 +1862,7 @@ lazy val `idealingua-v1` = (project in file("."))
     },
     refreshFlakeTask := {
               val log = streams.value.log
-              val result = "./build.sh nix flake-refresh flake-validate" ! log
+              val result = "./run --nix :flake-refresh --validate" ! log
               if (result != 0) {
                 throw new MessageOnlyException("flake.nix update failed!")
               }
