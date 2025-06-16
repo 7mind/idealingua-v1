@@ -1861,12 +1861,12 @@ lazy val `idealingua-v1` = (project in file("."))
       }
     },
     refreshFlakeTask := {
-              val log = streams.value.log
-              val result = "./run --nix :flake-refresh --validate" ! log
-              if (result != 0) {
-                throw new MessageOnlyException("flake.nix update failed!")
-              }
-            },
+      val log = streams.value.log
+      val result = Process("./run --nix :flake-refresh", None, "SCALA_VERSION" -> "2.13") ! log
+      if (result != 0) {
+        throw new MessageOnlyException("flake.nix update failed!")
+      }
+    },
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
       inquireVersions,
@@ -1888,10 +1888,10 @@ lazy val `idealingua-v1` = (project in file("."))
             ),
     ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git")),
     ThisBuild / scalacOptions += s"""-Xmacro-settings:scalatest-version=${V.scalatest}""",
-    ThisBuild / scalacOptions += """-Xmacro-settings:scalajs-version=PV.scala_js_version""",
-    ThisBuild / scalacOptions += """-Xmacro-settings:bundler-version=0.21.1""",
-    ThisBuild / scalacOptions += """-Xmacro-settings:sbt-js-version=1.0.2""",
-    ThisBuild / scalacOptions += """-Xmacro-settings:crossproject-version=1.3.2""",
+    ThisBuild / scalacOptions += s"""-Xmacro-settings:scalajs-version=1.19.0""",
+    ThisBuild / scalacOptions += s"""-Xmacro-settings:bundler-version=${"0.21.1"}""",
+    ThisBuild / scalacOptions += s"""-Xmacro-settings:sbt-js-version=${"1.0.2"}""",
+    ThisBuild / scalacOptions += s"""-Xmacro-settings:crossproject-version=${"1.3.2"}""",
     ThisBuild / scalacOptions += s"-Xmacro-settings:is-ci=${insideCI.value}",
     libraryDependencies += "io.7mind.izumi.sbt" % "sbtgen_2.13" % "0.0.107" % Provided,
     ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
