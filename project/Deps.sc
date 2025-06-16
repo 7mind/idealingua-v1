@@ -1,6 +1,7 @@
 import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.107`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
+import $file.project.PluginVersions
 
 object Idealingua {
 
@@ -189,22 +190,20 @@ object Idealingua {
     )
 
     implicit class VersionOptionExt(version: Option[Version]) {
-      def asString = {
-
+      def asExpr = {
         version match {
-          case Some(v: Version.VConst) => v.value
-          case Some(v: Version.VExpr)  => v.value
-          case _                       => ???
+          case Some(v) => v.asExpr
+          case _       => ???
         }
       }
     }
 
     implicit class VersionExt(version: Version) {
-      def asString = {
-
+      def asExpr = {
         version match {
-          case v: Version.VConst => v.value
-          case v: Version.VExpr  => v.value
+          case v: Version.VConst      => s"\"${v.value}\""
+          case v: Version.VExpr       => v.value
+          case v: Version.SbtGen.type => v.value
         }
       }
     }
@@ -266,12 +265,12 @@ object Idealingua {
             |  }
             |}""".stripMargin.raw,
         "refreshFlakeTask" := """{
-          val log = streams.value.log
-          val result = "./run --nix :flake-refresh --validate" ! log
-          if (result != 0) {
-            throw new MessageOnlyException("flake.nix update failed!")
-          }
-        }""".stripMargin.raw,
+                                |  val log = streams.value.log
+                                |  val result = Process("./run --nix :flake-refresh", None, "SCALA_VERSION" -> "2.13") ! log
+                                |  if (result != 0) {
+                                |    throw new MessageOnlyException("flake.nix update failed!")
+                                |  }
+                                |}""".stripMargin.raw,
         "releaseProcess" := """Seq[ReleaseStep](
                               |  checkSnapshotDependencies,
                               |  inquireVersions,
@@ -293,11 +292,11 @@ object Idealingua {
           Developer(id = "7mind", name = "Septimal Mind", url = url("https://github.com/7mind"), email = "team@7mind.io"),
         )""".raw,
         "scmInfo" in SettingScope.Build := """Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git"))""".raw,
-        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalatest-version=$${${V.scalatest.asString}}${"\"" * 3}""".raw,
-        "scalacOptions" in SettingScope.Build += s"""${"\"" * 3}-Xmacro-settings:scalajs-version=${Idealingua.settings.scalaJsVersion.asString}${"\"" * 3}""".raw,
-        "scalacOptions" in SettingScope.Build += s"""${"\"" * 3}-Xmacro-settings:bundler-version=${Idealingua.settings.bundlerVersion.asString}${"\"" * 3}""".raw,
-        "scalacOptions" in SettingScope.Build += s"""${"\"" * 3}-Xmacro-settings:sbt-js-version=${Idealingua.settings.sbtJsDependenciesVersion.asString}${"\"" * 3}""".raw,
-        "scalacOptions" in SettingScope.Build += s"""${"\"" * 3}-Xmacro-settings:crossproject-version=${Idealingua.settings.crossProjectVersion.asString}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalatest-version=$${${V.scalatest.asExpr}}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalajs-version=${PluginVersions.PV.scala_js_version}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:bundler-version=$${${Idealingua.settings.bundlerVersion.asExpr}}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:sbt-js-version=$${${Idealingua.settings.sbtJsDependenciesVersion.asExpr}}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:crossproject-version=$${${Idealingua.settings.crossProjectVersion.asExpr}}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += """s"-Xmacro-settings:is-ci=${insideCI.value}"""".raw,
 
         // scala-steward workaround
