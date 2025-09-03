@@ -48,7 +48,9 @@ including the following components:
 Syntax Highlighting
 -------------------
 
-[VSCode Extension](https://marketplace.visualstudio.com/items?itemName=SeptimalMind.idealingua1) [VSCodium Extension](https://open-vsx.org/extension/SeptimalMind/idealingua1)
+* [VSCode Extension](https://marketplace.visualstudio.com/items?itemName=SeptimalMind.idealingua1)
+* [VSCodium Extension](https://open-vsx.org/extension/SeptimalMind/idealingua1)
+* [Intellij Highlighting (MPS Jar)](https://github.com/7mind/jetbrains-izumi-idl-syntax)
 
 Project Status
 --------------
