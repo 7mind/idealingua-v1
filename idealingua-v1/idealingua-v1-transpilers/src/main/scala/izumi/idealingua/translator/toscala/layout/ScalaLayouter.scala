@@ -89,12 +89,12 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
         val root = {
           val rootId = naming.pkgId
-          val rootSettings = if (options.manifest.sbt.isCrossBuild) {
+          val rootSettings = {
             s""".settings(
                |   crossScalaVersions := Nil,
                |   publish / skip := true
                |)""".stripMargin
-          } else ""
+          }
           val aggregatedProjects = (projIds ++ Seq(bundleId))
             .flatMap(
               id =>
@@ -152,8 +152,6 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
         val content = keys ++ projDefs ++ Seq(bundle, root)
 
-        val sbtScalaVersionModule = sbtVersionModule
-
         val sbtModules = Seq(
           ExtendedModule.RuntimeModule(Module(ModuleId(Seq.empty, "build.sbt"), content.map(_.trim).mkString("\n\n"))),
           ExtendedModule.RuntimeModule(
@@ -184,7 +182,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
           ),
         )
 
-        projectModules ++ runtimeModules ++ sbtModules ++ sbtScalaVersionModule
+        projectModules ++ runtimeModules ++ sbtModules
     }
     Layouted(modules)
   }
@@ -197,23 +195,25 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
     }
   }
 
-  private def sbtVersionModule: Seq[ExtendedModule.RuntimeModule] = {
-    options.manifest.sbt.scalaVersions match {
-      case v :: Nil =>
-        Seq(ExtendedModule.RuntimeModule(Module(ModuleId(Seq.empty, "scalaVersion.sbt"), s"""scalaVersion in Global := "$v"""")))
-      case _ => Seq.empty
-    }
-  }
-
   private def crossModuleSettings(depsSetting: String): String = {
     if (options.manifest.sbt.isCrossBuild) {
       s""".settings(
          |  $crossScalaVersionsSetting,
          |  scalaVersion := crossScalaVersions.value.head,
-         |  $scalacOptions,
+         |  $crossScalacOptions,
          |  $depsSetting,
          |)""".stripMargin
-    } else ""
+    } else {
+      val soleScalaVersionSetting = options.manifest.sbt.scalaVersions match {
+        case v :: Nil =>
+          s"""scalaVersion := "$v","""
+        case _ => ""
+      }
+      s""".settings(
+         |  $depsSetting,
+         |  $soleScalaVersionSetting
+         |)""".stripMargin
+    }
   }
 
   private def crossScalaVersionsSetting: String = {
@@ -221,7 +221,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
     s"crossScalaVersions := Seq($asString)"
   }
 
-  private def scalacOptions: String = {
+  private def crossScalacOptions: String = {
     val versions    = options.manifest.sbt.scalaVersions
     val defaultCase = "case _ => Seq.empty"
     val perScalaVersionOptions =
