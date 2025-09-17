@@ -21,10 +21,16 @@ object JsonNetExtension extends CSharpTranslatorExtension {
   override def postModelEmit(ctx: CSTContext, id: Identifier)(implicit im: CSharpImports, ts: Typespace): String = {
     discard(ctx)
     s"""public class ${id.id.name}_JsonNetConverter: JsonNetConverter<${id.id.name}> {
+       |
+       |$unityStripingAttribute
+       |    public ${id.id.name}_JsonNetConverter() {}
+       |
+       |$unityStripingAttribute
        |    public override void WriteJson(JsonWriter writer, ${id.id.name} value, JsonSerializer serializer) {
        |        writer.WriteValue(value.ToString());
        |    }
        |
+       |$unityStripingAttribute
        |    public override ${id.id.name} ReadJson(JsonReader reader, System.Type objectType, ${id.id.name} existingValue, bool hasExistingValue, JsonSerializer serializer) {
        |        return ${id.id.name}.From((string)reader.Value);
        |    }
@@ -45,10 +51,16 @@ object JsonNetExtension extends CSharpTranslatorExtension {
   override def postModelEmit(ctx: CSTContext, id: Enumeration)(implicit im: CSharpImports, ts: Typespace): String = {
     discard(ctx)
     s"""public class ${id.id.name}_JsonNetConverter: JsonNetConverter<${id.id.name}> {
+       |
+       |$unityStripingAttribute
+       |    public ${id.id.name}_JsonNetConverter() {}
+       |
+       |$unityStripingAttribute
        |    public override void WriteJson(JsonWriter writer, ${id.id.name} value, JsonSerializer serializer) {
        |        writer.WriteValue(value.ToString());
        |    }
        |
+       |$unityStripingAttribute
        |    public override ${id.id.name} ReadJson(JsonReader reader, System.Type objectType, ${id.id.name} existingValue, bool hasExistingValue, JsonSerializer serializer) {
        |        return ${id.id.name}Helpers.From((string)reader.Value);
        |    }
@@ -90,12 +102,18 @@ object JsonNetExtension extends CSharpTranslatorExtension {
     val currentDomain = struct.id.uniqueDomainName
 
     s"""public class ${name}_JsonNetConverter: JsonNetConverter<$name> {
+       |
+       |$unityStripingAttribute
+       |    public ${name}_JsonNetConverter() {}
+       |
+       |$unityStripingAttribute
        |    public override void WriteJson(JsonWriter writer, $name v, JsonSerializer serializer) {
        |        writer.WriteStartObject();
        |${struct.fields.map(f => writeProperty(f)).mkString("\n").shift(8)}
        |        writer.WriteEndObject();
        |    }
        |
+       |$unityStripingAttribute
        |    public override $name ReadJson(JsonReader reader, System.Type objectType, $name existingValue, bool hasExistingValue, JsonSerializer serializer) {
        |        ${if (struct.fields.isEmpty) "reader.Skip();" else "var json = JObject.Load(reader);"}
        |${struct.fields.map(f => prepareReadProperty(f, currentDomain)).filter(_.isDefined).map(_.get).mkString("\n").shift(8)}
@@ -366,10 +384,16 @@ object JsonNetExtension extends CSharpTranslatorExtension {
     val eid     = ts.tools.implId(id.id)
     val eidName = id.id.name + eid.name
     s"""public class ${id.id.name}_JsonNetConverter: JsonNetConverter<${id.id.name}> {
+       |
+       |$unityStripingAttribute
+       |    public ${id.id.name}_JsonNetConverter() {}
+       |
+       |$unityStripingAttribute
        |    public override void WriteJson(JsonWriter writer, ${id.id.name} value, JsonSerializer serializer) {
        |${renderSerialize(id.id, "value").shift(8)}
        |    }
        |
+       |$unityStripingAttribute
        |    public override ${id.id.name} ReadJson(JsonReader reader, System.Type objectType, ${id.id.name} existingValue, bool hasExistingValue, JsonSerializer serializer) {
        |        var json = JObject.Load(reader);
        |        var kv = json.Properties().First();
@@ -409,6 +433,11 @@ object JsonNetExtension extends CSharpTranslatorExtension {
     discard(ctx)
 
     s"""public class ${i.id.name}_JsonNetConverter: JsonNetConverter<${i.id.name}> {
+       |
+       |$unityStripingAttribute
+       |    public ${i.id.name}_JsonNetConverter() {}
+       |
+       |$unityStripingAttribute
        |    public override void WriteJson(JsonWriter writer, ${i.id.name} al, JsonSerializer serializer) {
        |        writer.WriteStartObject();
        |${i.alternatives
@@ -423,6 +452,7 @@ object JsonNetExtension extends CSharpTranslatorExtension {
        |        writer.WriteEndObject();
        |    }
        |
+       |$unityStripingAttribute
        |    public override ${i.id.name} ReadJson(JsonReader reader, System.Type objectType, ${i.id.name} existingValue, bool hasExistingValue, JsonSerializer serializer) {
        |        var json = JObject.Load(reader);
        |        var kv = json.Properties().First();
@@ -474,6 +504,11 @@ object JsonNetExtension extends CSharpTranslatorExtension {
     val left  = CSharpType(leftType).renderType(true)
     val right = CSharpType(rightType).renderType(true)
     s"""public class ${name}_JsonNetConverter: JsonNetConverter<$name> {
+       |
+       |$unityStripingAttribute
+       |    public ${name}_JsonNetConverter() {}
+       |
+       |$unityStripingAttribute
        |    public override void WriteJson(JsonWriter writer, $name al, JsonSerializer serializer) {
        |        writer.WriteStartObject();
        |
@@ -490,6 +525,7 @@ object JsonNetExtension extends CSharpTranslatorExtension {
        |        writer.WriteEndObject();
        |    }
        |
+       |$unityStripingAttribute
        |    public override $name ReadJson(JsonReader reader, System.Type objectType, $name existingValue, bool hasExistingValue, JsonSerializer serializer) {
        |        var json = JObject.Load(reader);
        |        var kv = json.Properties().First();
@@ -511,4 +547,8 @@ object JsonNetExtension extends CSharpTranslatorExtension {
        |}
      """.stripMargin
   }
+
+  private val unityStripingAttribute = """#if UNITY_5_3_OR_NEWER
+                                         |    [UnityEngine.Scripting.RequiredMember]
+                                         |#endif""".stripMargin
 }
