@@ -49,7 +49,7 @@ Syntax Highlighting
 -------------------
 
 * [Intellij Idea Plugin](https://plugins.jetbrains.com/plugin/28203-baboon-support) ([baboon-intellij](https://github.com/7mind/baboon-intellij))
-  * IDEA plugin for [Baboon DML](https://github.com/7mind/baboon) also supports Idealingua
+  * IDEA plugin for [Baboon DML](https://github.com/7mind/baboon) supports Idealingua
 * [VSCode Extension](https://marketplace.visualstudio.com/items?itemName=SeptimalMind.idealingua1)
 * [VSCodium Extension](https://open-vsx.org/extension/SeptimalMind/idealingua1)
 
