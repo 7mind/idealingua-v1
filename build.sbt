@@ -1824,6 +1824,7 @@ lazy val `idealingua-v1` = (project in file("."))
       "-XDignore.symbol.file"
     ),
     crossScalaVersions := Nil,
+    libraryDependencies := Nil,
     ThisBuild / organization := "io.7mind.izumi",
     ThisBuild / publishTo := {
       // https://github.com/sbt/sbt/issues/8131
