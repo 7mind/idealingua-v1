@@ -18,6 +18,29 @@
         "type": "github"
       }
     },
+    "mudyla": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1764278888,
+        "narHash": "sha256-RRmR6hLsW97AFoVJ3UCH//mcewTQpNrZHItIzxodzbs=",
+        "owner": "7mind",
+        "repo": "mudyla",
+        "rev": "aa1e86c5cbcc8c9b00e1cbf8a188a0ab36c42149",
+        "type": "github"
+      },
+      "original": {
+        "owner": "7mind",
+        "repo": "mudyla",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1764521362,
@@ -37,6 +60,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
+        "mudyla": "mudyla",
         "nixpkgs": "nixpkgs",
         "squish-find-the-brains": "squish-find-the-brains"
       }

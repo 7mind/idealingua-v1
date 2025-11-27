@@ -8,11 +8,15 @@
   inputs.squish-find-the-brains.inputs.nixpkgs.follows = "nixpkgs";
   inputs.squish-find-the-brains.inputs.flake-utils.follows = "flake-utils";
 
+  inputs.mudyla.url = "github:7mind/mudyla";
+  inputs.mudyla.inputs.nixpkgs.follows = "nixpkgs";
+
   outputs =
     { self
     , nixpkgs
     , flake-utils
     , squish-find-the-brains
+    , mudyla
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -96,6 +100,7 @@
             gitMinimal
 
             squish-find-the-brains.packages.${system}.generate-lockfile
+            mudyla.packages.${system}.default
           ];
         };
       }

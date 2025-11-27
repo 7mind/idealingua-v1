@@ -1865,15 +1865,14 @@ lazy val `idealingua-v1` = (project in file("."))
     refreshFlakeTask := {
       val log = streams.value.log
       val rootDir = (ThisBuild / baseDirectory).value
-      val lockfileConfig = rootDir / "lockfile-config.json"
       val lockfileOutput = rootDir / "deps.lock.json"
       val refreshCommand = Process(
-        Seq("nix", "develop", "--command", "squish-lockfile", lockfileConfig.getPath),
+        Seq("nix", "develop", "--command", "mdl", ":flake-refresh"),
         rootDir
       )
-      val result = (refreshCommand #> lockfileOutput).!(log)
+      val result = refreshCommand.!(log)
       if (result != 0) {
-        throw new MessageOnlyException(s"flake.nix update failed: squish-lockfile exited with $result")
+        throw new MessageOnlyException(s"flake.nix update failed: mdl exited with $result")
       }
       val gitAdd = Process(Seq("git", "add", lockfileOutput.getPath), rootDir)
       val gitResult = gitAdd.!(log)

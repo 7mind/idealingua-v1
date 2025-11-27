@@ -1,5 +1,5 @@
 Describe 'Typescript transpiler'
-  Include ./.mobala/steps/lib/builders.sh
+  Include ./.mdl/lib/builders.sh
 
   Parameters:dynamic
     while read line; do
