@@ -1,7 +1,7 @@
 {
   description = "baboon build environment";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/24.05";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/25.11";
 
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
@@ -17,7 +17,10 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+        };
       in
       {
         packages = rec {
@@ -54,12 +57,12 @@
           nativeBuildInputs = with pkgs.buildPackages; [
             ncurses
 
-            graalvm-ce
+            graalvmPackages.graalvm-ce
             coursier
             ammonite_2_13
             pkgs.buildPackages.sbt
 
-            dotnet-sdk_6
+            dotnet-sdk_9
             mono
             msbuild
             dotnetPackages.NUnitConsole
