@@ -62,7 +62,7 @@
             ammonite_2_13
             pkgs.buildPackages.sbt
 
-            dotnet-sdk_6
+            dotnet-sdk_9
             mono
             msbuild
             dotnetPackages.NUnitConsole
