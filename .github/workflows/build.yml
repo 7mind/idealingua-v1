@@ -92,11 +92,6 @@ jobs:
       - uses: 7mind/github-env@minimal
         with:
           cache-scala: false
-      - uses: bitwarden/sm-action@v2
-        with:
-          access_token: ${{ secrets.TOKEN_BITWARDEN_SM }}
-          secrets: |
-            aa0a790c-4030-4126-bc77-b193010a0f04 > TOKEN_NPM
       - name: Publish NPM artifacts
         env:
           SCALA_VERSION: 2.13 # not used        
