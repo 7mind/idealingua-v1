@@ -24,7 +24,12 @@ npm install json
 ./node_modules/json/lib/json.js -I -f ${pkgPath}/package.json -e "this.version=\"${PROJECT_VERSION}\""
 ./node_modules/json/lib/json.js -I -f ${pkgPath}-es/package.json -e "this.version=\"${PROJECT_VERSION}\""
 
-( cd ${pkgPath} && npm publish --provenance --access public || exit 1 )
-( cd ${pkgPath}-es && npm publish --provenance --access public || exit 1 )
+NPM_TAG_ARGS=()
+if [[ ! "$CI_BRANCH_TAG" =~ ^v.*$ ]]; then
+  NPM_TAG_ARGS+=(--tag latest)
+fi
+
+( cd ${pkgPath} && npm publish --provenance --access public "${NPM_TAG_ARGS[@]}" || exit 1 )
+( cd ${pkgPath}-es && npm publish --provenance --access public "${NPM_TAG_ARGS[@]}" || exit 1 )
 
 popd
