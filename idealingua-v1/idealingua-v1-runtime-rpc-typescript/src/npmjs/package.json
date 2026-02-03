@@ -5,6 +5,10 @@
   "description": "Preliminary Izumi TypeScript runtime",
   "author": "Izumi Framework contributors",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/7mind/idealingua-v1.git"
+  },
   "dependencies": {
     "moment": "^2.29.1",
     "websocket": "^1.0.32",
