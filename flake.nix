@@ -70,8 +70,7 @@
 
             protobuf
 
-            nodejs
-            nodePackages.npm
+            nodejs_24
             typescript
             yarn
 
