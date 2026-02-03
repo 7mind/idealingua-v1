@@ -92,6 +92,11 @@ jobs:
       - uses: 7mind/github-env@minimal
         with:
           cache-scala: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
       - name: Publish NPM artifacts
         env:
           SCALA_VERSION: 2.13 # not used        
