@@ -1,18 +1,18 @@
 {
-  description = "baboon build environment";
+  description = "idealingua-v1 build environment";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/25.11";
-
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
-  inputs.sbt.url = "github:zaninime/sbt-derivation";
-  inputs.sbt.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.squish-find-the-brains.url = "github:7mind/squish-find-the-brains";
+  inputs.squish-find-the-brains.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.squish-find-the-brains.inputs.flake-utils.follows = "flake-utils";
 
   outputs =
     { self
     , nixpkgs
     , flake-utils
-    , sbt
+    , squish-find-the-brains
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -21,30 +21,43 @@
           inherit system;
           config.allowUnfree = true;
         };
+
+        versionSbt = builtins.readFile ./version.sbt;
+        versionMatch = builtins.match ''.*"([0-9]+\.[0-9]+\.[0-9]+)(-SNAPSHOT)?".*'' versionSbt;
+        version = builtins.elemAt versionMatch 0;
+
+        coursierCache = squish-find-the-brains.lib.mkCoursierCache {
+          inherit pkgs;
+          lockfilePath = ./deps.lock.json;
+        };
+
+        sbtSetup = squish-find-the-brains.lib.mkSbtSetup {
+          inherit pkgs coursierCache;
+          jdk = pkgs.graalvmPackages.graalvm-ce;
+        };
       in
       {
         packages = rec {
-          idealingua-v1 = sbt.lib.mkSbtDerivation {
-            pkgs = pkgs;
-            version = "1.4.8";
+          idealingua-v1 = pkgs.stdenv.mkDerivation {
+            inherit version;
             pname = "idealingua-v1";
             src = ./.;
-            depsSha256 = "sha256-AIOvFYjvsTSqeblzgo6gFiPkEWOCRM5aslYaM9xl7B4=";
-            nativeBuildInputs = with pkgs; [
-              coursier
-              libarchive
-              ammonite_2_13
-            ];
-            depsWarmupCommand = ''
-              #export COURSIER_ARCHIVE_CACHE="$${COURSIER_CACHE}/arc"
-              amm --home $$TMP --tmp-output-directory --no-home-predef ./sbtgen.sc
-              sbt "++2.13 clean" "++2.13 compile"
-            '';
+            nativeBuildInputs = sbtSetup.nativeBuildInputs ++ [ pkgs.libarchive pkgs.ammonite_2_13 ];
+            inherit (sbtSetup) JAVA_HOME;
+
             buildPhase = ''
-              #export COURSIER_ARCHIVE_CACHE="$${COURSIER_CACHE}/arc"
-              amm --home $$TMP --tmp-output-directory --no-home-predef ./sbtgen.sc
-              sbt "++2.13 clean" "++2.13 Universal/packageBin"
+              ${sbtSetup.setupScript}
+              amm --home $TMPDIR --tmp-output-directory --no-home-predef ./sbtgen.sc
+              ${pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+                HOME="$TMPDIR" \
+                SBT_OPTS="-Duser.home=$TMPDIR -Dsbt.global.base=$TMPDIR/.sbt -Dsbt.ivy.home=$TMPDIR/.ivy2 -Divy.home=$TMPDIR/.ivy2 -Dsbt.boot.directory=$TMPDIR/.sbt/boot" \
+                sbt "++2.13 clean" "++2.13 Universal/packageBin"
+              ''}
+              ${pkgs.lib.optionalString (!pkgs.stdenv.isDarwin) ''
+                sbt "++2.13 clean" "++2.13 Universal/packageBin"
+              ''}
             '';
+
             installPhase = ''
               mkdir -p $out
               bsdtar -xf ./idealingua-v1/idealingua-v1-compiler/target/universal/idealingua-v1-compiler-*.zip --strip-components 1 -C $out/
@@ -80,6 +93,7 @@
             nix
             gitMinimal
 
+            squish-find-the-brains.packages.${system}.generate-lockfile
           ];
         };
       }
