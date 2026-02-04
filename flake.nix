@@ -26,14 +26,15 @@
         versionMatch = builtins.match ''.*"([0-9]+\.[0-9]+\.[0-9]+)(-SNAPSHOT)?".*'' versionSbt;
         version = builtins.elemAt versionMatch 0;
 
+        jdk = pkgs.graalvmPackages.graalvm-ce;
+
         coursierCache = squish-find-the-brains.lib.mkCoursierCache {
           inherit pkgs;
           lockfilePath = ./deps.lock.json;
         };
 
         sbtSetup = squish-find-the-brains.lib.mkSbtSetup {
-          inherit pkgs coursierCache;
-          jdk = pkgs.graalvmPackages.graalvm-ce;
+          inherit pkgs coursierCache jdk;
         };
       in
       {
@@ -67,10 +68,11 @@
         };
 
         devShells.default = pkgs.mkShell {
+          JAVA_HOME = jdk;
           nativeBuildInputs = with pkgs.buildPackages; [
             ncurses
 
-            graalvmPackages.graalvm-ce
+            jdk
             coursier
             ammonite_2_13
             pkgs.buildPackages.sbt

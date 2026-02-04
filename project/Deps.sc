@@ -225,6 +225,7 @@ object Idealingua {
       final val rootSettings = Defaults.SbtMetaRootOptions ++ Defaults.RootOptions ++ Seq(
         "crossScalaVersions" := "Nil".raw,
         "libraryDependencies" := "Nil".raw,
+        "coverageEnabled" := false,
         "organization" in SettingScope.Build := "io.7mind.izumi",
         "publishTo" in SettingScope.Build :=
           """{
