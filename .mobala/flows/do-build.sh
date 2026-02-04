@@ -4,7 +4,6 @@ set -euo pipefail
 
 function do-build() {
   step_run_cond run-gen
-  step_run_cond run-flake-refresh  
   step_run_cond run-coverage
   
   step_run_cond run-test-scala  
