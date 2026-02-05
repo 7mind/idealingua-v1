@@ -46,8 +46,6 @@ This file defines the mudyla build orchestration for idealingua-v1.
 Generate sbt builds via sbtgen.
 
 ```bash
-dep action.gen
-
 source ./.mdl/lib/env.sh
 prepare_build_env "${args.scala-version}"
 

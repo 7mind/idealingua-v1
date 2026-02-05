@@ -52,6 +52,7 @@ source ./.mdl/lib/env.sh
 prepare_build_env "${args.scala-version}"
 ensure_numcpu
 
+mkdir -p ./target/spec-reports/scala
 shellspec --format documentation --jobs "${NUMCPU}" -o junit --reportdir ./target/spec-reports/scala ./.mdl/spec/scala_spec.sh
 
 ret success:bool=true
@@ -68,6 +69,7 @@ source ./.mdl/lib/env.sh
 prepare_build_env "${args.scala-version}"
 ensure_numcpu
 
+mkdir -p ./target/spec-reports/ts
 shellspec --format documentation --jobs "${NUMCPU}" -o junit --reportdir ./target/spec-reports/ts ./.mdl/spec/ts_spec.sh
 
 ret success:bool=true
@@ -84,6 +86,7 @@ source ./.mdl/lib/env.sh
 prepare_build_env "${args.scala-version}"
 ensure_numcpu
 
+mkdir -p ./target/spec-reports/cs
 shellspec --format documentation --jobs "${NUMCPU}" -o junit --reportdir ./target/spec-reports/cs ./.mdl/spec/cs_spec.sh
 
 ret success:bool=true
@@ -100,6 +103,7 @@ source ./.mdl/lib/env.sh
 prepare_build_env "${args.scala-version}"
 ensure_numcpu
 
+mkdir -p ./target/spec-reports/pb
 shellspec --format documentation --jobs "${NUMCPU}" -o junit --reportdir ./target/spec-reports/pb ./.mdl/spec/pb_spec.sh
 
 ret success:bool=true

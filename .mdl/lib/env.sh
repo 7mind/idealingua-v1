@@ -30,9 +30,9 @@ function resolve_scala_version() {
   local scala213
   local scala3
 
-  scala212=$(grep 'val scala212 ' project/Deps.sc | sed -r 's/.*"(.*)".*/\1/')
-  scala213=$(grep 'val scala213 ' project/Deps.sc | sed -r 's/.*"(.*)".*/\1/')
-  scala3=$(grep 'val scala300 ' project/Deps.sc | sed -r 's/.*"(.*)".*/\1/')
+  scala212=$(grep 'val scala212 ' sbtgen/Deps.scala | sed -r 's/.*"(.*)".*/\1/')
+  scala213=$(grep 'val scala213 ' sbtgen/Deps.scala | sed -r 's/.*"(.*)".*/\1/')
+  scala3=$(grep 'val scala300 ' sbtgen/Deps.scala | sed -r 's/.*"(.*)".*/\1/')
 
   case "$requested" in
     "" )
