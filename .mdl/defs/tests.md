@@ -2,28 +2,6 @@
 
 Test orchestration for idealingua-v1.
 
-# arguments
-
-- `args.scala-version`: Scala version selector (`2.12`, `2.13`, `3`, or full version)
-   - type: `string`
-   - default: `"2.13"`
-
-# environment
-
-- `LANG=C.UTF-8`
-
-## passthrough
-
-- `HOME`
-- `USER`
-- `CI`
-- `CI_BRANCH`
-- `CI_BRANCH_TAG`
-- `CI_PULL_REQUEST`
-- `CI_BUILD_UNIQ_SUFFIX`
-- `JAVA_HOME`
-- `SCALA_VERSION`
-
 # action: test-scala
 
 Scala transpiler integration tests (SBT and plain layouts).

@@ -124,6 +124,7 @@ prepare_build_env "${args.scala-version}"
 if ! validate_publishing; then
   echo "Skipping npm publish"
   ret success:bool=true
+  exit 0
 fi
 
 ./idealingua-v1/idealingua-v1-runtime-rpc-typescript/src/npmjs/publish.sh
@@ -142,11 +143,13 @@ prepare_build_env "${args.scala-version}"
 if ! validate_publishing; then
   echo "Skipping nuget publish"
   ret success:bool=true
+  exit 0
 fi
 
 if [[ -z "${TOKEN_NUGET:-}" ]]; then
   echo "Missing TOKEN_NUGET, skipping nuget publish"
   ret success:bool=true
+  exit 0
 fi
 
 ./idealingua-v1/idealingua-v1-runtime-rpc-csharp/src/main/nuget/publish.sh
@@ -165,11 +168,13 @@ prepare_build_env "${args.scala-version}"
 if ! validate_publishing; then
   echo "Skipping scala publish"
   ret success:bool=true
+  exit 0
 fi
 
 if [[ -z "${SONATYPE_SECRET:-}" || ! -f "${SONATYPE_SECRET}" ]]; then
   echo "SONATYPE_SECRET=${SONATYPE_SECRET:-} is not a file, skipping scala publish"
   ret success:bool=true
+  exit 0
 fi
 
 if [[ "${CI_BRANCH:-}" == "develop" ]]; then

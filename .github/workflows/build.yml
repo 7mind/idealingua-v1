@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: 7mind/github-env@minimal
       - name: Build and Test
-        run: nix develop --command mdl --scala-version=${{ matrix.scala }} :gen :coverage
+        run: nix develop --command mdl --github-actions --scala-version=${{ matrix.scala }} :gen :coverage
       - uses: bitwarden/sm-action@v2
         if: needs.checksecret.outputs.HAVE_SECRETS == 'true'
         with:
@@ -53,7 +53,7 @@ jobs:
       - name: Validate flake
         run: |
           if [[ "$CI_BRANCH_TAG" =~ ^v.*$ && "$CI_PULL_REQUEST" == "false" ]] ; then
-            nix develop --command mdl :validate-flake
+            nix develop --command mdl --github-actions :validate-flake
           fi
 
   test-compiler:
@@ -67,7 +67,7 @@ jobs:
     steps:
       - uses: 7mind/github-env@minimal
       - name: Test compiler
-        run: nix develop --command mdl --scala-version=${{ matrix.scala }} ${{ matrix.test }}
+        run: nix develop --command mdl --github-actions --scala-version=${{ matrix.scala }} ${{ matrix.test }}
       - uses: dorny/test-reporter@v1
         if: (needs.checksecret.outputs.HAVE_SECRETS == 'true') && (success() || failure())
         with:
@@ -92,7 +92,7 @@ jobs:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
       - name: Publish NPM artifacts
-        run: nix develop --command mdl --scala-version=2.13 :publish-npm
+        run: nix develop --command mdl --github-actions --scala-version=2.13 :publish-npm
 
   publish-nuget:
     runs-on: ubuntu-latest
@@ -108,7 +108,7 @@ jobs:
           secrets: |
             637c5cad-a680-4ea3-ac8b-b193010bee40 > TOKEN_NUGET
       - name: Publish Nuget artifacts
-        run: nix develop --command mdl --scala-version=2.13 :publish-nuget
+        run: nix develop --command mdl --github-actions --scala-version=2.13 :publish-nuget
 
   publish-scala:
     runs-on: ubuntu-latest
@@ -139,7 +139,7 @@ jobs:
             openssl aes-256-cbc -K ${OPENSSL_KEY} -iv ${OPENSSL_IV} -in secrets.tar.enc -out secrets.tar -d
             tar xvf secrets.tar
           fi
-          nix develop --command mdl --scala-version=${{ matrix.scala }} :publish-scala
+          nix develop --command mdl --github-actions --scala-version=${{ matrix.scala }} :publish-scala
 
   all-good:
     if: always()
