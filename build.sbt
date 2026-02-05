@@ -153,7 +153,17 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -328,7 +338,17 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -516,7 +536,17 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -709,7 +739,17 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -878,7 +918,17 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -1070,7 +1120,17 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -1226,7 +1286,17 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -1382,7 +1452,17 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -1538,7 +1618,17 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -1702,7 +1792,17 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -1722,7 +1822,10 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
 
 lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
   .settings(
+    crossScalaVersions := Nil,
+    libraryDependencies := Nil,
     publish / skip := true,
+    SettingKey[Boolean]("ide-skip-project") := true,
     crossScalaVersions := Nil
   )
   .enablePlugins(IzumiPlugin)
@@ -1745,7 +1848,10 @@ lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
 
 lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"))
   .settings(
+    crossScalaVersions := Nil,
+    libraryDependencies := Nil,
     publish / skip := true,
+    SettingKey[Boolean]("ide-skip-project") := true,
     crossScalaVersions := Nil
   )
   .aggregate(
@@ -1763,7 +1869,10 @@ lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"
 
 lazy val `idealingua-js` = (project in file(".agg/idealingua-v1-idealingua-js"))
   .settings(
+    crossScalaVersions := Nil,
+    libraryDependencies := Nil,
     publish / skip := true,
+    SettingKey[Boolean]("ide-skip-project") := true,
     crossScalaVersions := Nil
   )
   .aggregate(
@@ -1775,7 +1884,10 @@ lazy val `idealingua-js` = (project in file(".agg/idealingua-v1-idealingua-js"))
 
 lazy val `idealingua-v1-jvm` = (project in file(".agg/.agg-jvm"))
   .settings(
+    crossScalaVersions := Nil,
+    libraryDependencies := Nil,
     publish / skip := true,
+    SettingKey[Boolean]("ide-skip-project") := true,
     crossScalaVersions := Nil
   )
   .aggregate(
@@ -1784,7 +1896,10 @@ lazy val `idealingua-v1-jvm` = (project in file(".agg/.agg-jvm"))
 
 lazy val `idealingua-v1-js` = (project in file(".agg/.agg-js"))
   .settings(
+    crossScalaVersions := Nil,
+    libraryDependencies := Nil,
     publish / skip := true,
+    SettingKey[Boolean]("ide-skip-project") := true,
     crossScalaVersions := Nil
   )
   .aggregate(
@@ -1793,6 +1908,8 @@ lazy val `idealingua-v1-js` = (project in file(".agg/.agg-js"))
 
 lazy val `idealingua-v1` = (project in file("."))
   .settings(
+    crossScalaVersions := Nil,
+    libraryDependencies := Nil,
     publish / skip := true,
     ThisBuild / scalacOptions ++= Seq(
       s"-Xmacro-settings:sbt-version=${sbtVersion.value}",
@@ -1901,12 +2018,12 @@ lazy val `idealingua-v1` = (project in file("."))
             ),
     ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git")),
     ThisBuild / scalacOptions += s"""-Xmacro-settings:scalatest-version=${V.scalatest}""",
-    ThisBuild / scalacOptions += s"""-Xmacro-settings:scalajs-version=1.20.2""",
+    ThisBuild / scalacOptions += s"""-Xmacro-settings:scalajs-version=VExpr(PV.scala_js_version)""",
     ThisBuild / scalacOptions += s"""-Xmacro-settings:bundler-version=${"0.21.1"}""",
     ThisBuild / scalacOptions += s"""-Xmacro-settings:sbt-js-version=${"1.0.2"}""",
     ThisBuild / scalacOptions += s"""-Xmacro-settings:crossproject-version=${"1.3.2"}""",
     ThisBuild / scalacOptions += s"-Xmacro-settings:is-ci=${insideCI.value}",
-    libraryDependencies += "io.7mind.izumi.sbt" % "sbtgen_2.13" % "0.0.107" % Provided,
+    libraryDependencies += "io.7mind.izumi.sbt" % "sbtgen_2.13" % "0.0.112" % Provided,
     ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
   )
   .enablePlugins(IzumiPlugin)

@@ -1,8 +1,12 @@
 #!/bin/sh
-cs launch com.lihaoyi:ammonite_2.13.12:2.5.11 --fork -M ammonite.Main -- sbtgen.sc $*
-exit
-!#
-import $file.project.Deps, Deps._
 
-@main
-def entrypoint(args: String*) = Idealingua.entrypoint(args)
+script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+cd "$script_dir/sbtgen"
+
+scala-cli \
+  --power \
+  --java-home "$JAVA_HOME" \
+  --server=false \
+  --main-class Idealingua \
+  . \
+  -- "$@"

@@ -47,12 +47,12 @@
             inherit version;
             pname = "idealingua-v1";
             src = ./.;
-            nativeBuildInputs = sbtSetup.nativeBuildInputs ++ [ pkgs.libarchive pkgs.ammonite_2_13 ];
+            nativeBuildInputs = sbtSetup.nativeBuildInputs ++ [ pkgs.libarchive pkgs.scala-cli ];
             inherit (sbtSetup) JAVA_HOME;
 
             buildPhase = ''
               ${sbtSetup.setupScript}
-              amm --home $TMPDIR --tmp-output-directory --no-home-predef ./sbtgen.sc
+              ./sbtgen.sc
               ${pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
                 HOME="$TMPDIR" \
                 SBT_OPTS="-Duser.home=$TMPDIR -Dsbt.global.base=$TMPDIR/.sbt -Dsbt.ivy.home=$TMPDIR/.ivy2 -Divy.home=$TMPDIR/.ivy2 -Dsbt.boot.directory=$TMPDIR/.sbt/boot" \
@@ -78,7 +78,7 @@
 
             jdk
             coursier
-            ammonite_2_13
+            scala-cli
             pkgs.buildPackages.sbt
 
             dotnet-sdk_9

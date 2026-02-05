@@ -1,6 +1,6 @@
 {
   "shell_commands": [
-    ["amm", "--no-home-predef", "./sbtgen.sc"]
+    ["./sbtgen.sc"]
   ],
   "sbt_runs": [
     {"args": [";reload plugins; update; reload return"]},
