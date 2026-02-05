@@ -7,9 +7,6 @@ This file defines the mudyla build orchestration for idealingua-v1.
 - `args.scala-version`: Scala version selector (`2.12`, `2.13`, `3`, or full version)
    - type: `string`
    - default: `"2.13"`
-- `args.validate-flake`: Validate that `flake.nix` is up-to-date instead of mutating it
-   - type: `bool`
-   - default: `false`
 
 # environment
 
@@ -85,28 +82,36 @@ ret success:bool=true
 
 # action: flake-refresh
 
-Refresh flake inputs and regenerate the coursier lock with squish-find-the-brains. When `args.validate-flake=true`, the command checks freshness without mutating files.
+Refresh flake inputs and regenerate the coursier lock with squish-find-the-brains.
 
 ```bash
 source ./.mdl/lib/env.sh
 prepare_build_env "${args.scala-version}"
 
-if [[ "${args.validate-flake}" == "true" ]]; then
-  tmp_lock="$(mktemp)"
-  squish-lockfile lockfile-config.json > "$tmp_lock"
-
-  if ! cmp -s "$tmp_lock" deps.lock.json; then
-    echo "deps.lock.json is not up to date, run mdl :flake-refresh"
-    exit 1
-  fi
-
-  nix flake check
-  ret success:bool=true
-fi
-
 nix flake update
 squish-lockfile lockfile-config.json > deps.lock.json
 git add flake.nix flake.lock deps.lock.json || true
+
+ret success:bool=true
+```
+
+# action: validate-flake
+
+Validate that `flake.nix` and lockfiles are up-to-date without mutating files.
+
+```bash
+source ./.mdl/lib/env.sh
+prepare_build_env "${args.scala-version}"
+
+tmp_lock="$(mktemp)"
+squish-lockfile -n lockfile-config.json > "$tmp_lock"
+
+if ! cmp -s "$tmp_lock" deps.lock.json; then
+  echo "deps.lock.json is not up to date, run mdl :flake-refresh"
+  exit 1
+fi
+
+nix flake check
 
 ret success:bool=true
 ```

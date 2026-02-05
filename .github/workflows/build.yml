@@ -53,7 +53,7 @@ jobs:
       - name: Validate flake
         run: |
           if [[ "$CI_BRANCH_TAG" =~ ^v.*$ && "$CI_PULL_REQUEST" == "false" ]] ; then
-            nix develop --command mdl :flake-refresh --validate
+            nix develop --command mdl :validate-flake
           fi
 
   test-compiler:
