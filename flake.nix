@@ -10,6 +10,7 @@
 
   inputs.mudyla.url = "github:7mind/mudyla";
   inputs.mudyla.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.mudyla.inputs.flake-utils.follows = "flake-utils";
 
   outputs =
     { self

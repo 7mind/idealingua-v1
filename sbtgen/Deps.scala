@@ -307,7 +307,7 @@ object Idealingua {
         )""".raw,
         "scmInfo" in SettingScope.Build := """Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git"))""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalatest-version=$${${V.scalatest.asExpr}}${"\"" * 3}""".raw,
-        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalajs-version=${PV.scala_js_version}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalajs-version=${PluginVersions.pv.scala_js_version}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:bundler-version=$${${Idealingua.settings.bundlerVersion.asExpr}}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:sbt-js-version=$${${Idealingua.settings.sbtJsDependenciesVersion.asExpr}}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:crossproject-version=$${${Idealingua.settings.crossProjectVersion.asExpr}}${"\"" * 3}""".raw,
