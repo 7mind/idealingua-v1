@@ -1,5 +1,5 @@
 Describe 'Protobuf transpiler'
-  Include ./.mobala/steps/lib/builders.sh
+  Include ./.mdl/lib/builders.sh
 
   Parameters:dynamic
     %data ./idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs/main-tests

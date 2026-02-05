@@ -1,5 +1,5 @@
 Describe 'Scala transpiler'
-  Include ./.mobala/steps/lib/builders.sh
+  Include ./.mdl/lib/builders.sh
 
   setup() {
     export classpath="$(TERM=dumb sbt --batch --error "$VERSION_COMMAND ; export idealingua-v1-compiler/runtime:fullClasspath" 2>/dev/null)"
@@ -30,7 +30,7 @@ End
 
 
 Describe 'Scala transpiler (scala-only case)'
-  Include ./.mobala/steps/lib/builders.sh
+  Include ./.mdl/lib/builders.sh
   
 
   setup() {

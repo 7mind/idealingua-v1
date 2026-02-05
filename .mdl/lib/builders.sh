@@ -1,12 +1,16 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
 function test_scala_sbt_prj() {
   echo "IDL TEST ABOUT TO START: $1"
-  testname="$(basename $1)"
+  testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
   sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=SBT"
 
   pushd .
-  cd $tmpdir/scala
+  cd "$tmpdir/scala"
   [[ -f build.sbt ]] || exit 1
   sbt clean compile
   popd
@@ -15,13 +19,13 @@ function test_scala_sbt_prj() {
 
 function test_scala_plain_prj() {
   echo "IDL TEST ABOUT TO START: $1"
-  testname="$(basename $1)"
+  testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
   sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=PLAIN"
 
   pushd .
-  cd $tmpdir/scala
+  cd "$tmpdir/scala"
   files=$(find . -name '*.scala' -print0 | xargs -0)
 
   mkdir ./target
@@ -41,13 +45,13 @@ function test_scala_plain_prj() {
 
 function test_ts_yarn_prj() {
   echo "IDL TEST ABOUT TO START: $1"
-  testname="$(basename $1)"
+  testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
   sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :typescript -d layout=YARN"
 
   pushd .
-  cd $tmpdir/typescript
+  cd "$tmpdir/typescript"
   [[ -f tsconfig.json ]] || exit 1
 
   yarn install
@@ -59,13 +63,13 @@ function test_ts_yarn_prj() {
 
 function test_ts_plain_prj() {
   echo "IDL TEST ABOUT TO START: $1"
-  testname="$(basename $1)"
+  testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
   sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :typescript -d layout=PLAIN"
 
   pushd .
-  cd $tmpdir/typescript
+  cd "$tmpdir/typescript"
   [[ -f tsconfig.json ]] || exit 1
 
   yarn install
@@ -77,13 +81,13 @@ function test_ts_plain_prj() {
 
 function test_pb_prj() {
   echo "IDL TEST ABOUT TO START: $1"
-  testname="$(basename $1)"
+  testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
   sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :protobuf"
 
   pushd .
-  cd $tmpdir/protobuf
+  cd "$tmpdir/protobuf"
 
   mkdir ./java-out
   protoc --java_out=./java-out $(find ./ -iname '*.proto')
@@ -94,18 +98,17 @@ function test_pb_prj() {
 
 function test_cs_msbuild_prj() {
   echo "IDL TEST ABOUT TO START: $1"
-  testname="$(basename $1)"
+  testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
   sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :csharp -d layout=NUGET"
 
   pushd .
-  cd $tmpdir/csharp
+  cd "$tmpdir/csharp"
 
   msbuild /t:Restore /t:Rebuild
 
-  for f in nuspec/*.nuspec
-  do
+  for f in nuspec/*.nuspec; do
     nuget pack "$f"
   done
 
@@ -115,13 +118,13 @@ function test_cs_msbuild_prj() {
 
 function test_cs_plain_prj() {
   echo "IDL TEST ABOUT TO START: $1"
-  testname="$(basename $1)"
+  testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
   sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :csharp -d layout=PLAIN"
 
   pushd .
-  cd $tmpdir/csharp
+  cd "$tmpdir/csharp"
 
   csc -target:library -out:tests.dll "-recurse:\\*.cs" $refs
   cp "$refsdir"/*.dll .

@@ -8,11 +8,16 @@
   inputs.squish-find-the-brains.inputs.nixpkgs.follows = "nixpkgs";
   inputs.squish-find-the-brains.inputs.flake-utils.follows = "flake-utils";
 
+  inputs.mudyla.url = "github:7mind/mudyla";
+  inputs.mudyla.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.mudyla.inputs.flake-utils.follows = "flake-utils";
+
   outputs =
     { self
     , nixpkgs
     , flake-utils
     , squish-find-the-brains
+    , mudyla
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -43,12 +48,12 @@
             inherit version;
             pname = "idealingua-v1";
             src = ./.;
-            nativeBuildInputs = sbtSetup.nativeBuildInputs ++ [ pkgs.libarchive pkgs.ammonite_2_13 ];
+            nativeBuildInputs = sbtSetup.nativeBuildInputs ++ [ pkgs.libarchive pkgs.scala-cli ];
             inherit (sbtSetup) JAVA_HOME;
 
             buildPhase = ''
               ${sbtSetup.setupScript}
-              amm --home $TMPDIR --tmp-output-directory --no-home-predef ./sbtgen.sc
+              ./sbtgen.sc
               ${pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
                 HOME="$TMPDIR" \
                 SBT_OPTS="-Duser.home=$TMPDIR -Dsbt.global.base=$TMPDIR/.sbt -Dsbt.ivy.home=$TMPDIR/.ivy2 -Divy.home=$TMPDIR/.ivy2 -Dsbt.boot.directory=$TMPDIR/.sbt/boot" \
@@ -74,7 +79,7 @@
 
             jdk
             coursier
-            ammonite_2_13
+            scala-cli
             pkgs.buildPackages.sbt
 
             dotnet-sdk_9
@@ -96,6 +101,7 @@
             gitMinimal
 
             squish-find-the-brains.packages.${system}.generate-lockfile
+            mudyla.packages.${system}.default
           ];
         };
       }
