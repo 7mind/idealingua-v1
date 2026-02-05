@@ -1,9 +1,10 @@
-import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.107`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
-import $file.project.PluginVersions
 
 object Idealingua {
+  def main(args: Array[String]): Unit = {
+    entrypoint(args.toSeq)
+  }
 
   object V {
     val izumi = Version.VExpr("Izumi.version")
@@ -269,15 +270,14 @@ object Idealingua {
         "refreshFlakeTask" := """{
                                 |  val log = streams.value.log
                                 |  val rootDir = (ThisBuild / baseDirectory).value
-                                |  val lockfileConfig = rootDir / "lockfile-config.json"
                                 |  val lockfileOutput = rootDir / "deps.lock.json"
                                 |  val refreshCommand = Process(
-                                |    Seq("nix", "develop", "--command", "squish-lockfile", lockfileConfig.getPath),
+                                |    Seq("nix", "develop", "--command", "mdl", ":flake-refresh"),
                                 |    rootDir
                                 |  )
-                                |  val result = (refreshCommand #> lockfileOutput).!(log)
+                                |  val result = refreshCommand.!(log)
                                 |  if (result != 0) {
-                                |    throw new MessageOnlyException(s"flake.nix update failed: squish-lockfile exited with $result")
+                                |    throw new MessageOnlyException(s"flake.nix update failed: mdl exited with $result")
                                 |  }
                                 |  val gitAdd = Process(Seq("git", "add", lockfileOutput.getPath), rootDir)
                                 |  val gitResult = gitAdd.!(log)
@@ -307,7 +307,7 @@ object Idealingua {
         )""".raw,
         "scmInfo" in SettingScope.Build := """Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git"))""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalatest-version=$${${V.scalatest.asExpr}}${"\"" * 3}""".raw,
-        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalajs-version=${PluginVersions.PV.scala_js_version}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalajs-version=${PluginVersions.pv.scala_js_version}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:bundler-version=$${${Idealingua.settings.bundlerVersion.asExpr}}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:sbt-js-version=$${${Idealingua.settings.sbtJsDependenciesVersion.asExpr}}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:crossproject-version=$${${Idealingua.settings.crossProjectVersion.asExpr}}${"\"" * 3}""".raw,

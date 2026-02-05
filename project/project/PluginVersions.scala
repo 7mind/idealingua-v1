@@ -7,3 +7,7 @@ object PV {
 
   val scala_js_version = "1.20.2"
 }
+
+object PluginVersions {
+  val pv = PV
+}

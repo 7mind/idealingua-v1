@@ -374,10 +374,6 @@
       "sha256": "1cvr3dcz5y6p0185nzkh2cnbbkl3im4m0rrsy7gi91258cr4qgd8"
     },
     {
-      "url": "https://repo1.maven.org/maven2/com/github/scopt/scopt_2.13/4.1.0/scopt_2.13-4.1.0-sources.jar",
-      "sha256": "0dhaxnmmlxah8ar1llqdmizs2w0glxj9hldfmlh09jf42si58r44"
-    },
-    {
       "url": "https://repo1.maven.org/maven2/com/github/scopt/scopt_2.13/4.1.0/scopt_2.13-4.1.0.jar",
       "sha256": "0azqd377sqajcgcgrb178yzrm4bk88s4w9wlcw20nqvlm6ykfl1f"
     },
@@ -1262,36 +1258,32 @@
       "sha256": "0vam80309lwfk57rnqngbv9zy2ljq8ssmd8ppifv42a3yqwlhcs1"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbt-izumi_2.12_1.0/0.0.107/sbt-izumi_2.12_1.0-0.0.107.jar",
-      "sha256": "061rbsdscvxsqp9dhsdmngva2fsrpd0spv9hbdrappcikg6pj1cv"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbt-izumi_2.12_1.0/0.0.112/sbt-izumi_2.12_1.0-0.0.112.jar",
+      "sha256": "0f01n0fl074wxjvpgvd5vwlr2qmyhvh77chinxf8gl6v8wpwvnxv"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbt-izumi_2.12_1.0/0.0.107/sbt-izumi_2.12_1.0-0.0.107.pom",
-      "sha256": "1q77gbis15f7lmp9hq9q1rgpcsd3937rf6649hac1ixp66hnhqn1"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbt-izumi_2.12_1.0/0.0.112/sbt-izumi_2.12_1.0-0.0.112.pom",
+      "sha256": "1gvmf04izb3l6f9n9260cdk7mf96hdg1mi79bcyl699zgy1mks5l"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_2.13/0.0.107/sbtgen_2.13-0.0.107-sources.jar",
-      "sha256": "105mc7mbh4gw19i4l985xbc73shb5lm89dymncv7nsw2fyapnahz"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_2.13/0.0.112/sbtgen_2.13-0.0.112.jar",
+      "sha256": "034krd9br6szqyvn74a2gcwkyi76zaagxv3aqigwi8jx4rd177yk"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_2.13/0.0.107/sbtgen_2.13-0.0.107.jar",
-      "sha256": "0s7ywzb5jsdh3jrnsrcilaqgcjfsc2zan6l2hwdq0d291gakfcqx"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_2.13/0.0.112/sbtgen_2.13-0.0.112.pom",
+      "sha256": "0v3mpd5vwxsxrh4b0arxvg0xhskx03kh66kv2rwg4yj2gsxq2aac"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_2.13/0.0.107/sbtgen_2.13-0.0.107.pom",
-      "sha256": "055dcc930zr50lvdlf9grw89ry0m8pljz46s0v02p6cfhncdygd2"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_2.13/maven-metadata.xml",
+      "sha256": "1qdahhz7gxkmq77kr9i0qwglnigkg80l7ivhjlj5ksxwiiavaysy"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtmeta_2.13/0.0.107/sbtmeta_2.13-0.0.107-sources.jar",
-      "sha256": "0z9sikgid2vksz1bdv0r2xqgy10j5ipjfiqr8lxadqkb0f5l8z84"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtmeta_2.13/0.0.112/sbtmeta_2.13-0.0.112.jar",
+      "sha256": "0g8ir22injxvzj13b4ijfqwa4ccs1xlh8pjgi0yk0nkyyl9vwvwc"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtmeta_2.13/0.0.107/sbtmeta_2.13-0.0.107.jar",
-      "sha256": "08biv87fjvy3rhv44ws6y3jvgx9q369wcdx0dzqraa8smc3jw2qa"
-    },
-    {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtmeta_2.13/0.0.107/sbtmeta_2.13-0.0.107.pom",
-      "sha256": "0n6xgyj2smkjc9qada3ybidpcjgc6rjyimkqr99xa5vb526dfwnb"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtmeta_2.13/0.0.112/sbtmeta_2.13-0.0.112.pom",
+      "sha256": "19hfhpgxdwsavknlm4v0nshmzvd6aww8smqhscpqh83lcs3naaym"
     },
     {
       "url": "https://repo1.maven.org/maven2/io/airlift/airbase/112/airbase-112.pom",
@@ -2752,6 +2744,10 @@
     {
       "url": "https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.18/scala-library-2.13.18.pom",
       "sha256": "07f26k0020azrgjbzjgfvdp6zc5q781s7sjagy2rj8z12j113yy3"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scala-lang/scala-library/maven-metadata.xml",
+      "sha256": "1yhk4y0by3ihx9yi9ymzsjqlzhcmmxd993p4dsc17v4bd7m0j07x"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.12.20/scala-reflect-2.12.20.jar",
