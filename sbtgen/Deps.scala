@@ -54,7 +54,7 @@ object Idealingua {
   }
 
   def entrypoint(args: Seq[String]): Unit = {
-    Entrypoint.main(izumi, settings, Seq("-o", "..") ++ args)
+    Entrypoint.main(izumi, settings, Seq("-o", ".") ++ args)
   }
 
   val settings = GlobalSettings(
