@@ -28,7 +28,6 @@ This file defines the mudyla build orchestration for idealingua-v1.
 - `ACTIONS_ID_TOKEN_REQUEST_URL`
 - `ACTIONS_ID_TOKEN_REQUEST_TOKEN`
 - `GITHUB_ACTIONS`
-- `CI`
 - `GITHUB_SERVER_URL`
 - `GITHUB_REF`
 - `GITHUB_SHA`
