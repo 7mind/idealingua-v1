@@ -81,50 +81,7 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.20") => Seq(
-        "-release:8",
-        "-explaintypes",
-        "-Xsource:3",
-        "-P:kind-projector:underscore-placeholders",
-        "-Ypartial-unification",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
-        "-Wconf:cat=optimizer:warning",
-        "-Wconf:cat=other-match-analysis:error",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
-        "-Xlint:adapted-args",
-        "-Xlint:by-name-right-associative",
-        "-Xlint:constant",
-        "-Xlint:delayedinit-select",
-        "-Xlint:doc-detached",
-        "-Xlint:inaccessible",
-        "-Xlint:infer-any",
-        "-Xlint:missing-interpolator",
-        "-Xlint:nullary-override",
-        "-Xlint:nullary-unit",
-        "-Xlint:option-implicit",
-        "-Xlint:package-object-classes",
-        "-Xlint:poly-implicit-overload",
-        "-Xlint:private-shadow",
-        "-Xlint:stars-align",
-        "-Xlint:type-parameter-shadow",
-        "-Xlint:unsound-match",
-        "-opt-warnings:_",
-        "-Ywarn-extra-implicit",
-        "-Ywarn-unused:_",
-        "-Ywarn-adapted-args",
-        "-Ywarn-dead-code",
-        "-Ywarn-inaccessible",
-        "-Ywarn-infer-any",
-        "-Ywarn-nullary-override",
-        "-Ywarn-nullary-unit",
-        "-Ywarn-numeric-widen",
-        "-Ywarn-unused-import",
-        "-Ywarn-value-discard",
-        "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
-      )
-      case (_, "2.13.16") => Seq(
+      case (_, "2.13.18") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -146,14 +103,24 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.6") => Seq(
+      case (_, "3.3.7") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -171,17 +138,15 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "3.3.6",
-      "2.13.16",
-      "2.12.20"
+      "3.3.7",
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "3.3.6",
-      "2.13.16",
-      "2.12.20"
+      "3.3.7",
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := false,
@@ -256,50 +221,7 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.20") => Seq(
-        "-release:8",
-        "-explaintypes",
-        "-Xsource:3",
-        "-P:kind-projector:underscore-placeholders",
-        "-Ypartial-unification",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
-        "-Wconf:cat=optimizer:warning",
-        "-Wconf:cat=other-match-analysis:error",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
-        "-Xlint:adapted-args",
-        "-Xlint:by-name-right-associative",
-        "-Xlint:constant",
-        "-Xlint:delayedinit-select",
-        "-Xlint:doc-detached",
-        "-Xlint:inaccessible",
-        "-Xlint:infer-any",
-        "-Xlint:missing-interpolator",
-        "-Xlint:nullary-override",
-        "-Xlint:nullary-unit",
-        "-Xlint:option-implicit",
-        "-Xlint:package-object-classes",
-        "-Xlint:poly-implicit-overload",
-        "-Xlint:private-shadow",
-        "-Xlint:stars-align",
-        "-Xlint:type-parameter-shadow",
-        "-Xlint:unsound-match",
-        "-opt-warnings:_",
-        "-Ywarn-extra-implicit",
-        "-Ywarn-unused:_",
-        "-Ywarn-adapted-args",
-        "-Ywarn-dead-code",
-        "-Ywarn-inaccessible",
-        "-Ywarn-infer-any",
-        "-Ywarn-nullary-override",
-        "-Ywarn-nullary-unit",
-        "-Ywarn-numeric-widen",
-        "-Ywarn-unused-import",
-        "-Ywarn-value-discard",
-        "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
-      )
-      case (_, "2.13.16") => Seq(
+      case (_, "2.13.18") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -321,14 +243,24 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.6") => Seq(
+      case (_, "3.3.7") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -346,15 +278,13 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "2.13.16",
-      "2.12.20"
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "2.13.16",
-      "2.12.20"
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := false,
@@ -444,50 +374,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.20") => Seq(
-        "-release:8",
-        "-explaintypes",
-        "-Xsource:3",
-        "-P:kind-projector:underscore-placeholders",
-        "-Ypartial-unification",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
-        "-Wconf:cat=optimizer:warning",
-        "-Wconf:cat=other-match-analysis:error",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
-        "-Xlint:adapted-args",
-        "-Xlint:by-name-right-associative",
-        "-Xlint:constant",
-        "-Xlint:delayedinit-select",
-        "-Xlint:doc-detached",
-        "-Xlint:inaccessible",
-        "-Xlint:infer-any",
-        "-Xlint:missing-interpolator",
-        "-Xlint:nullary-override",
-        "-Xlint:nullary-unit",
-        "-Xlint:option-implicit",
-        "-Xlint:package-object-classes",
-        "-Xlint:poly-implicit-overload",
-        "-Xlint:private-shadow",
-        "-Xlint:stars-align",
-        "-Xlint:type-parameter-shadow",
-        "-Xlint:unsound-match",
-        "-opt-warnings:_",
-        "-Ywarn-extra-implicit",
-        "-Ywarn-unused:_",
-        "-Ywarn-adapted-args",
-        "-Ywarn-dead-code",
-        "-Ywarn-inaccessible",
-        "-Ywarn-infer-any",
-        "-Ywarn-nullary-override",
-        "-Ywarn-nullary-unit",
-        "-Ywarn-numeric-widen",
-        "-Ywarn-unused-import",
-        "-Ywarn-value-discard",
-        "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
-      )
-      case (_, "2.13.16") => Seq(
+      case (_, "2.13.18") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -509,14 +396,24 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.6") => Seq(
+      case (_, "3.3.7") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -534,17 +431,15 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "3.3.6",
-      "2.13.16",
-      "2.12.20"
+      "3.3.7",
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "3.3.6",
-      "2.13.16",
-      "2.12.20"
+      "3.3.7",
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := false,
@@ -582,9 +477,8 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.6",
-      "2.13.16",
-      "2.12.20"
+      "3.3.7",
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -637,50 +531,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.20") => Seq(
-        "-release:8",
-        "-explaintypes",
-        "-Xsource:3",
-        "-P:kind-projector:underscore-placeholders",
-        "-Ypartial-unification",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
-        "-Wconf:cat=optimizer:warning",
-        "-Wconf:cat=other-match-analysis:error",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
-        "-Xlint:adapted-args",
-        "-Xlint:by-name-right-associative",
-        "-Xlint:constant",
-        "-Xlint:delayedinit-select",
-        "-Xlint:doc-detached",
-        "-Xlint:inaccessible",
-        "-Xlint:infer-any",
-        "-Xlint:missing-interpolator",
-        "-Xlint:nullary-override",
-        "-Xlint:nullary-unit",
-        "-Xlint:option-implicit",
-        "-Xlint:package-object-classes",
-        "-Xlint:poly-implicit-overload",
-        "-Xlint:private-shadow",
-        "-Xlint:stars-align",
-        "-Xlint:type-parameter-shadow",
-        "-Xlint:unsound-match",
-        "-opt-warnings:_",
-        "-Ywarn-extra-implicit",
-        "-Ywarn-unused:_",
-        "-Ywarn-adapted-args",
-        "-Ywarn-dead-code",
-        "-Ywarn-inaccessible",
-        "-Ywarn-infer-any",
-        "-Ywarn-nullary-override",
-        "-Ywarn-nullary-unit",
-        "-Ywarn-numeric-widen",
-        "-Ywarn-unused-import",
-        "-Ywarn-value-discard",
-        "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
-      )
-      case (_, "2.13.16") => Seq(
+      case (_, "2.13.18") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -702,14 +553,24 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.6") => Seq(
+      case (_, "3.3.7") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -806,50 +667,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.20") => Seq(
-        "-release:8",
-        "-explaintypes",
-        "-Xsource:3",
-        "-P:kind-projector:underscore-placeholders",
-        "-Ypartial-unification",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
-        "-Wconf:cat=optimizer:warning",
-        "-Wconf:cat=other-match-analysis:error",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
-        "-Xlint:adapted-args",
-        "-Xlint:by-name-right-associative",
-        "-Xlint:constant",
-        "-Xlint:delayedinit-select",
-        "-Xlint:doc-detached",
-        "-Xlint:inaccessible",
-        "-Xlint:infer-any",
-        "-Xlint:missing-interpolator",
-        "-Xlint:nullary-override",
-        "-Xlint:nullary-unit",
-        "-Xlint:option-implicit",
-        "-Xlint:package-object-classes",
-        "-Xlint:poly-implicit-overload",
-        "-Xlint:private-shadow",
-        "-Xlint:stars-align",
-        "-Xlint:type-parameter-shadow",
-        "-Xlint:unsound-match",
-        "-opt-warnings:_",
-        "-Ywarn-extra-implicit",
-        "-Ywarn-unused:_",
-        "-Ywarn-adapted-args",
-        "-Ywarn-dead-code",
-        "-Ywarn-inaccessible",
-        "-Ywarn-infer-any",
-        "-Ywarn-nullary-override",
-        "-Ywarn-nullary-unit",
-        "-Ywarn-numeric-widen",
-        "-Ywarn-unused-import",
-        "-Ywarn-value-discard",
-        "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
-      )
-      case (_, "2.13.16") => Seq(
+      case (_, "2.13.18") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -871,14 +689,24 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.6") => Seq(
+      case (_, "3.3.7") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -896,16 +724,14 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "2.13.16",
-      "2.12.20"
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
     Test / fork := true
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "2.13.16",
-      "2.12.20"
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
     coverageEnabled := false,
@@ -943,9 +769,8 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.6",
-      "2.13.16",
-      "2.12.20"
+      "3.3.7",
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -998,50 +823,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.20") => Seq(
-        "-release:8",
-        "-explaintypes",
-        "-Xsource:3",
-        "-P:kind-projector:underscore-placeholders",
-        "-Ypartial-unification",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
-        "-Wconf:cat=optimizer:warning",
-        "-Wconf:cat=other-match-analysis:error",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
-        "-Xlint:adapted-args",
-        "-Xlint:by-name-right-associative",
-        "-Xlint:constant",
-        "-Xlint:delayedinit-select",
-        "-Xlint:doc-detached",
-        "-Xlint:inaccessible",
-        "-Xlint:infer-any",
-        "-Xlint:missing-interpolator",
-        "-Xlint:nullary-override",
-        "-Xlint:nullary-unit",
-        "-Xlint:option-implicit",
-        "-Xlint:package-object-classes",
-        "-Xlint:poly-implicit-overload",
-        "-Xlint:private-shadow",
-        "-Xlint:stars-align",
-        "-Xlint:type-parameter-shadow",
-        "-Xlint:unsound-match",
-        "-opt-warnings:_",
-        "-Ywarn-extra-implicit",
-        "-Ywarn-unused:_",
-        "-Ywarn-adapted-args",
-        "-Ywarn-dead-code",
-        "-Ywarn-inaccessible",
-        "-Ywarn-infer-any",
-        "-Ywarn-nullary-override",
-        "-Ywarn-nullary-unit",
-        "-Ywarn-numeric-widen",
-        "-Ywarn-unused-import",
-        "-Ywarn-value-discard",
-        "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
-      )
-      case (_, "2.13.16") => Seq(
+      case (_, "2.13.18") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -1063,14 +845,24 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.6") => Seq(
+      case (_, "3.3.7") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -1099,9 +891,8 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.6",
-      "2.13.16",
-      "2.12.20"
+      "3.3.7",
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -1154,50 +945,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.20") => Seq(
-        "-release:8",
-        "-explaintypes",
-        "-Xsource:3",
-        "-P:kind-projector:underscore-placeholders",
-        "-Ypartial-unification",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
-        "-Wconf:cat=optimizer:warning",
-        "-Wconf:cat=other-match-analysis:error",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
-        "-Xlint:adapted-args",
-        "-Xlint:by-name-right-associative",
-        "-Xlint:constant",
-        "-Xlint:delayedinit-select",
-        "-Xlint:doc-detached",
-        "-Xlint:inaccessible",
-        "-Xlint:infer-any",
-        "-Xlint:missing-interpolator",
-        "-Xlint:nullary-override",
-        "-Xlint:nullary-unit",
-        "-Xlint:option-implicit",
-        "-Xlint:package-object-classes",
-        "-Xlint:poly-implicit-overload",
-        "-Xlint:private-shadow",
-        "-Xlint:stars-align",
-        "-Xlint:type-parameter-shadow",
-        "-Xlint:unsound-match",
-        "-opt-warnings:_",
-        "-Ywarn-extra-implicit",
-        "-Ywarn-unused:_",
-        "-Ywarn-adapted-args",
-        "-Ywarn-dead-code",
-        "-Ywarn-inaccessible",
-        "-Ywarn-infer-any",
-        "-Ywarn-nullary-override",
-        "-Ywarn-nullary-unit",
-        "-Ywarn-numeric-widen",
-        "-Ywarn-unused-import",
-        "-Ywarn-value-discard",
-        "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
-      )
-      case (_, "2.13.16") => Seq(
+      case (_, "2.13.18") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -1219,14 +967,24 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.6") => Seq(
+      case (_, "3.3.7") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -1255,9 +1013,8 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.6",
-      "2.13.16",
-      "2.12.20"
+      "3.3.7",
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -1310,50 +1067,7 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.20") => Seq(
-        "-release:8",
-        "-explaintypes",
-        "-Xsource:3",
-        "-P:kind-projector:underscore-placeholders",
-        "-Ypartial-unification",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
-        "-Wconf:cat=optimizer:warning",
-        "-Wconf:cat=other-match-analysis:error",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
-        "-Xlint:adapted-args",
-        "-Xlint:by-name-right-associative",
-        "-Xlint:constant",
-        "-Xlint:delayedinit-select",
-        "-Xlint:doc-detached",
-        "-Xlint:inaccessible",
-        "-Xlint:infer-any",
-        "-Xlint:missing-interpolator",
-        "-Xlint:nullary-override",
-        "-Xlint:nullary-unit",
-        "-Xlint:option-implicit",
-        "-Xlint:package-object-classes",
-        "-Xlint:poly-implicit-overload",
-        "-Xlint:private-shadow",
-        "-Xlint:stars-align",
-        "-Xlint:type-parameter-shadow",
-        "-Xlint:unsound-match",
-        "-opt-warnings:_",
-        "-Ywarn-extra-implicit",
-        "-Ywarn-unused:_",
-        "-Ywarn-adapted-args",
-        "-Ywarn-dead-code",
-        "-Ywarn-inaccessible",
-        "-Ywarn-infer-any",
-        "-Ywarn-nullary-override",
-        "-Ywarn-nullary-unit",
-        "-Ywarn-numeric-widen",
-        "-Ywarn-unused-import",
-        "-Ywarn-value-discard",
-        "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
-      )
-      case (_, "2.13.16") => Seq(
+      case (_, "2.13.18") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -1375,14 +1089,24 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.6") => Seq(
+      case (_, "3.3.7") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -1411,9 +1135,8 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.3.6",
-      "2.13.16",
-      "2.12.20"
+      "3.3.7",
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -1466,50 +1189,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.20") => Seq(
-        "-release:8",
-        "-explaintypes",
-        "-Xsource:3",
-        "-P:kind-projector:underscore-placeholders",
-        "-Ypartial-unification",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
-        "-Wconf:cat=optimizer:warning",
-        "-Wconf:cat=other-match-analysis:error",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
-        "-Xlint:adapted-args",
-        "-Xlint:by-name-right-associative",
-        "-Xlint:constant",
-        "-Xlint:delayedinit-select",
-        "-Xlint:doc-detached",
-        "-Xlint:inaccessible",
-        "-Xlint:infer-any",
-        "-Xlint:missing-interpolator",
-        "-Xlint:nullary-override",
-        "-Xlint:nullary-unit",
-        "-Xlint:option-implicit",
-        "-Xlint:package-object-classes",
-        "-Xlint:poly-implicit-overload",
-        "-Xlint:private-shadow",
-        "-Xlint:stars-align",
-        "-Xlint:type-parameter-shadow",
-        "-Xlint:unsound-match",
-        "-opt-warnings:_",
-        "-Ywarn-extra-implicit",
-        "-Ywarn-unused:_",
-        "-Ywarn-adapted-args",
-        "-Ywarn-dead-code",
-        "-Ywarn-inaccessible",
-        "-Ywarn-infer-any",
-        "-Ywarn-nullary-override",
-        "-Ywarn-nullary-unit",
-        "-Ywarn-numeric-widen",
-        "-Ywarn-unused-import",
-        "-Ywarn-value-discard",
-        "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
-      )
-      case (_, "2.13.16") => Seq(
+      case (_, "2.13.18") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -1531,14 +1211,24 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.6") => Seq(
+      case (_, "3.3.7") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -1576,8 +1266,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
   )
   .settings(
     crossScalaVersions := Seq(
-      "2.13.16",
-      "2.12.20"
+      "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
     organization := "io.7mind.izumi",
@@ -1630,50 +1319,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     },
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "2.12.20") => Seq(
-        "-release:8",
-        "-explaintypes",
-        "-Xsource:3",
-        "-P:kind-projector:underscore-placeholders",
-        "-Ypartial-unification",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
-        "-Wconf:cat=optimizer:warning",
-        "-Wconf:cat=other-match-analysis:error",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
-        "-Xlint:adapted-args",
-        "-Xlint:by-name-right-associative",
-        "-Xlint:constant",
-        "-Xlint:delayedinit-select",
-        "-Xlint:doc-detached",
-        "-Xlint:inaccessible",
-        "-Xlint:infer-any",
-        "-Xlint:missing-interpolator",
-        "-Xlint:nullary-override",
-        "-Xlint:nullary-unit",
-        "-Xlint:option-implicit",
-        "-Xlint:package-object-classes",
-        "-Xlint:poly-implicit-overload",
-        "-Xlint:private-shadow",
-        "-Xlint:stars-align",
-        "-Xlint:type-parameter-shadow",
-        "-Xlint:unsound-match",
-        "-opt-warnings:_",
-        "-Ywarn-extra-implicit",
-        "-Ywarn-unused:_",
-        "-Ywarn-adapted-args",
-        "-Ywarn-dead-code",
-        "-Ywarn-inaccessible",
-        "-Ywarn-infer-any",
-        "-Ywarn-nullary-override",
-        "-Ywarn-nullary-unit",
-        "-Ywarn-numeric-widen",
-        "-Ywarn-unused-import",
-        "-Ywarn-value-discard",
-        "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
-      )
-      case (_, "2.13.16") => Seq(
+      case (_, "2.13.18") => Seq(
         "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
@@ -1695,14 +1341,24 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-Ycache-plugin-class-loader:always",
         "-Ycache-macro-class-loader:last-modified"
       )
-      case (_, "3.3.6") => Seq(
+      case (_, "3.3.7") => Seq(
         "-release:8",
         "-Ykind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
+        "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent"
       )
       case (_, _) => Seq.empty
@@ -1722,7 +1378,10 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
 
 lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
   .settings(
+    crossScalaVersions := Nil,
+    libraryDependencies := Nil,
     publish / skip := true,
+    SettingKey[Boolean]("ide-skip-project") := true,
     crossScalaVersions := Nil
   )
   .enablePlugins(IzumiPlugin)
@@ -1745,7 +1404,10 @@ lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
 
 lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"))
   .settings(
+    crossScalaVersions := Nil,
+    libraryDependencies := Nil,
     publish / skip := true,
+    SettingKey[Boolean]("ide-skip-project") := true,
     crossScalaVersions := Nil
   )
   .aggregate(
@@ -1763,7 +1425,10 @@ lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"
 
 lazy val `idealingua-js` = (project in file(".agg/idealingua-v1-idealingua-js"))
   .settings(
+    crossScalaVersions := Nil,
+    libraryDependencies := Nil,
     publish / skip := true,
+    SettingKey[Boolean]("ide-skip-project") := true,
     crossScalaVersions := Nil
   )
   .aggregate(
@@ -1775,7 +1440,10 @@ lazy val `idealingua-js` = (project in file(".agg/idealingua-v1-idealingua-js"))
 
 lazy val `idealingua-v1-jvm` = (project in file(".agg/.agg-jvm"))
   .settings(
+    crossScalaVersions := Nil,
+    libraryDependencies := Nil,
     publish / skip := true,
+    SettingKey[Boolean]("ide-skip-project") := true,
     crossScalaVersions := Nil
   )
   .aggregate(
@@ -1784,7 +1452,10 @@ lazy val `idealingua-v1-jvm` = (project in file(".agg/.agg-jvm"))
 
 lazy val `idealingua-v1-js` = (project in file(".agg/.agg-js"))
   .settings(
+    crossScalaVersions := Nil,
+    libraryDependencies := Nil,
     publish / skip := true,
+    SettingKey[Boolean]("ide-skip-project") := true,
     crossScalaVersions := Nil
   )
   .aggregate(
@@ -1793,6 +1464,8 @@ lazy val `idealingua-v1-js` = (project in file(".agg/.agg-js"))
 
 lazy val `idealingua-v1` = (project in file("."))
   .settings(
+    crossScalaVersions := Nil,
+    libraryDependencies := Nil,
     publish / skip := true,
     ThisBuild / scalacOptions ++= Seq(
       s"-Xmacro-settings:sbt-version=${sbtVersion.value}",
@@ -1825,6 +1498,7 @@ lazy val `idealingua-v1` = (project in file("."))
     ),
     crossScalaVersions := Nil,
     libraryDependencies := Nil,
+    coverageEnabled := false,
     ThisBuild / organization := "io.7mind.izumi",
     ThisBuild / publishTo := {
       // https://github.com/sbt/sbt/issues/8131
@@ -1863,9 +1537,20 @@ lazy val `idealingua-v1` = (project in file("."))
     },
     refreshFlakeTask := {
       val log = streams.value.log
-      val result = Process("./run --nix :flake-refresh", None, "SCALA_VERSION" -> "2.13") ! log
+      val rootDir = (ThisBuild / baseDirectory).value
+      val lockfileOutput = rootDir / "deps.lock.json"
+      val refreshCommand = Process(
+        Seq("nix", "develop", "--command", "mdl", ":flake-refresh"),
+        rootDir
+      )
+      val result = refreshCommand.!(log)
       if (result != 0) {
-        throw new MessageOnlyException("flake.nix update failed!")
+        throw new MessageOnlyException(s"flake.nix update failed: mdl exited with $result")
+      }
+      val gitAdd = Process(Seq("git", "add", lockfileOutput.getPath), rootDir)
+      val gitResult = gitAdd.!(log)
+      if (gitResult != 0) {
+        throw new MessageOnlyException(s"git add failed with exit code $gitResult")
       }
     },
     releaseProcess := Seq[ReleaseStep](
@@ -1893,9 +1578,7 @@ lazy val `idealingua-v1` = (project in file("."))
     ThisBuild / scalacOptions += s"""-Xmacro-settings:bundler-version=${"0.21.1"}""",
     ThisBuild / scalacOptions += s"""-Xmacro-settings:sbt-js-version=${"1.0.2"}""",
     ThisBuild / scalacOptions += s"""-Xmacro-settings:crossproject-version=${"1.3.2"}""",
-    ThisBuild / scalacOptions += s"-Xmacro-settings:is-ci=${insideCI.value}",
-    libraryDependencies += "io.7mind.izumi.sbt" % "sbtgen_2.13" % "0.0.107" % Provided,
-    ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
+    ThisBuild / scalacOptions += s"-Xmacro-settings:is-ci=${insideCI.value}"
   )
   .enablePlugins(IzumiPlugin)
   .aggregate(

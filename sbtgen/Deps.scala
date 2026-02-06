@@ -1,9 +1,10 @@
-import $ivy.`io.7mind.izumi.sbt:sbtgen_2.13:0.0.107`
 import izumi.sbtgen._
 import izumi.sbtgen.model._
-import $file.project.PluginVersions
 
 object Idealingua {
+  def main(args: Array[String]): Unit = {
+    entrypoint(args.toSeq)
+  }
 
   object V {
     val izumi = Version.VExpr("Izumi.version")
@@ -137,19 +138,16 @@ object Idealingua {
   import Deps._
 
   // DON'T REMOVE, these variables are read from CI build (build.sh)
-  final val scala212 = ScalaVersion("2.12.20")
-  final val scala213 = ScalaVersion("2.13.16")
-  final val scala300 = ScalaVersion("3.3.6")
+  final val scala213 = ScalaVersion("2.13.18")
+  final val scala300 = ScalaVersion("3.3.7")
 
   object Groups {
     final val idealingua = Set(Group("idealingua"))
   }
 
   object Targets {
-    // switch order to use 2.13 in IDEA
-//    val targetScala = Seq(scala212, scala213)
-    val targetScala2 = Seq(scala213, scala212)
-    val targetScala3 = Seq(scala300, scala213, scala212)
+    val targetScala2 = Seq(scala213)
+    val targetScala3 = Seq(scala300, scala213)
     private val jvmPlatform2 = PlatformEnv(
       platform = Platform.Jvm,
       language = targetScala2,
@@ -225,6 +223,7 @@ object Idealingua {
       final val rootSettings = Defaults.SbtMetaRootOptions ++ Defaults.RootOptions ++ Seq(
         "crossScalaVersions" := "Nil".raw,
         "libraryDependencies" := "Nil".raw,
+        "coverageEnabled" := false,
         "organization" in SettingScope.Build := "io.7mind.izumi",
         "publishTo" in SettingScope.Build :=
           """{
@@ -267,9 +266,20 @@ object Idealingua {
             |}""".stripMargin.raw,
         "refreshFlakeTask" := """{
                                 |  val log = streams.value.log
-                                |  val result = Process("./run --nix :flake-refresh", None, "SCALA_VERSION" -> "2.13") ! log
+                                |  val rootDir = (ThisBuild / baseDirectory).value
+                                |  val lockfileOutput = rootDir / "deps.lock.json"
+                                |  val refreshCommand = Process(
+                                |    Seq("nix", "develop", "--command", "mdl", ":flake-refresh"),
+                                |    rootDir
+                                |  )
+                                |  val result = refreshCommand.!(log)
                                 |  if (result != 0) {
-                                |    throw new MessageOnlyException("flake.nix update failed!")
+                                |    throw new MessageOnlyException(s"flake.nix update failed: mdl exited with $result")
+                                |  }
+                                |  val gitAdd = Process(Seq("git", "add", lockfileOutput.getPath), rootDir)
+                                |  val gitResult = gitAdd.!(log)
+                                |  if (gitResult != 0) {
+                                |    throw new MessageOnlyException(s"git add failed with exit code $gitResult")
                                 |  }
                                 |}""".stripMargin.raw,
         "releaseProcess" := """Seq[ReleaseStep](
@@ -294,28 +304,17 @@ object Idealingua {
         )""".raw,
         "scmInfo" in SettingScope.Build := """Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git"))""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalatest-version=$${${V.scalatest.asExpr}}${"\"" * 3}""".raw,
-        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalajs-version=${PluginVersions.PV.scala_js_version}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalajs-version=${PluginVersions.pv.scala_js_version}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:bundler-version=$${${Idealingua.settings.bundlerVersion.asExpr}}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:sbt-js-version=$${${Idealingua.settings.sbtJsDependenciesVersion.asExpr}}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:crossproject-version=$${${Idealingua.settings.crossProjectVersion.asExpr}}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += """s"-Xmacro-settings:is-ci=${insideCI.value}"""".raw,
-
-        // scala-steward workaround
-        // add sbtgen version to sbt build to allow scala-steward to find it and update it in .sc files
-        // https://github.com/scala-steward-org/scala-steward/issues/696#issuecomment-545800968
-        "libraryDependencies" += s""""io.7mind.izumi.sbt" % "sbtgen_2.13" % "${Version.SbtGen.value}" % Provided""".raw,
-
-        // Ignore scala-xml version conflict between scoverage where `coursier` requires scala-xml v2
-        // and scoverage requires scala-xml v1 on Scala 2.12,
-        // introduced when updating scoverage to 2.0.7 https://github.com/7mind/idealingua-v1/pull/373/
-        "libraryDependencySchemes" in SettingScope.Build += """"org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always""".raw,
       )
 
       final val sharedSettings = Defaults.SbtMetaSharedOptions ++ Defaults.CrossScalaPlusSources ++ Seq(
         "testOptions" in SettingScope.Test += """Tests.Argument("-oDF")""".raw,
         // "testOptions" in (SettingScope.Test, Platform.Jvm) ++= s"""Seq(Tests.Argument("-u"), Tests.Argument(s"$${target.value}/junit-xml-$${scalaVersion.value}"))""".raw,
         "scalacOptions" ++= Seq(
-          SettingKey(Some(scala212), None) := Defaults.Scala212Options,
           SettingKey(Some(scala213), None) := Defaults.Scala213Options,
           SettingKey(Some(scala300), None) := Defaults.Scala3Options,
           SettingKey.Default := Const.EmptySeq,

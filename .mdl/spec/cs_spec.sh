@@ -1,5 +1,5 @@
 Describe 'CS transpiler'
-  Include ./.mobala/steps/lib/builders.sh
+  Include ./.mdl/lib/builders.sh
 
   setup() {
     export refsdir="$PWD/idealingua-v1/idealingua-v1-test-defs/src/main/resources/refs/csharp"

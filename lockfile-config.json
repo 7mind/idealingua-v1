@@ -1,0 +1,9 @@
+{
+  "shell_commands": [
+    ["./sbtgen.sc"]
+  ],
+  "sbt_runs": [
+    {"args": [";reload plugins; update; reload return"]},
+    {"args": ["+update", "+compile"]}
+  ]
+}
