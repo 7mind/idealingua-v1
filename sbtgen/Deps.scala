@@ -382,7 +382,6 @@ object Idealingua {
           scala_reflect,
           Deps.fundamentals_bio in Scope.Compile.all,
           Deps.fundamentals_platform in Scope.Compile.all,
-          jawn in Scope.Compile.js,
           scala_java_time in Scope.Test.js,
         ) ++
           cats_all.map(_ in Scope.Compile.all) ++
@@ -403,7 +402,6 @@ object Idealingua {
           scala_xml,
           scalameta,
           Deps.fundamentals_bio in Scope.Compile.all,
-          jawn in Scope.Compile.js,
         ) ++
           circe_all,
         depends = Seq(
