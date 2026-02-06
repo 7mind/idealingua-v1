@@ -66,7 +66,7 @@ if [[ -n "${JAVA_HOME:-}" ]]; then
   sbt_args+=(--java-home "$JAVA_HOME")
 fi
 
-sbt -batch -no-colors -v \
+sbt -batch --no-server -Dsbt.server.forcestart=true -no-colors -v \
   "${sbt_args[@]}" \
   "$VERSION_COMMAND clean" \
   coverage \

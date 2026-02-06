@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [ '2.12', '2.13', '3' ]
+        scala: [ '2.13', '3' ]
     steps:
       - uses: 7mind/github-env@minimal
       - name: Build and Test
@@ -63,7 +63,7 @@ jobs:
       fail-fast: false
       matrix:
         test: [ ':test-scala', ':test-cs', ':test-ts', ':test-pb' ]
-        scala: [ '2.12', '2.13' ]
+        scala: [ '2.13' ]
     steps:
       - uses: 7mind/github-env@minimal
       - name: Test compiler
@@ -117,7 +117,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [ '2.12', '2.13', '3' ]
+        scala: [ '2.13', '3' ]
     steps:
       - uses: 7mind/github-env@minimal
       - uses: bitwarden/sm-action@v2
