@@ -450,7 +450,6 @@ lazy val `idealingua-v1-runtime-rpc-scalaJVM` = `idealingua-v1-runtime-rpc-scala
 lazy val `idealingua-v1-runtime-rpc-scalaJS` = `idealingua-v1-runtime-rpc-scala`.js
   .settings(
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "jawn-parser" % Izumi.Deps.fundamentals_json_circeJVM.org_typelevel_jawn_parser_version,
       "io.github.cquiroz" %%% "scala-java-time" % V.scala_java_time % Test
     )
   )
@@ -746,11 +745,6 @@ lazy val `idealingua-v1-transpilersJVM` = `idealingua-v1-transpilers`.jvm
     `idealingua-v1-runtime-rpc-csharp` % "test->compile"
   )
 lazy val `idealingua-v1-transpilersJS` = `idealingua-v1-transpilers`.js
-  .settings(
-    libraryDependencies ++= Seq(
-      "org.typelevel" %% "jawn-parser" % Izumi.Deps.fundamentals_json_circeJVM.org_typelevel_jawn_parser_version
-    )
-  )
 
 lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v1-test-defs"))
   .dependsOn(
