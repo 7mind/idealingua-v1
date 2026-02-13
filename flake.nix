@@ -97,6 +97,7 @@
             coreutils
             shellspec
             jq
+            nix
             gitMinimal
 
             squish-find-the-brains.packages.${system}.generate-lockfile
