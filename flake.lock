@@ -75,11 +75,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1770235128,
-        "narHash": "sha256-gB3zvK+QM7ZiJZny/IWp1HogmfTerOTZVN8QzVT8UOU=",
+        "lastModified": 1771025246,
+        "narHash": "sha256-pyqJIq7sbr/++UNknEURS1ude4nWLmT864ONhFujL/Q=",
         "owner": "7mind",
         "repo": "squish-find-the-brains",
-        "rev": "a90f677c09fa99676ceebbff7c8f36c3d973ad4e",
+        "rev": "79be60b0266215fd7bf3d4056a6c33388f4bd25a",
         "type": "github"
       },
       "original": {
