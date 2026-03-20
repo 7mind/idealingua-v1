@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
-
 function test_scala_sbt_prj() {
+  set -euo pipefail
   echo "IDL TEST ABOUT TO START: $1"
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
@@ -18,6 +17,7 @@ function test_scala_sbt_prj() {
 }
 
 function test_scala_plain_prj() {
+  set -euo pipefail
   echo "IDL TEST ABOUT TO START: $1"
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
@@ -44,6 +44,7 @@ function test_scala_plain_prj() {
 }
 
 function test_ts_yarn_prj() {
+  set -euo pipefail
   echo "IDL TEST ABOUT TO START: $1"
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
@@ -62,6 +63,7 @@ function test_ts_yarn_prj() {
 }
 
 function test_ts_plain_prj() {
+  set -euo pipefail
   echo "IDL TEST ABOUT TO START: $1"
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
@@ -80,6 +82,7 @@ function test_ts_plain_prj() {
 }
 
 function test_pb_prj() {
+  set -euo pipefail
   echo "IDL TEST ABOUT TO START: $1"
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
@@ -97,6 +100,7 @@ function test_pb_prj() {
 }
 
 function test_cs_msbuild_prj() {
+  set -euo pipefail
   echo "IDL TEST ABOUT TO START: $1"
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
@@ -117,6 +121,7 @@ function test_cs_msbuild_prj() {
 }
 
 function test_cs_plain_prj() {
+  set -euo pipefail
   echo "IDL TEST ABOUT TO START: $1"
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"

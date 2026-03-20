@@ -7,7 +7,7 @@ Describe 'Protobuf transpiler'
   End
 
   It "builds Protobuf project in $1"
-    When call test_pb_prj "$1"
+    When run test_pb_prj "$1"
     The status should be success
     The output should match pattern '*'
     The stderr should match pattern '*'
