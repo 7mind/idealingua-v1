@@ -1,3 +1,9 @@
+# ShellSpec note: `When run` (not `When call`) is required for builder functions.
+# `When call` disables set -e (errexit) — the function runs in an ignored errexit
+# context (via &&:) so compilation failures silently pass. `When run` executes in
+# a subshell where set -e works and exit is safely caught.
+# See: https://github.com/shellspec/shellspec/blob/master/docs/references.md
+
 Describe 'Scala transpiler'
   Include ./.mdl/lib/builders.sh
 

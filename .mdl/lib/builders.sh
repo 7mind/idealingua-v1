@@ -6,12 +6,12 @@ function test_scala_sbt_prj() {
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
-  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=SBT"
+  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=SBT -d sbt.scalaVersions=$SCALA_VERSION"
 
   pushd .
   cd "$tmpdir/scala"
   [[ -f build.sbt ]] || exit 1
-  sbt "++ ${SCALA_VERSION}! ; clean ; compile"
+  sbt clean compile
   popd
   echo "IDL TEST DONE: $1"
 }
