@@ -11,7 +11,7 @@ function test_scala_sbt_prj() {
   pushd .
   cd "$tmpdir/scala"
   [[ -f build.sbt ]] || exit 1
-  sbt clean compile
+  sbt "++ ${SCALA_VERSION}! ; clean ; compile"
   popd
   echo "IDL TEST DONE: $1"
 }
