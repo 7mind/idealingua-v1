@@ -9,7 +9,7 @@ import izumi.idealingua.model.il.ast.typed.{DefMethod, _}
 import izumi.idealingua.model.output.Module
 import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.CompilerOptions._
-import izumi.idealingua.translator.tocsharp.extensions.JsonNetExtension
+import izumi.idealingua.translator.tocsharp.extensions.{JsonNetExtension, NUnitExtension}
 import izumi.idealingua.translator.tocsharp.products.CogenProduct._
 import izumi.idealingua.translator.tocsharp.products.RenderableCogenProduct
 import izumi.idealingua.translator.tocsharp.types.{CSharpClass, CSharpField, CSharpType}
@@ -17,8 +17,8 @@ import izumi.idealingua.translator.{Translated, Translator}
 
 object CSharpTranslator {
   final val defaultExtensions = Seq(
-    JsonNetExtension
-    // NUnitExtension,
+    JsonNetExtension,
+    NUnitExtension,
   )
 }
 
