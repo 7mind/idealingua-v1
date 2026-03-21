@@ -6,7 +6,7 @@ object V {
   val http4s       = "0.23.33"
   val http4s_blaze = "0.23.17"
 
-  val scalameta = "4.14.7" // Not available for Scala 3 yet
+  val scalameta = "4.15.2" // Not available for Scala 3 yet
   val fastparse = "3.1.1" // 3.0.0 is available for Scala 3
 
   val scala_xml = "2.4.0"
@@ -20,8 +20,8 @@ object V {
 
   // java-only dependencies below
   // java, we need it bcs http4s ws client isn't ready yet
-  val asynchttpclient = "3.0.6"
+  val asynchttpclient = "3.0.7"
 
   val slf4j           = "1.7.30"
-  val typesafe_config = "1.4.5"
+  val typesafe_config = "1.4.6"
 }
