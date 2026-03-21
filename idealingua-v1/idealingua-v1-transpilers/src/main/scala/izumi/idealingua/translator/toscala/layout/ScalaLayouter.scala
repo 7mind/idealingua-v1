@@ -207,6 +207,8 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
       val soleScalaVersionSetting = options.manifest.sbt.scalaVersions match {
         case v :: Nil =>
           s"""scalaVersion := "$v","""
+        case Nil =>
+          throw new IllegalArgumentException("SBT layout requires at least one Scala version in scalaVersions manifest setting")
         case _ => ""
       }
       s""".settings(
