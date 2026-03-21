@@ -402,12 +402,28 @@
       "sha256": "18r2rf50frzha92dq35kw821266ij73jpa8lydxi1sfgqrq10rs0"
     },
     {
+      "url": "https://repo1.maven.org/maven2/com/lihaoyi/fastparse_3/3.1.1/fastparse_3-3.1.1.jar",
+      "sha256": "1wqwiw1d6jpzzphwd61sl8zshlk5rkvsrbz1f93vx20b4jp904p0"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/com/lihaoyi/fastparse_3/3.1.1/fastparse_3-3.1.1.pom",
+      "sha256": "1k4vczq2w1nx5pj0gfh0ahrf5b94dxpnszcx8bspi6sj20vbbkd6"
+    },
+    {
       "url": "https://repo1.maven.org/maven2/com/lihaoyi/geny_2.13/1.1.0/geny_2.13-1.1.0.jar",
       "sha256": "1dbls6w4s2r09j2gx946mdmr8z99vhhjnbdlf3d37dbv0iwg54xx"
     },
     {
       "url": "https://repo1.maven.org/maven2/com/lihaoyi/geny_2.13/1.1.0/geny_2.13-1.1.0.pom",
       "sha256": "098ll4xl8clxcxp06sscqxasrwjlcr36x4yw2f6jzg8n9ynpcphf"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/com/lihaoyi/geny_3/1.1.0/geny_3-1.1.0.jar",
+      "sha256": "1db9zlxwnh5na0dgj2vcp99wjsfbpcflzmrn8zsarciva29kfrj5"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/com/lihaoyi/geny_3/1.1.0/geny_3-1.1.0.pom",
+      "sha256": "0xwpnbzx750sjljq86j5ihqipc6w47g9qmacjlcbp2acfm1sg4aq"
     },
     {
       "url": "https://repo1.maven.org/maven2/com/lihaoyi/sourcecode_2.13/0.4.0/sourcecode_2.13-0.4.0.jar",
@@ -428,6 +444,14 @@
     {
       "url": "https://repo1.maven.org/maven2/com/lihaoyi/sourcecode_2.13/0.4.4/sourcecode_2.13-0.4.4.pom",
       "sha256": "16gx8lx012l0g9am8jgq4ggfmp299mq2vgbl4f76lsqc9xbxj822"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/com/lihaoyi/sourcecode_3/0.4.0/sourcecode_3-0.4.0.jar",
+      "sha256": "19vkgcdhflib3j8b0mwjjxpd9r5i5j43ikwkakdgzvjd38fbvs74"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/com/lihaoyi/sourcecode_3/0.4.0/sourcecode_3-0.4.0.pom",
+      "sha256": "07q4xpdddps7i7hjr7x4q25gpsbcfaaasjd8vvhd4qjah7s35cg5"
     },
     {
       "url": "https://repo1.maven.org/maven2/com/lmax/disruptor/3.4.2/disruptor-3.4.2.jar",
@@ -526,12 +550,12 @@
       "sha256": "0hjc6y8ybwqifwlzk3xsw3xsiyb39084vsgfqbgrxgpiqx5nx8h1"
     },
     {
-      "url": "https://repo1.maven.org/maven2/com/typesafe/config/1.4.5/config-1.4.5.jar",
-      "sha256": "1hr6qn90hs89zskirp6aa72la81zrscxwsrskm07559anbzhljsa"
+      "url": "https://repo1.maven.org/maven2/com/typesafe/config/1.4.6/config-1.4.6.jar",
+      "sha256": "0mk2nck746hq68w2zxhl7107s7hf0mbkyw41nlqrvi2vvasrysyx"
     },
     {
-      "url": "https://repo1.maven.org/maven2/com/typesafe/config/1.4.5/config-1.4.5.pom",
-      "sha256": "1m9fw7i6lk4hdyjwgsnlwf86lail90dyqf1pcpqdb2zcq3p5acpz"
+      "url": "https://repo1.maven.org/maven2/com/typesafe/config/1.4.6/config-1.4.6.pom",
+      "sha256": "08bdmvxifagvjf3kqi6f2gpah36x6aycdrhwjpcgiqdgjmjm2v81"
     },
     {
       "url": "https://repo1.maven.org/maven2/com/typesafe/ssl-config-core_2.12/0.2.2/ssl-config-core_2.12-0.2.2.jar",
@@ -914,196 +938,196 @@
       "sha256": "1ak3vgqjj6hw561i7kzdxp28maczw0v0yl98mnsbggnks6g8f480"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_2.13/1.2.22/fundamentals-basics_2.13-1.2.22.jar",
-      "sha256": "1s77pzqb9xz8722ixfl04jh8vv1pdbl7pd6aaw5lv0rjcsfpjrlh"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_2.13/1.2.24/fundamentals-basics_2.13-1.2.24.jar",
+      "sha256": "1b1bqyi3cln9pfa2mgr5x20ydsg40qj3x4528i3ww6p0hwnm2qas"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_2.13/1.2.22/fundamentals-basics_2.13-1.2.22.pom",
-      "sha256": "1xmxhvsnkim6smcq4m241hz720zkw6x9xyihk97wlny3lqj8f81h"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_2.13/1.2.24/fundamentals-basics_2.13-1.2.24.pom",
+      "sha256": "04zbsqc11v5b5k6kx11g3xc3w66j9bfibsjkff7zrlq440q1ipp8"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_3/1.2.22/fundamentals-basics_3-1.2.22.jar",
-      "sha256": "0pqw816kmz3r5sw0mgyv1n0za8i7bnspya98mxh6xnpsk89v6jyd"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_3/1.2.24/fundamentals-basics_3-1.2.24.jar",
+      "sha256": "0kzgl8b3bl7jlc9509rjc74m5dphn5h3f0nvca6qya1m7mzvbcr2"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_3/1.2.22/fundamentals-basics_3-1.2.22.pom",
-      "sha256": "0mvzcncjr0hlwh1iwjlyy9j2qxp4pnp107zq5285mkfpimnpxh7r"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_3/1.2.24/fundamentals-basics_3-1.2.24.pom",
+      "sha256": "0xiqz6dzjw2fladv7ar0p3kb3j8ayhbn864cgda1539ciq7l790x"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_2.13/1.2.22/fundamentals-bio_2.13-1.2.22.jar",
-      "sha256": "0mnssh7091p0i7a53x4kw5cy8q8dvnks1h04ckz0cv1px4vclhxi"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_2.13/1.2.24/fundamentals-bio_2.13-1.2.24.jar",
+      "sha256": "0ncx8kmsr5awlr0vq9ldai2a3i29dskcyrf76jv20isydph58m71"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_2.13/1.2.22/fundamentals-bio_2.13-1.2.22.pom",
-      "sha256": "00givg4iybfdh5nfzllr59rgmzfv2gfnxb6xdywnmi8a4k72gviv"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_2.13/1.2.24/fundamentals-bio_2.13-1.2.24.pom",
+      "sha256": "1sy895q2pv0yxhr449m60in0yxyrfkl66qbsr15csh787jzcxf0g"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_3/1.2.22/fundamentals-bio_3-1.2.22.jar",
-      "sha256": "1hv5sl8pv82nr573gjsn6q7s70ms9hmph3wwc0d2l6zdv8k6g343"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_3/1.2.24/fundamentals-bio_3-1.2.24.jar",
+      "sha256": "0sd76r16lrrqyjb2w1y08ms520aw53piab9sq2ppy8babzx74yjg"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_3/1.2.22/fundamentals-bio_3-1.2.22.pom",
-      "sha256": "0jy4x3fq11v81fnhl9y9swqvdmmzv1y0ich1lvmjkh0mza28kp7x"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_3/1.2.24/fundamentals-bio_3-1.2.24.pom",
+      "sha256": "1w8bj6j94vjxv7zqy4n2jv2xx4lnbz8xph6jh7a75nnr4nh562g9"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_2.13/1.2.22/fundamentals-collections_2.13-1.2.22.jar",
-      "sha256": "1hijx9hc3y0yirzf3jrbs8xp4rsl24xfsi36xda2x81l2f2qm5qi"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_2.13/1.2.24/fundamentals-collections_2.13-1.2.24.jar",
+      "sha256": "1idcxib840162kk3anh1zcdrzdbix54fbd8ziggjsr005jibw65h"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_2.13/1.2.22/fundamentals-collections_2.13-1.2.22.pom",
-      "sha256": "0gycsf6347n41kpzl5190pnaqwrkimm4fihrb77zs4lvy05zy2s7"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_2.13/1.2.24/fundamentals-collections_2.13-1.2.24.pom",
+      "sha256": "0y5a71lnd8l9krq5i6wwrkwm4n4n1pzslr1yrq6drl6sj6ypmh3s"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_3/1.2.22/fundamentals-collections_3-1.2.22.jar",
-      "sha256": "0mg6wxms8rmi0s416735slhcr58l4zjrzhpfpnk27a388za3dp3b"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_3/1.2.24/fundamentals-collections_3-1.2.24.jar",
+      "sha256": "0fxdp1mnqqmcpvdy7b408s7xvsj3sidpc1c3dq4pszz8si9j9cav"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_3/1.2.22/fundamentals-collections_3-1.2.22.pom",
-      "sha256": "0hq2jx7qiasnk5nxsxag802x54mhm73ffkzfdv4bpk8yl7wil5ca"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_3/1.2.24/fundamentals-collections_3-1.2.24.pom",
+      "sha256": "1qw12ivfs2mhz4hq08fq057ijvl2xlix6dv1j0awhm1v9w5ik0kf"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_2.13/1.2.22/fundamentals-functional_2.13-1.2.22.jar",
-      "sha256": "08rsk5ca3qjkxx2xay7sswq842rj7yncv7dx0q87rsx536zrir34"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_2.13/1.2.24/fundamentals-functional_2.13-1.2.24.jar",
+      "sha256": "12hgypzjvdwxvlxhw0m6lzasamdwzhzbmgsl985ychrqnxwvp6fb"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_2.13/1.2.22/fundamentals-functional_2.13-1.2.22.pom",
-      "sha256": "14s6fp8fm74x6gjyznhqvg67wrs6g292kfnj4nji5y0mppmbbps4"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_2.13/1.2.24/fundamentals-functional_2.13-1.2.24.pom",
+      "sha256": "1bk27xiciafsshwnd63hsx5828dryqiggbwsf67nm2a6bacxwa33"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_3/1.2.22/fundamentals-functional_3-1.2.22.jar",
-      "sha256": "131d890ds2jxbs6x86156fw1sn2nmxa4f3qnl6c7ikmmn57nksns"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_3/1.2.24/fundamentals-functional_3-1.2.24.jar",
+      "sha256": "14w2z4gs3rd6h2s4abxc3cba33fw8wc12179340737zwi7d0j80y"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_3/1.2.22/fundamentals-functional_3-1.2.22.pom",
-      "sha256": "0z7w1n9v8jam1yjajd8194yf9n0dvr84qdcz7fsfhi7p91q8sssm"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_3/1.2.24/fundamentals-functional_3-1.2.24.pom",
+      "sha256": "0n14hci6ridzmfygz9cvax0fbpknsnq3c9pq6xxiqrmpjmgq6ik9"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_2.13/1.2.22/fundamentals-language_2.13-1.2.22.jar",
-      "sha256": "0a3mp0y7n382ykhkzdsbzlk4dlmc1z435c8d033xf3skg9gfxn3y"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_2.13/1.2.24/fundamentals-language_2.13-1.2.24.jar",
+      "sha256": "1k61v9gknxncy8hzcg9jqig2q7pnsm44h3gyr4myjg9lccpgasff"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_2.13/1.2.22/fundamentals-language_2.13-1.2.22.pom",
-      "sha256": "04bjca305g62cswvxndr1lsb3vpk0aaddiwfflma234qmzvlz3ag"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_2.13/1.2.24/fundamentals-language_2.13-1.2.24.pom",
+      "sha256": "074c8wbkwqqman3q9djmp403q8cd1gm4yqr6kgi74r6nxhs3k219"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_3/1.2.22/fundamentals-language_3-1.2.22.jar",
-      "sha256": "1nxb3z31vg78i5bbg4z111r1qnb9zgn30218kb9zrhg1zazvqhxr"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_3/1.2.24/fundamentals-language_3-1.2.24.jar",
+      "sha256": "03jr0xnwzrmgf9w4iv4q6d6yw2xa911nc55ac5kl01v2y6s6z89q"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_3/1.2.22/fundamentals-language_3-1.2.22.pom",
-      "sha256": "1qmfc125nmvqch2k0rvxxln90j6nql0w3jbqz7cskjjslxqz1b8z"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_3/1.2.24/fundamentals-language_3-1.2.24.pom",
+      "sha256": "0imsr3x2spbck53pfz7hixcvn4j68z0wjal4nzv5vidsy9wwik7p"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_2.13/1.2.22/fundamentals-literals_2.13-1.2.22.jar",
-      "sha256": "1yhlwx8ig8534qxhs7cz01n6ka6fgq7iv5n8b1cqa033mp929y8n"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_2.13/1.2.24/fundamentals-literals_2.13-1.2.24.jar",
+      "sha256": "0kxrra93hfy0scb8xs2xd6i8b2jvx18n42535zjcldqvd9navjdk"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_2.13/1.2.22/fundamentals-literals_2.13-1.2.22.pom",
-      "sha256": "1px63520k3xpr06214yl2mjs17m0skczwvg1lsrgapgxmjf0zja0"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_2.13/1.2.24/fundamentals-literals_2.13-1.2.24.pom",
+      "sha256": "0jx3c2y4askj3vgl1sj65rgnskfqy4kmy84kxzyqjkdikgdcvlrl"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_3/1.2.22/fundamentals-literals_3-1.2.22.jar",
-      "sha256": "0ir5zzzqkcjz7iiig0gp2y748snjv0f9p7n12khhkg2dbdw639ka"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_3/1.2.24/fundamentals-literals_3-1.2.24.jar",
+      "sha256": "1dp9y68zyq6il7mh4klq2mdcc4msnny74yj5dzk16avplq7max7q"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_3/1.2.22/fundamentals-literals_3-1.2.22.pom",
-      "sha256": "06ri8pljbjb9ijxqmhgn4rz82g130s7s6f3n7sffil0hwv97qv70"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_3/1.2.24/fundamentals-literals_3-1.2.24.pom",
+      "sha256": "0hvzp63xk2v9c4rgm0mlqqshgzx0i81sq2bv3475sflr05sk6474"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_2.13/1.2.22/fundamentals-orphans_2.13-1.2.22.jar",
-      "sha256": "056q252kls0xfr3q6q3bc4qgimq5bpbgpv0hrnbxdsn3zykkk8kb"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_2.13/1.2.24/fundamentals-orphans_2.13-1.2.24.jar",
+      "sha256": "16hh01v362v3xnjhqm9azp17k273byaj6d4202appi87kblkjial"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_2.13/1.2.22/fundamentals-orphans_2.13-1.2.22.pom",
-      "sha256": "1m8vj5paqfaynm2cl6603d29kgbh88m1r9pxa7zkik7yqr99d57d"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_2.13/1.2.24/fundamentals-orphans_2.13-1.2.24.pom",
+      "sha256": "02lk6jrdnl56gsadi395b7vf3ncp5y463k0kxa898kdm1rnlr8hw"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_3/1.2.22/fundamentals-orphans_3-1.2.22.jar",
-      "sha256": "0m0p9qp1pzgq1ghjz4sh0fdvyka5f0mssi2yw0pdjm6c2p9qk8lv"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_3/1.2.24/fundamentals-orphans_3-1.2.24.jar",
+      "sha256": "0s7z5wvk53p3bzp8lqw7045v2jzw8krrkiajh7c4jr7nqxy7yy4c"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_3/1.2.22/fundamentals-orphans_3-1.2.22.pom",
-      "sha256": "10w7xaz3l5zcp1dl31mg0b908i95cinq9c91qnrpgjrzbcmhsvgh"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_3/1.2.24/fundamentals-orphans_3-1.2.24.pom",
+      "sha256": "0fq6xh34733aywjzilds9pdz43g1lgwfj56nawxq53cwmvyc5shs"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_2.13/1.2.22/fundamentals-platform_2.13-1.2.22.jar",
-      "sha256": "0zha45gm6phc5jkbavcis79zcnmlm4c18vjj9gk9rmrsg4b29ack"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_2.13/1.2.24/fundamentals-platform_2.13-1.2.24.jar",
+      "sha256": "1iccy35hfk0cn93l3sn938flc05xshhjqq3gi0g77lsaqg9m66yk"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_2.13/1.2.22/fundamentals-platform_2.13-1.2.22.pom",
-      "sha256": "1qlgs8ya1s0x2rrsa8w3hkx14lxyac8cr6h77pfykj2c02nl03x9"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_2.13/1.2.24/fundamentals-platform_2.13-1.2.24.pom",
+      "sha256": "17j8prybm0jw5cn79q38w7hzqmdrad40wzf2gpqaa6jk66a2yndk"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_3/1.2.22/fundamentals-platform_3-1.2.22.jar",
-      "sha256": "1dg2z70cazig22q1swvixjkc5n68lwk9kg6cp75qiz8pm42c82gk"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_3/1.2.24/fundamentals-platform_3-1.2.24.jar",
+      "sha256": "1a83gdbbjp8l6wp8xmyilpdmdm7fs8p6p9g527scr6n4qplyzcwh"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_3/1.2.22/fundamentals-platform_3-1.2.22.pom",
-      "sha256": "08ksci09c3l5sfl17kmj2b2f9m9if277957vj32h1kvnipqs119i"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_3/1.2.24/fundamentals-platform_3-1.2.24.pom",
+      "sha256": "02k1f8jycq7rapv8y7008w4r9rk407cnh4d8lljjj11q3xvjzlip"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_2.13/1.2.22/logstage-adapter-slf4j_2.13-1.2.22.jar",
-      "sha256": "023nl10bqg6sx72mgy4kmd8h7rl0xijzv9x94q7sy6y2v97yqnv6"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_2.13/1.2.24/logstage-adapter-slf4j_2.13-1.2.24.jar",
+      "sha256": "1jkc800qf9b6v8i6iw9l4gbw1r1i8crd97g7xa7lc6nmp28zhhfb"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_2.13/1.2.22/logstage-adapter-slf4j_2.13-1.2.22.pom",
-      "sha256": "19c233cs470qspvysdiclayzi91w5w9c290b03d8z8sbspgnp6w8"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_2.13/1.2.24/logstage-adapter-slf4j_2.13-1.2.24.pom",
+      "sha256": "09j3qssg2lbyv40dnrzmmgzbdjw0rli87fxyfyr7fi0lkam5kr8x"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_3/1.2.22/logstage-adapter-slf4j_3-1.2.22.jar",
-      "sha256": "0al96sf7qlg3mbfwqvnc28qy48qaid1ymaalz8vcq2k5bml3vkn2"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_3/1.2.24/logstage-adapter-slf4j_3-1.2.24.jar",
+      "sha256": "0mf37ph8l8jf0zw79w23dkmpffcd9iv454k7lywhdyi50fh32mzk"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_3/1.2.22/logstage-adapter-slf4j_3-1.2.22.pom",
-      "sha256": "0xmvdpnyg1bj9kk2xbjmxdyfhdqlz0rnaw0qxcjv8pvw9b6ffrbw"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_3/1.2.24/logstage-adapter-slf4j_3-1.2.24.pom",
+      "sha256": "1mbjd8j5s8japm552rx9qzdxid3fm4yy6rpp8yr2ig03pb2k4b2s"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_2.13/1.2.22/logstage-core_2.13-1.2.22.jar",
-      "sha256": "1q7gqysav6mxlxamys7qvq8fbd14591d0dzni14x20g0b2fvm9n8"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_2.13/1.2.24/logstage-core_2.13-1.2.24.jar",
+      "sha256": "09i3001zd39wkr5vgjlb1gw823hmqw656hby74njzr4agx5djfh8"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_2.13/1.2.22/logstage-core_2.13-1.2.22.pom",
-      "sha256": "12z02wl06s2dmyp9qyd96cpc2g7vx8ga3f29ny5b6zlqa2cy8bfs"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_2.13/1.2.24/logstage-core_2.13-1.2.24.pom",
+      "sha256": "0yfabphrwiy3hm5v0c4hcm3pfn25gx2q4skg9mvpqkbrva6j45m2"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_3/1.2.22/logstage-core_3-1.2.22.jar",
-      "sha256": "025s2rr8my9ng3iw9hb0461m8vcn040n86wwfhvyjag0f1lhywav"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_3/1.2.24/logstage-core_3-1.2.24.jar",
+      "sha256": "07s3zizdvzka0y6b3fxshx0hmcqw46s6y7s7szjqnp12d7wangav"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_3/1.2.22/logstage-core_3-1.2.22.pom",
-      "sha256": "12iappwwkr9kk2511sb6k6xl785ya7himpb63q14llfdhfnrhxw4"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_3/1.2.24/logstage-core_3-1.2.24.pom",
+      "sha256": "11vgr0ydbibfwhm21zbkqc59q9x1s7nkbigfh62i5kf5jziz9bhn"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt-izumi-deps_2.12_1.0/1.2.22/sbt-izumi-deps_2.12_1.0-1.2.22.jar",
-      "sha256": "1f7lzy62h9wrwv6lyxnf1ksdf6d5q4mjl4fmp7jzyfkiqjf009my"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt-izumi-deps_2.12_1.0/1.2.24/sbt-izumi-deps_2.12_1.0-1.2.24.jar",
+      "sha256": "15rp4as8padd5jpci96qm7d5il305r77q282canhlic2wycmr6d7"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt-izumi-deps_2.12_1.0/1.2.22/sbt-izumi-deps_2.12_1.0-1.2.22.pom",
-      "sha256": "1imliaajygcqdwk58jkf3ph44f0y0lpnpk79f3z4ca37yjw59scg"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt-izumi-deps_2.12_1.0/1.2.24/sbt-izumi-deps_2.12_1.0-1.2.24.pom",
+      "sha256": "0gavg2dlxlc67yc4k6g72zbjbl3pahdv5b1x6a4n73m9zdh42axj"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbt-izumi_2.12_1.0/0.0.112/sbt-izumi_2.12_1.0-0.0.112.jar",
-      "sha256": "0f01n0fl074wxjvpgvd5vwlr2qmyhvh77chinxf8gl6v8wpwvnxv"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbt-izumi_2.12_1.0/0.0.117/sbt-izumi_2.12_1.0-0.0.117.jar",
+      "sha256": "1l4w1ma7989makf8f4na57hqj5qv9s0fqzfkg9ian181dcl3i7x1"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbt-izumi_2.12_1.0/0.0.112/sbt-izumi_2.12_1.0-0.0.112.pom",
-      "sha256": "1gvmf04izb3l6f9n9260cdk7mf96hdg1mi79bcyl699zgy1mks5l"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbt-izumi_2.12_1.0/0.0.117/sbt-izumi_2.12_1.0-0.0.117.pom",
+      "sha256": "1qga5f54ci4rv0yl2bxvx6drhrparhf02rp3bq2wfd6pwr000gn9"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_2.13/0.0.112/sbtgen_2.13-0.0.112.jar",
-      "sha256": "034krd9br6szqyvn74a2gcwkyi76zaagxv3aqigwi8jx4rd177yk"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_2.13/0.0.117/sbtgen_2.13-0.0.117.jar",
+      "sha256": "1flah5y0gs3hhdjx1safyvbpddrr52pn70b4a7was3ix14cn3ja9"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_2.13/0.0.112/sbtgen_2.13-0.0.112.pom",
-      "sha256": "0v3mpd5vwxsxrh4b0arxvg0xhskx03kh66kv2rwg4yj2gsxq2aac"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_2.13/0.0.117/sbtgen_2.13-0.0.117.pom",
+      "sha256": "069psqczk1nsvld8lybr5r1i0na1a5zq1xr1pdnj13cnab2yrr52"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtmeta_2.13/0.0.112/sbtmeta_2.13-0.0.112.jar",
-      "sha256": "0g8ir22injxvzj13b4ijfqwa4ccs1xlh8pjgi0yk0nkyyl9vwvwc"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtmeta_2.13/0.0.117/sbtmeta_2.13-0.0.117.jar",
+      "sha256": "14wsifg4xhank402m5qmalm484qmdyf9ayfy5n61vdr79l6p6dys"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtmeta_2.13/0.0.112/sbtmeta_2.13-0.0.112.pom",
-      "sha256": "19hfhpgxdwsavknlm4v0nshmzvd6aww8smqhscpqh83lcs3naaym"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtmeta_2.13/0.0.117/sbtmeta_2.13-0.0.117.pom",
+      "sha256": "0dw3cq037ssklcf9g3hxmgwa5yqvfic40gr8ym9vl1swma35vmc0"
     },
     {
       "url": "https://repo1.maven.org/maven2/io/airlift/airbase/112/airbase-112.pom",
@@ -1738,16 +1762,16 @@
       "sha256": "1drsqdldqfk529grmgjpshjxa1f72lr1yyh9r4pvc144vqr72wga"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/asynchttpclient/async-http-client-project/3.0.6/async-http-client-project-3.0.6.pom",
-      "sha256": "0jkvjq9wr51ajcvlww6jar7pfg8yp1k46vny9if40m0c0szk73xz"
+      "url": "https://repo1.maven.org/maven2/org/asynchttpclient/async-http-client-project/3.0.7/async-http-client-project-3.0.7.pom",
+      "sha256": "0bwnvsbyv209i1r2zfdm2fpx267ss00ydiwklcpbvd85sf07b07j"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/asynchttpclient/async-http-client/3.0.6/async-http-client-3.0.6.jar",
-      "sha256": "1zyh2ajrlb90pr7wmj9hj4gv15sfxwwdiylbf8hkgajffli0hcg6"
+      "url": "https://repo1.maven.org/maven2/org/asynchttpclient/async-http-client/3.0.7/async-http-client-3.0.7.jar",
+      "sha256": "0dhqbj664vnhnq5wifrp4i42nz96384nmxl2flkks36ah096m0d9"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/asynchttpclient/async-http-client/3.0.6/async-http-client-3.0.6.pom",
-      "sha256": "08d77bng0wki8dgw675v0rq9bz7q6b4aa9mbrfi57c0q0q48p8c0"
+      "url": "https://repo1.maven.org/maven2/org/asynchttpclient/async-http-client/3.0.7/async-http-client-3.0.7.pom",
+      "sha256": "1zs32r573wxk7g1i3v6xpcby2g082gq8alxgqlvax7h6w81ljy6i"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/bouncycastle/bc-jdk18on-bom/1.82/bc-jdk18on-bom-1.82.pom",
@@ -2338,6 +2362,14 @@
       "sha256": "0270xfwi4rpn9ci2bl6kzgbdjsgp5kiq19akvsylgj7jkyz2jq6r"
     },
     {
+      "url": "https://repo1.maven.org/maven2/org/scala-lang/modules/scala-xml_3/2.4.0/scala-xml_3-2.4.0.jar",
+      "sha256": "0zqp6hi6vx4bc74i780090pvq8zzchq0ir4h30b282r4f6vp2fdm"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scala-lang/modules/scala-xml_3/2.4.0/scala-xml_3-2.4.0.pom",
+      "sha256": "141nln3ai0h7zjknfqvn8mz5hj741w9ig2hhhwg3jikd2kvmxlp2"
+    },
+    {
       "url": "https://repo1.maven.org/maven2/org/scala-lang/scala-compiler/2.12.20/scala-compiler-2.12.20.pom",
       "sha256": "18ya9jnr0v5ccdy8qfsla2fc1ndgnrm539prfdci8fs221qq6jyh"
     },
@@ -2394,16 +2426,8 @@
       "sha256": "0rs1gd5wnyln75z689yng1wd3fm2vwpxhqxra2jxivr386m3bp36"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.13.10/scala-reflect-2.13.10.jar",
-      "sha256": "0pmkmpnbijyklmr285h76fpi7r3r0acj5hcjm5rm6g0rk1qpmgb2"
-    },
-    {
       "url": "https://repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.13.10/scala-reflect-2.13.10.pom",
       "sha256": "0977smq1v6r31g1d9c47nxqh8kdhmhgg87ri9sq24rmg6m0c9mbr"
-    },
-    {
-      "url": "https://repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.13.12/scala-reflect-2.13.12.jar",
-      "sha256": "0ynarfrqn20aalm7fv2i3xkaw8v72mm3vgp00ckd5jwz7awwwj66"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.13.12/scala-reflect-2.13.12.pom",
@@ -2486,28 +2510,28 @@
       "sha256": "1nlgnazmqix3xsj3ns5zl6xmczc1iprbkf7g5b0nsbh0ma5y2znn"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/actions_2.12/1.12.2/actions_2.12-1.12.2.jar",
-      "sha256": "09kr183py85icyxj27qj2bfb8bf5r3a1k482d7y2mfsc0c3hf87w"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/actions_2.12/1.12.5/actions_2.12-1.12.5.jar",
+      "sha256": "0nn0pwdjq4wzzlzw6zgl9s2h5fxar8ki7kin5gyd8yf5dfw4q5rc"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/actions_2.12/1.12.2/actions_2.12-1.12.2.pom",
-      "sha256": "1xv34hqij87qxd738m54wapc5qv5avv08hxd0svhh621m0xgpd3y"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/actions_2.12/1.12.5/actions_2.12-1.12.5.pom",
+      "sha256": "0higl2dnsy7crwqq17lkxyplh5qj3by10724m2pmvf99lchmw58l"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/collections_2.12/1.12.2/collections_2.12-1.12.2.jar",
-      "sha256": "1km3n92clxz57n42lmj2rfnn08ziq2pgphg071yalm995hmpidmx"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/collections_2.12/1.12.5/collections_2.12-1.12.5.jar",
+      "sha256": "1cl5kwy12d5rrmdl38zb7wvppmcmlrzrxdfh99q24d8c7gki6jzr"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/collections_2.12/1.12.2/collections_2.12-1.12.2.pom",
-      "sha256": "1v9ks9xz4vzmvacdcb3x7r30lmhpw821xwz6nhdflzw8b0lihvaw"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/collections_2.12/1.12.5/collections_2.12-1.12.5.pom",
+      "sha256": "13anq988zwzsm868rrkqg3wb0b21q8bb06b0iay92nm5hb6hyl4p"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/command_2.12/1.12.2/command_2.12-1.12.2.jar",
-      "sha256": "0ck433dnkfqrdmgrj0zjqcvx8pp54ja7jn863ysxck3k0hj6yp8q"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/command_2.12/1.12.5/command_2.12-1.12.5.jar",
+      "sha256": "1awh49hvz13vkkkqzsr0mjzm7ak98zk9mywhv7905gxz7hhnb1sg"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/command_2.12/1.12.2/command_2.12-1.12.2.pom",
-      "sha256": "1gmnci981qaxnar35q7cvdz5yqcnyngz6z8pfsj8k1xgp6ws3xac"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/command_2.12/1.12.5/command_2.12-1.12.5.pom",
+      "sha256": "0znhz053zxd5zx94bmj9dwxvbk0vrgbpzcxpiiz5qpv3frn35bsw"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/scala-sbt/compiler-bridge_2.12/1.12.0/compiler-bridge_2.12-1.12.0-sources.jar",
@@ -2542,20 +2566,20 @@
       "sha256": "0562nq9rsggigv9q6s55df1vp6fk17wm0jrx9vb1k26q99bxbkxm"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/completion_2.12/1.12.2/completion_2.12-1.12.2.jar",
-      "sha256": "05mjadqwvxsz2cymjiwm97qqz968qqzfwa303bsjmp4x31fnwcad"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/completion_2.12/1.12.5/completion_2.12-1.12.5.jar",
+      "sha256": "10i4rc7s03x9gkhrwygwhs5wqlfa4ah2z44cnspffrcy156kp4cj"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/completion_2.12/1.12.2/completion_2.12-1.12.2.pom",
-      "sha256": "0z791znnczjgfrgska8bds55wb12zaj9h8m9xc6fgi65wn07r8g6"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/completion_2.12/1.12.5/completion_2.12-1.12.5.pom",
+      "sha256": "06z7qabzfds0gin67pvjkyq449lbr3hq0dngyham2f4sq3pv079p"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/core-macros_2.12/1.12.2/core-macros_2.12-1.12.2.jar",
-      "sha256": "1svgxng01syp43ry55d3xfn3kizdimapcwl73ay7z0nf0hhikgpr"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/core-macros_2.12/1.12.5/core-macros_2.12-1.12.5.jar",
+      "sha256": "1ad0vjviqv2g0widbayakil28i0b3wilbvnkd84mmwj8r4vgdmpy"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/core-macros_2.12/1.12.2/core-macros_2.12-1.12.2.pom",
-      "sha256": "0dld9nb7kfa9bc46s4i5gqr9zsk62f4ms6qi0j128a9yi2r98q8w"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/core-macros_2.12/1.12.5/core-macros_2.12-1.12.5.pom",
+      "sha256": "1h3df3j0zzf8a24390rm229gfd61s7chrqd8ja2f052pigic3mgq"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/scala-sbt/io_2.12/1.10.5/io_2.12-1.10.5.jar",
@@ -2614,44 +2638,44 @@
       "sha256": "0imy04ngjfvialpx7ppjh3shxiq9x02db78hbpd9wy8493ksi7ma"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/logic_2.12/1.12.2/logic_2.12-1.12.2.jar",
-      "sha256": "1zpyg32yys493ngdvsm12dvsydl67bp8rkm4cvaihlirlgbzvx8l"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/logic_2.12/1.12.5/logic_2.12-1.12.5.jar",
+      "sha256": "0cavs7gs5aw8ql83y75m25q9xr1mnps9kgxm3pk8s97fl2kivms0"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/logic_2.12/1.12.2/logic_2.12-1.12.2.pom",
-      "sha256": "1g77ggpvgd4qigjvvxb3a2w0zngd1qbbpawvixihsrlln7kr9x6r"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/logic_2.12/1.12.5/logic_2.12-1.12.5.pom",
+      "sha256": "005nl2vh808j9lbn8jx5cjfykqdfzbssvswk9g3rp34k04zp2qfa"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/main-settings_2.12/1.12.2/main-settings_2.12-1.12.2.jar",
-      "sha256": "0x56km6sj1pljgq3c8amj5ydwp6cgfv7mm4qh5sxvxh3ywhjfcs4"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/main-settings_2.12/1.12.5/main-settings_2.12-1.12.5.jar",
+      "sha256": "11s0041yjks13393dn8zwxbv54ayj2vllngcz6svhk6xbcp05ymz"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/main-settings_2.12/1.12.2/main-settings_2.12-1.12.2.pom",
-      "sha256": "0vlavgyvaabrchjd08j9bccz8d40w11w6zwh3ldxblsa367iddd8"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/main-settings_2.12/1.12.5/main-settings_2.12-1.12.5.pom",
+      "sha256": "1q36mhh5fndwxyc97pswlaflck7vhdgz2z78rab22pwldj5m6nar"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/main_2.12/1.12.2/main_2.12-1.12.2.jar",
-      "sha256": "1mg9ar1f0b3859yyj2y11b9r05vnnh7425gzgvsavw9r0w4lv9hf"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/main_2.12/1.12.5/main_2.12-1.12.5.jar",
+      "sha256": "0q779d5b7r8d23nhh8njnlz7b13a101dbyz1b1hhkkbchdzam5b3"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/main_2.12/1.12.2/main_2.12-1.12.2.pom",
-      "sha256": "0n4xyk4alpd5jvrs17zf0yi5bynf7y58pyl2zshdfb9g9rzdbsln"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/main_2.12/1.12.5/main_2.12-1.12.5.pom",
+      "sha256": "1j4383dqgys9vqf7kb5jfykymynr7dlkldvlq5i5vqnjzvayz8m9"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/protocol_2.12/1.12.2/protocol_2.12-1.12.2.jar",
-      "sha256": "11mc9x7dvr7qf8r9bazw6hjx96cc8rigfsxid6chr8lp5qr73gbx"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/protocol_2.12/1.12.5/protocol_2.12-1.12.5.jar",
+      "sha256": "1w77z7kx1pgnxckp977b33a0mgfj0kgg6yawbqz3j4ilmc6hrwl1"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/protocol_2.12/1.12.2/protocol_2.12-1.12.2.pom",
-      "sha256": "077wm4qr0kd3v7xvhscd2zpgscgaxrzkvcmilwcpvx0afl2iym5v"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/protocol_2.12/1.12.5/protocol_2.12-1.12.5.pom",
+      "sha256": "1r2q6847vf0czw3gi2yyyrffryiwfggxyj8vwa5npvigmnfar1xi"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/run_2.12/1.12.2/run_2.12-1.12.2.jar",
-      "sha256": "1jdq0czcb1gq1z8jk2ysbcr7bx1vlzs1irfaq2szrxs9s4az4z2a"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/run_2.12/1.12.5/run_2.12-1.12.5.jar",
+      "sha256": "0fhrzqlpb4yfbnqfg1ihk1xnihnngkvffh7z44jk0pxqb1xnz5qi"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/run_2.12/1.12.2/run_2.12-1.12.2.pom",
-      "sha256": "1lwlxhh2mq4bkds0kfyi29v25yvsvsr65lp9alnac3dc1dcqwigp"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/run_2.12/1.12.5/run_2.12-1.12.5.pom",
+      "sha256": "1bzcqjq8j3903m94nvn4dbx383jjasdhrfbbj1bbdyvd1mc59ls2"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbinary_2.12/0.5.1/sbinary_2.12-0.5.1.jar",
@@ -2662,44 +2686,44 @@
       "sha256": "0911brj2s04lsh67n5r30n9hn8vr41267h2biy7z1yyymlbynhd3"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbt-dependency-tree_2.12_1.0/1.11.0-RC2/sbt-dependency-tree_2.12_1.0-1.11.0-RC2.jar",
-      "sha256": "1m765k7vq9j3iixn00rnp9jn53dn8974929q9z9mqr0nmqv5sddz"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbt-dependency-tree_2.12_1.0/1.12.4/sbt-dependency-tree_2.12_1.0-1.12.4.jar",
+      "sha256": "11hrnk6s29v8ijppxxa15yw239qmnsm590ldfi3miv3i9dfc558b"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbt-dependency-tree_2.12_1.0/1.11.0-RC2/sbt-dependency-tree_2.12_1.0-1.11.0-RC2.pom",
-      "sha256": "11z0wkailmzgla528770k6gcznriccc6hlcqn1xxfajmibzns0b0"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbt-dependency-tree_2.12_1.0/1.12.4/sbt-dependency-tree_2.12_1.0-1.12.4.pom",
+      "sha256": "0gda0z4261l1542yd9nahbfzp3ajn9xfpmnqzs7zsw30fgqjy9gl"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbt/1.12.2/sbt-1.12.2.jar",
-      "sha256": "06c6w1ccvfmyzw5p9hd90ndq62hhycp0yxjlm59c0wipwxarcxcj"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbt/1.12.5/sbt-1.12.5.jar",
+      "sha256": "1jfmrc9si44hkl205x1gafgm9a1rzrsrlwvh5pj00gdk65lqv10y"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbt/1.12.2/sbt-1.12.2.pom",
-      "sha256": "0xqiaslmdv1jrkfxvy58zvb82n8ggsl4qsgf92ngbk0lq9an2bwv"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbt/1.12.5/sbt-1.12.5.pom",
+      "sha256": "0sl6blhq5q3w3v9nwqlqwzn3ifiszwpx0hqj497520m3bqsvs384"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/scripted-plugin_2.12/1.12.2/scripted-plugin_2.12-1.12.2.jar",
-      "sha256": "0hdqvqnm8x2j620a95w71ydrw5a14pd8wpyjbgb21saksq42wwgx"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/scripted-plugin_2.12/1.12.5/scripted-plugin_2.12-1.12.5.jar",
+      "sha256": "1n0gcacp2gfsv7ql6kls7sh5frslg28yl5x4psdrs8ik6azlj3b6"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/scripted-plugin_2.12/1.12.2/scripted-plugin_2.12-1.12.2.pom",
-      "sha256": "19am6l1sf8bmm885bjv65d6mds2laxwq67g1x7hnmnivwwc863g6"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/scripted-plugin_2.12/1.12.5/scripted-plugin_2.12-1.12.5.pom",
+      "sha256": "0f9j7xb392kipw62i6ma5plyby1h73in8dvfc1g570r64ryajnln"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/task-system_2.12/1.12.2/task-system_2.12-1.12.2.jar",
-      "sha256": "0pa0p04dl2rnbx2i10wf33a7qvr8018vydmwcvvdr2f57x1rk1i4"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/task-system_2.12/1.12.5/task-system_2.12-1.12.5.jar",
+      "sha256": "1i6kzd6wx8xq2dcbmjgnmadkdwacdyabihlm5lzfvhmxp9ncx46j"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/task-system_2.12/1.12.2/task-system_2.12-1.12.2.pom",
-      "sha256": "0j9z084r4bcksy132rvvl7hzf8rppv2p2hrp4j9hm7g6jxxx9h6c"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/task-system_2.12/1.12.5/task-system_2.12-1.12.5.pom",
+      "sha256": "0kvsjlxrg678cx1rcbz8fzmmaxqw371jvhzwk1qpyqjnvsn2h6cc"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/tasks_2.12/1.12.2/tasks_2.12-1.12.2.jar",
-      "sha256": "0c53izq93w7gxgjzr38wzr7fyl0sasxhpxnnsrrppwlprf3z2nix"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/tasks_2.12/1.12.5/tasks_2.12-1.12.5.jar",
+      "sha256": "1fr2x5jjb7mn9k8mi0m19hbz4ij6bgcvmph6hv1ifbaly1020lky"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/tasks_2.12/1.12.2/tasks_2.12-1.12.2.pom",
-      "sha256": "1nqzfs0hi5fw95d5a2y8f8wg96i992hd0ms35fag8d2czrh4ydm6"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/tasks_2.12/1.12.5/tasks_2.12-1.12.5.pom",
+      "sha256": "1d3b2anjjwdppgz3b8ybl5blcpl8ay2wna1vqkj6kybv14120by8"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/scala-sbt/template-resolver/0.1/template-resolver-0.1.jar",
@@ -2710,12 +2734,12 @@
       "sha256": "0nsx88y1b3nqpd6r80bb1rpaaskfhcxdbfaqngykrxz8gvq3i2q3"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/test-agent/1.12.2/test-agent-1.12.2.jar",
-      "sha256": "1k57g6jq68xparbm9pxv58rm7k1h3pxpmj1rl7zybrlzcnx5njra"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/test-agent/1.12.5/test-agent-1.12.5.jar",
+      "sha256": "10k8ar5dw1n301bmmf59y22rc7n79gwl0zpbnxhcmggl33pymsrl"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/test-agent/1.12.2/test-agent-1.12.2.pom",
-      "sha256": "19aiswmf1w5nz1w2xv36z6j2z3n6hy63rp65kvigd9i8zsq69245"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/test-agent/1.12.5/test-agent-1.12.5.pom",
+      "sha256": "0indd1l8fdjdl93wihpjsp1z5zbnknqamina8443q826crvqsc55"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/scala-sbt/test-interface/1.0/test-interface-1.0.jar",
@@ -2726,28 +2750,28 @@
       "sha256": "0bknid634xcq5r8fs1bx0ydxs3rhzgmzq1400h7y29n2s2lhdfk1"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/testing_2.12/1.12.2/testing_2.12-1.12.2.jar",
-      "sha256": "08l0mzd67l6in7064fdfrbkm8a2i98zhn3p6q1sr68nm07yaisna"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/testing_2.12/1.12.5/testing_2.12-1.12.5.jar",
+      "sha256": "0fmnylpskayianh9plx7fmrpmcix037k6xnza7rgigjhrkrpnyff"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/testing_2.12/1.12.2/testing_2.12-1.12.2.pom",
-      "sha256": "1nps24kb61r7jfc7q5i374agssppqzahvdnrrmkkn9j0z7c28rj5"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/testing_2.12/1.12.5/testing_2.12-1.12.5.pom",
+      "sha256": "18k1i20qvcm0m968gw03k0ymg4xn1qrvvry8b7nxjj9m7c35hppb"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-cache_2.12/1.12.2/util-cache_2.12-1.12.2.jar",
-      "sha256": "1ckxh6kdp6y0vkg4apik5amd07ja5vd6fwcfkgcv88769a7j7jsk"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-cache_2.12/1.12.5/util-cache_2.12-1.12.5.jar",
+      "sha256": "1kijr5vin7z7ibjhpvx7jbcr2pzgcbq4y4yqxacdss8yvkh77cwq"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-cache_2.12/1.12.2/util-cache_2.12-1.12.2.pom",
-      "sha256": "0nnra2qkb1s7s49yznf63afpj9xb1alxlmflhd3ds617grxf94lq"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-cache_2.12/1.12.5/util-cache_2.12-1.12.5.pom",
+      "sha256": "0d9b00ba7ip6a29ldm0w9albl0qr4d8gafq20lvam0hpq8ymr9x6"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-control_2.12/1.12.2/util-control_2.12-1.12.2.jar",
-      "sha256": "11vc9jr7gkcx6c1dj44n9mgd5r74ba565qjp678dxwxs01x7047h"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-control_2.12/1.12.5/util-control_2.12-1.12.5.jar",
+      "sha256": "1j4vy48fj9wc8zi1l1gfz052zsns0bly8vgsibwsqbgix2l6vv1s"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-control_2.12/1.12.2/util-control_2.12-1.12.2.pom",
-      "sha256": "1pxprp7qvlbasiwyln3qh0sjzzxicnbzzips1gh9sacnh4wnk55z"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-control_2.12/1.12.5/util-control_2.12-1.12.5.pom",
+      "sha256": "1hlbh437bjwixyvr5m50nlkd6z8zclnxf7iirjx2hcm7fssx70g7"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-interface/1.10.7/util-interface-1.10.7.jar",
@@ -2770,44 +2794,44 @@
       "sha256": "0ng203pfcazv23wxswjw9i1gbcsp6w8fhq1zpji8ffsgh7afvz0d"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-interface/1.12.2/util-interface-1.12.2.jar",
-      "sha256": "0yvha7jaxcyqr2gs8l351jg7wf0ggv98x0nyd8nz6l62kcmrla9v"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-interface/1.12.5/util-interface-1.12.5.jar",
+      "sha256": "1icy6hrgd84yjrww80266n9qk68c2djmf1ysqlvb3zpz1g02g6dg"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-interface/1.12.2/util-interface-1.12.2.pom",
-      "sha256": "1vdx5kx8pn4bijymmald7cbrbng4k75l7mdlf818xdn0zvnn8dq2"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-interface/1.12.5/util-interface-1.12.5.pom",
+      "sha256": "0aw7hhkgwz672q15rbwplj88dwffp1p7r4mwg71shn4mklpxa7n5"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-logging_2.12/1.12.2/util-logging_2.12-1.12.2.jar",
-      "sha256": "0d3acvs4wqs5h0byga3b438lq4aajscvmgil7i3iavbq3gzl5zmp"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-logging_2.12/1.12.5/util-logging_2.12-1.12.5.jar",
+      "sha256": "1gw8i3p5pa3pxssnhdbkzah5ng8qcavnqkrknfar5rxcyi5qd9kz"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-logging_2.12/1.12.2/util-logging_2.12-1.12.2.pom",
-      "sha256": "0lzgk2hyfxhz2g0q8inbh1szchqqcrg7ymcs41yrpw6kvqnpphw4"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-logging_2.12/1.12.5/util-logging_2.12-1.12.5.pom",
+      "sha256": "0l2y4rhq2hkms2n0r18qklbmb3ndc1ksdwy545wz07cmjk9yq78g"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-position_2.12/1.12.2/util-position_2.12-1.12.2.jar",
-      "sha256": "1lhp66zv7r4i0cqnkj5jnjh7yx3p01c660r3h29qyxqc691b8iwb"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-position_2.12/1.12.5/util-position_2.12-1.12.5.jar",
+      "sha256": "1z7kfplkhzwwld1db34kyswdgy3959nw6smr1g2c6f6w2ijjgwbl"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-position_2.12/1.12.2/util-position_2.12-1.12.2.pom",
-      "sha256": "08mb2qlj24znqv3r18dk62pp89jsj2lp13qgdhpgvv2rbppqsdcl"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-position_2.12/1.12.5/util-position_2.12-1.12.5.pom",
+      "sha256": "0h6li2cfyfk796sgrskmff6w4imyz5bj4mdf1ymdvsrn4cxw25yh"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-relation_2.12/1.12.2/util-relation_2.12-1.12.2.jar",
-      "sha256": "0kxa3a6fbsvh0gff47a82lsw09rl2j6xcjwg9ks46bqjxnhhy4kf"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-relation_2.12/1.12.5/util-relation_2.12-1.12.5.jar",
+      "sha256": "1lcqp2n5i33lrfs03w41i55yx6fhim342913jpgibrfxvqdza4lr"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-relation_2.12/1.12.2/util-relation_2.12-1.12.2.pom",
-      "sha256": "1xm5ha5hicizw7zcgp3sw3chvriixsdqbhi65pi4bpmfwp3xph7x"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-relation_2.12/1.12.5/util-relation_2.12-1.12.5.pom",
+      "sha256": "1bd8wn9pd0s4zmca78b09jgr41l37yrpjskyhn77hva7p9lg9acg"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-tracking_2.12/1.12.2/util-tracking_2.12-1.12.2.jar",
-      "sha256": "13si72h4q07pqzy9yfnc31ikza3s2s04a5sk0b6qgw1bnhm220kh"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-tracking_2.12/1.12.5/util-tracking_2.12-1.12.5.jar",
+      "sha256": "1qa8sigzl75snmjg8np8s1lf7i85a4y88yf0d6ynm1rcjy7x4lfl"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-tracking_2.12/1.12.2/util-tracking_2.12-1.12.2.pom",
-      "sha256": "1iwhclhhk9csnfl8flsm1fqkdrdg1ns85b0c2q2h0kbn682xnk61"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/util-tracking_2.12/1.12.5/util-tracking_2.12-1.12.5.pom",
+      "sha256": "0wfgc3g5l1ajbhn6yklyckb6dqbl82mbj47r2driipbfvnfkx7xl"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/scala-sbt/zinc-apiinfo_2.12/1.12.0/zinc-apiinfo_2.12-1.12.0.jar",
@@ -2858,12 +2882,12 @@
       "sha256": "107a1j6plprvxyyh9vjifw0mmm0x1d83av77y6zg8asbykzq9n9g"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/zinc-lm-integration_2.12/1.12.2/zinc-lm-integration_2.12-1.12.2.jar",
-      "sha256": "121vjdy79p6s71vp5lk2k3wwd34l5czr2f8hr4idnsawzy7ivfc5"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/zinc-lm-integration_2.12/1.12.5/zinc-lm-integration_2.12-1.12.5.jar",
+      "sha256": "1qv03jp8lx85nab0q4rcz87xki6nd131f14lnxba1lj9aw9x06ya"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/zinc-lm-integration_2.12/1.12.2/zinc-lm-integration_2.12-1.12.2.pom",
-      "sha256": "1rgnsf84m22hqqqldj41jy1wyc56j3fja7ax8pkw3jnsp4kcdbsn"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/zinc-lm-integration_2.12/1.12.5/zinc-lm-integration_2.12-1.12.5.pom",
+      "sha256": "08w504y11hwjm4y7lps6vkn81028i0gafg8fj5q0qn1zlsm8n2fy"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/scala-sbt/zinc-persist-core-assembly/1.12.0/zinc-persist-core-assembly-1.12.0.jar",
@@ -2906,44 +2930,60 @@
       "sha256": "0900g0va7rpv7j4j7vbbqplwvm07ff8hkwdrfnqznz8f1vzpnbmg"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/common_2.13/4.14.7/common_2.13-4.14.7.jar",
-      "sha256": "1p89xvxamblc6x0xn3szgdqy4z8cd412pmd4y84ka3hr1xsl65lc"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/common_2.13/4.15.2/common_2.13-4.15.2.jar",
+      "sha256": "1xzmqrknhbwb101x8ng2vr9vg6m9gcahzv35rjdad9qpl15i779h"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/common_2.13/4.14.7/common_2.13-4.14.7.pom",
-      "sha256": "017x5xw749zgiw91fxcrxhdz1167g4ln7fgwiacp5q6vax7mqx1f"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/common_2.13/4.15.2/common_2.13-4.15.2.pom",
+      "sha256": "1253kv3y38xxwxw33aypysaj1dc3h5h06r1gyixmq4bb4ajckd3b"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/io_2.13/4.14.7/io_2.13-4.14.7.jar",
-      "sha256": "0pxa8jv2rhaaxklbps1whllrw3rsbjchsgy1vnw289wxld091ch2"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/io_2.13/4.15.2/io_2.13-4.15.2.jar",
+      "sha256": "0yqhbs1g9viw7idr243iwwpbrdmfvlgx2p7yfm3p6jzms7ci8a2w"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/io_2.13/4.14.7/io_2.13-4.14.7.pom",
-      "sha256": "1vk8s0s18cyris3ckamzf06az0b2d4a7b5779kbifwir9sk0xpd1"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/io_2.13/4.15.2/io_2.13-4.15.2.pom",
+      "sha256": "1dhxsmlkfcxxjsl6hkkcwxam7dm23a430s8b02wlzkafhnwh0gff"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_2.13/4.14.7/parsers_2.13-4.14.7.jar",
-      "sha256": "08x1gkyffqdc1bfhyk8ffn5fkqxhy7v0xg01l6h4mc7bcflwv5ws"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_2.13/4.15.2/parsers_2.13-4.15.2.jar",
+      "sha256": "0jplxaxzgiskjx6xibggm2i4xjyhf4xbava4pnsavv0srhlhqz3q"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_2.13/4.14.7/parsers_2.13-4.14.7.pom",
-      "sha256": "0vvvbx2phhnqisa3098ilpyiv6dpl6pjclvvysdi4haqdvd67pp8"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_2.13/4.15.2/parsers_2.13-4.15.2.pom",
+      "sha256": "012m9ym791cr4kbdcpgy11p7mrvmrps1l5qns8sqvg2pd96z6dbc"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_2.13/4.14.7/scalameta_2.13-4.14.7.jar",
-      "sha256": "04ljn6kqr2vap7bsvxjxamxappyqbrvx8936d25g2xchbzi13z9g"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_3/4.15.2/parsers_3-4.15.2.jar",
+      "sha256": "04650vx057gpypykyznx2khw1bc5lai1rqqd1lky1mckl73lam3c"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_2.13/4.14.7/scalameta_2.13-4.14.7.pom",
-      "sha256": "0qmimgiddlmvwvdx11w4i9158mmny887hx4a5dpx9jspy5lql825"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_3/4.15.2/parsers_3-4.15.2.pom",
+      "sha256": "03d51x6gwf23yqg2psp2vzrc7w7p91m0zww1j3ys7c349baz59kq"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/trees_2.13/4.14.7/trees_2.13-4.14.7.jar",
-      "sha256": "07x3b40hb8rm45k3jmnifvbpri4iq41drad9lyrmqvykfvs8jr9g"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_2.13/4.15.2/scalameta_2.13-4.15.2.jar",
+      "sha256": "1n1585f6k8w4pld0ippz9ga0gdil0qwmh3b90ra1za8cfhzgmph1"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/trees_2.13/4.14.7/trees_2.13-4.14.7.pom",
-      "sha256": "15hhdpl043szxg1jj3ngjjhp0irl73qzmwng391k2h74vpm8c1hv"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_2.13/4.15.2/scalameta_2.13-4.15.2.pom",
+      "sha256": "16z76c1vh1nyx88vz80bqzf6j4q2cwr8fd4ak86fs2bd0im31dn4"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_3/4.15.2/scalameta_3-4.15.2.jar",
+      "sha256": "15b7jd3sgcpv3rlb6hpa6cdd08c2frlq5l6qmfdj4zaajiv48j3n"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_3/4.15.2/scalameta_3-4.15.2.pom",
+      "sha256": "106xmalhhhahcgnlk6qlz6n6mw48qlkzn891kzm6ljjr8dxknl5j"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scalameta/trees_2.13/4.15.2/trees_2.13-4.15.2.jar",
+      "sha256": "1igpbs8glfb2x1k617mp5clzjwcphm1pqrxhwphli8pxncxxw650"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scalameta/trees_2.13/4.15.2/trees_2.13-4.15.2.pom",
+      "sha256": "1bhwn11h90grww774zjyycgq6fxnsiwqp1lcp1246wzylrnrbvc3"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/scalatest/scalatest-compatible/3.2.19/scalatest-compatible-3.2.19.jar",
