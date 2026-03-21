@@ -53,13 +53,12 @@
 
             buildPhase = ''
               ${sbtSetup.setupScript}
-              ./sbtgen.sc
-              ${pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+              ./sbtgen.sc # executable build is jvm only
+              ${if pkgs.stdenv.isDarwin then ''
                 HOME="$TMPDIR" \
                 SBT_OPTS="-Duser.home=$TMPDIR -Dsbt.global.base=$TMPDIR/.sbt -Dsbt.ivy.home=$TMPDIR/.ivy2 -Divy.home=$TMPDIR/.ivy2 -Dsbt.boot.directory=$TMPDIR/.sbt/boot" \
                 sbt "++2.13 clean" "++2.13 Universal/packageBin"
-              ''}
-              ${pkgs.lib.optionalString (!pkgs.stdenv.isDarwin) ''
+              '' else ''
                 sbt "++2.13 clean" "++2.13 Universal/packageBin"
               ''}
             '';
