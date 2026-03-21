@@ -2,6 +2,7 @@ Describe 'Scala transpiler'
   Include ./.mdl/lib/builders.sh
 
   setup() {
+    sbt --batch "$VERSION_COMMAND ; publishLocal"
     export classpath="$(TERM=dumb sbt --batch --error "$VERSION_COMMAND ; export idealingua-v1-compiler/runtime:fullClasspath" 2>/dev/null)"
   }
 
