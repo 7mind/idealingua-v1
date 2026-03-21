@@ -15,20 +15,20 @@ class DefConst(context: IDLParserContext) extends Identifiers {
   import DefConst._
   import context._
 
-  def defAnno[$: P]: P[RawAnno] = P(defPositions.positioned("@" ~ idShort ~ "(" ~ inline ~ constantsNoDoc ~ inline ~ ")"))
+  def defAnno[$: P]: P[RawAnno] = P(defPositions.positioned("@" ~ idShort ~ "(" ~ `inline` ~ constantsNoDoc ~ `inline` ~ ")"))
     .map {
       case (pos, (id, value)) =>
         defns.RawAnno(id.name, value, pos)
     }
 
-  def defAnnos[$: P]: P[Seq[RawAnno]] = P(defAnno.rep(min = 1, sep = any) ~ NLC ~ inline).?.map(_.toSeq.flatten)
+  def defAnnos[$: P]: P[Seq[RawAnno]] = P(defAnno.rep(min = 1, sep = any) ~ NLC ~ `inline`).?.map(_.toSeq.flatten)
 
-  def constBlock[$: P]: P[TLDConsts] = kw(kw.consts, inline ~ enclosedConsts)
+  def constBlock[$: P]: P[TLDConsts] = kw(kw.consts, `inline` ~ enclosedConsts)
     .map {
       v => TLDConsts(RawConstBlock(v.toList))
     }
 
-  def constValue[$: P]: P[Aux] = P(("(" ~ inline ~ anyValue ~ inline ~ ")") | anyValue)
+  def constValue[$: P]: P[Aux] = P(("(" ~ `inline` ~ anyValue ~ `inline` ~ ")") | anyValue)
 
   private def const[$: P]: P[RawConst] = P(metaAgg.withMeta(constNoDoc)).map {
     case (meta, constVal) =>
@@ -42,7 +42,7 @@ class DefConst(context: IDLParserContext) extends Identifiers {
   private def constantsNoDoc[$: P]: P[RawVal.CMap] = P(constNoDoc.rep(min = 0, sep = sepStruct) ~ sepStruct.?)
     .map(v => RawVal.CMap(v.map(c => (c.id.name, c.const)).toMap))
 
-  private def constNoDoc[$: P]: P[RawConst] = P(defPositions.positioned(idShort ~ (inline ~ ":" ~ inline ~ idGeneric).? ~ inline ~ "=" ~ inline ~ constValue))
+  private def constNoDoc[$: P]: P[RawConst] = P(defPositions.positioned(idShort ~ (`inline` ~ ":" ~ `inline` ~ idGeneric).? ~ `inline` ~ "=" ~ `inline` ~ constValue))
     .map {
       case (pos, (name, tpe, value: Aux.ObjAux)) =>
         tpe match {
@@ -98,7 +98,7 @@ class DefConst(context: IDLParserContext) extends Identifiers {
 
   private def justValue[$: P]: P[Aux] = P(literal | objdef | listdef)
 
-  private def typedValue[$: P]: P[Aux] = (idGeneric ~ inline ~ "(" ~ inline ~ justValue ~ inline ~ ")").map {
+  private def typedValue[$: P]: P[Aux] = (idGeneric ~ `inline` ~ "(" ~ `inline` ~ justValue ~ `inline` ~ ")").map {
     case (id, agg) =>
       agg match {
         case Aux.Just(value) =>

@@ -5,7 +5,7 @@ import fastparse.NoWhitespace._
 
 trait Comments extends Symbols {
 
-  def MaybeDoc[$: P]: P[Option[String]] = P(DocComment ~ NLC ~ sep.inline).?
+  def MaybeDoc[$: P]: P[Option[String]] = P(DocComment ~ NLC ~ sep.`inline`).?
 
   def MultilineComment[$: P]: P0 = P((!"/**" ~ "/*" ~ CommentChunk.rep ~ "*/") | "/**/").rep(1)
 

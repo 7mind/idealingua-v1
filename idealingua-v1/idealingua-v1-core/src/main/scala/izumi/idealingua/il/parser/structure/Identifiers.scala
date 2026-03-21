@@ -21,10 +21,10 @@ trait Identifiers extends Separators {
 
   def identifier[$: P]: P[ParsedId] = P(idFull | idShort)
 
-  def idGeneric[$: P]: P[AbstractIndefiniteId] = P(inline ~ identifier ~ inline ~ generic.rep(min = 0, max = 1) ~ inline)
+  def idGeneric[$: P]: P[AbstractIndefiniteId] = P(`inline` ~ identifier ~ `inline` ~ generic.rep(min = 0, max = 1) ~ `inline`)
     .map(tp => tp._1.toGeneric(tp._2))
 
-  def generic[$: P]: P[Seq[AbstractIndefiniteId]] = P("[" ~ inline ~ idGeneric.rep(sep = ",") ~ inline ~ "]")
+  def generic[$: P]: P[Seq[AbstractIndefiniteId]] = P("[" ~ `inline` ~ idGeneric.rep(sep = ",") ~ `inline` ~ "]")
 
   def staticPart[$: P]: P[String] = P(CharsWhile(c => c != '"' && c != '$').!)
 

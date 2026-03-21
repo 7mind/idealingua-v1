@@ -10,37 +10,37 @@ trait ProtobufTranslatorExtension extends TranslatorExtension {
   import izumi.fundamentals.platform.language.Quirks._
 
   def handleInterface(ctx: PBTContext, interface: Interface, product: CogenProducts.Message): CogenProducts.Message = {
-    discard(ctx, interface, manifest)
+    discard(ctx, interface)
     product
   }
 
   def handleDto(ctx: PBTContext, dto: DTO, product: CogenProducts.Message): CogenProducts.Message = {
-    discard(ctx, dto, manifest)
+    discard(ctx, dto)
     product
   }
 
   def handleAlias(ctx: PBTContext, alias: Alias, product: CogenProducts.Message): CogenProducts.Message = {
-    discard(ctx, alias, manifest)
+    discard(ctx, alias)
     product
   }
 
   def handleIdentifier(ctx: PBTContext, id: Identifier, product: CogenProducts.Message): CogenProducts.Message = {
-    discard(ctx, id, manifest)
+    discard(ctx, id)
     product
   }
 
   def handleEnum(ctx: PBTContext, enumeration: Enumeration, product: CogenProducts.Enum): CogenProducts.Enum = {
-    discard(ctx, enumeration, manifest)
+    discard(ctx, enumeration)
     product
   }
 
   def handleAdt(ctx: PBTContext, adt: Adt, product: CogenProducts.ADT): CogenProducts.ADT = {
-    discard(ctx, adt, manifest)
+    discard(ctx, adt)
     product
   }
 
   def handleService(ctx: PBTContext, service: Service, product: CogenProducts.Service): CogenProducts.Service = {
-    discard(ctx, service, manifest)
+    discard(ctx, service)
     product
   }
 }

@@ -17,12 +17,12 @@ class DefSignature(context: IDLParserContext) {
 
 
   def baseSignature[$: P](keyword: => P[Unit]): P[(String, RawSimpleStructure)] = P(
-    keyword ~ inline ~
+    keyword ~ `inline` ~
       ids.symbol ~ any ~
       defStructure.inlineStruct
   )
 
-  def void[$: P]: P[Output.Void] = P("(" ~ inline ~ ")").map(_ => RawMethod.Output.Void())
+  def void[$: P]: P[Output.Void] = P("(" ~ `inline` ~ ")").map(_ => RawMethod.Output.Void())
 
   def adt[$: P]: P[Output.Algebraic] = defStructure.adtOut.map(v => RawMethod.Output.Algebraic(v.alternatives))
 

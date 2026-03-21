@@ -5,10 +5,9 @@ import izumi.idealingua.model.publishing.manifests._
 import izumi.idealingua.model.publishing.manifests.ProtobufBuildManifest.ProtobufRepositoryOptions
 import izumi.idealingua.model.publishing.{ProjectNamingRule, ProjectVersion, Publisher}
 
-trait Codecs {
+trait Codecs extends PlatformEnumCodecs {
 
   import _root_.io.circe._
-  import _root_.io.circe.generic.extras.semiauto
   import _root_.io.circe.generic.semiauto._
 
   implicit def decMFUrl: Decoder[MFUrl] = deriveDecoder
@@ -23,22 +22,15 @@ trait Codecs {
 
   implicit def decProjectNamingRule: Decoder[ProjectNamingRule] = deriveDecoder
 
-  //
-  implicit def decScalaProjectLayout: Decoder[ScalaProjectLayout] = semiauto.deriveEnumerationDecoder
-
   implicit def decSbtOptions: Decoder[SbtOptions] = deriveDecoder
 
   implicit def decScalaBuildManifest: Decoder[ScalaBuildManifest] = deriveDecoder
 
   implicit def decTs: Decoder[TypeScriptBuildManifest] = deriveDecoder
 
-  implicit def decTypeScriptProjectLayout: Decoder[TypeScriptProjectLayout] = semiauto.deriveEnumerationDecoder
-
   implicit def decYarnOptions: Decoder[YarnOptions] = deriveDecoder
 
   implicit def decGo: Decoder[GoLangBuildManifest] = deriveDecoder
-
-  implicit def decGoProjectLayout: Decoder[GoProjectLayout] = semiauto.deriveEnumerationDecoder
 
   implicit def decGoRepositoryOptions: Decoder[GoRepositoryOptions] = deriveDecoder
 
@@ -48,10 +40,7 @@ trait Codecs {
 
   implicit def decProtobuf: Decoder[ProtobufBuildManifest] = deriveDecoder
 
-  implicit def decCSharpProjectLayout: Decoder[CSharpProjectLayout] = semiauto.deriveEnumerationDecoder
-
   implicit def decNugetOptions: Decoder[NugetOptions] = deriveDecoder
-  //
 
   implicit def encMFUrl: Encoder[MFUrl] = deriveEncoder
 
@@ -65,28 +54,19 @@ trait Codecs {
 
   implicit def encProjectNamingRule: Encoder[ProjectNamingRule] = deriveEncoder
 
-  //
-  implicit def encScalaProjectLayout: Encoder[ScalaProjectLayout] = semiauto.deriveEnumerationEncoder
-
   implicit def encSbtOptions: Encoder[SbtOptions] = deriveEncoder
 
   implicit def encScalaBuildManifest: Encoder[ScalaBuildManifest] = deriveEncoder
 
   implicit def encTs: Encoder[TypeScriptBuildManifest] = deriveEncoder
 
-  implicit def encTypeScriptProjectLayout: Encoder[TypeScriptProjectLayout] = semiauto.deriveEnumerationEncoder
-
   implicit def encYarnOptions: Encoder[YarnOptions] = deriveEncoder
 
   implicit def encGo: Encoder[GoLangBuildManifest] = deriveEncoder
 
-  implicit def encGoProjectLayout: Encoder[GoProjectLayout] = semiauto.deriveEnumerationEncoder
-
   implicit def encGoRepositoryOptions: Encoder[GoRepositoryOptions] = deriveEncoder
 
   implicit def encCs: Encoder[CSharpBuildManifest] = deriveEncoder
-
-  implicit def encCSharpProjectLayout: Encoder[CSharpProjectLayout] = semiauto.deriveEnumerationEncoder
 
   implicit def encNugetOptions: Encoder[NugetOptions] = deriveEncoder
 

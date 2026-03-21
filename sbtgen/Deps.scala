@@ -329,6 +329,12 @@ object Idealingua {
         "scalacOptions" -= "-Wconf:any:error",
         "scalacOptions" += "-Wconf:msg=nowarn:silent",
         "scalacOptions" += "-Wconf:msg=pattern var charIn:silent",
+        // scalameta's parsers_3 transitively depends on trees_2.13 → sourcecode_2.13,
+        // conflicting with sourcecode_3 from fastparse_3
+        "excludeDependencies" ++= Seq(
+          SettingKey(Some(scala300), None) := Seq(""""com.lihaoyi" % "sourcecode_2.13"""".raw),
+          SettingKey.Default := Const.EmptySeq,
+        ),
       )
 
     }
@@ -362,6 +368,7 @@ object Idealingua {
     "fork" in (SettingScope.Test, Platform.Jvm) := true
   )
 
+
   final lazy val idealingua = Aggregate(
     name = Projects.idealingua.id,
     artifacts = Seq(
@@ -374,7 +381,7 @@ object Idealingua {
         name      = Projects.idealingua.core,
         libs      = Seq(fastparse) ++ Seq(Deps.fundamentals_platform in Scope.Compile.all),
         depends   = Seq(Projects.idealingua.model).map(_ in Scope.Compile.all),
-        platforms = Targets.cross2,
+        platforms = Targets.cross3,
       ),
       Artifact(
         name = Projects.idealingua.runtimeRpcScala,
@@ -411,7 +418,7 @@ object Idealingua {
           Seq(Projects.idealingua.testDefs, Projects.idealingua.runtimeRpcTypescript, Projects.idealingua.runtimeRpcGo, Projects.idealingua.runtimeRpcCSharp)
             .map(_ in Scope.Test.jvm),
         settings  = forkTests,
-        platforms = Targets.cross2,
+        platforms = Targets.cross3,
       ),
       Artifact(
         name      = Projects.idealingua.testDefs,
@@ -448,7 +455,7 @@ object Idealingua {
           Projects.idealingua.runtimeRpcCSharp,
           Projects.idealingua.testDefs,
         ).map(_ in Scope.Compile.all),
-        platforms = Targets.jvm2,
+        platforms = Targets.jvm3,
         settings  = Seq.empty,
         plugins = Plugins(
           Seq(Plugin("JavaAppPackaging"))
