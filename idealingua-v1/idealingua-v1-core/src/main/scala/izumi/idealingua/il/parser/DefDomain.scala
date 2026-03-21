@@ -15,7 +15,7 @@ class DefDomain(context: IDLParserContext)
 
   def domainBlock[$: P]: P[DomainId] = P(kw.domain ~/ domainId)
 
-  def importBlock[$: P]: P[Import] = kw(kw.`import`, domainId ~ ("." ~ inline ~ enclosed(defStructure.imports(sep.sepStruct) ~ sepStruct.?)).?)
+  def importBlock[$: P]: P[Import] = kw(kw.`import`, domainId ~ ("." ~ `inline` ~ enclosed(defStructure.imports(sep.sepStruct) ~ sepStruct.?)).?)
     .map {
       case (id, names) =>
         names match {

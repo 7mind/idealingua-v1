@@ -134,7 +134,13 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
     } },
     scalacOptions -= "-Wconf:any:error",
     scalacOptions += "-Wconf:msg=nowarn:silent",
-    scalacOptions += "-Wconf:msg=pattern var charIn:silent"
+    scalacOptions += "-Wconf:msg=pattern var charIn:silent",
+    excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
+      case (_, "3.3.7") => Seq(
+        "com.lihaoyi" % "sourcecode_2.13"
+      )
+      case (_, _) => Seq.empty
+    } }
   )
   .jvmSettings(
     crossScalaVersions := Seq(
@@ -274,16 +280,24 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
     } },
     scalacOptions -= "-Wconf:any:error",
     scalacOptions += "-Wconf:msg=nowarn:silent",
-    scalacOptions += "-Wconf:msg=pattern var charIn:silent"
+    scalacOptions += "-Wconf:msg=pattern var charIn:silent",
+    excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
+      case (_, "3.3.7") => Seq(
+        "com.lihaoyi" % "sourcecode_2.13"
+      )
+      case (_, _) => Seq.empty
+    } }
   )
   .jvmSettings(
     crossScalaVersions := Seq(
+      "3.3.7",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
   .jsSettings(
     crossScalaVersions := Seq(
+      "3.3.7",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -427,7 +441,13 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
     } },
     scalacOptions -= "-Wconf:any:error",
     scalacOptions += "-Wconf:msg=nowarn:silent",
-    scalacOptions += "-Wconf:msg=pattern var charIn:silent"
+    scalacOptions += "-Wconf:msg=pattern var charIn:silent",
+    excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
+      case (_, "3.3.7") => Seq(
+        "com.lihaoyi" % "sourcecode_2.13"
+      )
+      case (_, _) => Seq.empty
+    } }
   )
   .jvmSettings(
     crossScalaVersions := Seq(
@@ -583,7 +603,13 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     } },
     scalacOptions -= "-Wconf:any:error",
     scalacOptions += "-Wconf:msg=nowarn:silent",
-    scalacOptions += "-Wconf:msg=pattern var charIn:silent"
+    scalacOptions += "-Wconf:msg=pattern var charIn:silent",
+    excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
+      case (_, "3.3.7") => Seq(
+        "com.lihaoyi" % "sourcecode_2.13"
+      )
+      case (_, _) => Seq.empty
+    } }
   )
   .enablePlugins(IzumiPlugin)
 
@@ -719,10 +745,17 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
     } },
     scalacOptions -= "-Wconf:any:error",
     scalacOptions += "-Wconf:msg=nowarn:silent",
-    scalacOptions += "-Wconf:msg=pattern var charIn:silent"
+    scalacOptions += "-Wconf:msg=pattern var charIn:silent",
+    excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
+      case (_, "3.3.7") => Seq(
+        "com.lihaoyi" % "sourcecode_2.13"
+      )
+      case (_, _) => Seq.empty
+    } }
   )
   .jvmSettings(
     crossScalaVersions := Seq(
+      "3.3.7",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -730,6 +763,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
   )
   .jsSettings(
     crossScalaVersions := Seq(
+      "3.3.7",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -870,7 +904,13 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     } },
     scalacOptions -= "-Wconf:any:error",
     scalacOptions += "-Wconf:msg=nowarn:silent",
-    scalacOptions += "-Wconf:msg=pattern var charIn:silent"
+    scalacOptions += "-Wconf:msg=pattern var charIn:silent",
+    excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
+      case (_, "3.3.7") => Seq(
+        "com.lihaoyi" % "sourcecode_2.13"
+      )
+      case (_, _) => Seq.empty
+    } }
   )
   .enablePlugins(IzumiPlugin)
 
@@ -992,7 +1032,13 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     } },
     scalacOptions -= "-Wconf:any:error",
     scalacOptions += "-Wconf:msg=nowarn:silent",
-    scalacOptions += "-Wconf:msg=pattern var charIn:silent"
+    scalacOptions += "-Wconf:msg=pattern var charIn:silent",
+    excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
+      case (_, "3.3.7") => Seq(
+        "com.lihaoyi" % "sourcecode_2.13"
+      )
+      case (_, _) => Seq.empty
+    } }
   )
   .enablePlugins(IzumiPlugin)
 
@@ -1114,7 +1160,13 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
     } },
     scalacOptions -= "-Wconf:any:error",
     scalacOptions += "-Wconf:msg=nowarn:silent",
-    scalacOptions += "-Wconf:msg=pattern var charIn:silent"
+    scalacOptions += "-Wconf:msg=pattern var charIn:silent",
+    excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
+      case (_, "3.3.7") => Seq(
+        "com.lihaoyi" % "sourcecode_2.13"
+      )
+      case (_, _) => Seq.empty
+    } }
   )
   .enablePlugins(IzumiPlugin)
 
@@ -1236,7 +1288,13 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     } },
     scalacOptions -= "-Wconf:any:error",
     scalacOptions += "-Wconf:msg=nowarn:silent",
-    scalacOptions += "-Wconf:msg=pattern var charIn:silent"
+    scalacOptions += "-Wconf:msg=pattern var charIn:silent",
+    excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
+      case (_, "3.3.7") => Seq(
+        "com.lihaoyi" % "sourcecode_2.13"
+      )
+      case (_, _) => Seq.empty
+    } }
   )
   .enablePlugins(IzumiPlugin)
 
@@ -1260,6 +1318,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
   )
   .settings(
     crossScalaVersions := Seq(
+      "3.3.7",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -1366,7 +1425,13 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     } },
     scalacOptions -= "-Wconf:any:error",
     scalacOptions += "-Wconf:msg=nowarn:silent",
-    scalacOptions += "-Wconf:msg=pattern var charIn:silent"
+    scalacOptions += "-Wconf:msg=pattern var charIn:silent",
+    excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
+      case (_, "3.3.7") => Seq(
+        "com.lihaoyi" % "sourcecode_2.13"
+      )
+      case (_, _) => Seq.empty
+    } }
   )
   .enablePlugins(JavaAppPackaging, IzumiPlugin)
 

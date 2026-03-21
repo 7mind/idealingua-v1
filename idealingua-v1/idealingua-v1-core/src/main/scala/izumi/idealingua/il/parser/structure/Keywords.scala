@@ -4,11 +4,11 @@ import fastparse._, NoWhitespace._
 
 
 trait Keywords extends Separators {
-  def kw[$: P](s: String): P[Unit] = P(s ~ inline) //(sourcecode.Name(s"`$s`"))
+  def kw[$: P](s: String): P[Unit] = P(s ~ `inline`) //(sourcecode.Name(s"`$s`"))
 
   def kw[$: P](s: String, alt: String*): P[Unit] = {
     def alts = alt.foldLeft(P(s)) { case (acc, v) => acc | v }
-    P(alts ~ inline) //(sourcecode.Name(s"`$s | $alt`"))
+    P(alts ~ `inline`) //(sourcecode.Name(s"`$s | $alt`"))
   }
 
   def domain[$: P]: P[Unit] = kw("domain", "package", "namespace")

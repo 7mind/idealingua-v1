@@ -12,7 +12,7 @@ trait Separators extends Comments {
 
   private def SepLineBase[$: P]: P[Unit] = P(NLC | (WsComment ~ NLC | (wss ~ ShortComment)))
 
-  def inline[$: P]: P[Unit] = P(WsComment | wss)
+  def `inline`[$: P]: P[Unit] = P(WsComment | wss)
 
   def any[$: P]: P[Unit] = P(wss ~ (WsComment | SepLineBase).rep ~ wss)
 

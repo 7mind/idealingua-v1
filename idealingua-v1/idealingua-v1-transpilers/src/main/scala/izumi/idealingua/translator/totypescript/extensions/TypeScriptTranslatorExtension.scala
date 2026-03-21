@@ -10,27 +10,27 @@ trait TypeScriptTranslatorExtension extends TranslatorExtension {
   import izumi.fundamentals.platform.language.Quirks._
 
   def handleInterface(ctx: TSTContext, interface: Interface, product: InterfaceProduct): InterfaceProduct = {
-    discard(ctx, interface, manifest)
+    discard(ctx, interface)
     product
   }
 
   def handleDTO(ctx: TSTContext, dto: DTO, product: CompositeProduct): CompositeProduct = {
-    discard(ctx, dto, manifest)
+    discard(ctx, dto)
     product
   }
 
   def handleEnum(ctx: TSTContext, enumeration: TypeDef.Enumeration, product: EnumProduct): EnumProduct = {
-    discard(ctx, enumeration, manifest)
+    discard(ctx, enumeration)
     product
   }
 
   def handleIdentifier(ctx: TSTContext, identifier: TypeDef.Identifier, product: IdentifierProduct): IdentifierProduct = {
-    discard(ctx, identifier, manifest)
+    discard(ctx, identifier)
     product
   }
 
   def handleAdt(ctx: TSTContext, adt: TypeDef.Adt, product: AdtProduct): AdtProduct = {
-    discard(ctx, adt, manifest)
+    discard(ctx, adt)
     product
   }
 }
