@@ -105,7 +105,7 @@ function test_cs_msbuild_prj() {
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
-  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :csharp -d layout=NUGET"
+  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :csharp -d layout=NUGET -d enableNUnit=true"
 
   pushd .
   cd "$tmpdir/csharp"
@@ -126,7 +126,7 @@ function test_cs_plain_prj() {
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
-  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :csharp -d layout=PLAIN"
+  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :csharp -d layout=PLAIN -d enableNUnit=true"
 
   pushd .
   cd "$tmpdir/csharp"

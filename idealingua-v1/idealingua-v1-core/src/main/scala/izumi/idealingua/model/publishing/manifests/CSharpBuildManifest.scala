@@ -42,12 +42,14 @@ case class CSharpBuildManifest(
   common: Common,
   nuget: NugetOptions,
   layout: CSharpProjectLayout,
+  enableNUnit: Boolean,
 ) extends BuildManifest
 
 object CSharpBuildManifest {
   def example = CSharpBuildManifest(
-    common = BuildManifest.Common.example,
-    nuget  = NugetOptions.example,
-    layout = CSharpProjectLayout.NUGET,
+    common      = BuildManifest.Common.example,
+    nuget       = NugetOptions.example,
+    layout      = CSharpProjectLayout.NUGET,
+    enableNUnit = false,
   )
 }
