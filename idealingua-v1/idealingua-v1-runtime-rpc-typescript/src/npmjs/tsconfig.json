@@ -29,7 +29,7 @@
     "ignoreDeprecations": "5.0",
     "experimentalDecorators" : true,
     "removeComments" : true,
-    "preserveConstEnums" : true,
+    "preserveConstEnums" : true
   },
   "compileOnSave" : false
 }
