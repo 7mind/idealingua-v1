@@ -10,10 +10,15 @@
     "url": "https://github.com/7mind/idealingua-v1.git"
   },
   "dependencies": {
-    "moment": "^2.29.1",
-    "websocket": "^1.0.32",
     "@types/node": "^22.7.6",
-    "@types/websocket": "^1.0.1"
+    "@types/websocket": "^1.0.1",
+    "dayjs": "^1.11.10",
+    "websocket": "^1.0.32"
   },
-  "peerDependencies": {}
+  "devDependencies": {
+    "vitest": "^1.5.0"
+  },
+  "scripts": {
+    "test": "vitest run --dir ../main/resources/runtime/typescript/irt/test"
+  }
 }
