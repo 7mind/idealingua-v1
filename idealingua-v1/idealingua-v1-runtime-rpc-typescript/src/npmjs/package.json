@@ -10,9 +10,9 @@
     "url": "https://github.com/7mind/idealingua-v1.git"
   },
   "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
     "@types/node": "^22.7.6",
     "@types/websocket": "^1.0.1",
-    "dayjs": "^1.11.10",
     "websocket": "^1.0.32"
   },
   "devDependencies": {

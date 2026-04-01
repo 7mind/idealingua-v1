@@ -30,7 +30,6 @@
     "experimentalDecorators" : true,
     "removeComments" : true,
     "preserveConstEnums" : true,
-    "esModuleInterop" : true
   },
   "compileOnSave" : false
 }
