@@ -67,6 +67,20 @@ EOF
     sbt --batch "$ver_cmd ; idealingua-v1-compiler/run --root=$testroot --source=$testroot/source --target=$tmpdir --overlay-version=$version_json :$lang $layout_flags" >&2
   }
 
+  extract_log_qualifier() {
+    local scala_ver="$1"
+    local lang="$2"
+    local tmpdir="$3"
+    local version_json="$4"
+    local resolved
+    resolved=$(resolve_scala "$scala_ver")
+    local ver_cmd="++ $resolved"
+    local log
+    log=$(sbt --batch "$ver_cmd ; idealingua-v1-compiler/run --root=$testroot --source=$testroot/source --target=$tmpdir --overlay-version=$version_json :$lang" 2>&1)
+    echo "$log" >&2
+    echo "$log" | grep '"snapshotQualifier"' | sed 's/.*: *"\(.*\)".*/\1/'
+  }
+
   Parameters:dynamic
     %data "2.13"
     %data "3"
@@ -209,7 +223,7 @@ EOF
       }
       When run run_test "$1"
       The status should be success
-      The output should match pattern '1.2.3-build.[0-9a-f]*'
+      The output should match pattern '1.2.3-build.[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]'
       The stderr should match pattern '*'
     End
 
@@ -225,21 +239,37 @@ EOF
       }
       When run run_test "$1"
       The status should be success
-      The output should match pattern '1.2.3-build.[0-9a-f]*'
+      The output should match pattern '1.2.3-build.[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]'
       The stderr should match pattern '*'
     End
 
-    It "resolves <commit> (default 7) for Go without error (Scala $1)"
+    It "resolves <commit> for Go (Scala $1)"
       run_test() {
         set -euo pipefail
         local tmpdir
         tmpdir="$(mktemp -d)"
         local vj="$tmpdir/version.json"
         mk_version_json "$vj" false 'go=build.<commit>'
-        compile_lang "$1" go "$tmpdir" "$vj"
+        extract_log_qualifier "$1" go "$tmpdir" "$vj"
       }
       When run run_test "$1"
       The status should be success
+      The output should match pattern 'build.[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]'
+      The stderr should match pattern '*'
+    End
+
+    It "resolves <commit15> for Protobuf (Scala $1)"
+      run_test() {
+        set -euo pipefail
+        local tmpdir
+        tmpdir="$(mktemp -d)"
+        local vj="$tmpdir/version.json"
+        mk_version_json "$vj" false 'protobuf=build.<commit15>'
+        extract_log_qualifier "$1" protobuf "$tmpdir" "$vj"
+      }
+      When run run_test "$1"
+      The status should be success
+      The output should match pattern 'build.[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]'
       The stderr should match pattern '*'
     End
   End
