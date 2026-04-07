@@ -332,7 +332,8 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
       val version = scalaVersion.value
       if (version.startsWith("0.") || version.startsWith("3.")) {
         Seq(
-          "io.circe" %%% "circe-generic" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version
+          "io.circe" %%% "circe-generic" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
+          "io.circe" %%% "circe-generic-extras" % V.circe_generic_extras_3
         )
       } else Seq.empty
     }
@@ -636,7 +637,8 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
       val version = scalaVersion.value
       if (version.startsWith("0.") || version.startsWith("3.")) {
         Seq(
-          "io.circe" %%% "circe-generic" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version
+          "io.circe" %%% "circe-generic" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
+          "io.circe" %%% "circe-generic-extras" % V.circe_generic_extras_3
         )
       } else Seq.empty
     }
