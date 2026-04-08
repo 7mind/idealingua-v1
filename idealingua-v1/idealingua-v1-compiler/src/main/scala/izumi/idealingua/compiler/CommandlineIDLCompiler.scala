@@ -228,8 +228,8 @@ object CommandlineIDLCompiler {
       val defQualifier = decoded.snapshotQualifiers.getOrElse(lang.toString.toLowerCase, "UNSET")
       val commitHash   = CommitHashResolver.resolveCommitHash()
       val resolved     = CommitHashResolver.resolveQualifier(defQualifier, commitHash)
-      val timestamp    = ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond
       val qualifier = if (lang == IDLLanguage.Typescript && !CommitHashResolver.containsCommitTemplate(defQualifier)) {
+        val timestamp = ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond
         s"$resolved-$timestamp"
       } else {
         resolved
