@@ -318,6 +318,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
       "org.typelevel" %%% "cats-effect" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version,
       "io.circe" %%% "circe-parser" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
       "io.circe" %%% "circe-literal" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
+      "io.circe" %%% "circe-generic-extras" % V.circe_generic_extras,
       "dev.zio" %%% "zio" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version % Test,
       "dev.zio" %%% "zio-interop-cats" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version % Test,
       "dev.zio" %%% "izumi-reflect" % Izumi.Deps.fundamentals_bioJVM.dev_zio_izumi_reflect_version % Test
@@ -325,7 +326,6 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
       compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
-      "io.circe" %%% "circe-generic-extras" % V.circe_generic_extras,
       "io.circe" %%% "circe-derivation" % V.circe_derivation
     ) else Seq.empty },
     libraryDependencies ++= {
@@ -625,11 +625,11 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
       "org.scalameta" %%% "scalameta" % V.scalameta,
       "io.7mind.izumi" %%% "fundamentals-bio" % Izumi.version,
       "io.circe" %%% "circe-parser" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
-      "io.circe" %%% "circe-literal" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version
+      "io.circe" %%% "circe-literal" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
+      "io.circe" %%% "circe-generic-extras" % V.circe_generic_extras
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
       compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
-      "io.circe" %%% "circe-generic-extras" % V.circe_generic_extras,
       "io.circe" %%% "circe-derivation" % V.circe_derivation
     ) else Seq.empty },
     libraryDependencies ++= {

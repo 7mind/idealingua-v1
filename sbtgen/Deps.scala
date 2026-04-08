@@ -101,7 +101,7 @@ object Idealingua {
     final val circe_all = Seq(
       Library("io.circe", "circe-parser", V.circe, LibraryType.Auto) in Scope.Compile.all,
       Library("io.circe", "circe-literal", V.circe, LibraryType.Auto) in Scope.Compile.all,
-      Library("io.circe", "circe-generic-extras", V.circe_generic_extras, LibraryType.Auto) in Scope.Compile.all.scalaVersion(ScalaVersionScope.AllScala2),
+      Library("io.circe", "circe-generic-extras", V.circe_generic_extras, LibraryType.Auto) in Scope.Compile.all,
       Library("io.circe", "circe-derivation", V.circe_derivation, LibraryType.Auto) in Scope.Compile.all.scalaVersion(ScalaVersionScope.AllScala2),
       Library("io.circe", "circe-generic", V.circe, LibraryType.Auto) in Scope.Compile.all.scalaVersion(ScalaVersionScope.AllScala3),
     )
