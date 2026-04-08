@@ -4,7 +4,6 @@ import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.semiauto
 
 import izumi.idealingua.model.publishing.manifests._
-import izumi.idealingua.model.publishing.manifests.ProtobufBuildManifest.ProtobufRepositoryOptions
 
 trait PlatformEnumCodecs {
   implicit def decScalaProjectLayout: Decoder[ScalaProjectLayout] = semiauto.deriveEnumerationDecoder

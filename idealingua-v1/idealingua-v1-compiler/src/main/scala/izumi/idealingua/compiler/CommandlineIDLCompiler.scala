@@ -226,9 +226,15 @@ object CommandlineIDLCompiler {
       decoded <- parsed.as[VersionOverlay]
     } yield {
       val defQualifier = decoded.snapshotQualifiers.getOrElse(lang.toString.toLowerCase, "UNSET")
-      val timestamp    = ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond
-      val qualifier    = if (lang == IDLLanguage.Typescript) s"$defQualifier-$timestamp" else defQualifier
-      val version      = ProjectVersion(decoded.version, decoded.release, qualifier)
+      val commitHash   = CommitHashResolver.resolveCommitHash()
+      val resolved     = CommitHashResolver.resolveQualifier(defQualifier, commitHash)
+      val qualifier = if (lang == IDLLanguage.Typescript && !CommitHashResolver.containsCommitTemplate(defQualifier)) {
+        val timestamp = ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond
+        s"$resolved-$timestamp"
+      } else {
+        resolved
+      }
+      val version = ProjectVersion(decoded.version, decoded.release, qualifier)
       json"""{"common": {"version": $version}}"""
     }
   }

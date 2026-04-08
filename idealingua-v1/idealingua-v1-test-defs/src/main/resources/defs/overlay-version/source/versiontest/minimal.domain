@@ -1,0 +1,5 @@
+domain versiontest.minimal
+
+data TestDTO {
+  value: str
+}
