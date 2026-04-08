@@ -1178,20 +1178,28 @@
       "sha256": "1s0zqx3fzyvy894fcqhz799pv6mxafam3smfywvchn5kfffk0gpj"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/circe/circe-generic-extras_2.13/0.14.4/circe-generic-extras_2.13-0.14.4.jar",
-      "sha256": "1mmrhd4c5lr2kkm660640541kxqa7ds6ja6k96vpf4w07z9if4ka"
+      "url": "https://repo1.maven.org/maven2/io/circe/circe-generic-extras_2.13/0.14.5-RC1/circe-generic-extras_2.13-0.14.5-RC1.jar",
+      "sha256": "0m3dpz95rfwi4xbpdmvl9k837vjfd5bm4cwjl7sirs3g4l8rq0ii"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/circe/circe-generic-extras_2.13/0.14.4/circe-generic-extras_2.13-0.14.4.pom",
-      "sha256": "16h78b31mycy1lj7ald4r0rdnh0bg6sscr2873nyc0jpn4lk84jq"
+      "url": "https://repo1.maven.org/maven2/io/circe/circe-generic-extras_2.13/0.14.5-RC1/circe-generic-extras_2.13-0.14.5-RC1.pom",
+      "sha256": "1hydsw4fxyw34bkqzd9jkfpyv7k0g943bi0hmqhiijv9nwza68sl"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/circe/circe-generic_2.13/0.14.9/circe-generic_2.13-0.14.9.jar",
-      "sha256": "1pw2fajbdaspzr3hk3slhr00gmm04s9025yirpl4ifsr6fxhix98"
+      "url": "https://repo1.maven.org/maven2/io/circe/circe-generic-extras_3/0.14.5-RC1/circe-generic-extras_3-0.14.5-RC1.jar",
+      "sha256": "1nrjcxm08hfg1j7wcwwypmrmdilcp5i9xdvvf8ry9hsrb0qh69yh"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/circe/circe-generic_2.13/0.14.9/circe-generic_2.13-0.14.9.pom",
-      "sha256": "0kwspkr33psbnpnbyrhdid1wpd5107hw578486swcn0kkf2q1b0h"
+      "url": "https://repo1.maven.org/maven2/io/circe/circe-generic-extras_3/0.14.5-RC1/circe-generic-extras_3-0.14.5-RC1.pom",
+      "sha256": "1l66mfkrn9pa17hmj49ijrd7rhmrrqrvw655i17b0hpg8qaxnbca"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/io/circe/circe-generic_2.13/0.14.12/circe-generic_2.13-0.14.12.jar",
+      "sha256": "12rr910fibkbr7zph5dkgjg7c6ikgp2nffabvv2rvkvk6i4p950r"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/io/circe/circe-generic_2.13/0.14.12/circe-generic_2.13-0.14.12.pom",
+      "sha256": "0s4xkr9w1fhi5ngap0iszvkbywfwmx2py44wz9wh8mia1kfaw73l"
     },
     {
       "url": "https://repo1.maven.org/maven2/io/circe/circe-generic_3/0.14.14/circe-generic_3-0.14.14.jar",
