@@ -139,7 +139,7 @@ object Idealingua {
 
   // DON'T REMOVE, these variables are read from CI build (build.sh)
   final val scala213 = ScalaVersion("2.13.18")
-  final val scala300 = ScalaVersion("3.3.7")
+  final val scala300 = ScalaVersion("3.8.3")
 
   object Groups {
     final val idealingua = Set(Group("idealingua"))
@@ -318,13 +318,36 @@ object Idealingua {
         // "testOptions" in (SettingScope.Test, Platform.Jvm) ++= s"""Seq(Tests.Argument("-u"), Tests.Argument(s"$${target.value}/junit-xml-$${scalaVersion.value}"))""".raw,
         "scalacOptions" ++= Seq(
           SettingKey(Some(scala213), None) := Defaults.Scala213Options,
-          SettingKey(Some(scala300), None) := Defaults.Scala3Options,
+          SettingKey(Some(scala300), None) := Seq(
+            "-release:17",
+            "-Ykind-projector:underscores",
+            "-Yretain-trees",
+            "-no-indent",
+            "-explain",
+            "-explain-types",
+            "-explain-cyclic",
+            "-Xmax-inlines:64",
+            "-Wenum-comment-discard",
+            "-Wimplausible-patterns",
+            "-Wnonunit-statement",
+            "-WunstableInlineAccessors",
+            "-Wunused:all",
+            "-Wvalue-discard",
+            """-Wconf:any:verbose""",
+            """-Wconf:name=UnusedNonUnitValue:silent""",
+            """-Wconf:name=ValueDiscarding:silent""",
+            """-Wconf:msg=eta-expanded even though:silent""",
+          ),
           SettingKey.Default := Const.EmptySeq,
         ),
         "scalacOptions" ++= Seq(
-          SettingKey(None, Some(true)) := Seq(
+          SettingKey(Some(scala213), Some(true)) := Seq(
             "-opt:l:inline",
             "-opt-inline-from:izumi.**",
+          ),
+          SettingKey(Some(scala300), Some(true)) := Seq(
+            "-opt",
+            "-opt-inline:izumi.**",
           ),
           SettingKey.Default := Const.EmptySeq,
         ),

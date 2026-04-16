@@ -3,6 +3,7 @@ package izumi.idealingua.runtime.rpc.http4s.clients
 import io.circe.syntax.*
 import io.circe.{Json, Printer}
 import izumi.functional.bio.{Async2, Entropy1, Entropy2, Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
+import izumi.functional.bio.data.InterruptAction
 import izumi.functional.lifecycle.Lifecycle
 import izumi.fundamentals.platform.functional.Identity
 import izumi.fundamentals.platform.language.Quirks.Discarder
@@ -272,10 +273,10 @@ object WsRpcDispatcherFactory {
                     callback(Left(new RuntimeException(s"Awaiting NettyFuture threw an exception=$exception")))
                 }
             }
-            val canceler = F.sync {
+            val canceler = InterruptAction(F.sync {
               nettyFuture.cancel(false);
               ()
-            }
+            })
             canceler
         }
     }

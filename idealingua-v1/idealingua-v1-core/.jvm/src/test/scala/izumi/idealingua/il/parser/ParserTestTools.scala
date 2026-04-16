@@ -22,7 +22,7 @@ trait ParserTestTools {
   }
 
   def assertParseableCompletely[T](p: P[?] => P[T], str: String): T = {
-    assertParseable(ended(_, p), str)
+    assertParseable(pp => ended(pp, p), str)
   }
 
   def assertParseable[T](p: P[?] => P[T], str: String): T = {
@@ -44,7 +44,7 @@ trait ParserTestTools {
   }
 
   def assertDomainParses(str: String): Unit = {
-    val parsed = assertParseable(ctx.defParsers.fullDomainDef(_), str)
+    val parsed = assertParseable(ctx.defParsers.fullDomainDef(using _), str)
     assert(parsed.model.definitions.nonEmpty)
     ()
   }
