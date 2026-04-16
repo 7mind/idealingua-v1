@@ -28,11 +28,11 @@ class IDLParser(context: IDLParserContext) {
   import context._
 
   def parseDomain(input: String): Parsed[ParsedDomain] = {
-    parse(input, defParsers.fullDomainDef(_))
+    parse(input, defParsers.fullDomainDef(using _))
   }
 
   def parseModel(input: String): Parsed[ParsedModel] = {
-    parse(input, defParsers.modelDef(_))
+    parse(input, defParsers.modelDef(using _))
   }
 
 }

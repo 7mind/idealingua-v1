@@ -9,34 +9,34 @@ class CommentsAndDocstringsTest extends AnyWordSpec with ParserTestTools {
 
     "parse docstrings" in {
       assertParses(
-        comments.DocComment(_),
+        comments.DocComment(using _),
         """/** docstring
           | */""".stripMargin,
       )
 
       assertParses(
-        comments.DocComment(_),
+        comments.DocComment(using _),
         """/** docstring
           |  * docstring
           |  */""".stripMargin,
       )
 
       assertParses(
-        comments.DocComment(_),
+        comments.DocComment(using _),
         """/** docstring
           |* docstring
           |*/""".stripMargin,
       )
 
       assertParses(
-        comments.DocComment(_),
+        comments.DocComment(using _),
         """/**
           |* docstring
           |*/""".stripMargin,
       )
 
       assertParses(
-        comments.DocComment(_),
+        comments.DocComment(using _),
         """/**
           |* docstring
           |*
@@ -44,7 +44,7 @@ class CommentsAndDocstringsTest extends AnyWordSpec with ParserTestTools {
       )
 
       assertParsesInto(
-        comments.DocComment(_),
+        comments.DocComment(using _),
         """/** docstring
           |  * with *stars*
           |  */""".stripMargin,

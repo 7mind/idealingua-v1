@@ -9,6 +9,7 @@ import io.circe.syntax.EncoderOps
 import io.circe.{Json, Printer}
 import izumi.functional.bio.Exit.{Error, Interruption, Success, Termination}
 import izumi.functional.bio.{Clock1, Entropy1, Exit, F, IO2, Primitives2, Temporal2, UnsafeRun2}
+import izumi.fundamentals.collections.nonempty.NEList
 import izumi.fundamentals.platform.functional.Identity
 import izumi.fundamentals.platform.language.Quirks
 import izumi.fundamentals.platform.language.Quirks.Discarder
@@ -201,11 +202,11 @@ class HttpServer[F[+_, +_]: IO2: Temporal2: Primitives2: UnsafeRun2, AuthCtx](
         logger.warn(s"HTTP Request unexpectedly failed while handling $method:\n$error\n$trace") *>
         InternalServerError()
 
-      case Termination(_, (cause: IRTHttpFailureException) :: _, trace) =>
+      case Termination(_, NEList((cause: IRTHttpFailureException), _*), trace) =>
         logger.error(s"HTTP Request rejected - $method, $request:\n$cause\n$trace") *>
         F.pure(Response(status = cause.status))
 
-      case Termination(_, (cause: RejectedExecutionException) :: _, trace) =>
+      case Termination(_, NEList((cause: RejectedExecutionException), _*), trace) =>
         logger.warn(s"HTTP Request rejected - Not enough capacity to handle $method:\n$cause\n$trace") *>
         TooManyRequests()
 
