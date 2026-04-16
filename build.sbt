@@ -105,23 +105,30 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
       )
       case (_, "3.8.3") => Seq(
         "-release:17",
-        "-Ykind-projector:underscores",
+        "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
+        "-Wopt:all",
+        "-Wrecurse-with-default",
+        "-Wshadow:private-shadow",
         "-WunstableInlineAccessors",
         "-Wunused:all",
         "-Wvalue-discard",
+        "-Wwrong-arrow",
         "-Wconf:any:verbose",
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
-        "-Wconf:msg=eta-expanded even though:silent"
+        "-Wconf:msg=eta-expanded even though:silent",
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
       )
       case (_, _) => Seq.empty
     } },
@@ -255,23 +262,30 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
       )
       case (_, "3.8.3") => Seq(
         "-release:17",
-        "-Ykind-projector:underscores",
+        "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
+        "-Wopt:all",
+        "-Wrecurse-with-default",
+        "-Wshadow:private-shadow",
         "-WunstableInlineAccessors",
         "-Wunused:all",
         "-Wvalue-discard",
+        "-Wwrong-arrow",
         "-Wconf:any:verbose",
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
-        "-Wconf:msg=eta-expanded even though:silent"
+        "-Wconf:msg=eta-expanded even though:silent",
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
       )
       case (_, _) => Seq.empty
     } },
@@ -420,23 +434,30 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
       )
       case (_, "3.8.3") => Seq(
         "-release:17",
-        "-Ykind-projector:underscores",
+        "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
+        "-Wopt:all",
+        "-Wrecurse-with-default",
+        "-Wshadow:private-shadow",
         "-WunstableInlineAccessors",
         "-Wunused:all",
         "-Wvalue-discard",
+        "-Wwrong-arrow",
         "-Wconf:any:verbose",
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
-        "-Wconf:msg=eta-expanded even though:silent"
+        "-Wconf:msg=eta-expanded even though:silent",
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
       )
       case (_, _) => Seq.empty
     } },
@@ -586,23 +607,30 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
       )
       case (_, "3.8.3") => Seq(
         "-release:17",
-        "-Ykind-projector:underscores",
+        "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
+        "-Wopt:all",
+        "-Wrecurse-with-default",
+        "-Wshadow:private-shadow",
         "-WunstableInlineAccessors",
         "-Wunused:all",
         "-Wvalue-discard",
+        "-Wwrong-arrow",
         "-Wconf:any:verbose",
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
-        "-Wconf:msg=eta-expanded even though:silent"
+        "-Wconf:msg=eta-expanded even though:silent",
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
       )
       case (_, _) => Seq.empty
     } },
@@ -732,23 +760,30 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
       )
       case (_, "3.8.3") => Seq(
         "-release:17",
-        "-Ykind-projector:underscores",
+        "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
+        "-Wopt:all",
+        "-Wrecurse-with-default",
+        "-Wshadow:private-shadow",
         "-WunstableInlineAccessors",
         "-Wunused:all",
         "-Wvalue-discard",
+        "-Wwrong-arrow",
         "-Wconf:any:verbose",
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
-        "-Wconf:msg=eta-expanded even though:silent"
+        "-Wconf:msg=eta-expanded even though:silent",
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
       )
       case (_, _) => Seq.empty
     } },
@@ -894,23 +929,30 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
       )
       case (_, "3.8.3") => Seq(
         "-release:17",
-        "-Ykind-projector:underscores",
+        "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
+        "-Wopt:all",
+        "-Wrecurse-with-default",
+        "-Wshadow:private-shadow",
         "-WunstableInlineAccessors",
         "-Wunused:all",
         "-Wvalue-discard",
+        "-Wwrong-arrow",
         "-Wconf:any:verbose",
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
-        "-Wconf:msg=eta-expanded even though:silent"
+        "-Wconf:msg=eta-expanded even though:silent",
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
       )
       case (_, _) => Seq.empty
     } },
@@ -1026,23 +1068,30 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
       )
       case (_, "3.8.3") => Seq(
         "-release:17",
-        "-Ykind-projector:underscores",
+        "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
+        "-Wopt:all",
+        "-Wrecurse-with-default",
+        "-Wshadow:private-shadow",
         "-WunstableInlineAccessors",
         "-Wunused:all",
         "-Wvalue-discard",
+        "-Wwrong-arrow",
         "-Wconf:any:verbose",
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
-        "-Wconf:msg=eta-expanded even though:silent"
+        "-Wconf:msg=eta-expanded even though:silent",
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
       )
       case (_, _) => Seq.empty
     } },
@@ -1158,23 +1207,30 @@ lazy val `idealingua-v1-runtime-rpc-go` = project.in(file("idealingua-v1/idealin
       )
       case (_, "3.8.3") => Seq(
         "-release:17",
-        "-Ykind-projector:underscores",
+        "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
+        "-Wopt:all",
+        "-Wrecurse-with-default",
+        "-Wshadow:private-shadow",
         "-WunstableInlineAccessors",
         "-Wunused:all",
         "-Wvalue-discard",
+        "-Wwrong-arrow",
         "-Wconf:any:verbose",
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
-        "-Wconf:msg=eta-expanded even though:silent"
+        "-Wconf:msg=eta-expanded even though:silent",
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
       )
       case (_, _) => Seq.empty
     } },
@@ -1290,23 +1346,30 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
       )
       case (_, "3.8.3") => Seq(
         "-release:17",
-        "-Ykind-projector:underscores",
+        "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
+        "-Wopt:all",
+        "-Wrecurse-with-default",
+        "-Wshadow:private-shadow",
         "-WunstableInlineAccessors",
         "-Wunused:all",
         "-Wvalue-discard",
+        "-Wwrong-arrow",
         "-Wconf:any:verbose",
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
-        "-Wconf:msg=eta-expanded even though:silent"
+        "-Wconf:msg=eta-expanded even though:silent",
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
       )
       case (_, _) => Seq.empty
     } },
@@ -1431,23 +1494,30 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
       )
       case (_, "3.8.3") => Seq(
         "-release:17",
-        "-Ykind-projector:underscores",
+        "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
         "-explain",
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
+        "-Wopt:all",
+        "-Wrecurse-with-default",
+        "-Wshadow:private-shadow",
         "-WunstableInlineAccessors",
         "-Wunused:all",
         "-Wvalue-discard",
+        "-Wwrong-arrow",
         "-Wconf:any:verbose",
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
-        "-Wconf:msg=eta-expanded even though:silent"
+        "-Wconf:msg=eta-expanded even though:silent",
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
       )
       case (_, _) => Seq.empty
     } },

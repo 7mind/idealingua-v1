@@ -22,7 +22,7 @@ trait ParserTestTools {
   }
 
   def assertParseableCompletely[T](p: P[?] => P[T], str: String): T = {
-    assertParseable(pp => ended(pp, p), str)
+    assertParseable(ended(_, p), str)
   }
 
   def assertParseable[T](p: P[?] => P[T], str: String): T = {
