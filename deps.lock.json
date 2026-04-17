@@ -334,12 +334,12 @@
       "sha256": "0ivrvq4z30ksn3qjaib3iyazzx8dkl0kdmfwi9pgzbmmq97m6x7j"
     },
     {
-      "url": "https://repo1.maven.org/maven2/com/github/sbt/sbt-git_2.12_1.0/2.0.1/sbt-git-2.0.1.jar",
-      "sha256": "04lmyy90pmznnbi2l396zv2d5c8ksclr3nn4if9486y61pdyrki4"
+      "url": "https://repo1.maven.org/maven2/com/github/sbt/sbt-git_2.12_1.0/2.1.0/sbt-git_2.12_1.0-2.1.0.jar",
+      "sha256": "0hir6rbrlw3xx4ls9wvhwbnshf6cg30m00bg5fibzqvf2wnan1nq"
     },
     {
-      "url": "https://repo1.maven.org/maven2/com/github/sbt/sbt-git_2.12_1.0/2.0.1/sbt-git-2.0.1.pom",
-      "sha256": "09204plixpyprf5rwiifaq6gdvb603vxd8zzwh4sz6h4m5gihwlr"
+      "url": "https://repo1.maven.org/maven2/com/github/sbt/sbt-git_2.12_1.0/2.1.0/sbt-git_2.12_1.0-2.1.0.pom",
+      "sha256": "1q3cwi049mywbxlxz7g7w2f1mg38awb9azi3x1xislf4wnz4xq44"
     },
     {
       "url": "https://repo1.maven.org/maven2/com/github/sbt/sbt-native-packager_2.12_1.0/1.11.7/sbt-native-packager_2.12_1.0-1.11.7.jar",
@@ -366,12 +366,12 @@
       "sha256": "1cvr3dcz5y6p0185nzkh2cnbbkl3im4m0rrsy7gi91258cr4qgd8"
     },
     {
-      "url": "https://repo1.maven.org/maven2/com/github/scopt/scopt_2.13/4.1.0/scopt_2.13-4.1.0.jar",
-      "sha256": "0azqd377sqajcgcgrb178yzrm4bk88s4w9wlcw20nqvlm6ykfl1f"
+      "url": "https://repo1.maven.org/maven2/com/github/scopt/scopt_3/4.1.0/scopt_3-4.1.0.jar",
+      "sha256": "0gvazxybp8gvsvmxabmkfz6r7zcixdjq508acgw3s6vn7ds81yvw"
     },
     {
-      "url": "https://repo1.maven.org/maven2/com/github/scopt/scopt_2.13/4.1.0/scopt_2.13-4.1.0.pom",
-      "sha256": "1qwldx6735nx6qvb6jjyacx1gvr2j5m3gza64d4g126ryn68gdfg"
+      "url": "https://repo1.maven.org/maven2/com/github/scopt/scopt_3/4.1.0/scopt_3-4.1.0.pom",
+      "sha256": "15dby4hx6iq0fzr53gdga3f9z006p7z1paj10vqch22fyrihfl76"
     },
     {
       "url": "https://repo1.maven.org/maven2/com/google/errorprone/error_prone_annotations/2.4.0/error_prone_annotations-2.4.0.jar",
@@ -1162,28 +1162,28 @@
       "sha256": "09hln8whkhs6mqcgqb2kbcy4p7dbmr447a4fk4rhcg3fnr4sa227"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbt-izumi_2.12_1.0/0.0.117/sbt-izumi_2.12_1.0-0.0.117.jar",
-      "sha256": "1l4w1ma7989makf8f4na57hqj5qv9s0fqzfkg9ian181dcl3i7x1"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbt-izumi_2.12_1.0/0.0.118/sbt-izumi_2.12_1.0-0.0.118.jar",
+      "sha256": "0pp9sglnzvpyby0wa967b6k29xpmvx9crk6z7spdldj42vy2g80x"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbt-izumi_2.12_1.0/0.0.117/sbt-izumi_2.12_1.0-0.0.117.pom",
-      "sha256": "1qga5f54ci4rv0yl2bxvx6drhrparhf02rp3bq2wfd6pwr000gn9"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbt-izumi_2.12_1.0/0.0.118/sbt-izumi_2.12_1.0-0.0.118.pom",
+      "sha256": "1yhyf417qira0vgq1wb6lgdwvn5xvyfj0crrdm5jdkv9b65s3bll"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_2.13/0.0.117/sbtgen_2.13-0.0.117.jar",
-      "sha256": "1flah5y0gs3hhdjx1safyvbpddrr52pn70b4a7was3ix14cn3ja9"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_3/0.0.118/sbtgen_3-0.0.118.jar",
+      "sha256": "1vk8r55zbjwjw4d3311spdcqrvacm9ra9925jx023lq4zgyj6h54"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_2.13/0.0.117/sbtgen_2.13-0.0.117.pom",
-      "sha256": "069psqczk1nsvld8lybr5r1i0na1a5zq1xr1pdnj13cnab2yrr52"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtgen_3/0.0.118/sbtgen_3-0.0.118.pom",
+      "sha256": "0g30mf3z7c5bsvgsy6apqv5b6lj91s026cfn3syga8mhbsapp6mj"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtmeta_2.13/0.0.117/sbtmeta_2.13-0.0.117.jar",
-      "sha256": "14wsifg4xhank402m5qmalm484qmdyf9ayfy5n61vdr79l6p6dys"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtmeta_3/0.0.118/sbtmeta_3-0.0.118.jar",
+      "sha256": "18nk4bpd20yyb1y76zl315m5x5ijwkyscaapr6hzfvv8bwcbf9if"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtmeta_2.13/0.0.117/sbtmeta_2.13-0.0.117.pom",
-      "sha256": "0dw3cq037ssklcf9g3hxmgwa5yqvfic40gr8ym9vl1swma35vmc0"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbtmeta_3/0.0.118/sbtmeta_3-0.0.118.pom",
+      "sha256": "090yddfm6j27q5grsw8fcbh4wdbii3izn7rix2f9z1dhcs4k2jna"
     },
     {
       "url": "https://repo1.maven.org/maven2/io/airlift/airbase/112/airbase-112.pom",
@@ -1946,16 +1946,16 @@
       "sha256": "0bfpr1xnf1xr9siabx9ji482fpqlpr0l50lxfwqcyzfsv0lq6zaf"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/eclipse/jgit/org.eclipse.jgit-parent/5.13.1.202206130422-r/org.eclipse.jgit-parent-5.13.1.202206130422-r.pom",
-      "sha256": "10xwy6ga3fmigjy4fspa7zp5akrxvhc4j5pfhmvsai4gxmvgqrfy"
+      "url": "https://repo1.maven.org/maven2/org/eclipse/jgit/org.eclipse.jgit-parent/5.13.3.202401111512-r/org.eclipse.jgit-parent-5.13.3.202401111512-r.pom",
+      "sha256": "1jcw9dm119y51dfmd1kyvpcbc99kgb77z050kd1n40h53kcpkxw7"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/eclipse/jgit/org.eclipse.jgit/5.13.1.202206130422-r/org.eclipse.jgit-5.13.1.202206130422-r.jar",
-      "sha256": "0p05nlp24nxs2sa7andnvil3yhv5axg9y281cx4w2mcfdid3cyfn"
+      "url": "https://repo1.maven.org/maven2/org/eclipse/jgit/org.eclipse.jgit/5.13.3.202401111512-r/org.eclipse.jgit-5.13.3.202401111512-r.jar",
+      "sha256": "1fziyw7dg116xw504njg2990zhhha7ddr8f2z1wc76q8ig179jys"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/eclipse/jgit/org.eclipse.jgit/5.13.1.202206130422-r/org.eclipse.jgit-5.13.1.202206130422-r.pom",
-      "sha256": "05c5hx4w1ay8q7xy5l2gln9rkn0jm6r4zlmnwbm7hrckkjzvxi1w"
+      "url": "https://repo1.maven.org/maven2/org/eclipse/jgit/org.eclipse.jgit/5.13.3.202401111512-r/org.eclipse.jgit-5.13.3.202401111512-r.pom",
+      "sha256": "1pwnazw2gnwrm1x0pzwjcx8q4lppjww8ig2azmy0qj1pdgpsfxla"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/fusesource/fusesource-pom/1.12/fusesource-pom-1.12.pom",
@@ -2782,12 +2782,12 @@
       "sha256": "0911brj2s04lsh67n5r30n9hn8vr41267h2biy7z1yyymlbynhd3"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbt-dependency-tree_2.12_1.0/1.12.4/sbt-dependency-tree_2.12_1.0-1.12.4.jar",
-      "sha256": "11hrnk6s29v8ijppxxa15yw239qmnsm590ldfi3miv3i9dfc558b"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbt-dependency-tree_2.12_1.0/1.12.8/sbt-dependency-tree_2.12_1.0-1.12.8.jar",
+      "sha256": "1qw66bpj3m35l6wzdhil0m7yv38sl1p2lcnd62rsl4skxvy9f96l"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbt-dependency-tree_2.12_1.0/1.12.4/sbt-dependency-tree_2.12_1.0-1.12.4.pom",
-      "sha256": "0gda0z4261l1542yd9nahbfzp3ajn9xfpmnqzs7zsw30fgqjy9gl"
+      "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbt-dependency-tree_2.12_1.0/1.12.8/sbt-dependency-tree_2.12_1.0-1.12.8.pom",
+      "sha256": "0sx7aslfj7xapj3wkg0hgpszy33mvkjwsjivrizzxkq07qgsry3x"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/scala-sbt/sbt/1.12.5/sbt-1.12.5.jar",
