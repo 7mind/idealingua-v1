@@ -8,8 +8,7 @@ import izumi.idealingua.model.il.ast.typed.TypeDef
 import izumi.idealingua.model.output.{Module, ModuleId}
 import izumi.idealingua.translator.toscala.products.RenderableCogenProduct
 
-import scala.meta.Tree
-import scala.meta.internal.prettyprinters.TreeSyntax
+import scala.meta.*
 
 class ModuleTools {
   def toSource(id: DomainId, moduleId: ModuleId, product: RenderableCogenProduct, scalaVersion: List[String]): Seq[Module] = {
@@ -19,7 +18,7 @@ class ModuleTools {
 
       case _ =>
         val dialect         = if (scalaVersion.exists(_.startsWith("3"))) scala.meta.dialects.Scala30 else scala.meta.dialects.Scala213
-        val code            = (product.preamble +: product.render.map(TreeSyntax[Tree](dialect).apply(_).toString())).mkString("\n\n")
+        val code            = (product.preamble +: product.render.map(tree => dialect(tree).syntax)).mkString("\n\n")
         val content: String = withPackage(id.toPackage, code)
         Seq(Module(moduleId, content))
     }
