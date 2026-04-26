@@ -818,6 +818,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
   )
   .jsSettings(
     crossScalaVersions := Seq(
+      "3.8.3",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
