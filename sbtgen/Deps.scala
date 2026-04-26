@@ -177,10 +177,8 @@ object Idealingua {
     final val cross2 = Seq(jvmPlatform2, jsPlatform2)
     final val jvm2   = Seq(jvmPlatform2)
 
-    final val cross3      = Seq(jvmPlatform3, jsPlatform3)
-    // scalameta is not published for Scala 3 + Scala.js
-    final val crossJvm3Js2 = Seq(jvmPlatform3, jsPlatform2)
-    final val jvm3        = Seq(jvmPlatform3)
+    final val cross3 = Seq(jvmPlatform3, jsPlatform3)
+    final val jvm3   = Seq(jvmPlatform3)
   }
 
   object Projects {
@@ -424,7 +422,7 @@ object Idealingua {
           Seq(Projects.idealingua.testDefs, Projects.idealingua.runtimeRpcTypescript, Projects.idealingua.runtimeRpcGo, Projects.idealingua.runtimeRpcCSharp)
             .map(_ in Scope.Test.jvm),
         settings  = forkTests,
-        platforms = Targets.crossJvm3Js2,
+        platforms = Targets.cross3,
       ),
       Artifact(
         name      = Projects.idealingua.testDefs,

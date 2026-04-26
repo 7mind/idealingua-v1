@@ -3026,60 +3026,92 @@
       "sha256": "0900g0va7rpv7j4j7vbbqplwvm07ff8hkwdrfnqznz8f1vzpnbmg"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/common_2.13/4.15.2/common_2.13-4.15.2.jar",
-      "sha256": "1xzmqrknhbwb101x8ng2vr9vg6m9gcahzv35rjdad9qpl15i779h"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/common2_2.13/4.16.1/common2_2.13-4.16.1.jar",
+      "sha256": "17b774h69r541bd651bsc1q6rbw74v8g635qmlqmksiaqfhknsf9"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/common_2.13/4.15.2/common_2.13-4.15.2.pom",
-      "sha256": "1253kv3y38xxwxw33aypysaj1dc3h5h06r1gyixmq4bb4ajckd3b"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/common2_2.13/4.16.1/common2_2.13-4.16.1.pom",
+      "sha256": "0q6x498h0nfavllwqgy8nbn10vadvdqq05xg7kpqsa44idg5bhcw"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/io_2.13/4.15.2/io_2.13-4.15.2.jar",
-      "sha256": "0yqhbs1g9viw7idr243iwwpbrdmfvlgx2p7yfm3p6jzms7ci8a2w"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/common_2.13/4.16.1/common_2.13-4.16.1.jar",
+      "sha256": "03cbjs15mr7hsdxr5kn8hjl6cnsllvj3wmvik9nlwddx4kx0hf0v"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/io_2.13/4.15.2/io_2.13-4.15.2.pom",
-      "sha256": "1dhxsmlkfcxxjsl6hkkcwxam7dm23a430s8b02wlzkafhnwh0gff"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/common_2.13/4.16.1/common_2.13-4.16.1.pom",
+      "sha256": "1z4my8cyi85x80n0sws19qysayq7xccysh8awsx5hm05la3h1ryk"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_2.13/4.15.2/parsers_2.13-4.15.2.jar",
-      "sha256": "0jplxaxzgiskjx6xibggm2i4xjyhf4xbava4pnsavv0srhlhqz3q"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/common_3/4.16.1/common_3-4.16.1.jar",
+      "sha256": "15qx3xg21cprz4m70pm70sazbk340ga6ym56ba74kynl91sjk8da"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_2.13/4.15.2/parsers_2.13-4.15.2.pom",
-      "sha256": "012m9ym791cr4kbdcpgy11p7mrvmrps1l5qns8sqvg2pd96z6dbc"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/common_3/4.16.1/common_3-4.16.1.pom",
+      "sha256": "0b8j6ndsaahhmpvm9zzxqdg7spq9g2s0xwpsh4z7aqxfjzsakrdr"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_3/4.15.2/parsers_3-4.15.2.jar",
-      "sha256": "04650vx057gpypykyznx2khw1bc5lai1rqqd1lky1mckl73lam3c"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/io_2.13/4.16.1/io_2.13-4.16.1.jar",
+      "sha256": "0xqd5285bwsd21d1m7mga992bkrglrykpg6jnmq2nihdkw8zrnjf"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_3/4.15.2/parsers_3-4.15.2.pom",
-      "sha256": "03d51x6gwf23yqg2psp2vzrc7w7p91m0zww1j3ys7c349baz59kq"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/io_2.13/4.16.1/io_2.13-4.16.1.pom",
+      "sha256": "0m1i344g83b9b7332s2bbwm03qjkyw274fjj4qpkmr0pv8pw568y"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_2.13/4.15.2/scalameta_2.13-4.15.2.jar",
-      "sha256": "1n1585f6k8w4pld0ippz9ga0gdil0qwmh3b90ra1za8cfhzgmph1"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_2.13/4.16.1/parsers_2.13-4.16.1.jar",
+      "sha256": "1z028d4yj623r4nm9hrjmysc9q9rfx8rxackn4p7i3yydwxx07gb"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_2.13/4.15.2/scalameta_2.13-4.15.2.pom",
-      "sha256": "16z76c1vh1nyx88vz80bqzf6j4q2cwr8fd4ak86fs2bd0im31dn4"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_2.13/4.16.1/parsers_2.13-4.16.1.pom",
+      "sha256": "0rf2dnrrn5bjvwkvmqgavyxal2xay3mqlszzqldklafcd9k496z5"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_3/4.15.2/scalameta_3-4.15.2.jar",
-      "sha256": "15b7jd3sgcpv3rlb6hpa6cdd08c2frlq5l6qmfdj4zaajiv48j3n"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_3/4.16.1/parsers_3-4.16.1.jar",
+      "sha256": "1s66nl35y0vvyhp44svhg4nbpbg33va1d636k1pdhkg46k0ajjrl"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_3/4.15.2/scalameta_3-4.15.2.pom",
-      "sha256": "106xmalhhhahcgnlk6qlz6n6mw48qlkzn891kzm6ljjr8dxknl5j"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/parsers_3/4.16.1/parsers_3-4.16.1.pom",
+      "sha256": "0wb73vldh4bpma5kh1fyqb26jrmc56ygvqyj0cdx5znf7z7k1zl9"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/trees_2.13/4.15.2/trees_2.13-4.15.2.jar",
-      "sha256": "1igpbs8glfb2x1k617mp5clzjwcphm1pqrxhwphli8pxncxxw650"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_2.13/4.16.1/scalameta_2.13-4.16.1.jar",
+      "sha256": "18p46adacz4sqxcr1brykiwvrhp38hifr57x1q8421pcrajbr46q"
     },
     {
-      "url": "https://repo1.maven.org/maven2/org/scalameta/trees_2.13/4.15.2/trees_2.13-4.15.2.pom",
-      "sha256": "1bhwn11h90grww774zjyycgq6fxnsiwqp1lcp1246wzylrnrbvc3"
+      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_2.13/4.16.1/scalameta_2.13-4.16.1.pom",
+      "sha256": "1wzkbdihggrlksjy9z5sjjm1p5006a2g86iaya9y9xizybzxbp84"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_3/4.16.1/scalameta_3-4.16.1.jar",
+      "sha256": "05bljwissd560lbik5rgxrj3a34ixmsd9dg6szyvq8988id2lin6"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scalameta/scalameta_3/4.16.1/scalameta_3-4.16.1.pom",
+      "sha256": "0ph30gfbln67ag1064jdr90mbb2wa1fb2xddiq1s1q0cy4jwim7h"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scalameta/trees2_2.13/4.16.1/trees2_2.13-4.16.1.jar",
+      "sha256": "0hvajhqlvd1j1zqgkmji0rnzd43kl8fbg13kkvkcck0j2zbvwiaf"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scalameta/trees2_2.13/4.16.1/trees2_2.13-4.16.1.pom",
+      "sha256": "0vfaz95gzdyfrbm3kxwh0r4qwnydq14sa793ghlwfgk0b9bllgf5"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scalameta/trees_2.13/4.16.1/trees_2.13-4.16.1.jar",
+      "sha256": "1656xx1kq09p4qwavkkm6qxfi4w29s3npkr7hkkqqnjkvfnsjqxi"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scalameta/trees_2.13/4.16.1/trees_2.13-4.16.1.pom",
+      "sha256": "08xif2ajda03pn5xf87ffvrb4lylcc64w84apfigz0p07rs4kacs"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scalameta/trees_3/4.16.1/trees_3-4.16.1.jar",
+      "sha256": "1m5zlrspbxx87fkn68wr2ngjhhg40vhp6fkbaa0axxdlb3fmqrxw"
+    },
+    {
+      "url": "https://repo1.maven.org/maven2/org/scalameta/trees_3/4.16.1/trees_3-4.16.1.pom",
+      "sha256": "0mzcvp68wvl2yvn00qllpijak0mx78pjc8k6bxjnirhmwqv3hdv6"
     },
     {
       "url": "https://repo1.maven.org/maven2/org/scalatest/scalatest-compatible/3.2.19/scalatest-compatible-3.2.19.jar",
