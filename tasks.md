@@ -29,18 +29,33 @@ Detail in `./docs/drafts/20260503-1200-modernization-plan.md`. Sub-task and acce
 
 These are decisions or open questions that span multiple PRs. The full enumerated list (with recommendations) is in the meta-plan, §"Cross-cutting decisions". Tracked here as visible state.
 
-- [ ] **C1 — Build alongside vs. in-place.** Recommended: alongside, behind a feature flag, until harness proves byte-parity.
-- [ ] **C2 — Delete `idealingua-v1-runtime-rpc-go` along with the Go transpiler?** Recommended yes.
-- [ ] **C3 — Drop Scala 2.13 in the compiler module while keeping it in the runtime?** Open.
-- [ ] **C4 — Lock `wireId = "<pkg>.<name>"` formula permanently.** No type may change package without a wire-format break.
-- [ ] **C5 — Are Buzzers/Streams still used in production?** If yes, first-class in new IR; if no, deprecate-but-keep-working.
-- [ ] **C6 — Are Constants (`RawVal`/`ConstValue`) in scope for the typer rewrite?** Recommended yes (the current TODOs around them are a known correctness gap).
-- [ ] **C7 — Are Newtypes / ForeignType in scope for "make it work" or "delete syntax"?** Open.
-- [x] **C8 — New typer emits diagnostics, never throws on user errors.** Locked (replaces `IDLException` from typer call paths).
-- [ ] **C9 — CLI flag stability for `CommandlineIDLCompiler`.** Recommended: deprecation cycle for any flag rename/removal.
-- [ ] **C10 — Where does the test harness live (compiler module's empty test tree, or a new `idealingua-v1-test-harness` module)?** Open.
-- [x] **C11 — Cross-domain reference graph cycles enforced before dependency-graph construction, not after.** Locked.
-- [ ] **C12 — Field-ordering invariant in the new IR.** The new IR must preserve declaration order on structs because Circe `deriveEncoder` emits keys in field-declaration order and current consumers may rely on byte equality. PR-02 must call this out explicitly.
+User-decided 2026-05-03 in `docs/drafts/20260503-2159-questions-modernization-decisions.md`. Answers folded below.
+
+- [x] **C1 / Q6 — Build alongside, behind feature flag.** New `izumi.idealingua.typer.phase.*` package coexists with `IDLPostTyper`, gated by a flag in `TypespaceCompilerBaseFacade`, until PR-03 harness proves byte-parity.
+- [x] **C2 / Q2 — Delete `idealingua-v1-runtime-rpc-go` along with the Go transpiler.** Single atomic deletion in IMPL-8.
+- [x] **C3 / Q8 — Keep cross-build (Scala 2.13 + Scala 3) everywhere.** **Collision with PR-02 D14 fix**: `Fingerprint(value: IArray[Byte])` is Scala 3 only. Implementation must substitute either `scodec.bits.ByteVector` or a hand-written wrapper with `equals`/`hashCode`; PR-02 §4 needs an addendum.
+- [x] **C4 / Q12 — Lock `wireId = "<pkg>.<name>"` formula permanently.** No type may change package or name without a coordinated wire-format break across all consumers. Codify in `docs/wire-format.md` (PR-03 §4 spec doc).
+- [x] **C5 / Q1 — Buzzers used in production; Streams not used.** New IR treats Buzzers first-class on par with Services. Streams: deprecate-but-keep-working in the new IR (no behavior change, no fixtures), schedule removal for a later release.
+- [x] **C6 / Q10 — Constants in scope.** New typer adds a `ConstValueTyper` phase; closes the TODOs at `IDLPostTyper.translateValue:240,245,250`.
+- [x] **C7 / Q11 — Drop `ForeignType` from the grammar; finish newtype support for all type kinds.** Existing models that use `ForeignType` get a typer diagnostic and stop compiling.
+- [x] **C8 / L1 — New typer emits diagnostics, never throws on user errors.** Locked.
+- [x] **C9 / Q9 — Hard remove of unused CLI flags on the M2 release.** No deprecation cycle. Deviation from recommendation; user accepts the risk that downstream automations may pass legacy flags.
+- [x] **C10 / Q7 — New `idealingua-v1-test-harness` module.** Separates TS/dotnet test-time deps from the compiler module.
+- [x] **C11 / L2 — Cross-domain reference graph cycles enforced before dependency-graph construction.** Locked.
+- [x] **C12 / L3 — Field-ordering invariant in the new IR.** Locked. New IR preserves struct field declaration order (Circe `deriveEncoder` emits keys in declaration order; current consumers may rely on byte equality).
+- [x] **Q3 — TBLOB lock base64-string for all three languages.** PR-02 implements C# in IMPL-N; PR-03 baseline must verify Scala/TS already match.
+- [x] **Q4 — TUInt64 hybrid encoding.** Number for values ≤ 2^53 - 1 (JS max safe integer); string for ≥ 2^53. Boundary is documented in the wire-format spec.
+- [x] **Q5 — TSet insertion order, mirrored across all three languages.** PR-02 must ensure TS/C# emitters iterate in a way that matches Scala's `LinkedHashSet`.
+- [x] **L4 — Layer B byte-strict raw comparison default; canonicalization is a parallel sanity check.** Locked.
+- [x] **L5 — Negative-test diagnostic-kind assertions deferred to PR-02.** PR-03 asserts only "legacy throws something". Locked.
+- [x] **L6 — Freeze tag `wire-format-baseline-2026-05-03`.** Locked.
+
+### New follow-ups created by user answers
+
+- [ ] **F1 — Substitute Scala-3-only `IArray[Byte]` in PR-02 §4 `Fingerprint` (per C3/Q8 cross-build decision).** Pick one of: `scodec.bits.ByteVector`, hand-written `final case class Fingerprint(value: Array[Byte])` with explicit `equals`/`hashCode`, or `WrappedArray[Byte]`. Update §4 + IMPL-2 scope.
+- [ ] **F2 — TBLOB cross-language verification pre-baseline.** PR-03.1 (baseline capture) must confirm Scala and TS already encode `TBLOB` as base64-string before the freeze tag is cut; if they don't, Q3 reopens.
+- [ ] **F3 — Streams deprecation note.** New IR carries Streams in a `@deprecated` posture. PR-02 §3 needs a one-paragraph note on what "deprecate-but-keep-working" means concretely (no new tests; no schema changes; emitters still produce them).
+- [ ] **F4 — `ForeignType` removal grammar surface.** PR-02 needs to enumerate which `.domain` files in `idealingua-v1-test-defs/` use `ForeignType` (likely zero, but verify) and add a typer diagnostic that rejects it cleanly.
 
 ---
 
