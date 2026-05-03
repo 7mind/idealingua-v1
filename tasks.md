@@ -52,10 +52,10 @@ User-decided 2026-05-03 in `docs/drafts/20260503-2159-questions-modernization-de
 
 ### New follow-ups created by user answers
 
-- [ ] **F1 — Substitute Scala-3-only `IArray[Byte]` in PR-02 §4 `Fingerprint` (per C3/Q8 cross-build decision).** Pick one of: `scodec.bits.ByteVector`, hand-written `final case class Fingerprint(value: Array[Byte])` with explicit `equals`/`hashCode`, or `WrappedArray[Byte]`. Update §4 + IMPL-2 scope.
+- [x] **F1 — Substitute Scala-3-only `IArray[Byte]` in PR-02 §4 `Fingerprint` (per C3/Q8 cross-build decision).** Resolved 2026-05-03 — picked `scodec.bits.ByteVector` as the primary type (hand-equality-wrapper noted as fallback). PR-02 §4 IR pseudo-code and the frozen-after-assembly invariant paragraph updated.
 - [ ] **F2 — TBLOB cross-language verification pre-baseline.** PR-03.1 (baseline capture) must confirm Scala and TS already encode `TBLOB` as base64-string before the freeze tag is cut; if they don't, Q3 reopens.
-- [ ] **F3 — Streams deprecation note.** New IR carries Streams in a `@deprecated` posture. PR-02 §3 needs a one-paragraph note on what "deprecate-but-keep-working" means concretely (no new tests; no schema changes; emitters still produce them).
-- [ ] **F4 — `ForeignType` removal grammar surface.** PR-02 needs to enumerate which `.domain` files in `idealingua-v1-test-defs/` use `ForeignType` (likely zero, but verify) and add a typer diagnostic that rejects it cleanly.
+- [x] **F3 — Streams deprecation note.** Resolved 2026-05-03 — added "Deprecated-but-supported types: Streams" subsection in PR-02 §3 (between Phase 12 and the phase-dependency DAG); rewrote §9 C5 and §12 Q2 to mark the decision RESOLVED.
+- [x] **F4 — `ForeignType` removal grammar surface.** Resolved 2026-05-03 — verified via grep that zero `.domain` fixtures under `idealingua-v1-test-defs/` use the `foreign` keyword. Grammar surface to remove enumerated in PR-02 §9 C7: keyword `Keywords.scala:25`, parser entry `DefStructure.scala:131-136`, raw AST nodes `RawTypeDef.scala:32` and `RawTopLevelDefn.scala:24`. §12 Q4 marked RESOLVED.
 
 ---
 

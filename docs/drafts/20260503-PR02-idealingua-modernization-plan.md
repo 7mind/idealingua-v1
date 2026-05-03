@@ -500,6 +500,43 @@ A]` (per PR-01 Lesson 5 — `IDLException` becomes a "BUG" assertion only).
   Validator inherits the same opt-in model.
 - **Failure mode**: accumulating; the entry caller decides whether to halt.
 
+### Deprecated-but-supported types: Streams
+
+Per cross-cutting decision **C5 / Q1** (see `tasks.md`), `Streams` are not
+in production use and are scheduled for removal in a later release. PR-02
+does **not** rewrite anything for Streams: the new IR carries
+`TypeDef.Streams` and `TypedStream` with the *same shape and semantics* as
+the legacy typed AST, every phase passes them through unchanged, and the
+existing Scala/TS/C# emitters continue to produce the same generated code.
+Concretely:
+
+- Phase 1 (ScopeBuilder), Phase 2 (NameResolver), Phase 4 (KindChecker)
+  treat `Streams` exactly like `Service` — same scoping, same name
+  resolution, same kind invariants.
+- Phase 7 (EphemeralSynthesizer) does **not** synthesize per-method
+  ephemeral DTOs for stream methods; the legacy code does not either, so
+  no behaviour change.
+- Phase 9 (FingerprintCalculator) hashes `Streams` like any other type;
+  fingerprints participate in PR-03's harness on equal footing with
+  Services.
+- The new `Domain.types`/`Domain.userTypes` projections include `Streams`.
+- The wire-format spec doc (PR-03 §4) documents `stream:s2c` /
+  `stream:c2s` packet kinds (defined at `packets.scala:43-46`) but flags
+  Streams as "deprecated; do not introduce new uses".
+
+What "deprecate-but-keep-working" explicitly does **not** mean: no new
+fixtures in PR-03 specifically targeting stream encodings beyond what
+the existing `streams.domain` test fixture already exercises; no new
+language-level features for streams; no schema-level changes. The path to
+removal is a separate PR after M2 lands, gated on confirmation that no
+production consumer has emerged in the meantime.
+
+`Buzzers` retain full first-class status — the runtime serves
+`buzzer:request`/`buzzer:response`/`buzzer:failure` packet kinds, the
+typed AST has `Buzzer` and `BuzzerId`, and existing fixtures (e.g.
+`buzzers.domain`) cover them. Phase 7 synthesizes ephemeral input/output
+DTOs for buzzer methods exactly as for services.
+
 ### Phase dependency DAG
 
 ```
@@ -659,7 +696,7 @@ final case class EphemeralDto(
   struct: Struct,
 )
 
-final case class Fingerprint(value: IArray[Byte])  // SHA-256, Scala 3 IArray
+final case class Fingerprint(value: ByteVector)  // SHA-256; scodec.bits.ByteVector for cross-build structural equality
 
 final case class Cycle[T](members: List[T], terminating: Boolean)
 
@@ -727,13 +764,17 @@ are caught by code review (no `mutable.*` imports in the IR package) plus a
 unit assertion in the Assembler that rejects any `mutable.*` instance reachable
 from `Domain` at construction time.
 
-`Fingerprint` wraps `IArray[Byte]` rather than `Array[Byte]` because
+`Fingerprint` wraps `scodec.bits.ByteVector` rather than `Array[Byte]` because
 `Array[Byte]` in Scala uses reference equality (`a1 == a2` returns `false`
-for two arrays with identical content); `IArray[Byte]` is Scala 3's immutable
-array with structural equality, so `Map[TypeId, Fingerprint]` lookups,
-case-class `equals`, and harness comparisons behave as written. If the build
-must remain on Scala 2 for any reason, replace `IArray[Byte]` with
-`scodec.bits.ByteVector` (same equality guarantee).
+for two arrays with identical content); `ByteVector` provides structural
+equality, immutability, and works on both Scala 2.13 and Scala 3, so
+`Map[TypeId, Fingerprint]` lookups, case-class `equals`, and harness
+comparisons behave as written. (Earlier drafts proposed Scala 3's `IArray`,
+but cross-cutting decision C3 keeps the cross-build, so `IArray` is off the
+table — see `tasks.md` cross-cutting note **C3 / Q8**.) If `scodec` is
+undesirable as a transitive dependency, the equivalent is a hand-written
+`final case class Fingerprint(value: Array[Byte])` with explicit
+`equals`/`hashCode` overrides; behaviour is identical.
 
 ---
 
@@ -1227,13 +1268,13 @@ the meta-plan was published) is covered first to make the decision visible.
   different package; the typer's PR-03 harness asserts this. *Blocker*: user
   acknowledgment that this is a forever invariant.
 
-- **C5 — Buzzers and Streams.** *Recommendation*: keep both first-class in the
-  new IR (`Domain.members` includes `TypeDef.Buzzer` and `TypeDef.Streams`).
-  The runtime supports `BuzzRequest`, `S2CStream`, `C2SStream` per the
-  meta-plan §"Wire format" (`docs/drafts/20260503-1200-modernization-plan.md:80-105`);
-  treating them differently from Services in the typer would create asymmetry
-  with no benefit. *Blocker*: user confirmation that they want to spend
-  the implementation cost of preserving these.
+- **C5 — Buzzers and Streams.** **RESOLVED 2026-05-03**: Buzzers stay
+  first-class in the new IR (Phase 7 synthesizes ephemeral input/output DTOs
+  for buzzer methods on par with services). Streams are deprecated-but-kept-
+  working: the IR carries `TypeDef.Streams` with unchanged shape, every
+  phase is a pass-through, no new fixtures or language features, removal
+  scheduled for a post-M2 release. See "Deprecated-but-supported types:
+  Streams" in §3 above and `tasks.md` cross-cutting note **C5 / Q1**.
 
 - **C6 — Constants (`RawVal` / `ConstValue`).** *Recommendation*: Phase 8
   type-checks consts fully (replacing the three `// TODO: verify structure`
@@ -1241,12 +1282,18 @@ the meta-plan was published) is covered first to make the decision visible.
   that consts are in scope for PR-02's IMPL- sequence (vs. deferred to a
   later modernization).
 
-- **C7 — Newtypes and ForeignType.** *Recommendation*: keep `NewType` working
-  (currently inlined into `IDLPostTyper.fixType` at
-  `IDLTyper.scala:174-189`); move it to a `NewTypeExpander` raw-AST desugaring
-  pass per PR-01 Lesson 7. Delete `ForeignType` syntax — it currently throws
-  at `IDLTyper.scala:191-192` ("TODO: foreign type isn't supported yet") and is
-  unused. *Blocker*: user confirmation that ForeignType is genuinely unused.
+- **C7 — Newtypes and ForeignType.** **RESOLVED 2026-05-03**: `ForeignType`
+  is removed from the grammar; existing models that use it stop compiling
+  with a hard typer diagnostic. Verified 2026-05-03 that no `.domain`
+  fixture under `idealingua-v1-test-defs/` mentions `foreign` (zero matches
+  in a case-insensitive grep). The grammar surface to remove: keyword
+  `foreign` (`Keywords.scala:25`), parser entry `defStructure.foreignBlock`
+  (`DefStructure.scala:131-136` and the `DefMember.scala:27` alternative),
+  raw AST nodes `RawTypeDef.ForeignType` (`RawTypeDef.scala:32`) and
+  `RawTopLevelDefn.TLDForeignType` (`RawTopLevelDefn.scala:24`). NewType
+  support is finished for all type kinds (currently DTO/Interface only at
+  `IDLTyper.scala:174-189`); moved to a dedicated `NewTypeExpander` raw-AST
+  desugaring pass per PR-01 Lesson 7.
 
 - **C8 — Diagnostics model.** *Recommendation*: every typer phase returns
   `Either[NEList[Diagnostic], A]` (or the `Diagnostics` accumulator from §4).
@@ -1452,10 +1499,10 @@ becomes locked once the question is answered.
   *Downstream*: locks the syntax used in the new typer (e.g. enums, opaque
   types, exhaustivity behaviour). Recommended: (a).
 
-- [ ] **Q2 — Are Buzzers and Streams in scope for the new IR (cross-cutting
-  C5)?** Options: (a) keep first-class; (b) deprecate but compile;
-  (c) remove. *Downstream*: locks whether `TypeDef.Buzzer` and
-  `TypeDef.Streams` exist in §4. Recommended: (a).
+- [x] **Q2 — Are Buzzers and Streams in scope for the new IR (cross-cutting
+  C5)?** **RESOLVED 2026-05-03**: Buzzers first-class; Streams deprecated-
+  but-kept-working (per `tasks.md` cross-cutting note C5 / Q1 and §3
+  "Deprecated-but-supported types: Streams").
 
 - [ ] **Q3 — Are constants in scope for typing (cross-cutting C6)?** Options:
   (a) Phase 8 type-checks fully; (b) Phase 8 carries unchecked constants
@@ -1463,12 +1510,11 @@ becomes locked once the question is answered.
   whether the three TODOs at `IDLTyper.scala:240, 245, 250` produce
   diagnostics or are silently accepted. Recommended: (a).
 
-- [ ] **Q4 — Is `ForeignType` deleted (cross-cutting C7)?** Options: (a) make
-  it work in Phase 4; (b) delete the syntax and produce a hard
-  diagnostic on encounter; (c) silently accept and pass through.
-  `IDLPostTyper.fixType` currently throws at `IDLTyper.scala:191-192`
-  ("TODO: foreign type isn't supported yet"). *Downstream*: decides whether
-  Phase 4's `KindChecker` carries a `ForeignType` arm. Recommended: (b).
+- [x] **Q4 — Is `ForeignType` deleted (cross-cutting C7)?** **RESOLVED
+  2026-05-03**: Option (b) — delete the syntax and produce a hard
+  diagnostic on encounter. Verified zero `.domain` fixtures under
+  `idealingua-v1-test-defs/` use the `foreign` keyword, so removal is
+  safe. See §9 C7 above for the grammar-surface enumeration.
 
 - [ ] **Q5 — How does the new family manager handle duplicate `DomainId`
   across files (= overlay merge)?** Options: (a) replicate the legacy merge
