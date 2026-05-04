@@ -30,12 +30,17 @@ class ScalaTranslator(ts: Typespace, options: ScalaTranslatorOptions) extends Tr
   protected val ctx: STContext = new STContext(ts, options.extensions, options.manifest.sbt)
 
   def translate(): Translated = {
-    import izumi.fundamentals.collections.IzCollections._
-    val aliases = ctx.typespace.domain.types.collect {
+    // Group aliases by their target ModuleId (package-object.scala path).
+    // Using a Seq-based groupBy preserves declaration order within each group;
+    // sorting by key.toString stabilises the iteration order of distinct groups.
+    val aliasEntries = ctx.typespace.domain.types.collect {
       case a: Alias =>
         ctx.modules.toModuleId(a) -> renderAlias(a)
-    }.toMultimap
-      .view.mapValues(_.flatten.toSeq)
+    }
+    val aliases = aliasEntries
+      .groupBy(_._1)
+      .toSeq.sortBy(_._1.toString)
+      .map { case (id, pairs) => id -> pairs.flatMap(_._2) }
 
     val packageObjects = aliases.map {
       case (id, content) =>

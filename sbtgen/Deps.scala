@@ -357,6 +357,7 @@ object Idealingua {
       final val runtimeRpcCSharp     = ArtifactId("idealingua-v1-runtime-rpc-csharp")
       final val runtimeRpcGo         = ArtifactId("idealingua-v1-runtime-rpc-go")
       final val compiler             = ArtifactId("idealingua-v1-compiler")
+      final val testHarness          = ArtifactId("idealingua-v1-test-harness")
     }
 
     object docs {
@@ -465,6 +466,40 @@ object Idealingua {
           Seq(Plugin("JavaAppPackaging"))
         ),
       ),
+      Artifact(
+        name      = Projects.idealingua.testHarness,
+        libs      = Seq.empty,
+        depends   = Seq(
+          Projects.idealingua.transpilers,
+          Projects.idealingua.compiler,
+          Projects.idealingua.testDefs,
+        ).map(_ in Scope.Compile.all),
+        platforms = Targets.jvm3,
+        settings  = Seq(
+          "regenerateGoldens" := """{
+                                   |  val log      = streams.value.log
+                                   |  val repoRoot = (LocalRootProject / baseDirectory).value.getAbsolutePath
+                                   |  log.info("regenerateGoldens: starting")
+                                   |  val cp = (Compile / fullClasspath).value.files
+                                   |  val r  = (Compile / runner).value
+                                   |  r.run("izumi.idealingua.harness.RegenerateMain", cp, Seq(repoRoot), log)
+                                   |    .failed.foreach(e => throw e)
+                                   |  log.info("regenerateGoldens: done")
+                                   |}""".stripMargin.raw,
+          "verifyGoldens" := """{
+                               |  val log      = streams.value.log
+                               |  val repoRoot = (LocalRootProject / baseDirectory).value.getAbsolutePath
+                               |  log.info("verifyGoldens: starting")
+                               |  val cp = (Compile / fullClasspath).value.files
+                               |  val r  = (Compile / runner).value
+                               |  r.run("izumi.idealingua.harness.VerifyMain", cp, Seq(repoRoot), log)
+                               |    .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
+                               |  log.info("verifyGoldens: all goldens match")
+                               |}""".stripMargin.raw,
+          "runWireFixtures" := """{ println("runWireFixtures: placeholder — implemented in PR-03.2") }""".raw,
+          "runCrossLangInterop" := """{ println("runCrossLangInterop: placeholder — implemented in PR-03.4") }""".raw,
+        ),
+      ),
     ),
     pathPrefix       = Projects.idealingua.basePath,
     groups           = Groups.idealingua,
@@ -484,7 +519,11 @@ object Idealingua {
       Import("sbtrelease.ReleaseStateTransformations._"),
       Import("""scala.sys.process._
                |
-               |lazy val refreshFlakeTask = taskKey[Unit]("Refresh flake.nix")
+               |lazy val refreshFlakeTask    = taskKey[Unit]("Refresh flake.nix")
+               |lazy val regenerateGoldens   = taskKey[Unit]("Regenerate Layer A goldens")
+               |lazy val verifyGoldens       = taskKey[Unit]("Verify Layer A goldens against legacy compiler")
+               |lazy val runWireFixtures     = taskKey[Unit]("Run Layer B wire-byte fixtures (placeholder for PR-03.2)")
+               |lazy val runCrossLangInterop = taskKey[Unit]("Run Layer C cross-language interop (placeholder for PR-03.4)")
                |""".stripMargin),
     ),
     globalLibs = Seq(

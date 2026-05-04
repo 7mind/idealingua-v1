@@ -1,0 +1,29 @@
+package izumi.idealingua.harness
+
+import java.nio.file.Paths
+
+/**
+  * Entry points for sbt task delegation via (Compile / runMain).
+  * Each object accepts a single argument: the repo root path.
+  */
+object RegenerateMain {
+  def main(args: Array[String]): Unit = {
+    require(args.length == 1, s"Usage: RegenerateMain <repoRoot>, got ${args.mkString(", ")}")
+    val repoRoot = Paths.get(args(0))
+    GoldenGenerator.regenerate(
+      HarnessCorpus.corpusRoot(repoRoot),
+      HarnessCorpus.goldenRoot(repoRoot),
+    )
+  }
+}
+
+object VerifyMain {
+  def main(args: Array[String]): Unit = {
+    require(args.length == 1, s"Usage: VerifyMain <repoRoot>, got ${args.mkString(", ")}")
+    val repoRoot = Paths.get(args(0))
+    GoldenVerifier.verify(
+      HarnessCorpus.corpusRoot(repoRoot),
+      HarnessCorpus.goldenRoot(repoRoot),
+    )
+  }
+}

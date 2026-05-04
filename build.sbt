@@ -8,7 +8,11 @@ import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import sbtrelease.ReleaseStateTransformations._
 import scala.sys.process._
 
-lazy val refreshFlakeTask = taskKey[Unit]("Refresh flake.nix")
+lazy val refreshFlakeTask    = taskKey[Unit]("Refresh flake.nix")
+lazy val regenerateGoldens   = taskKey[Unit]("Regenerate Layer A goldens")
+lazy val verifyGoldens       = taskKey[Unit]("Verify Layer A goldens against legacy compiler")
+lazy val runWireFixtures     = taskKey[Unit]("Run Layer B wire-byte fixtures (placeholder for PR-03.2)")
+lazy val runCrossLangInterop = taskKey[Unit]("Run Layer C cross-language interop (placeholder for PR-03.4)")
 
 
 enablePlugins(SbtgenVerificationPlugin)
@@ -1545,6 +1549,172 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
   )
   .enablePlugins(JavaAppPackaging, IzumiPlugin)
 
+lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingua-v1-test-harness"))
+  .dependsOn(
+    `idealingua-v1-transpilersJVM` % "test->compile;compile->compile",
+    `idealingua-v1-compiler` % "test->compile;compile->compile",
+    `idealingua-v1-test-defs` % "test->compile;compile->compile"
+  )
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % V.scalatest % Test
+    ),
+    libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+    ) else Seq.empty }
+  )
+  .settings(
+    crossScalaVersions := Seq(
+      "3.8.3",
+      "2.13.18"
+    ),
+    scalaVersion := crossScalaVersions.value.head,
+    organization := "io.7mind.izumi",
+    scalacOptions ++= Seq(
+      s"-Xmacro-settings:product-name=${name.value}",
+      s"-Xmacro-settings:product-version=${version.value}",
+      s"-Xmacro-settings:product-group=${organization.value}",
+      s"-Xmacro-settings:scala-version=${scalaVersion.value}",
+      s"-Xmacro-settings:scala-versions=${crossScalaVersions.value.mkString(":")}"
+    ),
+    Compile / unmanagedSourceDirectories ++= {
+      val version = scalaVersion.value
+      val crossVersions = crossScalaVersions.value
+      import Ordering.Implicits._
+      val ltEqVersions = crossVersions.map(CrossVersion.partialVersion).filter(_ <= CrossVersion.partialVersion(version)).flatten
+      (Compile / unmanagedSourceDirectories).value.flatMap {
+        case dir if dir.getPath.endsWith("scala") => ltEqVersions.map { case (m, n) => file(dir.getPath + s"-$m.$n+") }
+        case _ => Seq.empty
+      }
+    },
+    Test / unmanagedSourceDirectories ++= {
+      val version = scalaVersion.value
+      val crossVersions = crossScalaVersions.value
+      import Ordering.Implicits._
+      val ltEqVersions = crossVersions.map(CrossVersion.partialVersion).filter(_ <= CrossVersion.partialVersion(version)).flatten
+      (Test / unmanagedSourceDirectories).value.flatMap {
+        case dir if dir.getPath.endsWith("scala") => ltEqVersions.map { case (m, n) => file(dir.getPath + s"-$m.$n+") }
+        case _ => Seq.empty
+      }
+    },
+    Compile / unmanagedSourceDirectories ++= {
+      val version = scalaVersion.value
+      val crossVersions = crossScalaVersions.value
+      import Ordering.Implicits._
+      val gtEqVersions = crossVersions.map(CrossVersion.partialVersion).filter(_ >= CrossVersion.partialVersion(version)).flatten
+      (Compile / unmanagedSourceDirectories).value.flatMap {
+        case dir if dir.getPath.endsWith("scala") => gtEqVersions.map { case (m, n) => file(dir.getPath + s"-$m.$n-") }
+        case _ => Seq.empty
+      }
+    },
+    Test / unmanagedSourceDirectories ++= {
+      val version = scalaVersion.value
+      val crossVersions = crossScalaVersions.value
+      import Ordering.Implicits._
+      val gtEqVersions = crossVersions.map(CrossVersion.partialVersion).filter(_ >= CrossVersion.partialVersion(version)).flatten
+      (Test / unmanagedSourceDirectories).value.flatMap {
+        case dir if dir.getPath.endsWith("scala") => gtEqVersions.map { case (m, n) => file(dir.getPath + s"-$m.$n-") }
+        case _ => Seq.empty
+      }
+    },
+    Test / testOptions += Tests.Argument("-oDF"),
+    scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
+      case (_, "2.13.18") => Seq(
+        "-release:8",
+        "-explaintypes",
+        "-Xsource:3-cross",
+        "-P:kind-projector:underscore-placeholders",
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
+        "-Wconf:cat=optimizer:warning",
+        "-Wconf:cat=other-match-analysis:error",
+        "-Vimplicits",
+        "-Vtype-diffs",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
+        "-Wdead-code",
+        "-Wextra-implicit",
+        "-Wnumeric-widen",
+        "-Woctal-literal",
+        "-Wvalue-discard",
+        "-Wunused:_",
+        "-Wmacros:default",
+        "-Ycache-plugin-class-loader:always",
+        "-Ycache-macro-class-loader:last-modified"
+      )
+      case (_, "3.8.3") => Seq(
+        "-release:17",
+        "-Xkind-projector:underscores",
+        "-Yretain-trees",
+        "-no-indent",
+        "-explain",
+        "-explain-types",
+        "-explain-cyclic",
+        "-Xmax-inlines:64",
+        "-Ybackend-parallelism",
+        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
+        "-Wenum-comment-discard",
+        "-Wimplausible-patterns",
+        "-Wnonunit-statement",
+        "-Wopt:all",
+        "-Wrecurse-with-default",
+        "-Wshadow:private-shadow",
+        "-WunstableInlineAccessors",
+        "-Wunused:all",
+        "-Wvalue-discard",
+        "-Wwrong-arrow",
+        "-Wconf:any:verbose",
+        "-Wconf:name=UnusedNonUnitValue:silent",
+        "-Wconf:name=ValueDiscarding:silent",
+        "-Wconf:msg=eta-expanded even though:silent",
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
+      )
+      case (_, _) => Seq.empty
+    } },
+    scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
+      case (false, "2.13.18") => Seq(
+        "-opt:l:inline",
+        "-opt-inline-from:izumi.**"
+      )
+      case (false, "3.8.3") => Seq(
+        "-opt",
+        "-opt-inline:izumi.**"
+      )
+      case (_, _) => Seq.empty
+    } },
+    scalacOptions -= "-Wconf:any:error",
+    scalacOptions += "-Wconf:msg=nowarn:silent",
+    scalacOptions += "-Wconf:msg=pattern var charIn:silent",
+    excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
+      case (_, "3.8.3") => Seq(
+        "com.lihaoyi" % "sourcecode_2.13"
+      )
+      case (_, _) => Seq.empty
+    } },
+    regenerateGoldens := {
+      val log      = streams.value.log
+      val repoRoot = (LocalRootProject / baseDirectory).value.getAbsolutePath
+      log.info("regenerateGoldens: starting")
+      val cp = (Compile / fullClasspath).value.files
+      val r  = (Compile / runner).value
+      r.run("izumi.idealingua.harness.RegenerateMain", cp, Seq(repoRoot), log)
+        .failed.foreach(e => throw e)
+      log.info("regenerateGoldens: done")
+    },
+    verifyGoldens := {
+      val log      = streams.value.log
+      val repoRoot = (LocalRootProject / baseDirectory).value.getAbsolutePath
+      log.info("verifyGoldens: starting")
+      val cp = (Compile / fullClasspath).value.files
+      val r  = (Compile / runner).value
+      r.run("izumi.idealingua.harness.VerifyMain", cp, Seq(repoRoot), log)
+        .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
+      log.info("verifyGoldens: all goldens match")
+    },
+    runWireFixtures := { println("runWireFixtures: placeholder — implemented in PR-03.2") },
+    runCrossLangInterop := { println("runCrossLangInterop: placeholder — implemented in PR-03.4") }
+  )
+  .enablePlugins(IzumiPlugin)
+
 lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
   .settings(
     crossScalaVersions := Nil,
@@ -1568,7 +1738,8 @@ lazy val `idealingua` = (project in file(".agg/idealingua-v1-idealingua"))
     `idealingua-v1-runtime-rpc-typescript`,
     `idealingua-v1-runtime-rpc-go`,
     `idealingua-v1-runtime-rpc-csharp`,
-    `idealingua-v1-compiler`
+    `idealingua-v1-compiler`,
+    `idealingua-v1-test-harness`
   )
 
 lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"))
@@ -1589,7 +1760,8 @@ lazy val `idealingua-jvm` = (project in file(".agg/idealingua-v1-idealingua-jvm"
     `idealingua-v1-runtime-rpc-typescript`,
     `idealingua-v1-runtime-rpc-go`,
     `idealingua-v1-runtime-rpc-csharp`,
-    `idealingua-v1-compiler`
+    `idealingua-v1-compiler`,
+    `idealingua-v1-test-harness`
   )
 
 lazy val `idealingua-js` = (project in file(".agg/idealingua-v1-idealingua-js"))
