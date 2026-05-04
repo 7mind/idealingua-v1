@@ -27,3 +27,11 @@ object VerifyMain {
     )
   }
 }
+
+object WireFixturesMain {
+  def main(args: Array[String]): Unit = {
+    require(args.length == 1, s"Usage: WireFixturesMain <repoRoot>, got ${args.mkString(", ")}")
+    val repoRoot = Paths.get(args(0))
+    val _ = WireFixtureRunner.runAll(HarnessCorpus.wireFixturesScalaRoot(repoRoot))
+  }
+}

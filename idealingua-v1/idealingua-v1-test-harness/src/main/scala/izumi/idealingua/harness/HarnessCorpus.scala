@@ -15,6 +15,18 @@ object HarnessCorpus {
   def goldenRoot(repoRoot: Path): Path =
     repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/golden")
 
+  /**
+    * Returns the Scala-language sub-tree of the wire-fixtures directory.
+    *
+    * Path: `<repoRoot>/idealingua-v1/idealingua-v1-test-defs/wire-fixtures/scala/`
+    *
+    * Choice: this function returns the language-specific subtree directly so that
+    * WireFixtureRunner.load(root) performs a flat 2-level walk: `<root>/<wireId>/<scenario>.json`.
+    * The language prefix (`scala/`) is embedded here, not in the runner, keeping the runner generic.
+    */
+  def wireFixturesScalaRoot(repoRoot: Path): Path =
+    repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/scala")
+
   def loadCorpus(corpusRoot: Path): Seq[LoadedDomain.Success] = {
     val context  = new LocalModelLoaderContext(Seq(corpusRoot), Seq.empty[File])
     val rules    = TypespaceCompilerBaseFacade.descriptors.flatMap(_.rules)

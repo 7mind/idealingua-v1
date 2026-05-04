@@ -476,6 +476,7 @@ object Idealingua {
         ).map(_ in Scope.Compile.all),
         platforms = Targets.jvm3,
         settings  = Seq(
+          "unmanagedSourceDirectories" in SettingScope.Compile += """(LocalRootProject / baseDirectory).value / "idealingua-v1" / "idealingua-v1-test-defs" / "golden" / "scala"""".raw,
           "regenerateGoldens" := """{
                                    |  val log      = streams.value.log
                                    |  val repoRoot = (LocalRootProject / baseDirectory).value.getAbsolutePath
@@ -496,7 +497,22 @@ object Idealingua {
                                |    .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
                                |  log.info("verifyGoldens: all goldens match")
                                |}""".stripMargin.raw,
-          "runWireFixtures" := """{ println("runWireFixtures: placeholder — implemented in PR-03.2") }""".raw,
+          "runWireFixtures" := """{
+                               |  val log      = streams.value.log
+                               |  val repoRoot = (LocalRootProject / baseDirectory).value.toPath
+                               |  log.info("runWireFixtures: starting")
+                               |  val cp = (Compile / fullClasspath).value.files
+                               |  val r  = (Compile / runner).value
+                               |  r.run("izumi.idealingua.harness.WireFixturesMain", cp, Seq(repoRoot.toString), log)
+                               |    .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
+                               |  val fixturesDir = repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/scala")
+                               |  val count = if (java.nio.file.Files.exists(fixturesDir)) {
+                               |    val s = java.nio.file.Files.walk(fixturesDir)
+                               |    try s.filter(p => java.nio.file.Files.isRegularFile(p) && p.toString.endsWith(".json")).count()
+                               |    finally s.close()
+                               |  } else 0L
+                               |  log.info(s"runWireFixtures: all $count fixtures match")
+                               |}""".stripMargin.raw,
           "runCrossLangInterop" := """{ println("runCrossLangInterop: placeholder — implemented in PR-03.4") }""".raw,
         ),
       ),

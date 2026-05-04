@@ -102,7 +102,7 @@ Status: `[ ]` open · `[~]` under fix · `[x]` resolved
 **Fix:** Replaced with `Files.walk(root).sorted(java.util.Comparator.reverseOrder()).forEach(Files.delete)` — materializes the entire path tree first, deletes in post-order via reverse path sort. Stream closed in `finally`. Cross-build verified on Scala 2.13.18 + 3.8.3.
 
 ## [PR-03.1-D12] `GoldenGenerator.deleteRecursively` deletes entries during `Files.list().forEach()` traversal — implementation-defined behavior
-**Status:** under fix
+**Status:** resolved
 **Severity:** minor
 **Location:** /home/pavel/work/safe/idealingua-v1/idealingua-v1/idealingua-v1-test-harness/src/main/scala/izumi/idealingua/harness/GoldenGenerator.scala:35-45
 **Description:** `Files.list(path)` opens a `DirectoryStream` (on Linux backed by `readdir(2)`). Deleting entries while the stream is iterating is implementation-defined per POSIX: glibc may revisit a deleted entry, or skip a sibling appended after `opendir`. For ext4 + the harness's use (no concurrent writes) this is empirically benign — the 700-file two-run sha256 audit confirms it works. But the pattern is brittle on tmpfs, NFS, ZipFileSystem, or future Windows port; failure mode is `NoSuchFileException` from a re-emitted deleted entry, leaving the parent half-deleted.
@@ -114,3 +114,62 @@ Status: `[ ]` open · `[~]` under fix · `[x]` resolved
 **Location:** /home/pavel/work/safe/idealingua-v1/idealingua-v1/idealingua-v1-transpilers/src/main/scala/izumi/idealingua/translator/totypescript/TypeScriptImports.scala:41-50 (primary); also `…/totypescript/TypeScriptImports.scala:212`, `…/tocsharp/CSharpImports.scala:112`, `…/toscala/ServiceRenderer.scala:65`, `…/toscala/layout/ScalaLayouter.scala:52`.
 **Description:** Same architectural pattern as F6/D09: `imports.filterNot(...).groupBy(_.pkg).map(...).mkString("\n")` and similar produce TS/C#/Scala output in `immutable.HashMap` iteration order. Empirical 700-file sha256 audit on this machine across two cold sbt-JVM invocations shows determinism, but that does not prove cross-machine determinism. The freeze-tag baseline contract rests on the goldens being byte-reproducible from any JVM. If a second host produces different bucket placements (different stdlib version, different JIT, different host hash randomization), `verifyGoldens` could flake on CI or downstream contributors.
 **Fix:** Out of PR-03.1 scope. F6/D09's per-case user approval was specifically for the empirically-reproduced ScalaTranslator non-determinism. The TS/C#/ServiceRenderer/ScalaLayouter sites have NOT been observed to flake. Tracked as new follow-up F7 in `tasks.md`; if CI flakes on a different host, we extend the F6-style sort fix to these sites. No PR-03.1 change.
+
+---
+
+## PR-03.2
+
+### T1 (scaffold goldens-on-classpath)
+
+Clean (no findings). T1 reviewer reported clean; executor used the correct sbtgen DSL form (`"key" in SettingScope.Compile += …raw`) and confirmed cross-build success on both Scala versions.
+
+### T2 (WireFixtures + Runner + Dispatch + WireFixturesMain + task body wiring)
+
+## [PR-03.2-T2-D01] `FailureKind.ByteMismatch` declared but never produced — dead enum case
+**Status:** resolved
+**Severity:** minor
+**Location:** /home/pavel/work/safe/idealingua-v1/idealingua-v1/idealingua-v1-test-harness/src/main/scala/izumi/idealingua/harness/WireFixtureRunner.scala:30, 118, 128
+**Description:** `FailureKind.ByteMismatch` is declared, listed in `orderedKinds`, and given a hint string in `formatReport`, but no code path in `verifyOne` constructs a `Failure` with `kind = ByteMismatch`. When raw bytes differ, the code branches into either `RoundtripDivergence` (lines 86-89) or `WhitespaceMismatch` (lines 92-95). Per plan §2, `byte-mismatch` is the umbrella label that splits into the two sub-kinds; the executor implemented only the sub-kinds. Dead enum case will surface in any pattern-match exhaustiveness review.
+**Suggested fix:** Drop `ByteMismatch` from `FailureKind`, the `orderedKinds` Seq, and the `formatReport` hint pattern. Add a one-line comment in `verifyOne` noting that byte-mismatch is split into `RoundtripDivergence` + `WhitespaceMismatch`.
+
+## [PR-03.2-T2-D02] Step-6 sanity check at lines 99-105 is unreachable
+**Status:** resolved
+**Severity:** minor
+**Location:** /home/pavel/work/safe/idealingua-v1/idealingua-v1/idealingua-v1-test-harness/src/main/scala/izumi/idealingua/harness/WireFixtureRunner.scala:99-105
+**Description:** Step 6's check `if (canonical != reJson.noSpaces)` cannot trigger. By line 99, `Arrays.equals(f.bytes, reBytes)` returned true, so `f.bytes == reBytes`; `reBytes = reJson.noSpaces.getBytes(UTF_8)`; therefore `parser.parse(new String(f.bytes, UTF_8)).noSpaces == reJson.noSpaces`. Block is dead code.
+**Suggested fix:** Delete the unreachable block (lines 99-105) and the corresponding step-6 docstring (lines 22-23).
+
+## [PR-03.2-T2-D03] Success log message lacks fixture count
+**Status:** resolved
+**Severity:** nit
+**Location:** /home/pavel/work/safe/idealingua-v1/build.sbt:1722; /home/pavel/work/safe/idealingua-v1/sbtgen/Deps.scala:507
+**Description:** Plan §11 R-defaults specifies `"runWireFixtures: all <N> fixtures match"` (mirrors `verifyGoldens`). Actual log line is `"runWireFixtures: all fixtures match"` (no count). With zero fixtures, this prints success identically to a fully-populated run, masking a wrong-root-path misconfiguration.
+**Suggested fix:** Have `WireFixtureRunner.runAll` return `Int` (count of verified fixtures); task body logs `s"runWireFixtures: all $count fixtures match"`. Keeps the harness sbt-free.
+
+## [PR-03.2-T2-D04] `wireFixturesRoot` returns `wire-fixtures/scala/` while plan §7 specifies `wire-fixtures/`
+**Status:** resolved
+**Severity:** nit
+**Location:** /home/pavel/work/safe/idealingua-v1/idealingua-v1/idealingua-v1-test-harness/src/main/scala/izumi/idealingua/harness/HarnessCorpus.scala:27-28
+**Description:** Plan §7 line 252 says `wireFixturesRoot(repoRoot) = repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures")`. Executor returned `…/wire-fixtures/scala`. Self-consistent (HarnessCorpus + WireFixtures + WireFixtureRunner all assume root = `wire-fixtures/scala/`), but contradicts §7 literal text and pre-commits the language pinning before PR-03.3 (TS+C# legs) needs it.
+**Suggested fix:** Rename `wireFixturesRoot` → `wireFixturesScalaRoot` to make the language pinning explicit (avoids a future refactor footgun in PR-03.3).
+
+## [PR-03.2-T2-D05] (FALSE POSITIVE) Reviewer claimed T2 absorbed T1's missed `unmanagedSourceDirectories` work
+**Status:** resolved (false positive; no action)
+**Severity:** N/A
+**Location:** N/A
+**Description:** Reviewer ran `git show 1b8e1e2:sbtgen/Deps.scala | grep unmanagedSourceDirectories` and found nothing — but `1b8e1e2` is PR-03.1's commit, NOT T1 of PR-03.2. T1 of PR-03.2 is uncommitted (in working tree); the `unmanagedSourceDirectories` setting was added by the T1 executor and verified by the T1 reviewer. The reviewer mistook the git situation.
+**Fix:** No action.
+
+## [PR-03.2-T2-D06] `WireFixtureRunner` scaladoc is stale relative to implementation
+**Status:** resolved
+**Severity:** nit
+**Location:** /home/pavel/work/safe/idealingua-v1/idealingua-v1/idealingua-v1-test-harness/src/main/scala/izumi/idealingua/harness/WireFixtureRunner.scala:11-24
+**Description:** Class-level scaladoc lists step 5b as "Otherwise → ByteMismatch" — but implementation produces `WhitespaceMismatch` (line 92). Step 6 docstring claims "WhitespaceMismatch (already caught in step 5; separate label for clarity)" but step 6 is dead per D02.
+**Suggested fix:** Rewrite scaladoc to enumerate exactly 4 producing kinds (`DecodeFailed`, `RoundtripDivergence`, `WhitespaceMismatch`, `UnknownWireId`); drop ByteMismatch and step-6 prose (correlated with D01/D02 fixes).
+
+## [PR-03.2-T2-D07] Redundant wildcard imports for non-sealed-trait types in `WireDispatch`
+**Status:** resolved (deferred — optional cosmetic cleanup)
+**Severity:** nit
+**Location:** /home/pavel/work/safe/idealingua-v1/idealingua-v1/idealingua-v1-test-harness/src/main/scala/izumi/idealingua/harness/WireDispatch.scala:38-47, 54
+**Description:** For non-sealed-trait types whose Circe instances live in a `…Circe` trait extended by their companion (e.g. `final case class Point` + `object Point extends PointCirce`), Scala's implicit search finds `Encoder[Point]`/`Decoder[Point]` via companion-object scope automatically — no explicit import needed. Plan R6's advice was specifically for sealed-trait companions; executor extended it to all entries. Functionally harmless.
+**Fix:** Deferred. Optional cleanup — keeps compile-time effect identical and is not a correctness issue. Tracked here for visibility; reviewer or future executor may simplify.
