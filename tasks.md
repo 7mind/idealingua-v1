@@ -11,7 +11,7 @@ Status: `[ ]` planned · `[~]` in progress · `[x]` done · `[!]` blocked
 ## Milestones (high-level)
 
 - [x] **M1 — Modernization design package.** Three plan documents that together describe (a) the Baboon typer architecture lessons we adopt, (b) the concrete idealingua-v1 typer/IR/backend modernization plan, (c) the wire-format backward-compatibility test harness.
-- [~] **M2 — Implementation.** Execute the plans landed in M1. PR-03.1 (pre-modernization Layer A goldens harness) is the first PR; planning complete, currently blocked on user input (R1 corpus scope).
+- [~] **M2 — Implementation.** Execute the plans landed in M1. PR-03.1 (pre-modernization Layer A goldens harness) is the first PR; planning complete, R1 resolved (broader scope = 28 `.domain` files), execution in progress.
 
 ---
 
@@ -29,7 +29,7 @@ Detail in `./docs/drafts/20260503-1200-modernization-plan.md`. Sub-task and acce
 
 Detail in per-PR plan docs under `./docs/drafts/`. One line per PR here.
 
-- [!] **PR-03.1** — `docs/drafts/20260503-2300-PR0301-baseline-harness-impl-plan.md`. Module skeleton + Layer A scaffold. Single commit on `wip/necromancy`. Adds `idealingua-v1-test-harness` (cross-built 2.13 + 3.8.3) under `./idealingua-v1/idealingua-v1-test-harness/`. Wires four contractual sbt tasks: `regenerateGoldens`, `verifyGoldens` (functional), `runWireFixtures`, `runCrossLangInterop` (no-op placeholders). Generates and commits Layer A goldens under `./idealingua-v1/idealingua-v1-test-defs/golden/{scala,typescript,csharp}/`. Prerequisite for the `wire-format-baseline-2026-05-03` tag (cut by user post-merge). **Blocked**: R1 corpus-scope decision (see plan §5 R1 / new C13 below).
+- [~] **PR-03.1** — `docs/drafts/20260503-2300-PR0301-baseline-harness-impl-plan.md`. Module skeleton + Layer A scaffold. Single commit on `wip/necromancy`. Adds `idealingua-v1-test-harness` (cross-built 2.13 + 3.8.3) under `./idealingua-v1/idealingua-v1-test-harness/`. Wires four contractual sbt tasks: `regenerateGoldens`, `verifyGoldens` (functional), `runWireFixtures`, `runCrossLangInterop` (no-op placeholders). Generates and commits Layer A goldens under `./idealingua-v1/idealingua-v1-test-defs/golden/{scala,typescript,csharp}/` for **all 28 `.domain` files** under `main-tests/source/` (broader scope per C13). Prerequisite for the `wire-format-baseline-2026-05-03` tag (cut by user post-merge).
 - [ ] **PR-03.2** — Layer B wire-byte fixtures (Scala leg of legacy compiler runtime round-trip).
 - [ ] **PR-03.3** — Layer B for TS + C#.
 - [ ] **PR-03.4** — Layer C cross-language interop matrix.
@@ -63,7 +63,7 @@ User-decided 2026-05-03 in `docs/drafts/20260503-2159-questions-modernization-de
 - [x] **L4 — Layer B byte-strict raw comparison default; canonicalization is a parallel sanity check.** Locked.
 - [x] **L5 — Negative-test diagnostic-kind assertions deferred to PR-02.** PR-03 asserts only "legacy throws something". Locked.
 - [x] **L6 — Freeze tag `wire-format-baseline-2026-05-03`.** Locked.
-- [!] **C13 / R1 — PR-03.1 corpus scope.** PR-03 master plan §6 audit (rows 17, 22) implies broader scope: 28 `.domain` files spanning `main-tests/source/{idltest, izumi/test, overlaytest}`. PR-03 master plan §12 PR-03.1 description says narrower (`idltest/*.domain` only, 22 files). `job.md` mirrors the contradiction ("22 test domains" + "every `.domain` file under main-tests/source/"). Planner recommends broader. Decision pending user resolution before PR-03.1 T1 starts.
+- [x] **C13 / R1 — PR-03.1 corpus scope = broader (28 `.domain` files).** Resolved 2026-05-04 by user. Scope: all `.domain` files under `idealingua-v1-test-defs/src/main/resources/defs/main-tests/source/`, comprising `idltest/` (22) + `izumi/test/` (5: clashing, clashing/another, domain01, domain02, domain03recursive01) + `overlaytest/` (1: withoverlay). Resolves master plan §11 Q9 (recommendation accepted). Master plan §12 PR-03.1 wording corrected; §3 / §5 narrower phrasings stand as descriptive of the predominant corpus and are read in light of this resolution.
 
 ### New follow-ups created by user answers
 

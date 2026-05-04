@@ -250,24 +250,9 @@ goldenRoot / lang.toString / path.mkString("/") / name
 
 ## §5 Corpus enumeration
 
-### The corpus question (master plan §6 vs §12 PR-03.1 contradiction) — open R1
+### Decision (R1 resolved 2026-05-04 by user): broader scope = 28 `.domain` files
 
-The PR-03 master plan contains an internal contradiction:
-- §6 lines 670-678 covers "the 22 `.domain` files in `…/main-tests/source/idltest/`" **plus** "izumi/ cross-package fixtures and overlaytest/".
-- §12 PR-03.1 lines 1140-1142 specifies "walks `…/defs/main-tests/source/idltest/*.domain`" — narrower (idltest only).
-
-Job.md mirrors this contradiction:
-- "Generate goldens for all 22 test domains × 3 surviving languages" (narrower)
-- "runs the legacy compiler over every `.domain` file under `…/main-tests/source/`" (broader)
-
-**Planner recommendation: broader scope** (28 `.domain` files), grounds:
-1. PR-03 §6 audit row 17 explicitly cross-references `phase`, `clones`, `aliases2`; row 22 references `izumi/*`. Narrowing to `idltest/` breaks rows 17 and 22's coverage claim.
-2. `izumi/test/clashing.domain`, `clashing/another.domain`, `domain01/02/03recursive01.domain` exercise duplicate-name detection and recursive imports — non-trivial wire-format edges.
-3. `overlaytest/withoverlay.domain` exercises the overlay loader's effect on the typed AST. PR-02's typer rewrite must reproduce overlay semantics; without a baseline, that's unprovable.
-
-**Counter-argument** (narrower): the user's brief explicitly says "22"; narrower is conservative; broader has duplicate-domain risks (R2); freeze tag captures whatever PR-03.1 ships, so narrower-then-broader is fine if PR-03.1.5 adds the rest.
-
-**Open for orchestrator/user resolution before T1**.
+All `.domain` files under `idealingua-v1-test-defs/src/main/resources/defs/main-tests/source/` are in scope. The earlier contradiction between master plan §6 audit (broader: rows 17, 22 cross-reference `izumi/*`, `phase`, `clones`, `aliases2`) and master plan §12 PR-03.1 narrower wording (`idltest/*.domain`) is resolved in favor of §6 + §11 Q9's recommendation. Tracked as C13 in `tasks.md`.
 
 ### Files to compile (broader scope, recommended)
 
@@ -414,9 +399,9 @@ If the executor encounters an unexpected Scala-3-only or Scala-2-only API in a t
 
 ## §11 Risks & open questions
 
-### R1 — Corpus scope dispute (master plan §6 broader vs §12 PR-03.1 narrower vs job.md "22")
+### R1 — Corpus scope (resolved 2026-05-04: broader = 28 files)
 
-Recommendation: broader scope (all 28 `.domain` files under `main-tests/source/`). Documented in §5. **Unblocks**: orchestrator/user confirms recommendation OR explicitly narrows to `idltest/` 22 files only.
+User resolved per C13 in `tasks.md`. No further action. R2 (clashing-domain risk) remains a tractable in-execution discovery item.
 
 ### R2 — Loader behavior on `izumi/test/clashing.domain` + `izumi/test/clashing/another.domain`
 
