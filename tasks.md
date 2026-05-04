@@ -11,7 +11,7 @@ Status: `[ ]` planned · `[~]` in progress · `[x]` done · `[!]` blocked
 ## Milestones (high-level)
 
 - [x] **M1 — Modernization design package.** Three plan documents that together describe (a) the Baboon typer architecture lessons we adopt, (b) the concrete idealingua-v1 typer/IR/backend modernization plan, (c) the wire-format backward-compatibility test harness.
-- [ ] **M2 — Implementation.** Execute the plans landed in M1. Out of scope for this session.
+- [~] **M2 — Implementation.** Execute the plans landed in M1. PR-03.1 (pre-modernization Layer A goldens harness) is the first PR; planning complete, currently blocked on user input (R1 corpus scope).
 
 ---
 
@@ -22,6 +22,20 @@ Detail in `./docs/drafts/20260503-1200-modernization-plan.md`. Sub-task and acce
 - [x] **PR-01** — `docs/drafts/20260503-PR01-baboon-typer-lessons.md` (810 lines). Distills Baboon's per-domain typer micro-phases, surrounding infrastructure, IR-level table, lessons applied, non-goals. Two adversarial-review rounds; 17 defects raised in round 1, all resolved; round 2 clean.
 - [x] **PR-02** — `docs/drafts/20260503-PR02-idealingua-modernization-plan.md` (~1500 lines). Phase-by-phase design of the new typer, file-level diff plan, delete-plan for Go+Protobuf, migration ordering with feature-flag rollout, baseline+target performance plan. Two adversarial-review rounds; round 1 raised 16 defects (all resolved); round 2 found one regressed fix (PR-02-D17, type mismatch on D11); round 3 verified D17 clean.
 - [x] **PR-03** — `docs/drafts/20260503-PR03-backcompat-test-harness-plan.md` (~1100 lines). Wire-format safety net (3-layer harness), wire-format spec doc skeleton, pre-modernization baseline workflow with committed freeze tag `wire-format-baseline-2026-05-03`. Three adversarial-review rounds; round 1 raised 11 defects (all resolved); round 2 found 2 minor leftovers (Q3 contradiction, freeze-tag hedge); round 3 caught one ghost reference at line 1160 (resolved); final review clean.
+
+---
+
+## Milestone 2 — PR breakdown
+
+Detail in per-PR plan docs under `./docs/drafts/`. One line per PR here.
+
+- [!] **PR-03.1** — `docs/drafts/20260503-2300-PR0301-baseline-harness-impl-plan.md`. Module skeleton + Layer A scaffold. Single commit on `wip/necromancy`. Adds `idealingua-v1-test-harness` (cross-built 2.13 + 3.8.3) under `./idealingua-v1/idealingua-v1-test-harness/`. Wires four contractual sbt tasks: `regenerateGoldens`, `verifyGoldens` (functional), `runWireFixtures`, `runCrossLangInterop` (no-op placeholders). Generates and commits Layer A goldens under `./idealingua-v1/idealingua-v1-test-defs/golden/{scala,typescript,csharp}/`. Prerequisite for the `wire-format-baseline-2026-05-03` tag (cut by user post-merge). **Blocked**: R1 corpus-scope decision (see plan §5 R1 / new C13 below).
+- [ ] **PR-03.2** — Layer B wire-byte fixtures (Scala leg of legacy compiler runtime round-trip).
+- [ ] **PR-03.3** — Layer B for TS + C#.
+- [ ] **PR-03.4** — Layer C cross-language interop matrix.
+- [ ] **PR-03.5** — Negative-test corpus (kind-of-diagnostic assertions deferred to PR-02).
+- [ ] **PR-03.6** — `docs/wire-format.md` spec doc.
+- [ ] **PR-02 IMPL-1..N** — typer rewrite, gated by F2/F5 resolution and freeze-tag baseline.
 
 ---
 
@@ -49,11 +63,13 @@ User-decided 2026-05-03 in `docs/drafts/20260503-2159-questions-modernization-de
 - [x] **L4 — Layer B byte-strict raw comparison default; canonicalization is a parallel sanity check.** Locked.
 - [x] **L5 — Negative-test diagnostic-kind assertions deferred to PR-02.** PR-03 asserts only "legacy throws something". Locked.
 - [x] **L6 — Freeze tag `wire-format-baseline-2026-05-03`.** Locked.
+- [!] **C13 / R1 — PR-03.1 corpus scope.** PR-03 master plan §6 audit (rows 17, 22) implies broader scope: 28 `.domain` files spanning `main-tests/source/{idltest, izumi/test, overlaytest}`. PR-03 master plan §12 PR-03.1 description says narrower (`idltest/*.domain` only, 22 files). `job.md` mirrors the contradiction ("22 test domains" + "every `.domain` file under main-tests/source/"). Planner recommends broader. Decision pending user resolution before PR-03.1 T1 starts.
 
 ### New follow-ups created by user answers
 
 - [x] **F1 — Substitute Scala-3-only `IArray[Byte]` in PR-02 §4 `Fingerprint` (per C3/Q8 cross-build decision).** Resolved 2026-05-03 — picked `scodec.bits.ByteVector` as the primary type (hand-equality-wrapper noted as fallback). PR-02 §4 IR pseudo-code and the frozen-after-assembly invariant paragraph updated.
-- [ ] **F2 — TBLOB cross-language verification pre-baseline.** PR-03.1 (baseline capture) must confirm Scala and TS already encode `TBLOB` as base64-string before the freeze tag is cut; if they don't, Q3 reopens.
+- [ ] **F2 — TBLOB cross-language verification pre-baseline.** PR-03.1 (baseline capture) must confirm Scala and TS already encode `TBLOB` as base64-string before the freeze tag is cut; if they don't, Q3 reopens. **Status update (2026-05-03 planner audit)**: vacuous on the in-scope corpus — `command grep -rn 'blb\b\|TBLOB' …/defs/main-tests/source/` returns zero matches. Mark `[x]` once PR-03.1 lands and the executor confirms the grep result against the final corpus.
+- [ ] **F5 — TBLOB Q3 divergence (out of PR-03.1 scope; urgent for PR-03.3).** Surfaced during PR-03.1 planning audit: all three transpilers diverge from Q3 (locked as base64-string for all three). (a) Scala maps TBLOB → `Array[Byte]` at `idealingua-v1-transpilers/.../toscala/types/ScalaTypeConverter.scala:122`, which Circe's default `Encoder[Array[Byte]]` encodes as a JSON array of integers (NOT base64). (b) TypeScript emits `???` for TBLOB at `…/totypescript/types/TypeScriptTypeConverter.scala:29, 60, 93, 182, 232, 282, 325` and `…/totypescript/extensions/IntrospectionExtension.scala:34`. (c) C# already known per PR-03-D02 in `defects-m1.md`: `…/tocsharp/extensions/JsonNetExtension.scala:188, 241, 351`; `…/tocsharp/types/CSharpType.scala:53, 213`. User must reconfirm Q3 before any future PR adds TBLOB fixtures: (a) keep base64 lock and patch all three emitters as part of PR-02; (b) downgrade to per-language TBLOB-undefined and disallow TBLOB in the wire-format spec; (c) other.
 - [x] **F3 — Streams deprecation note.** Resolved 2026-05-03 — added "Deprecated-but-supported types: Streams" subsection in PR-02 §3 (between Phase 12 and the phase-dependency DAG); rewrote §9 C5 and §12 Q2 to mark the decision RESOLVED.
 - [x] **F4 — `ForeignType` removal grammar surface.** Resolved 2026-05-03 — verified via grep that zero `.domain` fixtures under `idealingua-v1-test-defs/` use the `foreign` keyword. Grammar surface to remove enumerated in PR-02 §9 C7: keyword `Keywords.scala:25`, parser entry `DefStructure.scala:131-136`, raw AST nodes `RawTypeDef.scala:32` and `RawTopLevelDefn.scala:24`. §12 Q4 marked RESOLVED.
 
