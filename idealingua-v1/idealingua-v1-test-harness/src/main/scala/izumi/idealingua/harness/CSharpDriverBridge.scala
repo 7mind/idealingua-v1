@@ -52,7 +52,7 @@ private[harness] object CSharpDriverBridge {
     Right(parseDriverResults(stdout, fixtures))
   }
 
-  private def ensureBuild(dir: Path): Option[String] = {
+  private[harness] def ensureBuild(dir: Path): Option[String] = {
     val driverDll = dir.resolve("bin/Debug/net9.0/Driver.dll")
     if (Files.exists(driverDll)) None
     else {

@@ -45,3 +45,12 @@ object WireFixturesMain {
     )
   }
 }
+
+object CrossLangMain {
+  def main(args: Array[String]): Unit = {
+    require(args.length == 1, s"Usage: CrossLangMain <repoRoot>, got ${args.mkString(", ")}")
+    val repoRoot = java.nio.file.Paths.get(args(0))
+    val report = WireFixtureCrossLangRunner.runAll(repoRoot)
+    System.out.println(report.formatSummary())
+  }
+}

@@ -515,7 +515,16 @@ object Idealingua {
                                |  val cc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/csharp"))
                                |  log.info(s"runWireFixtures: all $sc Scala + $tc TypeScript + $cc CSharp fixtures match")
                                |}""".stripMargin.raw,
-          "runCrossLangInterop" := """{ println("runCrossLangInterop: placeholder — implemented in PR-03.4") }""".raw,
+          "runCrossLangInterop" := """{
+                            |  val log      = streams.value.log
+                            |  val repoRoot = (LocalRootProject / baseDirectory).value.toPath
+                            |  log.info("runCrossLangInterop: starting cross-language matrix")
+                            |  val cp = (Compile / fullClasspath).value.files
+                            |  val r  = (Compile / runner).value
+                            |  r.run("izumi.idealingua.harness.CrossLangMain", cp, Seq(repoRoot.toString), log)
+                            |    .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
+                            |  log.info("runCrossLangInterop: matrix verified")
+                            |}""".stripMargin.raw,
         ),
       ),
     ),

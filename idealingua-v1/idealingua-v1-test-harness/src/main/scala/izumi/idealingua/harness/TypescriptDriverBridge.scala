@@ -62,7 +62,7 @@ private[harness] object TypescriptDriverBridge {
     *   - IRT runtime target: `../idealingua-v1-runtime-rpc-typescript/src/main/resources/runtime/typescript/irt`
     *   - Symlink location: `../idealingua-v1-test-defs/golden/typescript/irt`
     */
-  private def ensureIrtSymlink(harnessTsDir: Path): Option[String] = {
+  private[harness] def ensureIrtSymlink(harnessTsDir: Path): Option[String] = {
     // harnessTsDir = .../idealingua-v1/idealingua-v1-test-harness/src/main/typescript
     // Up 4 levels: typescript → main → src → idealingua-v1-test-harness → idealingua-v1 (inner sub-root)
     val subRoot = harnessTsDir.getParent.getParent.getParent.getParent
@@ -86,7 +86,7 @@ private[harness] object TypescriptDriverBridge {
     }
   }
 
-  private def ensureNpmInstall(dir: Path): Option[String] = {
+  private[harness] def ensureNpmInstall(dir: Path): Option[String] = {
     val nodeModules = dir.resolve("node_modules")
     if (Files.exists(nodeModules)) None
     else {
