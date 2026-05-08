@@ -39,6 +39,33 @@ object HarnessCorpus {
   def harnessCSharpDir(repoRoot: Path): Path =
     repoRoot.resolve("idealingua-v1/idealingua-v1-test-harness/src/main/csharp")
 
+  def negativeRoot(repoRoot: Path): Path =
+    repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs/negative")
+
+  /** Returns sub-sub-directories that contain a `.must-reject` marker file. */
+  def listNegativeCases(negativeRoot: Path): Seq[Path] = {
+    if (!java.nio.file.Files.exists(negativeRoot)) return Seq.empty
+    val s = java.nio.file.Files.walk(negativeRoot)
+    try {
+      val all = scala.collection.mutable.Buffer[Path]()
+      val it  = s.iterator()
+      while (it.hasNext) {
+        val p = it.next()
+        if (java.nio.file.Files.isRegularFile(p) && p.getFileName.toString.endsWith(".must-reject")) {
+          all += p.getParent
+        }
+      }
+      all.toSeq.sortBy(_.toString)
+    } finally s.close()
+  }
+
+  /** Repo root for tests. Tests run from sbt's cwd which is the project root. */
+  def repoRootForTests(): Path = {
+    val override_ = System.getProperty("harness.repoRoot")
+    if (override_ != null && override_.nonEmpty) java.nio.file.Paths.get(override_)
+    else java.nio.file.Paths.get(System.getProperty("user.dir"))
+  }
+
   def loadCorpus(corpusRoot: Path): Seq[LoadedDomain.Success] = {
     val context  = new LocalModelLoaderContext(Seq(corpusRoot), Seq.empty[File])
     val rules    = TypespaceCompilerBaseFacade.descriptors.flatMap(_.rules)

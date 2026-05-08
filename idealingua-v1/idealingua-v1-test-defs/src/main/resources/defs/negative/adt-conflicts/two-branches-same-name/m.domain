@@ -1,0 +1,10 @@
+domain test.adt.conflicts
+
+data Bb {
+  x: i32
+}
+
+adt Aa {
+  Bb
+  Bb
+}

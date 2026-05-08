@@ -1,0 +1,5 @@
+domain test.undefined.reference
+
+data Aa {
+  ff: NoSuchType
+}

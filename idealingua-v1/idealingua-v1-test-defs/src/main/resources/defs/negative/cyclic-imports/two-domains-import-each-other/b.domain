@@ -1,0 +1,11 @@
+domain test.cyc.b
+
+import test.cyc.a
+
+import test.cyc.a.{
+  Aa
+}
+
+data Bb {
+  f: Aa
+}
