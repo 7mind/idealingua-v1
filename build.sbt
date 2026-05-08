@@ -1726,7 +1726,8 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
       } else 0L
       val sc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/scala"))
       val tc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/typescript"))
-      log.info(s"runWireFixtures: all $sc Scala + $tc TypeScript fixtures match")
+      val cc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/csharp"))
+      log.info(s"runWireFixtures: all $sc Scala + $tc TypeScript + $cc CSharp fixtures match")
     },
     runCrossLangInterop := { println("runCrossLangInterop: placeholder — implemented in PR-03.4") }
   )

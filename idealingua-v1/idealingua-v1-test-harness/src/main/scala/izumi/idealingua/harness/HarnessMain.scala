@@ -38,5 +38,10 @@ object WireFixturesMain {
       HarnessCorpus.wireFixturesTypescriptRoot(repoRoot),
       HarnessCorpus.harnessTypescriptDir(repoRoot),
     )
+    val _ = WireFixtureCSharpRunner.runAll(
+      repoRoot,
+      HarnessCorpus.wireFixturesCSharpRoot(repoRoot),
+      HarnessCorpus.harnessCSharpDir(repoRoot),
+    )
   }
 }

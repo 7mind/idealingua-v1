@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <RootNamespace>IdealinguaV1Harness.CSharpDriver</RootNamespace>
+    <AssemblyName>Driver</AssemblyName>
+    <NoWarn>CS0108;CS0114;CS0612;CS0618;CS8632;CS0162;CS0219</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- IRT runtime sources (skip Transport tree). -->
+    <Compile Include="../../../../idealingua-v1-runtime-rpc-csharp/src/main/resources/runtime/csharp/IRT/Marshaller/**/*.cs" />
+    <Compile Include="../../../../idealingua-v1-runtime-rpc-csharp/src/main/resources/runtime/csharp/IRT/Logger/**/*.cs" />
+    <Compile Include="../../../../idealingua-v1-runtime-rpc-csharp/src/main/resources/runtime/csharp/IRT/*.cs" />
+    <!-- Goldens. -->
+    <Compile Include="../../../../idealingua-v1-test-defs/golden/csharp/**/*.cs" />
+    <!-- Exclude service/buzzer goldens that pull IRT.Transport.Client. -->
+    <Compile Remove="../../../../idealingua-v1-test-defs/golden/csharp/Idltest/Services/TestService.cs" />
+    <Compile Remove="../../../../idealingua-v1-test-defs/golden/csharp/Idltest/Events/TestBuzzer.cs" />
+    <Compile Remove="../../../../idealingua-v1-test-defs/golden/csharp/Izumi/Test/Domain02/TestAliasServ.cs" />
+    <Compile Remove="../../../../idealingua-v1-test-defs/golden/csharp/Izumi/Test/Domain02/NestedAdtsService.cs" />
+    <Compile Remove="../../../../idealingua-v1-test-defs/golden/csharp/Izumi/Test/Domain02/ImportIdService.cs" />
+    <Compile Remove="../../../../idealingua-v1-test-defs/golden/csharp/Izumi/Test/Domain01/OptionalService.cs" />
+  </ItemGroup>
+</Project>
