@@ -167,7 +167,15 @@ Clean (no findings). T1 reviewer reported clean; executor used the correct sbtge
 **Description:** Class-level scaladoc lists step 5b as "Otherwise → ByteMismatch" — but implementation produces `WhitespaceMismatch` (line 92). Step 6 docstring claims "WhitespaceMismatch (already caught in step 5; separate label for clarity)" but step 6 is dead per D02.
 **Suggested fix:** Rewrite scaladoc to enumerate exactly 4 producing kinds (`DecodeFailed`, `RoundtripDivergence`, `WhitespaceMismatch`, `UnknownWireId`); drop ByteMismatch and step-6 prose (correlated with D01/D02 fixes).
 
-## [PR-03.2-T2-D07] Redundant wildcard imports for non-sealed-trait types in `WireDispatch`
+### PR-03.3a T2 (TS driver + Dispatch + Scala-side runner)
+
+## [PR-03.3a-T2-D01] IRT-symlink in `golden/typescript/irt` is a brittle architecture
+**Status:** resolved (acceptable; documented for future PR-03.3b / refactor)
+**Severity:** minor
+**Location:** /home/pavel/work/safe/idealingua-v1/idealingua-v1/idealingua-v1-test-defs/golden/typescript/irt (symlink, not committed); auto-created by `TypescriptDriverBridge`.
+**Description:** TS goldens import IRT runtime via relative paths (`'../../irt'`, `'../../../irt'`, etc.). tsx-runtime does NOT honor `tsconfig.json`'s `rootDirs` for relative imports — only tsc does. To make tsx resolve the IRT runtime, T2 introduced a runtime-created symlink at `golden/typescript/irt` → `…runtime-rpc-typescript/src/main/resources/runtime/typescript/irt`. The symlink lives INSIDE the goldens directory. It's `.gitignore`d implicitly because the entire tree under `golden/typescript/` is checked-in by file lists, not by glob — `git status` shows it as `??` untracked.
+**Risk:** (a) `regenerateGoldens` clears `golden/typescript/` recursively → wipes the symlink → next `runWireFixtures` recreates it. Works but couples the two tasks. (b) `Files.walk` in `GoldenVerifier` defaults to NOT following symlinks AND `Files.isRegularFile(symlink)` returns false → verifyGoldens correctly ignores. Verified empirically. (c) If a future executor changes `Files.walk` to `FOLLOW_LINKS`, cascade: verifyGoldens would walk into IRT and report ~30 "stale" goldens. (d) Tooling that recursively chmod/chown could traverse into the IRT source tree.
+**Fix:** Accepted for PR-03.3a as the smallest workable approach. Future PR-03.3b (C# leg) will face the same problem and should consider Option B from the plan: a scratch tree under `target/typescript/scratch/` with goldens copied + IRT symlinked, fully outside the `golden/` directory. Tracked here for visibility; revisit during PR-03.3b planning if symlink-in-goldens proves problematic.
 **Status:** resolved (deferred — optional cosmetic cleanup)
 **Severity:** nit
 **Location:** /home/pavel/work/safe/idealingua-v1/idealingua-v1/idealingua-v1-test-harness/src/main/scala/izumi/idealingua/harness/WireDispatch.scala:38-47, 54

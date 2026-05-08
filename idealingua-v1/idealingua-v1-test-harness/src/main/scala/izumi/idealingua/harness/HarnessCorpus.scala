@@ -27,6 +27,12 @@ object HarnessCorpus {
   def wireFixturesScalaRoot(repoRoot: Path): Path =
     repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/scala")
 
+  def wireFixturesTypescriptRoot(repoRoot: Path): Path =
+    repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/typescript")
+
+  def harnessTypescriptDir(repoRoot: Path): Path =
+    repoRoot.resolve("idealingua-v1/idealingua-v1-test-harness/src/main/typescript")
+
   def loadCorpus(corpusRoot: Path): Seq[LoadedDomain.Success] = {
     val context  = new LocalModelLoaderContext(Seq(corpusRoot), Seq.empty[File])
     val rules    = TypespaceCompilerBaseFacade.descriptors.flatMap(_.rules)

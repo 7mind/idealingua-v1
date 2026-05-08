@@ -1719,13 +1719,14 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
       val r  = (Compile / runner).value
       r.run("izumi.idealingua.harness.WireFixturesMain", cp, Seq(repoRoot.toString), log)
         .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
-      val fixturesDir = repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/scala")
-      val count = if (java.nio.file.Files.exists(fixturesDir)) {
-        val s = java.nio.file.Files.walk(fixturesDir)
-        try s.filter(p => java.nio.file.Files.isRegularFile(p) && p.toString.endsWith(".json")).count()
+      def countJsons(p: java.nio.file.Path): Long = if (java.nio.file.Files.exists(p)) {
+        val s = java.nio.file.Files.walk(p)
+        try s.filter(x => java.nio.file.Files.isRegularFile(x) && x.toString.endsWith(".json")).count()
         finally s.close()
       } else 0L
-      log.info(s"runWireFixtures: all $count fixtures match")
+      val sc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/scala"))
+      val tc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/typescript"))
+      log.info(s"runWireFixtures: all $sc Scala + $tc TypeScript fixtures match")
     },
     runCrossLangInterop := { println("runCrossLangInterop: placeholder — implemented in PR-03.4") }
   )

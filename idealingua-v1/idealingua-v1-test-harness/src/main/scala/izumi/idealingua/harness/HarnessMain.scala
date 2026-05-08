@@ -33,5 +33,10 @@ object WireFixturesMain {
     require(args.length == 1, s"Usage: WireFixturesMain <repoRoot>, got ${args.mkString(", ")}")
     val repoRoot = Paths.get(args(0))
     val _ = WireFixtureRunner.runAll(HarnessCorpus.wireFixturesScalaRoot(repoRoot))
+    val _ = WireFixtureTypescriptRunner.runAll(
+      repoRoot,
+      HarnessCorpus.wireFixturesTypescriptRoot(repoRoot),
+      HarnessCorpus.harnessTypescriptDir(repoRoot),
+    )
   }
 }

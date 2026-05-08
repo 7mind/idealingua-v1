@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2020",
+    "lib": ["es2020", "dom"],
+    "moduleResolution": "node",
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": false,
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "noEmit": true,
+    "rootDirs": [
+      ".",
+      "../../../../idealingua-v1-test-defs/golden/typescript",
+      "../../../../idealingua-v1-runtime-rpc-typescript/src/main/resources/runtime/typescript"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "irt": ["../../../../idealingua-v1-runtime-rpc-typescript/src/main/resources/runtime/typescript/irt"],
+      "moment": ["./node_modules/moment"],
+      "websocket": ["./node_modules/websocket"],
+      "*": ["../../../../idealingua-v1-test-defs/golden/typescript/*"]
+    }
+  },
+  "include": [
+    "driver.ts",
+    "Dispatch.ts",
+    "FixtureSeeder.ts",
+    "../../../../idealingua-v1-test-defs/golden/typescript/**/*.ts",
+    "../../../../idealingua-v1-runtime-rpc-typescript/src/main/resources/runtime/typescript/irt/**/*.ts"
+  ]
+}
