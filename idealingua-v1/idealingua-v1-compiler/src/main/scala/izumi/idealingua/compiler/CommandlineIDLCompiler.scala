@@ -286,7 +286,6 @@ object VersionOverlay {
       Map(
         IDLLanguage.Scala      -> "SNAPSHOT",
         IDLLanguage.Typescript -> "build.0",
-        IDLLanguage.Go         -> "0",
         IDLLanguage.CSharp     -> "alpha",
       ).map { case (k, v) => k.toString.toLowerCase -> v },
     )

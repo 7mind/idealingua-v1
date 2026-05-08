@@ -19,8 +19,6 @@ class ManifestWriter() {
         m.asJson
       case m: TypeScriptBuildManifest =>
         m.asJson
-      case m: GoLangBuildManifest =>
-        m.asJson
       case m: CSharpBuildManifest =>
         m.asJson
     }).toString()
@@ -34,12 +32,8 @@ class ManifestReader(conf: IDLCArgs, log: CompilerLog, shutdown: Shutdown, patch
         readManifest(ScalaBuildManifest.example)
       case IDLLanguage.Typescript =>
         readManifest(TypeScriptBuildManifest.example)
-      case IDLLanguage.Go =>
-        readManifest(GoLangBuildManifest.example)
       case IDLLanguage.CSharp =>
         readManifest(CSharpBuildManifest.example)
-      case IDLLanguage.Protobuf =>
-        readManifest(ProtobufBuildManifest.example)
     }
   }
 

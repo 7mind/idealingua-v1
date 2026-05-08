@@ -355,7 +355,6 @@ object Idealingua {
       final val runtimeRpcHttp4s     = ArtifactId("idealingua-v1-runtime-rpc-http4s")
       final val runtimeRpcTypescript = ArtifactId("idealingua-v1-runtime-rpc-typescript")
       final val runtimeRpcCSharp     = ArtifactId("idealingua-v1-runtime-rpc-csharp")
-      final val runtimeRpcGo         = ArtifactId("idealingua-v1-runtime-rpc-go")
       final val compiler             = ArtifactId("idealingua-v1-compiler")
       final val testHarness          = ArtifactId("idealingua-v1-test-harness")
     }
@@ -420,7 +419,7 @@ object Idealingua {
           Projects.idealingua.core,
           Projects.idealingua.runtimeRpcScala,
         ).map(_ in Scope.Compile.all) ++
-          Seq(Projects.idealingua.testDefs, Projects.idealingua.runtimeRpcTypescript, Projects.idealingua.runtimeRpcGo, Projects.idealingua.runtimeRpcCSharp)
+          Seq(Projects.idealingua.testDefs, Projects.idealingua.runtimeRpcTypescript, Projects.idealingua.runtimeRpcCSharp)
             .map(_ in Scope.Test.jvm),
         settings  = forkTests,
         platforms = Targets.cross3,
@@ -438,12 +437,6 @@ object Idealingua {
         platforms = Targets.jvm3,
       ),
       Artifact(
-        name      = Projects.idealingua.runtimeRpcGo,
-        libs      = Seq.empty,
-        depends   = Seq.empty,
-        platforms = Targets.jvm3,
-      ),
-      Artifact(
         name      = Projects.idealingua.runtimeRpcCSharp,
         libs      = Seq.empty,
         depends   = Seq.empty,
@@ -456,7 +449,6 @@ object Idealingua {
           Projects.idealingua.transpilers,
           Projects.idealingua.runtimeRpcScala,
           Projects.idealingua.runtimeRpcTypescript,
-          Projects.idealingua.runtimeRpcGo,
           Projects.idealingua.runtimeRpcCSharp,
           Projects.idealingua.testDefs,
         ).map(_ in Scope.Compile.all),

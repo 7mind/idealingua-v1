@@ -79,7 +79,6 @@ object IDLCArgs {
         Seq(
           RoleParserSchema("init", IP, Some("setup project template. Invoke as :init <path>"), None, freeArgsAllowed = true),
           RoleParserSchema("scala", LP, Some("scala target"), None, freeArgsAllowed                                  = false),
-          RoleParserSchema("go", LP, Some("go target"), None, freeArgsAllowed                                        = false),
           RoleParserSchema("csharp", LP, Some("C#/Unity target"), None, freeArgsAllowed                              = false),
           RoleParserSchema("typescript", LP, Some("Typescript target"), None, freeArgsAllowed                        = false),
         ),

@@ -2,7 +2,6 @@ package izumi.idealingua.compiler
 
 import izumi.idealingua.model.publishing.BuildManifest.{Common, License, MFUrl, ManifestDependency}
 import izumi.idealingua.model.publishing.manifests._
-import izumi.idealingua.model.publishing.manifests.ProtobufBuildManifest.ProtobufRepositoryOptions
 import izumi.idealingua.model.publishing.{ProjectNamingRule, ProjectVersion, Publisher}
 
 trait Codecs extends PlatformEnumCodecs {
@@ -30,15 +29,7 @@ trait Codecs extends PlatformEnumCodecs {
 
   implicit def decYarnOptions: Decoder[YarnOptions] = deriveDecoder
 
-  implicit def decGo: Decoder[GoLangBuildManifest] = deriveDecoder
-
-  implicit def decGoRepositoryOptions: Decoder[GoRepositoryOptions] = deriveDecoder
-
   implicit def decCs: Decoder[CSharpBuildManifest] = deriveDecoder
-
-  implicit def decProtobufRepo: Decoder[ProtobufRepositoryOptions] = deriveDecoder
-
-  implicit def decProtobuf: Decoder[ProtobufBuildManifest] = deriveDecoder
 
   implicit def decNugetOptions: Decoder[NugetOptions] = deriveDecoder
 
@@ -62,17 +53,9 @@ trait Codecs extends PlatformEnumCodecs {
 
   implicit def encYarnOptions: Encoder[YarnOptions] = deriveEncoder
 
-  implicit def encGo: Encoder[GoLangBuildManifest] = deriveEncoder
-
-  implicit def encGoRepositoryOptions: Encoder[GoRepositoryOptions] = deriveEncoder
-
   implicit def encCs: Encoder[CSharpBuildManifest] = deriveEncoder
 
   implicit def encNugetOptions: Encoder[NugetOptions] = deriveEncoder
-
-  implicit def encProtobufRepo: Encoder[ProtobufRepositoryOptions] = deriveEncoder
-
-  implicit def encProtobuf: Encoder[ProtobufBuildManifest] = deriveEncoder
   //
 
   implicit def decProjectVersion: Decoder[ProjectVersion] = deriveDecoder

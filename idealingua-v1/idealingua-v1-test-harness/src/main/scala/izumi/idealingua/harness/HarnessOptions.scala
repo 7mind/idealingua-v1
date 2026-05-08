@@ -50,7 +50,6 @@ object HarnessOptions {
     case IDLLanguage.Scala      => scala
     case IDLLanguage.Typescript => typescript
     case IDLLanguage.CSharp     => csharp
-    case other                  => throw new RuntimeException(s"No deterministic manifest defined for language: $other")
   }
 
   def optionsFor(lang: IDLLanguage): UntypedCompilerOptions = UntypedCompilerOptions(

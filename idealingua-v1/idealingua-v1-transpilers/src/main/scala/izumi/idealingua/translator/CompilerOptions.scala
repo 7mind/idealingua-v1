@@ -2,10 +2,8 @@ package izumi.idealingua.translator
 
 import izumi.idealingua.model.output.Module
 import izumi.idealingua.model.publishing.BuildManifest
-import izumi.idealingua.model.publishing.manifests.{CSharpBuildManifest, GoLangBuildManifest, ProtobufBuildManifest, ScalaBuildManifest, TypeScriptBuildManifest}
+import izumi.idealingua.model.publishing.manifests.{CSharpBuildManifest, ScalaBuildManifest, TypeScriptBuildManifest}
 import izumi.idealingua.translator.tocsharp.extensions.CSharpTranslatorExtension
-import izumi.idealingua.translator.togolang.extensions.GoLangTranslatorExtension
-import izumi.idealingua.translator.toprotobuf.extensions.ProtobufTranslatorExtension
 import izumi.idealingua.translator.toscala.extensions.ScalaTranslatorExtension
 import izumi.idealingua.translator.totypescript.extensions.TypeScriptTranslatorExtension
 
@@ -54,10 +52,8 @@ final case class CompilerOptions[E <: TranslatorExtension, M <: BuildManifest](
 
 object CompilerOptions {
   type TypescriptTranslatorOptions = CompilerOptions[TypeScriptTranslatorExtension, TypeScriptBuildManifest]
-  type GoTranslatorOptions         = CompilerOptions[GoLangTranslatorExtension, GoLangBuildManifest]
   type CSharpTranslatorOptions     = CompilerOptions[CSharpTranslatorExtension, CSharpBuildManifest]
   type ScalaTranslatorOptions      = CompilerOptions[ScalaTranslatorExtension, ScalaBuildManifest]
-  type ProtobufTranslatorOptions   = CompilerOptions[ProtobufTranslatorExtension, ProtobufBuildManifest]
 
   def from[E <: TranslatorExtension: ClassTag, M <: BuildManifest](options: UntypedCompilerOptions): CompilerOptions[E, M] = {
     val extensions = options.extensions.collect {
