@@ -54,14 +54,14 @@ object NameResolver {
       case _: RawTypeDef.DeclaredType => ()
     }
 
+    scoped.raw.services.foreach(s => placeUserType(members, userTypes, ctx.fixService(s)))
+    scoped.raw.buzzers.foreach(b => placeUserType(members, userTypes, ctx.fixBuzzer(b)))
+    scoped.raw.streams.foreach(s => placeUserType(members, userTypes, ctx.fixStreams(s)))
+
     // Pre-seed members with any builtins that were touched during reference resolution.
     ctx.referencedBuiltins.foreach {
       p => members.update(p, Member.Builtin(p))
     }
-
-    val services = scoped.raw.services.toList.map(ctx.fixService)
-    val buzzers  = scoped.raw.buzzers.toList.map(ctx.fixBuzzer)
-    val streams  = scoped.raw.streams.toList.map(ctx.fixStreams)
 
     val consts: List[RawConst] = scoped.raw.consts.toList.flatMap(_.consts)
 
@@ -88,9 +88,6 @@ object NameResolver {
       meta        = makeMeta(scoped),
       members     = members.toMap,
       userTypes   = userTypes.toMap,
-      services    = services,
-      buzzers     = buzzers,
-      streams     = streams,
       imports     = imports.toMap,
       aliases     = Map.empty, // filled by AliasDealiaser
       consts      = consts,
@@ -179,14 +176,14 @@ object NameResolver {
     def fixNewType(d: RawTypeDef.NewType): TypeDef.Alias =
       TypeDef.Alias(d.id.toAliasId, resolveRef(d.source, d.meta.position), fixMeta(d.meta))
 
-    def fixService(s: RawService): ServiceDef =
-      ServiceDef(s.id, s.methods.map(fixMethod), fixMeta(s.meta))
+    def fixService(s: RawService): TypeDef.Service =
+      TypeDef.Service(s.id, s.methods.map(fixMethod), fixMeta(s.meta))
 
-    def fixBuzzer(b: RawBuzzer): BuzzerDef =
-      BuzzerDef(b.id, b.events.map(fixMethod), fixMeta(b.meta))
+    def fixBuzzer(b: RawBuzzer): TypeDef.Buzzer =
+      TypeDef.Buzzer(b.id, b.events.map(fixMethod), fixMeta(b.meta))
 
-    def fixStreams(s: RawStreams): StreamsDef =
-      StreamsDef(s.id, s.streams.map(fixStream), fixMeta(s.meta))
+    def fixStreams(s: RawStreams): TypeDef.Streams =
+      TypeDef.Streams(s.id, s.streams.map(fixStream), fixMeta(s.meta))
 
     private def fixMethod(m: RawMethod): DefMethod = m match {
       case rpc: RawMethod.RPCMethod =>

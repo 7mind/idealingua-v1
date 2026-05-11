@@ -70,6 +70,66 @@ object Diagnostic {
     * ADTs are not supported).
     */
   final case class NestedAdtMemberUnsupported(adt: TypeId, branch: TypeId, position: InputPosition) extends Diagnostic
+
+  // --- Phase 5 (CycleDetector) ----------------------------------------------
+
+  /** Non-broken cycle through field/member references (no `Option`/`List`/etc.
+    * container indirection in the cycle path).
+    */
+  final case class CyclicUsage(members: List[TypeId], position: InputPosition) extends Diagnostic
+
+  /** Cycle entirely through inheritance edges (interface extends + DTO mixin). */
+  final case class CyclicInheritance(members: List[TypeId], position: InputPosition) extends Diagnostic
+
+  /** Marker emitted alongside `CyclicUsage`/`CyclicInheritance` when no
+    * container-typed back-edge breaks the cycle (i.e. all back-edges are
+    * direct references).  Distinct from `CyclicUsage` for downstream
+    * consumers that need to distinguish "terminating recursion" (legal) from
+    * "hard cycle" (illegal).
+    */
+  final case class NonTerminatingCycle(members: List[TypeId], position: InputPosition) extends Diagnostic
+
+  // --- Phase 6 (StructuralFlattener) ----------------------------------------
+
+  /** Two fields of the same name on the same flattened struct have
+    * incompatible types (hard conflict).
+    */
+  final case class FieldNameConflict(owner: TypeId, fieldName: String, candidates: List[TypeId], position: InputPosition) extends Diagnostic
+
+  /** A structural mixin reference points at a type that is not registered as
+    * a user type.  (Distinct from `BadMixinTarget`, which fires when the
+    * reference resolves to the wrong KIND of type.)
+    */
+  final case class MissingMixin(owner: TypeId, missing: TypeId, position: InputPosition) extends Diagnostic
+
+  // --- Phase 7 (EphemeralSynthesizer) ---------------------------------------
+
+  /** A synthesized ephemeral name collides with a user-declared type id or
+    * with a previously-synthesized ephemeral id.
+    */
+  final case class EphemeralNameCollision(synthesized: TypeId, existing: TypeId, position: InputPosition) extends Diagnostic
+
+  // --- Phase 8 (ConstValueTyper) --------------------------------------------
+
+  /** A const's declared `RawVal` shape does not match its declared target
+    * `TypeId` (e.g. `CInt` assigned to a `TString` target).
+    */
+  final case class ConstTypeMismatch(constName: String, expected: TypeId, actualKind: String, position: InputPosition) extends Diagnostic
+
+  /** A const initializer for a DTO/Interface target is missing a required
+    * field.
+    */
+  final case class ConstFieldMissing(constName: String, owner: TypeId, fieldName: String, position: InputPosition) extends Diagnostic
+
+  /** A const initializer for a DTO/Interface target supplies an extra field
+    * that is not declared on the target.
+    */
+  final case class ConstFieldUnknown(constName: String, owner: TypeId, fieldName: String, position: InputPosition) extends Diagnostic
+
+  /** A const value is structurally malformed (e.g. could not resolve target
+    * type-id, or the value's nested structure is not a const-value shape).
+    */
+  final case class BadConstValue(constName: String, description: String, position: InputPosition) extends Diagnostic
 }
 
 /** Accumulator for zero or more `Diagnostic` values.

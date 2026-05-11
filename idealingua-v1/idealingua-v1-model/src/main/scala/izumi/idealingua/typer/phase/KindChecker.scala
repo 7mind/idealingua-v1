@@ -65,6 +65,9 @@ object KindChecker {
       case _: TypeDef.Identifier => () // see scaladoc
       case _: TypeDef.Enum       => ()
       case _: TypeDef.Alias      => ()
+      case _: TypeDef.Service    => ()
+      case _: TypeDef.Buzzer     => ()
+      case _: TypeDef.Streams    => ()
     }
 
     resolved.copy(diagnostics = resolved.diagnostics ++ Diagnostics(diagBuf.toVector))
