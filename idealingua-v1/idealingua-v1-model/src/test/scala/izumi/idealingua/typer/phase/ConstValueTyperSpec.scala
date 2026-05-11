@@ -44,7 +44,7 @@ final class ConstValueTyperSpec extends AnyFunSpec with Matchers {
       EphemeralSynthesizer(
         StructuralFlattener(
           CycleDetector(
-            AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(input))))
+            AliasDealiaser(KindChecker(NameResolver(scopeFor(input))))
           )
         )
       )

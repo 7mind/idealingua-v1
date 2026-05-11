@@ -25,7 +25,7 @@ final class NameResolverSpec extends AnyFunSpec with Matchers {
       )
       val (input, _) = fixture(List(idDef, dtoDef), Nil, Map.empty)
 
-      val scoped   = ScopeBuilder(input)
+      val scoped   = scopeFor(input)
       val resolved = NameResolver(scoped)
 
       resolved.userTypes.keySet should contain allOf (idDef.id, dtoDef.id)
@@ -46,7 +46,7 @@ final class NameResolverSpec extends AnyFunSpec with Matchers {
         imports    = List(izumi.idealingua.model.il.ast.raw.domains.SingleImport(domB, izumi.idealingua.model.il.ast.raw.domains.ImportedId("B", None))),
         referenced = Map(domB -> resolved(domB, List(refDto))),
       )
-      val r = NameResolver(ScopeBuilder(input))
+      val r = NameResolver(scopeFor(input))
       val a = r.userTypes(aliasDef.id).asInstanceOf[IRTypeDef.Alias]
       a.target shouldBe refDto.id
       r.diagnostics.isEmpty shouldBe true
@@ -63,7 +63,7 @@ final class NameResolverSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(dtoDef), Nil, Map.empty)
-      val r          = NameResolver(ScopeBuilder(input))
+      val r          = NameResolver(scopeFor(input))
 
       r.userTypes(dtoDef.id).asInstanceOf[IRTypeDef.Dto].struct.fields.head.typeId shouldBe a[Generic.TList]
       r.diagnostics.isEmpty shouldBe true
@@ -76,7 +76,7 @@ final class NameResolverSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(dtoDef), Nil, Map.empty)
-      val r          = NameResolver(ScopeBuilder(input))
+      val r          = NameResolver(scopeFor(input))
 
       r.diagnostics.issues.collect { case d: Diagnostic.UnknownTypeRef => d } should have size 1
     }
@@ -92,7 +92,7 @@ final class NameResolverSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(dtoDef), Nil, Map.empty)
-      val r          = NameResolver(ScopeBuilder(input))
+      val r          = NameResolver(scopeFor(input))
 
       r.diagnostics.issues.collect { case d: Diagnostic.WrongGenericArity => d } should have size 1
     }

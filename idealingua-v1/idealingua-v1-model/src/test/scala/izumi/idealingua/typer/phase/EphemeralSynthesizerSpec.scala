@@ -44,7 +44,7 @@ final class EphemeralSynthesizerSpec extends AnyFunSpec with Matchers {
         meta = meta,
       )
       val svc = RawService(svcId, List(method), meta)
-      val rd0 = AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(serviceFixture(List(svc))))))
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(serviceFixture(List(svc))))))
       val rd  = EphemeralSynthesizer(StructuralFlattener(CycleDetector(rd0)))
 
       val inputId  = DTOId(TypePath(domA, Seq("Svc")), "PingInput")
@@ -70,7 +70,7 @@ final class EphemeralSynthesizerSpec extends AnyFunSpec with Matchers {
         meta = meta,
       )
       val svc = RawService(svcId, List(method), meta)
-      val rd0 = AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(serviceFixture(List(svc))))))
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(serviceFixture(List(svc))))))
       val rd  = EphemeralSynthesizer(StructuralFlattener(CycleDetector(rd0)))
 
       val adtId = AdtId(TypePath(domA, Seq("Svc")), "DoOutput")
@@ -84,7 +84,7 @@ final class EphemeralSynthesizerSpec extends AnyFunSpec with Matchers {
       val ifcId = InterfaceId(TypePath(domA, Seq.empty), "I")
       val ifc = RawTypeDef.Interface(ifcId, RawStructure(Nil, Nil, Nil, Nil, Nil), meta)
       val (input, _) = fixture(List(ifc), Nil, Map.empty)
-      val rd0 = AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(input))))
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(input))))
       val rd  = EphemeralSynthesizer(StructuralFlattener(CycleDetector(rd0)))
 
       val mirrorId = DTOId(ifcId, "Struct")

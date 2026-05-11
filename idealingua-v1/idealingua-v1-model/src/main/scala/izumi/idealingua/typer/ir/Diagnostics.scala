@@ -1,6 +1,6 @@
 package izumi.idealingua.typer.ir
 
-import izumi.idealingua.model.common.TypeId
+import izumi.idealingua.model.common.{DomainId, TypeId}
 import izumi.idealingua.model.common.TypeId.AliasId
 import izumi.idealingua.model.il.ast.InputPosition
 
@@ -19,6 +19,15 @@ sealed trait Diagnostic {
 }
 
 object Diagnostic {
+
+  // --- Phase 0 (IdealinguaFamilyManager) ------------------------------------
+
+  /** A cycle was detected in the domain import graph.
+    *
+    * Per C11/L2: emitted as a diagnostic (non-fatal); `FamilyIndex.loadOrder`
+    * still contains the cycling domains in a deterministic (alphabetic) order.
+    */
+  final case class CyclicDomainImport(cycle: List[DomainId], position: InputPosition) extends Diagnostic
 
   // --- Phase 1 (ScopeBuilder) -----------------------------------------------
 

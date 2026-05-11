@@ -19,7 +19,7 @@ final class KindCheckerSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(idDef), Nil, Map.empty)
-      val r          = KindChecker(AliasDealiaser(NameResolver(ScopeBuilder(input))))
+      val r          = KindChecker(AliasDealiaser(NameResolver(scopeFor(input))))
       r.diagnostics.issues.collect { case d: Diagnostic.BadIdentifierFieldType => d } shouldBe empty
       r.diagnostics.issues.collect { case d: Diagnostic.BadMixinTarget         => d } shouldBe empty
     }
@@ -32,7 +32,7 @@ final class KindCheckerSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(base, child), Nil, Map.empty)
-      val r          = KindChecker(AliasDealiaser(NameResolver(ScopeBuilder(input))))
+      val r          = KindChecker(AliasDealiaser(NameResolver(scopeFor(input))))
       r.diagnostics.issues.collect { case d: Diagnostic.BadMixinTarget => d } shouldBe empty
     }
 
@@ -44,7 +44,7 @@ final class KindCheckerSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(dtoDef, adtDef), Nil, Map.empty)
-      val r          = KindChecker(AliasDealiaser(NameResolver(ScopeBuilder(input))))
+      val r          = KindChecker(AliasDealiaser(NameResolver(scopeFor(input))))
       r.diagnostics.issues.collect { case d: Diagnostic.NestedAdtMemberUnsupported => d } shouldBe empty
     }
 
@@ -56,7 +56,7 @@ final class KindCheckerSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(refDto, idDef), Nil, Map.empty)
-      val r          = KindChecker(AliasDealiaser(NameResolver(ScopeBuilder(input))))
+      val r          = KindChecker(AliasDealiaser(NameResolver(scopeFor(input))))
       r.diagnostics.issues.collect { case d: Diagnostic.BadIdentifierFieldType => d } should not be empty
     }
 
@@ -68,7 +68,7 @@ final class KindCheckerSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(en, child), Nil, Map.empty)
-      val r          = KindChecker(AliasDealiaser(NameResolver(ScopeBuilder(input))))
+      val r          = KindChecker(AliasDealiaser(NameResolver(scopeFor(input))))
       r.diagnostics.issues.collect { case d: Diagnostic.BadMixinTarget => d } should not be empty
     }
 
@@ -80,7 +80,7 @@ final class KindCheckerSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(nested, outer), Nil, Map.empty)
-      val r          = KindChecker(AliasDealiaser(NameResolver(ScopeBuilder(input))))
+      val r          = KindChecker(AliasDealiaser(NameResolver(scopeFor(input))))
       r.diagnostics.issues.collect { case d: Diagnostic.NestedAdtMemberUnsupported => d } should not be empty
     }
   }

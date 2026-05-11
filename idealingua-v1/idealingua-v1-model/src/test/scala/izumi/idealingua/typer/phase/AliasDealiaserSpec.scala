@@ -16,7 +16,7 @@ final class AliasDealiaserSpec extends AnyFunSpec with Matchers {
       val a = RawTypeDef.Alias(AliasId(TypePath(domA, Seq.empty), "A"), IndefiniteId(Seq.empty, "B"), meta)
       val b = RawTypeDef.Alias(AliasId(TypePath(domA, Seq.empty), "B"), IndefiniteId(Seq.empty, "str"), meta)
       val (input, _) = fixture(List(a, b), Nil, Map.empty)
-      val r          = AliasDealiaser(NameResolver(ScopeBuilder(input)))
+      val r          = AliasDealiaser(NameResolver(scopeFor(input)))
 
       r.aliases(a.id) shouldBe Primitive.TString
       r.aliases(b.id) shouldBe Primitive.TString
@@ -27,7 +27,7 @@ final class AliasDealiaserSpec extends AnyFunSpec with Matchers {
       val a = RawTypeDef.Alias(AliasId(TypePath(domA, Seq.empty), "A"), IndefiniteId(Seq.empty, "B"), meta)
       val b = RawTypeDef.Alias(AliasId(TypePath(domA, Seq.empty), "B"), IndefiniteId(Seq.empty, "A"), meta)
       val (input, _) = fixture(List(a, b), Nil, Map.empty)
-      val r          = AliasDealiaser(NameResolver(ScopeBuilder(input)))
+      val r          = AliasDealiaser(NameResolver(scopeFor(input)))
 
       r.diagnostics.issues.collect { case d: Diagnostic.CyclicAlias => d } should not be empty
       r.aliases.get(a.id) shouldBe None

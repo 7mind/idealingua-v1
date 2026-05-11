@@ -9,7 +9,7 @@ import izumi.idealingua.model.il.ast.raw.domains.{DomainMeshLoaded, DomainMeshRe
 import izumi.idealingua.model.il.ast.raw.models.Inclusion
 import izumi.idealingua.model.il.ast.raw.typeid.ParsedId
 import izumi.idealingua.model.loader.FSPath
-import izumi.idealingua.typer.ir.Diagnostic
+import izumi.idealingua.typer.ir.{Diagnostic, Diagnostics, FamilyIndex}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -25,7 +25,8 @@ final class ScopeBuilderSpec extends AnyFunSpec with Matchers {
         referenced = Map(domB -> resolved(domB, List(dto("B", domB)))),
       )
 
-      val scoped = ScopeBuilder(input)
+      val family = singleEntryFamily(input)
+      val scoped = ScopeBuilder(input.id, input, family)
 
       scoped.domainId shouldBe domA
       scoped.localNames.keySet shouldBe Set("A", "E")
@@ -47,7 +48,8 @@ final class ScopeBuilderSpec extends AnyFunSpec with Matchers {
         referenced = Map(domB -> resolved(domB, List(dto("B", domB)))),
       )
 
-      val scoped = ScopeBuilder(input)
+      val family = singleEntryFamily(input)
+      val scoped = ScopeBuilder(input.id, input, family)
 
       scoped.diagnostics.issues.collect {
         case d: Diagnostic.ImportNameClashesWithLocal => d.name
@@ -61,7 +63,8 @@ final class ScopeBuilderSpec extends AnyFunSpec with Matchers {
         referenced = Map.empty,
       )
 
-      val scoped = ScopeBuilder(input)
+      val family = singleEntryFamily(input)
+      val scoped = ScopeBuilder(input.id, input, family)
 
       val collisions = scoped.diagnostics.issues.collect { case d: Diagnostic.ScopeCollision => d.name }
       collisions shouldBe Vector("X")
@@ -80,10 +83,53 @@ final class ScopeBuilderSpec extends AnyFunSpec with Matchers {
         referenced = Map.empty,
       )
 
-      val scoped = ScopeBuilder(input)
+      val family = singleEntryFamily(input)
+      val scoped = ScopeBuilder(input.id, input, family)
 
       scoped.diagnostics.issues.collect { case d: Diagnostic.ForeignTypeUnsupported => d.name } shouldBe Vector("Foreign")
       scoped.localNames.keySet shouldBe Set("A")
+    }
+
+    it("resolves imported type from family.domains (cross-domain family lookup)") {
+      // Domain A imports type C from domain C.  C is not in A's defn.referenced
+      // but IS in the family index — verifies that ScopeBuilder uses family, not
+      // the embedded defn.referenced map.
+      val domC = DomainId(Seq("test"), "c")
+      val cDto = dto("C", domC)
+      val resolvedC = resolved(domC, List(cDto))
+
+      val (inputA, _) = fixture(
+        local      = List(dto("A")),
+        imports    = List(SingleImport(domC, ImportedId("C", None))),
+        referenced = Map(domC -> resolvedC),
+      )
+
+      // Build a family that has both A and a stub for C.
+      val stubC = DomainMeshLoaded(
+        id               = domC,
+        origin           = FSPath.Name("c.domain"),
+        directInclusions = Seq.empty,
+        originalImports  = Seq.empty,
+        meta             = meta,
+        types            = List(cDto),
+        services         = Seq.empty,
+        buzzers          = Seq.empty,
+        streams          = Seq.empty,
+        consts           = Seq.empty,
+        imports          = Seq.empty,
+        defn             = resolvedC,
+      )
+      val family = FamilyIndex(
+        domains     = Map(domA -> inputA, domC -> stubC),
+        importGraph = Map(domA -> Set(domC), domC -> Set.empty),
+        loadOrder   = List(domC, domA),
+        diagnostics = Diagnostics.empty,
+      )
+
+      val scoped = ScopeBuilder(inputA.id, inputA, family)
+      scoped.importedNames.keySet shouldBe Set("C")
+      scoped.importedNames("C") shouldBe DTOId(TypePath(domC, Seq.empty), "C")
+      scoped.diagnostics.isEmpty shouldBe true
     }
   }
 }
@@ -167,6 +213,60 @@ object ScopeBuilderSpec {
       defn              = resolvedA,
     )
     (loaded, importedTid.getOrElse(DTOId(TypePath(domA, Seq.empty), "<sentinel>")))
+  }
+
+  /** Build a single-domain `FamilyIndex` wrapping `root`, plus any imported
+    * domains found in `root.defn.referenced` (promoted to minimal stubs).
+    *
+    * Simulates what `IdealinguaFamilyManager` would produce for a single root.
+    */
+  def singleEntryFamily(root: DomainMeshLoaded): FamilyIndex = {
+    // For tests where the root carries referenced domains in defn.referenced,
+    // promote them to DomainMeshLoaded stubs so ScopeBuilder can resolve imports.
+    val stubs: Map[DomainId, DomainMeshLoaded] = root.defn.referenced.map {
+      case (id, mesh) =>
+        val types = mesh.members.iterator.collect {
+          case d: RawTopLevelDefn.TLDBaseType    => d.v: RawTypeDef
+          case d: RawTopLevelDefn.TLDNewtype     => d.v: RawTypeDef
+          case d: RawTopLevelDefn.TLDForeignType => d.v: RawTypeDef
+        }.toSeq
+        val stub = DomainMeshLoaded(
+          id               = mesh.id,
+          origin           = mesh.origin,
+          directInclusions = mesh.directInclusions,
+          originalImports  = mesh.imports,
+          meta             = mesh.meta,
+          types            = types,
+          services         = Seq.empty,
+          buzzers          = Seq.empty,
+          streams          = Seq.empty,
+          consts           = Seq.empty,
+          imports          = mesh.imports.flatMap { imp =>
+            imp.identifiers.map(iid => SingleImport(imp.id, iid))
+          }.toSeq,
+          defn             = mesh,
+        )
+        id -> stub
+    }
+    FamilyIndex(
+      domains     = stubs + (root.id -> root),
+      importGraph = Map(root.id -> root.defn.referenced.keys.toSet) ++
+                    stubs.map { case (id, _) => id -> Set.empty[DomainId] },
+      loadOrder   = stubs.keys.toList.sortBy(_.toString) :+ root.id,
+      diagnostics = Diagnostics.empty,
+    )
+  }
+
+  /** Convenience: build ScopeBuilder output for a single-domain fixture.
+    *
+    * Constructs a single-entry `FamilyIndex` via `IdealinguaFamilyManager` and
+    * delegates to `ScopeBuilder.apply(id, parsed, family)`.  All IMPL-2/3 specs
+    * that previously called `ScopeBuilder(input)` directly use this helper to
+    * adapt to the IMPL-4 signature without changing the test logic.
+    */
+  def scopeFor(input: DomainMeshLoaded): ScopeBuilder.ScopedDomain = {
+    val family = IdealinguaFamilyManager(input)
+    ScopeBuilder(input.id, input, family)
   }
 
   // ParsedId helper for NewType cases used elsewhere

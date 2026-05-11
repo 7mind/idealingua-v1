@@ -30,7 +30,7 @@ final class CycleDetectorSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(dtoDef), Nil, Map.empty)
-      val rd0 = AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(input))))
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(input))))
       val rd  = CycleDetector(rd0)
 
       val cyclicUsage = rd.diagnostics.issues.collect { case d: Diagnostic.CyclicUsage => d }
@@ -45,7 +45,7 @@ final class CycleDetectorSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(dtoDef), Nil, Map.empty)
-      val rd0 = AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(input))))
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(input))))
       val rd  = CycleDetector(rd0)
 
       rd.diagnostics.issues.collect { case d: Diagnostic.CyclicUsage => d } should have size 1
@@ -68,7 +68,7 @@ final class CycleDetectorSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(i1, i2), Nil, Map.empty)
-      val rd0 = AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(input))))
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(input))))
       val rd  = CycleDetector(rd0)
 
       rd.diagnostics.issues.collect { case d: Diagnostic.CyclicInheritance => d } should have size 1

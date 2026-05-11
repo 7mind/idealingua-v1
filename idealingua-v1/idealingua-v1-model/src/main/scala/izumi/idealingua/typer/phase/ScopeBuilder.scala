@@ -2,20 +2,25 @@ package izumi.idealingua.typer.phase
 
 import izumi.idealingua.model.common.{DomainId, TypeId}
 import izumi.idealingua.model.il.ast.InputPosition
-import izumi.idealingua.model.il.ast.raw.defns.{RawNodeMeta, RawTopLevelDefn, RawTypeDef}
+import izumi.idealingua.model.il.ast.raw.defns.{RawNodeMeta, RawTypeDef}
 import izumi.idealingua.model.il.ast.raw.defns.RawTypeDef.{ForeignType, NewType}
-import izumi.idealingua.model.il.ast.raw.domains.{DomainMeshLoaded, DomainMeshResolved}
-import izumi.idealingua.typer.ir.{Diagnostic, Diagnostics}
+import izumi.idealingua.model.il.ast.raw.domains.DomainMeshLoaded
+import izumi.idealingua.typer.ir.{Diagnostic, Diagnostics, FamilyIndex}
 
 /** Phase 1 — `ScopeBuilder`.
   *
-  * Walks the raw `DomainMeshLoaded` (Phase 0 output of legacy `IDLPretyper`),
-  * resolves local and imported names, and emits diagnostics for clashes /
-  * unsupported features. Output is the internal `ScopedDomain` value, consumed
-  * by Phase 2 (`NameResolver`).
+  * Walks the raw `DomainMeshLoaded` for a single domain, resolves local and
+  * imported names against the cross-domain `FamilyIndex` (Phase 0 output), and
+  * emits diagnostics for clashes / unsupported features. Output is the internal
+  * `ScopedDomain` value, consumed by Phase 2 (`NameResolver`).
   *
-  * Per PR-02 IMPL-2 plan §3: the input is `DomainMeshLoaded` (F18 bypass);
-  * IMPL-4's `FamilyIndex` will replace this when Phase 0 is rebuilt.
+  * Per master plan §3 Phase 1 (line 231): input is
+  * `(DomainId, DomainMeshLoaded, FamilyIndex)` — this closes F18 (the IMPL-2
+  * bypass that consumed `DomainMeshLoaded` directly without the family index).
+  *
+  * Cross-domain import resolution uses `family.domains(importedDomainId)` rather
+  * than the embedded `parsed.defn.referenced` map; this eliminates the duplicate
+  * recursive resolution that the IMPL-2 bypass performed.
   */
 object ScopeBuilder {
 
@@ -41,19 +46,23 @@ object ScopeBuilder {
     diagnostics: Diagnostics,
   )
 
-  /** Build a `ScopedDomain` from a `DomainMeshLoaded`.
+  /** Build a `ScopedDomain` from a `DomainMeshLoaded` and its `FamilyIndex`.
+    *
+    * @param rootId  The domain identifier for `parsed` (must be a key in `family.domains`).
+    * @param parsed  The loaded domain AST for `rootId` (`family.domains(rootId)`).
+    * @param family  The full cross-domain family index (Phase 0 output).
     *
     * Per C8/L1 (diagnostics-mode): no exceptions are thrown for user-visible
     * errors — every problem becomes a `Diagnostic` in `ScopedDomain.diagnostics`.
     */
-  def apply(input: DomainMeshLoaded): ScopedDomain = {
-    val domainPos: InputPosition = input.meta.position
+  def apply(rootId: DomainId, parsed: DomainMeshLoaded, family: FamilyIndex): ScopedDomain = {
+    val domainPos: InputPosition = parsed.meta.position
 
     val localBuilder = scala.collection.mutable.LinkedHashMap.empty[String, TypeId]
     val indexBuilder = scala.collection.mutable.LinkedHashMap.empty[TypeId, RawTypeDef]
     val diagBuf      = scala.collection.mutable.ArrayBuffer.empty[Diagnostic]
 
-    input.types.foreach {
+    parsed.types.foreach {
       case d: RawTypeDef.WithId =>
         val tid  = d.id
         val name = tid.name
@@ -87,13 +96,14 @@ object ScopeBuilder {
     val localNames: Map[String, TypeId] = localBuilder.toMap
 
     val importedBuilder = scala.collection.mutable.LinkedHashMap.empty[String, TypeId]
-    input.imports.foreach {
+    parsed.imports.foreach {
       si =>
         val importedAs   = si.imported.importedAs
         val originalName = si.imported.name
-        input.defn.referenced.get(si.domain) match {
-          case Some(refMesh) =>
-            collectLocalNames(refMesh).get(originalName) match {
+        // Resolve via the family index: no recursive re-typing of imported domains.
+        family.domains.get(si.domain) match {
+          case Some(importedDomain) =>
+            collectLocalNames(importedDomain).get(originalName) match {
               case Some(tid) => importedBuilder.update(importedAs, tid)
               case None      => () // surface later as UnknownTypeRef during Phase 2
             }
@@ -111,11 +121,11 @@ object ScopeBuilder {
     }
 
     ScopedDomain(
-      domainId      = input.id,
+      domainId      = rootId,
       localNames    = localNames,
       importedNames = importedBuilder.toMap,
       index         = indexBuilder.toMap,
-      raw           = input,
+      raw           = parsed,
       diagnostics   = Diagnostics(diagBuf.toVector),
     )
   }
@@ -132,16 +142,16 @@ object ScopeBuilder {
     case t: RawTypeDef.Adt         => t.meta
   }
 
-  /** Mirror of `IDLPretyper.perform` projection: extract a domain's locally
-    * declared simple names → `TypeId` map directly from its raw `members`.
+  /** Extract the locally-declared simple names → `TypeId` map from a
+    * `DomainMeshLoaded` (using the pre-extracted `types` field).
     *
-    * Used during import resolution where a `DomainMeshLoaded` may not be
-    * pre-built for the referenced mesh.
+    * Used during import resolution to look up the imported domain's local names
+    * via `family.domains(importedDomainId)`.
     */
-  private def collectLocalNames(refMesh: DomainMeshResolved): Map[String, TypeId] = {
-    refMesh.members.iterator.collect {
-      case d: RawTopLevelDefn.TLDBaseType => d.v.id.name -> d.v.id
-      case d: RawTopLevelDefn.TLDNewtype  => d.v.id.name -> d.v.id.toAliasId
+  private def collectLocalNames(domain: DomainMeshLoaded): Map[String, TypeId] = {
+    domain.types.iterator.collect {
+      case d: RawTypeDef.WithId => d.id.name -> (d.id: TypeId)
+      case d: NewType           => d.id.name -> (d.id.toAliasId: TypeId)
     }.toMap
   }
 }

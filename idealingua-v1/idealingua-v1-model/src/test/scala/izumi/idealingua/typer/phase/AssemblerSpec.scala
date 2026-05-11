@@ -11,6 +11,11 @@ final class AssemblerSpec extends AnyFunSpec with Matchers {
 
   import ScopeBuilderSpec._
 
+  private def scopeFor(input: izumi.idealingua.model.il.ast.raw.domains.DomainMeshLoaded) = {
+    val family = IdealinguaFamilyManager(input)
+    ScopeBuilder(input.id, input, family)
+  }
+
   private def fullPipeline(input: izumi.idealingua.model.il.ast.raw.domains.DomainMeshLoaded) =
     Assembler(
       RootExtractor(
@@ -18,7 +23,7 @@ final class AssemblerSpec extends AnyFunSpec with Matchers {
           ConstValueTyper(
             EphemeralSynthesizer(
               StructuralFlattener(
-                CycleDetector(AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(input)))))
+                CycleDetector(AliasDealiaser(KindChecker(NameResolver(scopeFor(input)))))
               )
             )
           )
@@ -32,7 +37,7 @@ final class AssemblerSpec extends AnyFunSpec with Matchers {
         ConstValueTyper(
           EphemeralSynthesizer(
             StructuralFlattener(
-              CycleDetector(AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(input)))))
+              CycleDetector(AliasDealiaser(KindChecker(NameResolver(scopeFor(input)))))
             )
           )
         )

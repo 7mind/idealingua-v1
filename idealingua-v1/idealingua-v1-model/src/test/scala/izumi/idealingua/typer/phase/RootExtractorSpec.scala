@@ -23,7 +23,7 @@ final class RootExtractorSpec extends AnyFunSpec with Matchers {
         FingerprintCalculator(
           EphemeralSynthesizer(
             StructuralFlattener(
-              CycleDetector(AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(input)))))
+              CycleDetector(AliasDealiaser(KindChecker(NameResolver(scopeFor(input)))))
             )
           )
         )

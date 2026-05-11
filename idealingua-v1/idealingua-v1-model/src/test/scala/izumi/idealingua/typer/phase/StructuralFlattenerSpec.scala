@@ -32,7 +32,7 @@ final class StructuralFlattenerSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(i1, i2, dto), Nil, Map.empty)
-      val rd0 = AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(input))))
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(input))))
       val rd  = StructuralFlattener(CycleDetector(rd0))
 
       val flat = rd.flattenedStructs(dtoId)
@@ -64,7 +64,7 @@ final class StructuralFlattenerSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(i1, i2, dto), Nil, Map.empty)
-      val rd0 = AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(input))))
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(input))))
       val rd  = StructuralFlattener(CycleDetector(rd0))
 
       val flat = rd.flattenedStructs(dtoId)
@@ -93,7 +93,7 @@ final class StructuralFlattenerSpec extends AnyFunSpec with Matchers {
         meta,
       )
       val (input, _) = fixture(List(i1, i2, dto), Nil, Map.empty)
-      val rd0 = AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(input))))
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(input))))
       val rd  = StructuralFlattener(CycleDetector(rd0))
 
       val flat = rd.flattenedStructs(dtoId)
