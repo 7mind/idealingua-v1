@@ -7,6 +7,7 @@ import izumi.idealingua.model.typespace.verification.VerificationRule
 import izumi.idealingua.model.typespace.verification.rules.ReservedKeywordRule
 import izumi.idealingua.translator.CompilerOptions.ScalaTranslatorOptions
 import izumi.idealingua.translator._
+import izumi.idealingua.translator.toscala.domain.DomainScalaTranslator
 import izumi.idealingua.translator.toscala.layout.ScalaLayouter
 
 object ScalaTranslatorDescriptor extends TranslatorDescriptor[ScalaTranslatorOptions] {
@@ -24,7 +25,7 @@ object ScalaTranslatorDescriptor extends TranslatorDescriptor[ScalaTranslatorOpt
     domain: izumi.idealingua.typer.ir.Domain,
     parsed: izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved,
     options: UntypedCompilerOptions,
-  ): Translator = throw new NotImplementedError("Scala Domain-consuming translator pending IMPL-7a.2/7b/7c")
+  ): Translator = new DomainScalaTranslator(domain, parsed, typedOptions(options))
 
   override def rules: Seq[VerificationRule] = Seq(
     ReservedKeywordRule.warning("scala", keywords)

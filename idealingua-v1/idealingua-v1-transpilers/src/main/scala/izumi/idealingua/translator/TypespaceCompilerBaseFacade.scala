@@ -11,14 +11,19 @@ class TypespaceCompilerBaseFacade(options: UntypedCompilerOptions) {
     val descriptor = TypespaceCompilerBaseFacade.descriptor(options.language)
     val compiled = toCompile.map {
       loaded =>
-        val typespace = options.typerImpl match {
+        options.typerImpl match {
           case TyperImpl.Legacy =>
-            loaded.typespace
+            descriptor.make(loaded.typespace, options).translate()
           case TyperImpl.NewTyper =>
             val newDomain = NewTyperPipeline.run(loaded.parsed)
-            new DomainAsTypespace(newDomain, loaded.typespace)
+            options.language match {
+              case IDLLanguage.Scala =>
+                descriptor.makeDomain(newDomain, loaded.parsed, options).translate()
+              case _ =>
+                val adapter = new DomainAsTypespace(newDomain, loaded.typespace)
+                descriptor.make(adapter, options).translate()
+            }
         }
-        descriptor.make(typespace, options).translate()
     }
 
     val hook = descriptor.makeHook(options)
