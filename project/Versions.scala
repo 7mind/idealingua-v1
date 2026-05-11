@@ -24,4 +24,6 @@ object V {
 
   val slf4j           = "1.7.30"
   val typesafe_config = "1.4.6"
+
+  val scodec_bits = "1.1.38"
 }

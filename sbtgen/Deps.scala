@@ -35,6 +35,7 @@ object Idealingua {
     val typesafe_config = Version.VExpr("V.typesafe_config")
 
     val scala_java_time = Version.VExpr("V.scala_java_time")
+    val scodec_bits     = Version.VExpr("V.scodec_bits")
   }
 
   object PV {
@@ -133,6 +134,9 @@ object Idealingua {
     val asynchttpclient = Library("org.asynchttpclient", "async-http-client", V.asynchttpclient, LibraryType.Invariant)
 
     val scala_java_time = Library("io.github.cquiroz", "scala-java-time", V.scala_java_time, LibraryType.Auto)
+    // scodec-bits: used by Fingerprint in izumi.idealingua.typer.ir (IMPL-1).
+    // Cross-builds on Scala 2.13 + 3.x (JVM + JS). See tasks.md F1.
+    val scodec_bits = Library("org.scodec", "scodec-bits", V.scodec_bits, LibraryType.Auto) in Scope.Compile.all
   }
 
   import Deps._
@@ -378,7 +382,7 @@ object Idealingua {
     artifacts = Seq(
       Artifact(
         name    = Projects.idealingua.model,
-        libs    = Seq(scala_reflect) ++ Deps.fundamentals_basics.map(_ in Scope.Compile.all),
+        libs    = Seq(scala_reflect, Deps.scodec_bits) ++ Deps.fundamentals_basics.map(_ in Scope.Compile.all),
         depends = Seq.empty,
       ),
       Artifact(

@@ -27,7 +27,8 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
       "org.scalatest" %%% "scalatest" % V.scalatest % Test,
       "io.7mind.izumi" %%% "fundamentals-collections" % Izumi.version,
       "io.7mind.izumi" %%% "fundamentals-platform" % Izumi.version,
-      "io.7mind.izumi" %%% "fundamentals-functional" % Izumi.version
+      "io.7mind.izumi" %%% "fundamentals-functional" % Izumi.version,
+      "org.scodec" %%% "scodec-bits" % V.scodec_bits
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
       compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
