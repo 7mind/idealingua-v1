@@ -139,6 +139,24 @@ object Diagnostic {
     * type-id, or the value's nested structure is not a const-value shape).
     */
   final case class BadConstValue(constName: String, description: String, position: InputPosition) extends Diagnostic
+
+  // --- Phase 12 (Validator) -------------------------------------------------
+
+  /** A type name violates naming conventions (lowercase first char, too short,
+    * or uses a reserved prefix such as "Iz", "IRT", "IDL").
+    */
+  final case class BadNamingConvention(typeId: TypeId, reason: String, position: InputPosition) extends Diagnostic
+
+  /** An enum declares two or more members with the same value string. */
+  final case class DuplicateEnumMember(enumId: TypeId, memberName: String, position: InputPosition) extends Diagnostic
+
+  /** An ADT declares two or more branches with the same wire name. */
+  final case class DuplicateAdtBranch(adtId: TypeId, branchName: String, position: InputPosition) extends Diagnostic
+
+  /** An ADT branch resolves to a primitive (builtin) type rather than a user
+    * type (DTO, Interface, or Identifier).
+    */
+  final case class PrimitiveAdtMember(adtId: TypeId, branchTypeId: TypeId, position: InputPosition) extends Diagnostic
 }
 
 /** Accumulator for zero or more `Diagnostic` values.
