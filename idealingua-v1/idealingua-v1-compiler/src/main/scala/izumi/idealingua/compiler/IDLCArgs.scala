@@ -5,6 +5,7 @@ import java.nio.file.{Path, Paths}
 import izumi.fundamentals.platform.cli.model.EntrypointArgs
 import izumi.fundamentals.platform.cli.model.schema.*
 import izumi.fundamentals.platform.cli.{CLIParserImpl, MultiModalArgsParserImpl, ParserFailureHandler, SubArgsParserImpl}
+import izumi.idealingua.translator.TyperImpl
 
 case class LanguageOpts(
   id: String,
@@ -26,7 +27,8 @@ case class IDLCArgs(
   init: Option[Path],
   versionOverlay: Option[Path],
   overrides: Map[String, String],
-  publish: Boolean = false,
+  publish: Boolean      = false,
+  typerImpl: TyperImpl  = TyperImpl.Legacy,
 )
 
 object IDLCArgs {
@@ -49,6 +51,7 @@ object IDLCArgs {
     final val overlayVersionFile = arg("overlay-version", "v", "version file", "<path>")
     final val define             = arg("define", "d", "define value", "const.name=value")
     final val publish            = flag("publish", "p", "build and publish generated code")
+    final val typerImpl          = arg("typer", "T", "typer implementation", "<legacy|new>")
   }
 
   object LP extends ParserDef {
@@ -103,6 +106,7 @@ object IDLCArgs {
     val overlayVersion = parameters.findValue(P.overlayVersionFile).asPath
     val publish        = parameters.hasFlag(P.publish)
     val defines        = parseDefs(parameters, P.define)
+    val typerImpl      = parameters.findValue(P.typerImpl).map(v => TyperImpl.parse(v.value)).getOrElse(TyperImpl.Legacy)
 
     val internalRoles = Seq("init", "help")
 
@@ -139,6 +143,7 @@ object IDLCArgs {
       overlayVersion,
       defines,
       publish,
+      typerImpl,
     )
   }
 

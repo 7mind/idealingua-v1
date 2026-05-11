@@ -74,11 +74,13 @@ final case class UntypedCompilerOptions(
   withBundledRuntime: Boolean              = true,
   providedRuntime: Option[ProvidedRuntime] = None,
   zipOutput: Boolean                       = true,
+  typerImpl: TyperImpl                     = TyperImpl.Legacy,
 ) extends AbstractCompilerOptions[TranslatorExtension, BuildManifest] {
   override def toString: String = {
-    val rtRepr  = Option(withBundledRuntime).filter(_ == true).map(_ => "+rtb").getOrElse("-rtb")
-    val rtfRepr = providedRuntime.map(rt => s"rtu=${rt.modules.size}").getOrElse("-rtu")
-    val extRepr = extensions.mkString("(", ", ", ")")
-    Seq(language, rtRepr, rtfRepr, extRepr).mkString(" ")
+    val rtRepr    = Option(withBundledRuntime).filter(_ == true).map(_ => "+rtb").getOrElse("-rtb")
+    val rtfRepr   = providedRuntime.map(rt => s"rtu=${rt.modules.size}").getOrElse("-rtu")
+    val extRepr   = extensions.mkString("(", ", ", ")")
+    val typerRepr = s"typer=$typerImpl"
+    Seq(language, rtRepr, rtfRepr, extRepr, typerRepr).mkString(" ")
   }
 }

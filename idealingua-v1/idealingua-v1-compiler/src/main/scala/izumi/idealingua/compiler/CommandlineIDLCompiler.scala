@@ -183,7 +183,7 @@ object CommandlineIDLCompiler {
     val exts = getExt(lang, lopt.extensions)
 
     val manifest = readManifest(conf, env, lopt, lang)
-    UntypedCompilerOptions(lang, exts, lopt.target, manifest, lopt.withRuntime, zipOutput = lopt.zip)
+    UntypedCompilerOptions(lang, exts, lopt.target, manifest, lopt.withRuntime, zipOutput = lopt.zip, typerImpl = conf.typerImpl)
   }
 
   private def readManifest(conf: IDLCArgs, env: Map[String, String], lopt: LanguageOpts, lang: IDLLanguage): BuildManifest = {

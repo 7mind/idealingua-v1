@@ -1,6 +1,7 @@
 package izumi.idealingua.model.loader
 
 import izumi.idealingua.model.common.DomainId
+import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.model.problems._
 import izumi.idealingua.model.typespace.Typespace
 
@@ -8,7 +9,16 @@ sealed trait LoadedDomain
 
 object LoadedDomain {
 
-  final case class Success(path: FSPath, typespace: Typespace, warnings: Vector[IDLWarning]) extends LoadedDomain
+  /** Successfully loaded + legacy-typed + verified domain.
+    *
+    * `parsed` carries the pre-typer `DomainMeshResolved` so that the new
+    * phase-based typer pipeline (selected via `UntypedCompilerOptions.typerImpl`)
+    * can re-run on the same source without a second loader pass.  Until the
+    * new pipeline reaches byte-parity (later PR-02 step) and the legacy path
+    * is deleted, both `typespace` (legacy) and `parsed` (new pipeline input)
+    * are present.
+    */
+  final case class Success(path: FSPath, typespace: Typespace, parsed: DomainMeshResolved, warnings: Vector[IDLWarning]) extends LoadedDomain
 
   sealed trait Failure extends LoadedDomain
 

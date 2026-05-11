@@ -33,17 +33,17 @@ class ModelResolver(rules: Seq[VerificationRule]) {
     (for {
       d      <- f
       ts     <- runTyper(d)
-      result <- runVerifier(ts)
+      result <- runVerifier(ts, d)
     } yield {
       result
     }).fold(identity, identity)
   }
 
-  private def runVerifier(ts: Typespace): Either[LoadedDomain.VerificationFailed, LoadedDomain.Success] = {
+  private def runVerifier(ts: Typespace, parsed: DomainMeshResolved): Either[LoadedDomain.VerificationFailed, LoadedDomain.Success] = {
     try {
       val issues = new TypespaceVerifier(ts, rules).verify()
       if (issues.issues.isEmpty) {
-        Right(LoadedDomain.Success(ts.domain.meta.origin, ts, issues.warnings))
+        Right(LoadedDomain.Success(ts.domain.meta.origin, ts, parsed, issues.warnings))
       } else {
         Left(LoadedDomain.VerificationFailed(ts.domain.meta.origin, ts.domain.id, issues))
       }
