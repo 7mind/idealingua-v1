@@ -62,7 +62,7 @@ class ScalaTranslator(ts: Typespace, options: ScalaTranslatorOptions) extends Tr
       packageObjects,
     ).flatten
 
-    Translated(ts, ctx.ext.extend(modules))
+    Translated(ts.domain.id, ts.domain.meta, ctx.ext.extend(modules))
   }
 
   protected def translateBuzzer(definition: Buzzer): Seq[Module] = {

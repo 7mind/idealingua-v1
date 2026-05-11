@@ -26,6 +26,12 @@ object CSharpTranslatorDescriptor extends TranslatorDescriptor[CSharpTranslatorO
     new CSharpTranslator(typespace, withNUnit)
   }
 
+  override def makeDomain(
+    domain: izumi.idealingua.typer.ir.Domain,
+    parsed: izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved,
+    options: UntypedCompilerOptions,
+  ): Translator = throw new NotImplementedError("CSharp Domain-consuming translator pending IMPL-7a.2/7b/7c")
+
   override def rules: Seq[VerificationRule] = Seq(
     ReservedKeywordRule.warning("c#", keywords)
   )

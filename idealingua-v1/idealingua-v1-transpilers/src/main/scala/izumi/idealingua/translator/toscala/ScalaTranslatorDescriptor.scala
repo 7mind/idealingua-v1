@@ -20,6 +20,12 @@ object ScalaTranslatorDescriptor extends TranslatorDescriptor[ScalaTranslatorOpt
 
   override def make(typespace: Typespace, options: UntypedCompilerOptions): Translator = new ScalaTranslator(typespace, typedOptions(options))
 
+  override def makeDomain(
+    domain: izumi.idealingua.typer.ir.Domain,
+    parsed: izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved,
+    options: UntypedCompilerOptions,
+  ): Translator = throw new NotImplementedError("Scala Domain-consuming translator pending IMPL-7a.2/7b/7c")
+
   override def rules: Seq[VerificationRule] = Seq(
     ReservedKeywordRule.warning("scala", keywords)
   )

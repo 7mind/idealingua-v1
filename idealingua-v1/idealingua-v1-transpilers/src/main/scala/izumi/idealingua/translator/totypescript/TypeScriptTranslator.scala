@@ -7,7 +7,7 @@ import izumi.idealingua.model.common.*
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.{Algebraic, Alternative, Singular, Struct, Void}
 import izumi.idealingua.model.il.ast.typed.TypeDef.*
 import izumi.idealingua.model.il.ast.typed.{DefMethod, *}
-import izumi.idealingua.model.output.Module
+import izumi.idealingua.model.output.{Module, ModuleId}
 import izumi.idealingua.model.publishing.manifests.TypeScriptProjectLayout
 import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.CompilerOptions.*
@@ -34,14 +34,25 @@ class TypeScriptTranslator(ts: Typespace, options: TypescriptTranslatorOptions) 
   import ctx._
 
   def translate(): Translated = {
-    Translated(
-      ts,
-      Seq(
-        typespace.domain.types.flatMap(translateDef),
-        typespace.domain.services.flatMap(translateService),
-        typespace.domain.buzzers.flatMap(translateBuzzer),
-      ).flatten,
-    )
+    val translatedModules = Seq(
+      typespace.domain.types.flatMap(translateDef),
+      typespace.domain.services.flatMap(translateService),
+      typespace.domain.buzzers.flatMap(translateBuzzer),
+    ).flatten
+
+    Translated(ts.domain.id, ts.domain.meta, translatedModules :+ buildIndexModule())
+  }
+
+  protected def buildIndexModule(): Module = {
+    val content =
+      s"""// Auto-generated, any modifications may be overwritten in the future.
+         |// Exporting module for domain ${ts.domain.id.toPackage.mkString(".")}
+         |${ts.domain.types.filterNot(_.id.isInstanceOf[AliasId]).map(t => s"export * from './${t.id.name}';").mkString("\n")}
+         |${ts.domain.services.map(s => s"export * from './${s.id.name}';").mkString("\n")}
+         |${ts.domain.buzzers.map(s => s"export * from './${s.id.name}';").mkString("\n")}
+         """.stripMargin
+
+    Module(ModuleId(ts.domain.id.toPackage, "index.ts"), content)
   }
 
   protected def translateService(definition: Service): Seq[Module] = {

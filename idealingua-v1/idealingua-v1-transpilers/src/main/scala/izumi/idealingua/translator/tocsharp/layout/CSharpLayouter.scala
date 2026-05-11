@@ -49,13 +49,13 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
 
     val sources = outputs.flatMap {
       t =>
-        val did = t.typespace.domain.id
+        val did = t.domainId
         val (testsSrcs, mainSrcs) = t.modules
           .map(m => m.copy(id = m.id.copy(path = Seq.empty)))
           .map(m => ExtendedModule.DomainModule(did, m))
           .partition(_.module.meta.get("scope").contains("test"))
 
-        val deps = t.typespace.domain.meta.directImports.map(i => ManifestDependency(naming.projectId(i.id), mfVersion))
+        val deps = t.meta.directImports.map(i => ManifestDependency(naming.projectId(i.id), mfVersion))
         val pkgMf = options.manifest.copy(nuget =
           options.manifest.nuget.copy(dependencies = options.manifest.nuget.dependencies ++ deps.toList ++ Seq(ManifestDependency(naming.irtId, mfVersion)))
         )
@@ -64,7 +64,7 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
 
         val prjId        = naming.projectId(did)
         val nuspecModule = mkNuspecModule(List(s"../src/$prjDir/**/*.cs"), deps, prjId, pkgMf)
-        val csdeps = t.typespace.domain.meta.directImports.map {
+        val csdeps = t.meta.directImports.map {
           i =>
             val id         = i.id
             val prjDirName = naming.projectDirName(id)
@@ -74,12 +74,12 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
 
         val src = mainSrcs ++ csproj(prjId, csdeps, basicDeps)
 
-        val testDeps         = pkgMf.nuget.dependencies ++ pkgMf.nuget.testDependencies ++ Seq(ManifestDependency(naming.projectId(t.typespace.domain.id), mfVersion))
+        val testDeps         = pkgMf.nuget.dependencies ++ pkgMf.nuget.testDependencies ++ Seq(ManifestDependency(naming.projectId(t.domainId), mfVersion))
         val pkgMfTest        = pkgMf.copy(nuget = pkgMf.nuget.copy(dependencies = testDeps))
         val prjIdTest        = naming.testProjectId(did)
         val nuspecTestModule = mkNuspecModule(List(s"../tests/$prjDir/**/*.cs"), testDeps, prjIdTest, pkgMfTest)
 
-        val csdepsTest = t.typespace.domain.meta.directImports.map {
+        val csdepsTest = t.meta.directImports.map {
           i =>
             val id          = i.id
             val prjDirName  = naming.projectDirName(id)
@@ -88,7 +88,7 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
             s"tests/$prjDirName/$prjTestName.csproj"
         }
 
-        val tests = testsSrcs ++ csproj(s"$prjDir.Test", csdepsTest ++ Seq(s"src/$prjDir/${naming.projectId(t.typespace.domain.id)}.csproj"), basicTestDeps)
+        val tests = testsSrcs ++ csproj(s"$prjDir.Test", csdepsTest ++ Seq(s"src/$prjDir/${naming.projectId(t.domainId)}.csproj"), basicTestDeps)
 
         val nuspecs = Seq(nuspecModule, nuspecTestModule)
         addPrefix(src, Seq(s"src", prjDir)) ++
@@ -123,7 +123,7 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
       naming.pkgId,
     ) ++ outputs.map {
       t =>
-        naming.projectId(t.typespace.domain.id)
+        naming.projectId(t.domainId)
     }
 
     val packagesConfig = mkPackagesConfig(allIds)
@@ -133,7 +133,7 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
   private def generateSolution(outputs: Seq[Translated]): Seq[ExtendedModule.RuntimeModule] = {
     val projects = outputs.flatMap {
       out =>
-        val id = out.typespace.domain.id
+        val id = out.domainId
 
         val prjDirName  = naming.projectDirName(id)
         val prjName     = naming.projectId(id)
@@ -181,7 +181,7 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
   private def mkBundle(outputs: Seq[Translated], pkgId: String): ExtendedModule = {
     val allModules = outputs.map {
       t =>
-        ManifestDependency(naming.projectId(t.typespace.domain.id), mfVersion)
+        ManifestDependency(naming.projectId(t.domainId), mfVersion)
     }
     val deps                   = options.manifest.nuget.dependencies ++ allModules.toList
     val everythingNuspecModule = mkNuspecModule(List.empty, deps, pkgId, options.manifest)
@@ -191,7 +191,7 @@ class CSharpLayouter(options: CSharpTranslatorOptions) extends TranslationLayout
   private def mkTestBundle(outputs: Seq[Translated], pkgId: String, pkgIdTest: String): ExtendedModule = {
     val allModulesTest = Seq(ManifestDependency(pkgId, mfVersion)) ++ outputs.map {
       t =>
-        ManifestDependency(naming.testProjectId(t.typespace.domain.id), mfVersion)
+        ManifestDependency(naming.testProjectId(t.domainId), mfVersion)
     }
     val testDeps                   = options.manifest.nuget.dependencies ++ options.manifest.nuget.testDependencies ++ allModulesTest.toList
     val everythingNuspecModuleTest = mkNuspecModule(List.empty, testDeps, pkgIdTest, options.manifest)

@@ -33,7 +33,7 @@ class CSharpTranslator(ts: Typespace, options: CSharpTranslatorOptions) extends 
       typespace.domain.buzzers.flatMap(translateBuzzer),
     ).flatten
 
-    Translated(ts, modules)
+    Translated(ts.domain.id, ts.domain.meta, modules)
   }
 
   protected def translateService(definition: Service): Seq[Module] = {
