@@ -500,6 +500,13 @@ class IDLPostTyper(defn: DomainMeshLoaded) {
 
       case t: Builtin =>
         t
+
+      // F16/Option A1: service-family ids extend TypeId since PR-02 IMPL-2 (TypeId.scala),
+      // but the legacy typer never routes them through transformSimpleId — fixServiceId /
+      // fixBuzzerId / fixStreamsId handle them directly. This arm exists solely to keep the
+      // sealed-hierarchy match exhaustive.
+      case _: ServiceId | _: BuzzerId | _: StreamsId =>
+        throw new IllegalStateException(s"legacy typer does not process service-family ids through transformSimpleId: $t")
     }).asInstanceOf[R]
   }
 
@@ -527,6 +534,11 @@ class IDLPostTyper(defn: DomainMeshLoaded) {
 
       case t: Builtin =>
         t
+
+      // F16/Option A1: see transformSimpleId for the rationale; legacy code
+      // never reaches this arm via fixSimpleId either.
+      case _: ServiceId | _: BuzzerId | _: StreamsId =>
+        throw new IllegalStateException(s"legacy typer does not process service-family ids through fixSimpleId: $t")
     }).asInstanceOf[T]
 
     if (out.path.toPackage == domainId.toPackage) {

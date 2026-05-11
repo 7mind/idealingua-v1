@@ -59,6 +59,11 @@ protected[typespace] class InheritanceQueriesImpl(ts: Typespace) extends Inherit
       case _: AdtId =>
         List()
 
+      // F16/Option A1 (PR-02 IMPL-2): service-family ids extend TypeId now;
+      // services/buzzers/streams have no inheritance.
+      case _: ServiceId | _: BuzzerId | _: StreamsId =>
+        List()
+
       case e: Builtin =>
         throw new IDLException(s"Unexpected parent id for $id: $e")
     }
@@ -83,6 +88,11 @@ protected[typespace] class InheritanceQueriesImpl(ts: Typespace) extends Inherit
         List()
 
       case _: AdtId =>
+        List()
+
+      // F16/Option A1 (PR-02 IMPL-2): service-family ids extend TypeId now;
+      // services/buzzers/streams have no inheritance.
+      case _: ServiceId | _: BuzzerId | _: StreamsId =>
         List()
 
       case e: Builtin =>

@@ -11,7 +11,7 @@ import izumi.idealingua.translator.toscala.products.CogenProduct
 import izumi.idealingua.translator.toscala.products.CogenProduct.{CompositeProduct, IdentifierProudct}
 import izumi.idealingua.translator.toscala.types.{ScalaStruct, StructContext}
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.HashSet
 import scala.meta._
 
@@ -61,6 +61,12 @@ object AnyvalExtension extends ScalaTranslatorExtension {
     canBeAnyValField(ctx, typeId, HashSet.empty)
   }
 
+  // F16/Option A1 (PR-02 IMPL-2): TypeId.scala widened ServiceId/BuzzerId/StreamsId to extend
+  // the sealed TypeId trait. This match never receives a service-family id (canBeAnyValField is
+  // only invoked from field/struct contexts where IDs of those kinds cannot appear), so the
+  // existing branches remain semantically exhaustive — only the compiler's exhaustiveness
+  // checker requires a hint.
+  @nowarn("msg=match may not be exhaustive")
   @tailrec
   private def canBeAnyValField(ctx: STContext, typeId: TypeId, /* unused */ seen: HashSet[TypeId]): Boolean = {
     typeId match {
