@@ -3,56 +3,67 @@ package izumi.idealingua.harness
 import izumi.idealingua.translator.compat.NewTyperPipeline
 import org.scalatest.funsuite.AnyFunSuite
 
-/** PR-02 IMPL-2/3/5 diagnostics: captures the per-domain diagnostic kind +
-  * originating phase for each corpus domain rejected by the new typer
-  * pipeline. Complements `ScalaTyperParitySpec` (which excludes them as
-  * F-followups IMPL-7a.2-F5c/F5e).
+/** PR-02 IMPL-2/3/5 diagnostics: regression guard that the new typer
+  * pipeline accepts every domain in the corpus.
   *
-  * The 2 expected-rejected domains are listed below. The spec is *positive*:
-  * it asserts the new typer rejects each one and that the failure message
-  * mentions the expected diagnostic kind. Captured messages are appended to
-  * the assertion output so per-domain triage stays visible in CI logs.
+  * Originally a *positive* spec listing the F-followup domains expected to
+  * be rejected (with the expected diagnostic kind for each). Inverted on
+  * 2026-05-12 after the final F5e + F5c cleanup landed and the rejection
+  * list emptied: the spec now asserts that `NewTyperPipeline.run` succeeds
+  * on all 28 corpus domains. Any future regression where a previously
+  * accepted domain is rejected will fail this spec and surface the captured
+  * diagnostic in CI logs.
   *
-  * If a domain stops being rejected (i.e. a fix lands) the assertion in
-  * `expectsRejection` will fail loudly, signalling that the exclusion list
-  * in `ScalaTyperParitySpec` should be trimmed accordingly.
-  *
-  * History:
-  *   - `{idltest.json}` (F1) and `{idltest.ast}` (F5d) removed 2026-05-12
-  *     after the CycleDetector container-indirection fix landed.
+  * History (all resolved):
+  *   - `{idltest.json}` (F1) and `{idltest.ast}` (F5d) — CycleDetector
+  *     container-indirection fix, 2026-05-12.
   *   - `{izumi.test.clashing}` (F4), `{idltest.aliases}` (F5a),
-  *     `{izumi.test.domain02}` (F5b) removed 2026-05-12 after the
-  *     NameResolver cross-domain-scope + alias-as-mixin dealias fix landed
-  *     (`PR-02 IMPL-2/3-fix`). All three are now accepted by the new typer.
-  *   - `{idltest.inheritance}` (F2) removed 2026-05-12 after the
-  *     StructuralFlattener covariant-field-merge fix landed
-  *     (`PR-02 IMPL-3-fix: StructuralFlattener allows covariant field-type override`).
-  *   - `{idltest.consts}` F3 ConstValueTyper fixes landed 2026-05-12; the
-  *     11 BadConstValue/ConstTypeMismatch diagnostics are gone, but the
-  *     deliberate typo on `anotherString: XXX = """yyy"""` still produces
-  *     a legitimate `UnknownTypeRef(.XXX)`. The fixture stays excluded from
-  *     `ScalaTyperParitySpec` under F5e (legacy silently ignores the typo
-  *     because legacy never processes top-level consts at all, see
-  *     `IDLTyper.scala:44-54` — `IDLPretyper` collects consts into
-  *     `DomainMeshLoaded.consts` but no downstream phase reads them).
+  *     `{izumi.test.domain02}` (F5b) — NameResolver cross-domain-scope +
+  *     alias-as-mixin dealias fix (`PR-02 IMPL-2/3-fix`), 2026-05-12.
+  *   - `{idltest.inheritance}` (F2) — StructuralFlattener
+  *     covariant-field-merge fix, 2026-05-12.
+  *   - `{idltest.consts}` (F3) — ConstValueTyper top-level untyped +
+  *     list-literal routing fix, 2026-05-12.
+  *   - `{idltest.consts}` (F5e) — fixture typo `anotherString: XXX`
+  *     corrected to `str`, 2026-05-12.
+  *   - `{idltest.services}` (F5c T1) — EphemeralSynthesizer auto-wraps
+  *     non-DTO alt-output branches, 2026-05-12.
+  *   - `{idltest.services}` (F5c T2/T3) — AdtConflictsRule skips
+  *     synthesized ADTs (`Domain.ephemeralOwner` keys), 2026-05-12.
   */
 final class TyperDiagnosticsSpec extends AnyFunSuite {
   private val repoRoot   = HarnessCorpus.repoRootForTests()
   private val corpusRoot = HarnessCorpus.corpusRoot(repoRoot)
 
-  /** Per-domain expectation: id → expected diagnostic-kind substring. */
-  private val expectations: Seq[(String, String)] = Seq(
-    "{idltest.consts}"        -> "UnknownTypeRef",
-    "{idltest.services}"      -> "",
-  )
+  /** Per-domain expectation: id → expected diagnostic-kind substring.
+    *
+    * Empty as of 2026-05-12: parity gate is fully unblocked.
+    */
+  private val expectations: Seq[(String, String)] = Seq.empty
 
-  test("new typer rejects the 2 documented F-followup domains and captures per-domain diagnostics") {
+  test("new typer accepts every domain in the corpus (regression guard)") {
     val fullCorpus = HarnessCorpus.loadCorpus(corpusRoot)
-    val byId       = fullCorpus.map(d => d.typespace.domain.id.toString -> d).toMap
 
-    val capturedLines = scala.collection.mutable.Buffer.empty[String]
+    val capturedLines        = scala.collection.mutable.Buffer.empty[String]
+    val unexpectedlyRejected = scala.collection.mutable.Buffer.empty[String]
     val unexpectedlyAccepted = scala.collection.mutable.Buffer.empty[String]
+    val byId                 = fullCorpus.map(d => d.typespace.domain.id.toString -> d).toMap
 
+    // Pass 1 — every corpus domain must be accepted by the new typer.
+    for (domain <- fullCorpus) {
+      val id = domain.typespace.domain.id.toString
+      try {
+        val _ = NewTyperPipeline.run(domain.parsed)
+      } catch {
+        case t: Throwable =>
+          unexpectedlyRejected += id
+          capturedLines += s"$id (UNEXPECTED REJECTION):"
+          for (line <- t.getMessage.linesIterator) capturedLines += s"  $line"
+      }
+    }
+
+    // Pass 2 — any residual entries in `expectations` are checked positively
+    // (rejection with the documented diagnostic substring). Empty by design.
     for ((id, expectedKind) <- expectations) {
       byId.get(id) match {
         case None =>
@@ -74,12 +85,13 @@ final class TyperDiagnosticsSpec extends AnyFunSuite {
       }
     }
 
-    // Always print the captured diagnostics — info() so they survive in CI.
-    info(capturedLines.mkString("\n"))
+    if (capturedLines.nonEmpty) info(capturedLines.mkString("\n"))
 
-    // Fail loudly if any of the 3 stopped being rejected — that's a stale exclusion.
+    if (unexpectedlyRejected.nonEmpty) {
+      fail(s"New typer regressed on ${unexpectedlyRejected.size} domain(s) that previously passed: ${unexpectedlyRejected.mkString(", ")}\n\nFull capture:\n${capturedLines.mkString("\n")}")
+    }
     if (unexpectedlyAccepted.nonEmpty) {
-      fail(s"The following domains are no longer rejected by NewTyperPipeline and should be re-enabled in ScalaTyperParitySpec: ${unexpectedlyAccepted.mkString(", ")}\n\nFull capture:\n${capturedLines.mkString("\n")}")
+      fail(s"The following domains are no longer rejected by NewTyperPipeline and should be removed from `expectations`: ${unexpectedlyAccepted.mkString(", ")}\n\nFull capture:\n${capturedLines.mkString("\n")}")
     }
   }
 }

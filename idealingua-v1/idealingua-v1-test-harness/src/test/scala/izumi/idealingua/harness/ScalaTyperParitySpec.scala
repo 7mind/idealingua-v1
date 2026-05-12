@@ -23,20 +23,9 @@ final class ScalaTyperParitySpec extends AnyFunSuite {
 
   /** Fixtures excluded from the parity comparison.
     *
-    * These are IR-phase divergences (Phase 2 NameResolver / Phase 12
-    * Validator) — not Scala translator-port divergences.
-    *
-    *   - `{idltest.consts}`: deliberate-typo `anotherString: XXX = …` still
-    *     surfaces a legitimate `UnknownTypeRef(.XXX)` from Phase 2. Legacy
-    *     silently ignores the typo because legacy never processes top-level
-    *     consts at all (`IDLTyper.scala:44-54`: `IDLPretyper` collects them
-    *     into `DomainMeshLoaded.consts` but no downstream phase reads them).
-    *     F-followup IMPL-7a.2-F5e. The original F3 defects (top-level
-    *     untyped scalar/list/map consts + untyped object literal against
-    *     a structural target inside `lst[T]`) were fixed in
-    *     `PR-02 IMPL-3-fix: ConstValueTyper top-level untyped + list-literal routing`.
-    *   - `{idltest.services}`: PrimitiveAdtMember/DuplicateAdtBranch on
-    *     synthesized alternative-output ADTs. F-followup IMPL-7a.2-F5c.
+    * Empty as of 2026-05-12: the new typer accepts the full 28-domain corpus
+    * and produces byte-equal Scala output to the legacy typer on every
+    * domain.
     *
     * Removed 2026-05-12 after CycleDetector container-indirection fix:
     *   - `{idltest.json}` (F1) — recursive `JSONLike` ADT now passes.
@@ -51,11 +40,16 @@ final class ScalaTyperParitySpec extends AnyFunSuite {
     * Removed 2026-05-12 after StructuralFlattener covariant-field-merge fix
     * (`PR-02 IMPL-3-fix: StructuralFlattener allows covariant field-type override`):
     *   - `{idltest.inheritance}` (F2) — covariant field overrides now soft-merged.
+    *
+    * Removed 2026-05-12 after the final F5e + F5c cleanup
+    * (`PR-02 IMPL-3/5-fix: F5e typo + F5c synthesized-ADT validator relaxation`):
+    *   - `{idltest.consts}`   (F5e) — fixture-typo `anotherString: XXX` corrected to `str`.
+    *   - `{idltest.services}` (F5c T2/T3) — `AdtConflictsRule` skips synthesized
+    *     ADTs (`Domain.ephemeralOwner` keys), so the duplicate `SuccessData`
+    *     branches synthesized for `SuccessData !! SuccessData` no longer trigger
+    *     `DuplicateAdtBranch`.
     */
-  private val excludedDomainIds: Set[String] = Set(
-    "{idltest.consts}",
-    "{idltest.services}",
-  )
+  private val excludedDomainIds: Set[String] = Set.empty
 
   /** Per-domain parity assertion. Each non-excluded domain is compiled
     * twice in isolation (legacy + new) and bytes are compared. Per-domain
