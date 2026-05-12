@@ -1,7 +1,7 @@
 package izumi.idealingua.typer.phase
 
 import izumi.idealingua.model.common.TypeId._
-import izumi.idealingua.model.common.{Primitive, StructureId, TypeId}
+import izumi.idealingua.model.common.{DomainId, Primitive, StructureId, TypeId}
 import izumi.idealingua.model.il.ast.InputPosition
 import izumi.idealingua.model.il.ast.typed.Field
 import izumi.idealingua.typer.ir._
@@ -53,7 +53,30 @@ object StructuralFlattener {
     removedConcepts: List[StructureId],
   )
 
-  def apply(rd: ResolvedDomain): ResolvedDomain = {
+  /** Back-compat overload for tests and call sites that don't have a
+    * cross-domain `FamilyIndex` handy.  Cross-domain mixin fields will not be
+    * flattened (legacy single-domain behaviour); use `apply(rd, family)` from
+    * the production pipeline so foreign mixin structs are walked too (PR-02
+    * IMPL-7a.2-Fj).
+    */
+  def apply(rd: ResolvedDomain): ResolvedDomain = apply(rd, None)
+
+  /** Production overload: cross-domain mixin fields are flattened by
+    * resolving foreign domain meshes through `family` (PR-02 IMPL-7a.2-Fj).
+    *
+    * For each direct supertype `S` of any struct in `rd` whose
+    * `S.path.domain != rd.id`, the flattener runs `ScopeBuilder` +
+    * `NameResolver` on the foreign mesh (cached per-domain via
+    * `family.domains(...)`) and harvests its `Dto`/`Interface` structs into
+    * the BFS `views` map. Transitive foreign-of-foreign mixins are followed
+    * in the same way. Foreign-domain diagnostics are discarded — the foreign
+    * domain runs its own typer pass and surfaces them through its own
+    * pipeline result, so re-emitting them here would only double-report.
+    */
+  def apply(rd: ResolvedDomain, family: FamilyIndex): ResolvedDomain =
+    apply(rd, Some(family))
+
+  private def apply(rd: ResolvedDomain, family: Option[FamilyIndex]): ResolvedDomain = {
     val diagBuf = mutable.ArrayBuffer.empty[Diagnostic]
     val parentsBuf = mutable.LinkedHashMap.empty[TypeId, Set[InterfaceId]]
     val flatBuf = mutable.LinkedHashMap.empty[StructureId, FlatStruct]
@@ -128,6 +151,80 @@ object StructuralFlattener {
         directInterfaces.update(eph.id, eph.struct.superclasses.interfaces)
         directConcepts.update(eph.id, eph.struct.superclasses.concepts)
       case _ => ()
+    }
+
+    // ----- Harvest cross-domain mixin structs (PR-02 IMPL-7a.2-Fj) -----
+    //
+    // The flattener was previously per-domain: cross-domain mixin parents
+    // (`& foreignDomain#M`) had no entry in `views`, so their fields were
+    // silently dropped from the flattened struct. This left renderer output
+    // referencing a `case class D(...)` constructor signature that omitted
+    // the foreign-mixin fields (e.g. `idltest.aliases.D1` missed `f2: String`
+    // from `idltest.aliases2#M2`), producing compile-gate errors.
+    //
+    // Fix: for each foreign domain reachable through `directSupers`, run
+    // `ScopeBuilder` + `NameResolver` on its mesh (cached per-domain) and
+    // harvest its `Dto`/`Interface` structs into `views`/`directSupers`/
+    // `directInterfaces`/`directConcepts`. Recurse over foreign-of-foreign
+    // supertypes so the BFS walker eventually reaches every transitive
+    // ancestor. Foreign diagnostics are dropped — the foreign domain owns
+    // its own pipeline run and surfaces its own diagnostics there.
+    family.foreach { fam =>
+      val foreignResolved = mutable.HashMap.empty[DomainId, Option[ResolvedDomain]]
+
+      def resolveForeign(d: DomainId): Option[ResolvedDomain] =
+        foreignResolved.getOrElseUpdate(
+          d, {
+            if (d == rd.id) None
+            else
+              fam.domains.get(d).map { mesh =>
+                val scoped = ScopeBuilder(d, mesh, fam)
+                NameResolver(scoped, fam)
+              }
+          },
+        )
+
+      def harvest(id: StructureId): Unit = {
+        if (views.contains(id)) return
+        val resolved = resolveForeign(id.path.domain).getOrElse(return)
+        resolved.userTypes.get(id) match {
+          case Some(dto: TypeDef.Dto) =>
+            views.update(
+              id,
+              StructView(
+                dto.struct.fields,
+                dto.struct.removedFields,
+                dto.struct.superclasses.interfaces ++ dto.struct.superclasses.concepts,
+                dto.struct.superclasses.removedConcepts,
+              ),
+            )
+            directSupers.update(id, dto.struct.superclasses.interfaces ++ dto.struct.superclasses.concepts)
+            directInterfaces.update(id, dto.struct.superclasses.interfaces)
+            directConcepts.update(id, dto.struct.superclasses.concepts)
+            (dto.struct.superclasses.interfaces ++ dto.struct.superclasses.concepts).foreach(harvest)
+          case Some(ifc: TypeDef.Interface) =>
+            views.update(
+              id,
+              StructView(
+                ifc.struct.fields,
+                ifc.struct.removedFields,
+                ifc.struct.superclasses.interfaces ++ ifc.struct.superclasses.concepts,
+                ifc.struct.superclasses.removedConcepts,
+              ),
+            )
+            directSupers.update(id, ifc.struct.superclasses.interfaces ++ ifc.struct.superclasses.concepts)
+            directInterfaces.update(id, ifc.struct.superclasses.interfaces)
+            directConcepts.update(id, ifc.struct.superclasses.concepts)
+            (ifc.struct.superclasses.interfaces ++ ifc.struct.superclasses.concepts).foreach(harvest)
+          case _ => ()
+        }
+      }
+
+      // Snapshot keys to avoid concurrent-modification while we mutate views.
+      val seedSupers = directSupers.values.flatten.toList
+      seedSupers.foreach { sup =>
+        if (sup.path.domain != rd.id) harvest(sup)
+      }
     }
 
     /** Walk only `interfaces` edges; recurses transitively. Returns the
@@ -244,10 +341,30 @@ object StructuralFlattener {
     // BFS walks every flattenable struct — both user-declared and
     // synthesized ephemerals — so renderer lookups against `flattenedStructs`
     // are total (F8 fix).
+    //
+    // Cross-domain harvested views (PR-02 IMPL-7a.2-Fj) participate in BFS
+    // as ancestors but do NOT receive their own FlatStruct entry in the
+    // local domain — they belong to a different domain's `flattenedStructs`
+    // map and will be produced there.
     val parentsMap: Map[TypeId, Set[InterfaceId]] = parentsBuf.toMap
     val viewsMap: Map[StructureId, StructView]    = views.toMap
+    val localStructIds: Set[StructureId] = {
+      val acc = mutable.LinkedHashSet.empty[StructureId]
+      rd.userTypes.values.foreach {
+        case dto: TypeDef.Dto       => val _ = acc.add(dto.id)
+        case ifc: TypeDef.Interface => val _ = acc.add(ifc.id)
+        case _                      => ()
+      }
+      rd.members.values.foreach {
+        case Member.Ephemeral(eph) => val _ = acc.add(eph.id)
+        case _                     => ()
+      }
+      acc.toSet
+    }
     views.keys.foreach { id =>
-      flatBuf.update(id, flatten(id, viewsMap, rd, directSupers, parentsMap, diagBuf))
+      if (localStructIds.contains(id)) {
+        flatBuf.update(id, flatten(id, viewsMap, rd, directSupers, parentsMap, diagBuf))
+      }
     }
 
     rd.copy(

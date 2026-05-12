@@ -45,7 +45,13 @@ object NewTyperPipeline {
     // flattener now sources structs from both `userTypes` and
     // `members.collect{ case Ephemeral(...) }` in one pass.
     val withEphem    = EphemeralSynthesizer(withCycles)
-    val flattened    = StructuralFlattener(withEphem)
+    // PR-02 IMPL-7a.2-Fj: pass the cross-domain `FamilyIndex` so the flattener
+    // can resolve foreign mixin parents (e.g. `& otherDomain#M`) and include
+    // their fields in the local type's `FlatStruct`. Without this the renderer
+    // emits `case class D(local_only)` for a `data D { & local; & foreign#M }`
+    // declaration, dropping `M`'s fields — see compile-gate error on
+    // `idltest/aliases/D1.scala` (1 → 0 errors).
+    val flattened    = StructuralFlattener(withEphem, family)
     val withConsts   = ConstValueTyper(flattened)
     val withFinger   = FingerprintCalculator(withConsts)
     val rooted       = RootExtractor(withFinger)
