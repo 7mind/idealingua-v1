@@ -36,9 +36,14 @@ object DomainCastDownExpandExtension {
 
     implementors.flatMap { dtoId =>
       ctx.domain.flattenedStructs.get(dtoId).map { dtoFlat =>
-        val dtoFields = dtoFlat.fields.map(_.field)
-        val parentFields = dtoFields.filter(f => ifaceFlat.contains(f))
-        val localFields  = dtoFields.filterNot(f => ifaceFlat.contains(f))
+        // Defect #7 (IMPL-7a.2-Fa): dedup covariant duplicates by name in the
+        // DTO's flat field list so the synthesized `Cast.using(...)` factory
+        // never emits two `name =` keys for the same logical field.
+        val seen: scala.collection.mutable.LinkedHashSet[String] = scala.collection.mutable.LinkedHashSet.empty
+        val dtoFields = dtoFlat.fields.sortBy(_.distance).filter(ff => seen.add(ff.field.name)).map(_.field)
+        val ifaceFieldNames: Set[String] = ifaceFlat.map(_.name)
+        val parentFields = dtoFields.filter(f => ifaceFieldNames.contains(f.name))
+        val localFields  = dtoFields.filterNot(f => ifaceFieldNames.contains(f.name))
 
         val thisType   = ctx.conv.toScala(i.id)
         val targetType = ctx.conv.toScala(dtoId)

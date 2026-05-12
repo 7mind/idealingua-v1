@@ -95,7 +95,7 @@ final class DomainCompositeRenderer(ctx: DomainSTContext) {
       dto.id,
       izumi.idealingua.typer.ir.FlatStruct(dto.id, List.empty, List.empty, List.empty),
     )
-    val sstruct  = DomainScalaStruct.scalaStruct(dto.id, flat, dto.struct.superclasses, ctx.conv)
+    val sstruct  = DomainScalaStruct.scalaStruct(dto.id, flat, dto.struct.superclasses, ctx.conv, ctx.domain)
     val composite = new DomainCompositeStructure(ctx, sstruct)
     defns(composite, ClassSource.CsDTO(LegacyDtoStub(dto)))
   }

@@ -206,7 +206,7 @@ final case class DomainServiceMethodProduct(
         concepts        = method.signature.input.concepts,
         removedConcepts = List.empty,
       )
-      val scalaStruct = DomainScalaStruct.scalaStruct(typespaceId, flat, supers, ctx.conv)
+      val scalaStruct = DomainScalaStruct.scalaStruct(typespaceId, flat, supers, ctx.conv, ctx.domain)
       scalaStruct.all
     }
 
@@ -228,7 +228,7 @@ final case class DomainServiceMethodProduct(
         concepts        = method.signature.input.concepts,
         removedConcepts = List.empty,
       )
-      val scalaStruct = DomainScalaStruct.scalaStruct(typespaceId, flat, supers, ctx.conv)
+      val scalaStruct = DomainScalaStruct.scalaStruct(typespaceId, flat, supers, ctx.conv, ctx.domain)
       val composite   = new DomainCompositeStructure(ctx, scalaStruct)
       // Use a stub legacy DTO via ClassSource.CsDTO — the composite renderer
       // only matches on type, never reads the inner field, at the
@@ -312,7 +312,7 @@ final case class DomainServiceMethodProduct(
           FlatStruct(outId, List.empty, List.empty, List.empty),
         )
         val supers = izumi.idealingua.model.il.ast.typed.Super.empty
-        val scalaStruct = DomainScalaStruct.scalaStruct(outId, flat, supers, ctx.conv)
+        val scalaStruct = DomainScalaStruct.scalaStruct(outId, flat, supers, ctx.conv, ctx.domain)
         val composite   = new DomainCompositeStructure(ctx, scalaStruct)
         val stub = stubDto(outId)
         ctx.compositeRenderer.defns(composite, ClassSource.CsDTO(stub)).render

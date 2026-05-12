@@ -29,14 +29,14 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
       i.id,
       izumi.idealingua.typer.ir.FlatStruct(i.id, List.empty, List.empty, List.empty),
     )
-    val fields = DomainScalaStruct.scalaStruct(i.id, flat, i.struct.superclasses, ctx.conv)
+    val fields = DomainScalaStruct.scalaStruct(i.id, flat, i.struct.superclasses, ctx.conv, ctx.domain)
     val t      = ctx.conv.toScala(i.id)
 
     val qqInterface = mkTrait(i.struct.superclasses.interfaces, t, fields)
 
     val implId       = DomainScalaStruct.implId(i.id)
     val implFlat     = DomainScalaStruct.implFlatStruct(implId, flat)
-    val implFields   = DomainScalaStruct.scalaStruct(implId, implFlat, izumi.idealingua.model.il.ast.typed.Super.empty.copy(interfaces = List(i.id)), ctx.conv)
+    val implFields   = DomainScalaStruct.scalaStruct(implId, implFlat, izumi.idealingua.model.il.ast.typed.Super.empty.copy(interfaces = List(i.id)), ctx.conv, ctx.domain)
     val implStructure = new DomainCompositeStructure(ctx, implFields)
 
     // Construct a synthetic `TypeDef.Interface` legacy stub for the

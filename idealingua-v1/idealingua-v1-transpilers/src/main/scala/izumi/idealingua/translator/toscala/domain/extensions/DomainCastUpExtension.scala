@@ -43,11 +43,24 @@ object DomainCastUpExtension {
       val flat = ctx.domain.flattenedStructs.get(thisId)
       val parentFlat = ctx.domain.flattenedStructs.get(parentId).map(_.fields.map(_.field).toSet).getOrElse(Set.empty)
 
+      // Defect #7 (IMPL-7a.2-Fa): when a child covariantly overrides a parent
+      // field, `flat.fields` carries both occurrences (primary + ancestor).
+      // The cast-up converter must emit only ONE assignment per name, otherwise
+      // we produce `T(field = _value.field, field = _value.field)` (Scala
+      // duplicate-named-argument error). Same dedup rule as
+      // `DomainScalaStruct.fromFlat`: smallest-distance entry wins. Field
+      // membership in `parentFlat` is set-based so the parent's field
+      // declaration determines inclusion; the primary's `Field` value matches
+      // when the field name is identical and the parent's type is a supertype
+      // of the primary's type (covariant rule).
+      val dedupedNames = scala.collection.mutable.LinkedHashSet.empty[String]
       val constructorCode = flat
-        .map(_.fields.map(_.field).filter(f => parentFlat.contains(f)))
+        .map(_.fields.filter(ff => parentFlat.exists(_.name == ff.field.name)))
         .getOrElse(List.empty)
-        .map { f =>
-          q""" ${Term.Name(f.name)} = _value.${Term.Name(f.name)} """
+        .sortBy(_.distance)
+        .filter(ff => dedupedNames.add(ff.field.name))
+        .map { ff =>
+          q""" ${Term.Name(ff.field.name)} = _value.${Term.Name(ff.field.name)} """
         }
 
       val thisType       = ctx.conv.toScala(thisId)

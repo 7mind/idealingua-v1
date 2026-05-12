@@ -40,8 +40,15 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     * The remaining divergences are pre-existing renderer-level defects
     * unrelated to F8 — see `tasks.md` IMPL-9 row for the F-followup
     * catalog (AnyVal field renaming, Circe trait-vs-object layout, upcast
-    * self-vs-parent selection, downcast `T.Struct` vs implementor, BFS
-    * field-order vs legacy depth-first order, etc.).
+    * self-vs-parent selection, downcast `T.Struct` vs implementor, etc.).
+    *
+    * IMPL-7a.2-Fa (2026-05-12) closed defect #5 (field-order BFS → legacy
+    * sort) and defect #7 (covariant duplicate-field emission). The count
+    * stays at 167 because every previously affected module also diverges
+    * for at least one other defect category; the *content* of those
+    * divergences moved from "wrong field order / duplicate field name"
+    * to whichever residual defect dominates each module (Circe, upcast
+    * self, etc.).
     *
     * Symmetric on Scala 2.13.18 and 3.8.3.
     */
