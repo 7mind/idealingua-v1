@@ -149,7 +149,7 @@ object NameResolver {
     private def collectExportedNames(domain: DomainMeshLoaded): Map[String, TypeId] = {
       domain.types.iterator.collect {
         case d: RawTypeDef.WithId  => d.id.name -> ScopeBuilder.normalizeId(d.id, domain.id)
-        case d: RawTypeDef.NewType => d.id.name -> ScopeBuilder.normalizeId(d.id.toAliasId, domain.id)
+        case d: RawTypeDef.NewType => d.id.name -> ScopeBuilder.newtypeRegisteredId(d, domain.id, domain, family)
       }.toMap
     }
 
@@ -210,12 +210,49 @@ object NameResolver {
       TypeDef.Adt(ownedId, members, fixMeta(d.meta))
     }
 
-    /** Newtypes become aliases at this layer (legacy behaviour); the
-      * `Some(modifiers)` case extends a base structural type — Phase 6
-      * (IMPL-3) will materialise it. For now we synthesize an alias.
+    /** F-clone-newtype (PR-02 IMPL-7a.2-Fh2): `clone X into Y { ... }` with
+      * non-empty modifiers materializes Y as the same kind as X (DTO /
+      * Interface / Identifier), inheriting X's struct + applying modifiers
+      * and prepending X itself as a concept. Empty-modifier clones keep the
+      * legacy alias materialization (`IDLTyper.scala:171-172`).
+      *
+      * Identifier source is currently unsupported by legacy
+      * (`:188 throw new IDLException`); we surface that as a fallback alias
+      * to keep the IR well-formed and emit no diagnostic (matches
+      * `RawTypeDef.NewType` shape diagnostics handled in `KindChecker`).
       */
-    def fixNewType(d: RawTypeDef.NewType): TypeDef.Alias =
-      TypeDef.Alias(own(d.id.toAliasId).asInstanceOf[AliasId], resolveRef(d.source, d.meta.position), fixMeta(d.meta))
+    def fixNewType(d: RawTypeDef.NewType): TypeDef = d.modifiers match {
+      case None =>
+        TypeDef.Alias(own(d.id.toAliasId).asInstanceOf[AliasId], resolveRef(d.source, d.meta.position), fixMeta(d.meta))
+      case Some(mods) =>
+        ScopeBuilder.findRawSource(d.source, scoped.raw, family) match {
+          case Some(srcDto: RawTypeDef.DTO) =>
+            val extended = mergeNewtype(srcDto.struct, mods, d.source)
+            val newId    = own(d.id.toDataId).asInstanceOf[DTOId]
+            TypeDef.Dto(newId, toStruct(extended), fixMeta(d.meta))
+          case Some(srcIfc: RawTypeDef.Interface) =>
+            val extended = mergeNewtype(srcIfc.struct, mods, d.source)
+            val newId    = own(d.id.toInterfaceId).asInstanceOf[InterfaceId]
+            TypeDef.Interface(newId, toStruct(extended), fixMeta(d.meta))
+          case _ =>
+            // Identifier source / unresolved source: fall back to alias.
+            TypeDef.Alias(own(d.id.toAliasId).asInstanceOf[AliasId], resolveRef(d.source, d.meta.position), fixMeta(d.meta))
+        }
+    }
+
+    /** Build the extended `RawStructure` for a clone-with-modifiers: take
+      * the source struct, extend with `modifiers`, and prepend the source as
+      * a concept so inheritance flows through (mirrors
+      * `IDLTyper.scala:178-179` / `:183-184`).
+      */
+    private def mergeNewtype(srcStruct: RawStructure, modifiers: RawStructure, source: AbstractIndefiniteId): RawStructure = {
+      val extended = srcStruct.extend(modifiers)
+      val srcMixin = source match {
+        case id: IndefiniteId       => IndefiniteMixin(id.pkg, id.name)
+        case other                  => IndefiniteMixin(Seq.empty, other.name)
+      }
+      extended.copy(concepts = srcMixin +: extended.concepts)
+    }
 
     def fixService(s: RawService): TypeDef.Service =
       TypeDef.Service(own(s.id).asInstanceOf[ServiceId], s.methods.map(fixMethod), fixMeta(s.meta))

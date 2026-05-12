@@ -1,7 +1,7 @@
 package izumi.idealingua.typer.phase
 
 import izumi.idealingua.model.common.TypeId._
-import izumi.idealingua.model.common.{Builtin, DomainId, TypeId}
+import izumi.idealingua.model.common.{AbstractIndefiniteId, Builtin, DomainId, IndefiniteId, TypeId}
 import izumi.idealingua.model.il.ast.InputPosition
 import izumi.idealingua.model.il.ast.raw.defns.{RawNodeMeta, RawTypeDef}
 import izumi.idealingua.model.il.ast.raw.defns.RawTypeDef.{ForeignType, NewType}
@@ -77,7 +77,13 @@ object ScopeBuilder {
         }
 
       case d: NewType =>
-        val tid  = normalize(d.id.toAliasId, rootId).asInstanceOf[AliasId]
+        // F-clone-newtype (PR-02 IMPL-7a.2-Fh2): a `clone X into Y { ... }`
+        // declaration with non-empty modifiers materializes as the same kind
+        // as `X` (DTO/Interface/Identifier), not as an `AliasId`. Mirrors
+        // legacy `IDLTyper.fixType` arm for `RawTypeDef.NewType(_, _, Some(_))`
+        // (`IDLTyper.scala:174-189`). For empty-modifier clones we keep the
+        // legacy alias materialization (`:171-172`).
+        val tid  = newtypeRegisteredId(d, rootId, parsed, family)
         val name = tid.name
         localBuilder.get(name) match {
           case Some(existing) =>
@@ -104,7 +110,7 @@ object ScopeBuilder {
         // Resolve via the family index: no recursive re-typing of imported domains.
         family.domains.get(si.domain) match {
           case Some(importedDomain) =>
-            collectLocalNames(importedDomain).get(originalName) match {
+            collectLocalNames(importedDomain, family).get(originalName) match {
               case Some(tid) => importedBuilder.update(importedAs, tid)
               case None      => () // surface later as UnknownTypeRef during Phase 2
             }
@@ -152,11 +158,63 @@ object ScopeBuilder {
     * in `domain.id` carries `path.domain == domain.id` (legacy parity with
     * `IDLPostTyper.fixPkg`).
     */
-  private def collectLocalNames(domain: DomainMeshLoaded): Map[String, TypeId] = {
+  private def collectLocalNames(domain: DomainMeshLoaded, family: FamilyIndex): Map[String, TypeId] = {
     domain.types.iterator.collect {
       case d: RawTypeDef.WithId => d.id.name -> normalize(d.id, domain.id)
-      case d: NewType           => d.id.name -> normalize(d.id.toAliasId, domain.id)
+      case d: NewType           => d.id.name -> newtypeRegisteredId(d, domain.id, domain, family)
     }.toMap
+  }
+
+  /** Determine the registered TypeId for a NewType (with or without modifiers).
+    *
+    * With empty modifiers the clone is a pure alias (legacy
+    * `IDLTyper.scala:171-172`). With non-empty modifiers it adopts the kind of
+    * its source (legacy `:174-189`): DTO source → DTOId; Interface source →
+    * InterfaceId; Identifier source → IdentifierId (legacy throws for any
+    * other source kind, which we surface here as a fallback to AliasId so the
+    * IR stays well-formed).
+    */
+  private[phase] def newtypeRegisteredId(d: NewType, rootId: DomainId, parsed: DomainMeshLoaded, family: FamilyIndex): TypeId = {
+    if (d.modifiers.isEmpty) {
+      normalize(d.id.toAliasId, rootId)
+    } else {
+      newtypeKindedId(d, rootId, parsed, family).getOrElse(normalize(d.id.toAliasId, rootId))
+    }
+  }
+
+  /** Resolve the source RawTypeDef and return the corresponding kinded TypeId
+    * for the clone (rooted at `rootId`). Consults the local `parsed.types`
+    * first, then the family index for cross-domain sources.
+    */
+  private def newtypeKindedId(d: NewType, rootId: DomainId, parsed: DomainMeshLoaded, family: FamilyIndex): Option[TypeId] = {
+    findRawSource(d.source, parsed, family) match {
+      case Some(_: RawTypeDef.DTO)        => Some(normalize(d.id.toDataId, rootId))
+      case Some(_: RawTypeDef.Interface)  => Some(normalize(d.id.toInterfaceId, rootId))
+      case Some(_: RawTypeDef.Identifier) => Some(normalize(d.id.toIdId, rootId))
+      case _                              => None
+    }
+  }
+
+  /** Look up the raw type referenced by a `NewType.source` in the local domain
+    * (`parsed`) or, if qualified, the cross-domain family scope. Returns the
+    * raw type definition so `newtypeKindedId` can branch on its kind.
+    */
+  private[phase] def findRawSource(ref: AbstractIndefiniteId, parsed: DomainMeshLoaded, family: FamilyIndex): Option[RawTypeDef] = ref match {
+    case id: IndefiniteId =>
+      val isLocal = id.pkg.isEmpty || id.pkg == parsed.id.toPackage
+      if (isLocal) findByNameInDomain(id.name, parsed)
+      else {
+        val otherDomain = DomainId(id.pkg.init, id.pkg.last)
+        family.domains.get(otherDomain).flatMap(d => findByNameInDomain(id.name, d))
+      }
+    case _ => None
+  }
+
+  private def findByNameInDomain(name: String, domain: DomainMeshLoaded): Option[RawTypeDef] = {
+    domain.types.collectFirst {
+      case d: RawTypeDef.WithId if d.id.name == name => d
+      case d: NewType           if d.id.name == name => d
+    }
   }
 
   /** Rewrite a parser-produced `TypeId` so its `TypePath.domain` reflects the

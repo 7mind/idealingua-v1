@@ -110,24 +110,79 @@ object StructuralFlattener {
     val directSupers = mutable.LinkedHashMap.empty[StructureId, List[StructureId]]
     views.foreach { case (id, v) => directSupers.update(id, v.supers) }
 
-    // ----- parents map: transitive InterfaceId closure (cycles short-circuit) -----
-    def transitiveParents(start: StructureId): Set[InterfaceId] = {
+    // Per-node interface and concept supertype lists (mirrors legacy
+    // `safeAllParents` split, `InheritanceQueriesImpl.scala:32-79`).
+    val directInterfaces = mutable.LinkedHashMap.empty[StructureId, List[StructureId]]
+    val directConcepts   = mutable.LinkedHashMap.empty[StructureId, List[StructureId]]
+    rd.userTypes.values.foreach {
+      case dto: TypeDef.Dto =>
+        directInterfaces.update(dto.id, dto.struct.superclasses.interfaces)
+        directConcepts.update(dto.id, dto.struct.superclasses.concepts)
+      case ifc: TypeDef.Interface =>
+        directInterfaces.update(ifc.id, ifc.struct.superclasses.interfaces)
+        directConcepts.update(ifc.id, ifc.struct.superclasses.concepts)
+      case _ => ()
+    }
+    rd.members.values.foreach {
+      case Member.Ephemeral(eph) =>
+        directInterfaces.update(eph.id, eph.struct.superclasses.interfaces)
+        directConcepts.update(eph.id, eph.struct.superclasses.concepts)
+      case _ => ()
+    }
+
+    /** Walk only `interfaces` edges; recurses transitively. Returns the
+      * interface ancestors reachable purely through `&` declarations
+      * (mirrors legacy `safeParentsInherited` *strict ancestors part*,
+      * `InheritanceQueriesImpl.scala:36-49`, with self excluded —
+      * `Domain.parents` consumers add `{id}` explicitly,
+      * `DomainCastUpExtension.scala:19-20`).
+      */
+    def ancestorInterfaces(start: StructureId): mutable.LinkedHashSet[InterfaceId] = {
       val acc     = mutable.LinkedHashSet.empty[InterfaceId]
       val visited = mutable.LinkedHashSet.empty[StructureId]
-      val queue   = mutable.Queue.empty[StructureId]
-      queue.enqueue(start)
-      while (queue.nonEmpty) {
-        val cur = queue.dequeue()
+      def walk(cur: StructureId): Unit = {
         if (visited.add(cur)) {
-          directSupers.getOrElse(cur, Nil).foreach {
-            case iid: InterfaceId =>
-              val _ = acc.add(iid)
-              queue.enqueue(iid)
-            case sid =>
-              queue.enqueue(sid)
+          directInterfaces.getOrElse(cur, Nil).foreach {
+            case i: InterfaceId => val _ = acc.add(i); walk(i)
+            case _              => ()
           }
         }
       }
+      walk(start)
+      acc
+    }
+
+    /** Legacy `safeAllParents` strict-ancestor variant
+      * (`InheritanceQueriesImpl.scala:32-34`): union of strict-ancestor
+      * `parentsInherited` (interfaces-only chase) and `parentsConcepts`
+      * (own concepts walked with `safeAllParents`). The asymmetry —
+      * interfaces walked recursively via interface-edges only, concepts
+      * walked recursively via *both* edge types — is preserved so
+      * `_downcast_extend_*` emissions match legacy `compatibleDtos`.
+      */
+    def transitiveParents(start: StructureId): Set[InterfaceId] = {
+      val acc = mutable.LinkedHashSet.empty[InterfaceId]
+      val visited = mutable.LinkedHashSet.empty[StructureId]
+      def walk(cur: StructureId): Unit = {
+        if (visited.add(cur)) {
+          // strict-ancestor interfaces walk (excludes `cur` itself)
+          ancestorInterfaces(cur).foreach(i => { val _ = acc.add(i); () })
+          // parentsConcepts: own concepts → recurse with safeAllParents.
+          // Per legacy, when crossing into a concept C, safeAllParents(C)
+          // includes C itself if it's an interface (the parentsInherited
+          // self-inclusion arm). Replicate by adding C if interface.
+          directConcepts.getOrElse(cur, Nil).foreach {
+            case sid: StructureId =>
+              sid match {
+                case i: InterfaceId => val _ = acc.add(i); ()
+                case _              => ()
+              }
+              walk(sid)
+            case _ => ()
+          }
+        }
+      }
+      walk(start)
       acc.toSet
     }
 

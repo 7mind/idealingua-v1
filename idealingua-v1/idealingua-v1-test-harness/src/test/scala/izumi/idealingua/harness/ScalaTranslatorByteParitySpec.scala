@@ -103,7 +103,6 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     "{idltest.inheritance}::idltest/inheritance/DataWithAB.scala",
     "{idltest.inheritance}::idltest/inheritance/IntPair.scala",
     "{idltest.inheritance}::idltest/inheritance/NotificationWithAB.scala",
-    "{idltest.phase}::idltest/phase/LengthInBytes.scala",
     "{izumi.test.domain01}::izumi/test/domain01/ExtendedMixin.scala",
     "{izumi.test.domain01}::izumi/test/domain01/GenericFailureData.scala",
     "{idltest.diamonds}::idltest/diamonds/TestInterface1.scala",
@@ -112,7 +111,6 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     "{idltest.events}::idltest/events/TestBuzzer.scala",
     "{idltest.services}::idltest/services/Request.scala",
     "{idltest.services}::idltest/services/TestService.scala",
-    "{idltest.ast}::idltest/ast/TypeInfo.scala",
     "{idltest.dtofields}::idltest/dtofields/IntPair.scala",
   )
 
@@ -161,8 +159,15 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *   - 2026-05-12 (initial wrap-up cycle audit): 35.
     *   - 2026-05-12 (Fh1: F-subtraction — expand removedConcepts to flattened
     *     field names in StructuralFlattener): 32.
+    *   - 2026-05-12 (Fh2: F-clone-newtype — `clone X into Y { ... }` with
+    *     non-empty modifiers now materializes Y as same kind as X, plus
+    *     `transitiveParents` rewritten to match legacy `safeAllParents`
+    *     asymmetric concept-vs-interface recursion): 30.  Two AcceptedDivergences
+    *     entries (`{idltest.ast}::idltest/ast/TypeInfo.scala`,
+    *     `{idltest.phase}::idltest/phase/LengthInBytes.scala`) became
+    *     byte-identical as a side-effect of the parents-graph realignment.
     */
-  private val SubstantiveBaseline: Int = 32
+  private val SubstantiveBaseline: Int = 30
 
   private def keyOf(id: ModuleId): String =
     (id.path :+ id.name).mkString("/")
