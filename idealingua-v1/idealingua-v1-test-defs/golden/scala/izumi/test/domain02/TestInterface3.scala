@@ -16,21 +16,21 @@ trait TestInterface3Circe {
   import _root_.io.circe.syntax.*
   import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
   implicit val encodeTestInterface3: Encoder.AsObject[TestInterface3] = Encoder.AsObject.instance {
-    case v: TestInterface3.Struct =>
-      Map("izumi.test.domain02.TestInterface3.Struct" -> v).asJsonObject
     case v: DTO1 =>
       Map("izumi.test.domain02.DTO1" -> v).asJsonObject
+    case v: TestInterface3.Struct =>
+      Map("izumi.test.domain02.TestInterface3.Struct" -> v).asJsonObject
   }
   implicit val decodeTestInterface3: Decoder[TestInterface3] = Decoder.instance(c => {
     val maybeContent = c.keys.flatMap(_.headOption).toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \"type_name\": { ...fields } }", c.history))
     for (fname <- maybeContent; value = c.downField(fname); result <- fname match {
-      case "izumi.test.domain02.TestInterface3.Struct" =>
-        value.as[TestInterface3.Struct]
       case "izumi.test.domain02.DTO1" =>
         value.as[DTO1]
+      case "izumi.test.domain02.TestInterface3.Struct" =>
+        value.as[TestInterface3.Struct]
       case _ =>
         val cname = "izumi.test.domain02.TestInterface3"
-        val alts = List("izumi.test.domain02.TestInterface3.Struct", "izumi.test.domain02.DTO1").mkString(",")
+        val alts = List("izumi.test.domain02.DTO1", "izumi.test.domain02.TestInterface3.Struct").mkString(",")
         Left(DecodingFailure(s"Can't decode type $fname as $cname, expected one of [$alts]", value.history))
     }) yield result
   })
@@ -46,9 +46,9 @@ object TestInterface3 extends TestInterface3Circe {
     implicit val decodeStruct: Decoder[Struct] = deriveDecoder[Struct]
   }
   object Struct extends TestInterface3.StructCirce {
-    def apply(testinterface1: TestInterface1, testinterface3: TestInterface3, sameEverywhereField: Long, if1Field_overriden: Int): TestInterface3.Struct = {
+    def apply(testinterface1: TestInterface1, testinterface3: TestInterface3, if1Field_overriden: Int, sameEverywhereField: Long): TestInterface3.Struct = {
       assert((testinterface3.asInstanceOf[_root_.scala.AnyRef] ne null) && (testinterface1.asInstanceOf[_root_.scala.AnyRef] ne null))
-      new TestInterface3.Struct(if1Field_inherited = testinterface1.if1Field_inherited, sameField = testinterface1.sameField, fromOtherDomain = testinterface1.fromOtherDomain, fromOtherDomainDirect = testinterface1.fromOtherDomainDirect, if3Field = testinterface3.if3Field, sameEverywhereField = sameEverywhereField, if1Field_overriden = if1Field_overriden)
+      new TestInterface3.Struct(if1Field_inherited = testinterface1.if1Field_inherited, sameField = testinterface1.sameField, fromOtherDomain = testinterface1.fromOtherDomain, fromOtherDomainDirect = testinterface1.fromOtherDomainDirect, if3Field = testinterface3.if3Field, if1Field_overriden = if1Field_overriden, sameEverywhereField = sameEverywhereField)
     }
     implicit object Struct_upcast_Struct extends izumi.idealingua.runtime.IRTCast[TestInterface3.Struct, TestInterface3.Struct] {
       override def convert(_value: TestInterface3.Struct): TestInterface3.Struct = {
@@ -70,22 +70,21 @@ object TestInterface3 extends TestInterface3Circe {
     }
     implicit class StructExtensions(override protected val _value: TestInterface3.Struct) extends izumi.idealingua.runtime.IRTConversions[TestInterface3.Struct]
   }
-  implicit object TestInterface3_downcast_extend_TestInterface3Struct extends izumi.idealingua.runtime.IRTExtend[TestInterface3, TestInterface3.Struct] {
+  implicit object TestInterface3_downcast_extend_DTO1 extends izumi.idealingua.runtime.IRTExtend[TestInterface3, DTO1] {
     class Call(private val _value: TestInterface3) extends AnyVal {
-      def using(sameEverywhereField: Long, if1Field_overriden: Int): TestInterface3.Struct = {
+      def using(if2Field: Long): DTO1 = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestInterface3.Struct(if3Field = _value.if3Field, fromOtherDomain = _value.fromOtherDomain, if1Field_inherited = _value.if1Field_inherited, sameField = _value.sameField, fromOtherDomainDirect = _value.fromOtherDomainDirect, sameEverywhereField = sameEverywhereField, if1Field_overriden = if1Field_overriden)
+        DTO1(if1Field_overriden = _value.if1Field_overriden, if1Field_inherited = _value.if1Field_inherited, sameField = _value.sameField, sameEverywhereField = _value.sameEverywhereField, fromOtherDomain = _value.fromOtherDomain, fromOtherDomainDirect = _value.fromOtherDomainDirect, if3Field = _value.if3Field, if2Field = if2Field)
       }
     }
     override type INSTANTIATOR = Call
     override def next(_value: TestInterface3): Call = new Call(_value)
   }
-  implicit object TestInterface3_downcast_extend_DTO1 extends izumi.idealingua.runtime.IRTExtend[TestInterface3, DTO1] {
+  implicit object TestInterface3_downcast_extend_TestInterface3Struct extends izumi.idealingua.runtime.IRTExtend[TestInterface3, TestInterface3.Struct] {
     class Call(private val _value: TestInterface3) extends AnyVal {
-      def using(sameEverywhereField: Long, sameField: Long, if1Field_overriden: Int, testinterface2: TestInterface2): DTO1 = {
+      def using(): TestInterface3.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(testinterface2.asInstanceOf[_root_.scala.AnyRef] ne null)
-        DTO1(if3Field = _value.if3Field, fromOtherDomain = _value.fromOtherDomain, fromOtherDomainDirect = _value.fromOtherDomainDirect, if1Field_inherited = _value.if1Field_inherited, sameEverywhereField = sameEverywhereField, sameField = sameField, if1Field_overriden = if1Field_overriden, if2Field = testinterface2.if2Field)
+        TestInterface3.Struct(if1Field_overriden = _value.if1Field_overriden, if1Field_inherited = _value.if1Field_inherited, sameField = _value.sameField, sameEverywhereField = _value.sameEverywhereField, fromOtherDomain = _value.fromOtherDomain, fromOtherDomainDirect = _value.fromOtherDomainDirect, if3Field = _value.if3Field)
       }
     }
     override type INSTANTIATOR = Call

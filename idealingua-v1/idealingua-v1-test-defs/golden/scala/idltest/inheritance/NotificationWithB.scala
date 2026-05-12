@@ -8,25 +8,25 @@ trait NotificationWithBCirce {
   import _root_.io.circe.syntax.*
   import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
   implicit val encodeNotificationWithB: Encoder.AsObject[NotificationWithB] = Encoder.AsObject.instance {
-    case v: NotificationWithAB.Struct =>
-      Map("idltest.inheritance.NotificationWithAB.Struct" -> v).asJsonObject
     case v: DataWithAB =>
       Map("idltest.inheritance.DataWithAB" -> v).asJsonObject
+    case v: NotificationWithAB.Struct =>
+      Map("idltest.inheritance.NotificationWithAB.Struct" -> v).asJsonObject
     case v: NotificationWithB.Struct =>
       Map("idltest.inheritance.NotificationWithB.Struct" -> v).asJsonObject
   }
   implicit val decodeNotificationWithB: Decoder[NotificationWithB] = Decoder.instance(c => {
     val maybeContent = c.keys.flatMap(_.headOption).toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \"type_name\": { ...fields } }", c.history))
     for (fname <- maybeContent; value = c.downField(fname); result <- fname match {
-      case "idltest.inheritance.NotificationWithAB.Struct" =>
-        value.as[NotificationWithAB.Struct]
       case "idltest.inheritance.DataWithAB" =>
         value.as[DataWithAB]
+      case "idltest.inheritance.NotificationWithAB.Struct" =>
+        value.as[NotificationWithAB.Struct]
       case "idltest.inheritance.NotificationWithB.Struct" =>
         value.as[NotificationWithB.Struct]
       case _ =>
         val cname = "idltest.inheritance.NotificationWithB"
-        val alts = List("idltest.inheritance.NotificationWithAB.Struct", "idltest.inheritance.DataWithAB", "idltest.inheritance.NotificationWithB.Struct").mkString(",")
+        val alts = List("idltest.inheritance.DataWithAB", "idltest.inheritance.NotificationWithAB.Struct", "idltest.inheritance.NotificationWithB.Struct").mkString(",")
         Left(DecodingFailure(s"Can't decode type $fname as $cname, expected one of [$alts]", value.history))
     }) yield result
   })
@@ -48,16 +48,16 @@ object NotificationWithB extends NotificationWithBCirce {
         DataWithAB()
       }
     }
+    implicit object Struct_cast_into_CovariantStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB.Struct, Covariant.Struct] {
+      override def convert(_value: NotificationWithB.Struct): Covariant.Struct = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        Covariant.Struct()
+      }
+    }
     implicit object Struct_cast_into_CovariantAStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB.Struct, CovariantA.Struct] {
       override def convert(_value: NotificationWithB.Struct): CovariantA.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         CovariantA.Struct()
-      }
-    }
-    implicit object Struct_cast_into_EmptyStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB.Struct, Empty.Struct] {
-      override def convert(_value: NotificationWithB.Struct): Empty.Struct = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Empty.Struct()
       }
     }
     implicit object Struct_cast_into_CovariantBStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB.Struct, CovariantB.Struct] {
@@ -66,10 +66,16 @@ object NotificationWithB extends NotificationWithBCirce {
         CovariantB.Struct()
       }
     }
-    implicit object Struct_cast_into_NotificationWithABStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB.Struct, NotificationWithAB.Struct] {
-      override def convert(_value: NotificationWithB.Struct): NotificationWithAB.Struct = {
+    implicit object Struct_cast_into_EmptyStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB.Struct, Empty.Struct] {
+      override def convert(_value: NotificationWithB.Struct): Empty.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        NotificationWithAB.Struct()
+        Empty.Struct()
+      }
+    }
+    implicit object Struct_cast_into_NotificationStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB.Struct, Notification.Struct] {
+      override def convert(_value: NotificationWithB.Struct): Notification.Struct = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        Notification.Struct()
       }
     }
     implicit object Struct_cast_into_NotificationWithAStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB.Struct, NotificationWithA.Struct] {
@@ -78,16 +84,10 @@ object NotificationWithB extends NotificationWithBCirce {
         NotificationWithA.Struct()
       }
     }
-    implicit object Struct_cast_into_CovariantStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB.Struct, Covariant.Struct] {
-      override def convert(_value: NotificationWithB.Struct): Covariant.Struct = {
+    implicit object Struct_cast_into_NotificationWithABStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB.Struct, NotificationWithAB.Struct] {
+      override def convert(_value: NotificationWithB.Struct): NotificationWithAB.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Covariant.Struct()
-      }
-    }
-    implicit object Struct_cast_into_NotificationStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB.Struct, Notification.Struct] {
-      override def convert(_value: NotificationWithB.Struct): Notification.Struct = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Notification.Struct()
+        NotificationWithAB.Struct()
       }
     }
     implicit object Struct_upcast_Struct extends izumi.idealingua.runtime.IRTCast[NotificationWithB.Struct, NotificationWithB.Struct] {
@@ -110,16 +110,16 @@ object NotificationWithB extends NotificationWithBCirce {
     }
     implicit class StructExtensions(override protected val _value: NotificationWithB.Struct) extends izumi.idealingua.runtime.IRTConversions[NotificationWithB.Struct]
   }
+  implicit object NotificationWithB_cast_into_CovariantStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB, Covariant.Struct] {
+    override def convert(_value: NotificationWithB): Covariant.Struct = {
+      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+      Covariant.Struct()
+    }
+  }
   implicit object NotificationWithB_cast_into_CovariantAStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB, CovariantA.Struct] {
     override def convert(_value: NotificationWithB): CovariantA.Struct = {
       assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
       CovariantA.Struct()
-    }
-  }
-  implicit object NotificationWithB_cast_into_EmptyStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB, Empty.Struct] {
-    override def convert(_value: NotificationWithB): Empty.Struct = {
-      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-      Empty.Struct()
     }
   }
   implicit object NotificationWithB_cast_into_CovariantBStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB, CovariantB.Struct] {
@@ -128,16 +128,10 @@ object NotificationWithB extends NotificationWithBCirce {
       CovariantB.Struct()
     }
   }
-  implicit object NotificationWithB_cast_into_NotificationWithAStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB, NotificationWithA.Struct] {
-    override def convert(_value: NotificationWithB): NotificationWithA.Struct = {
+  implicit object NotificationWithB_cast_into_EmptyStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB, Empty.Struct] {
+    override def convert(_value: NotificationWithB): Empty.Struct = {
       assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-      NotificationWithA.Struct()
-    }
-  }
-  implicit object NotificationWithB_cast_into_CovariantStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB, Covariant.Struct] {
-    override def convert(_value: NotificationWithB): Covariant.Struct = {
-      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-      Covariant.Struct()
+      Empty.Struct()
     }
   }
   implicit object NotificationWithB_cast_into_NotificationStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB, Notification.Struct] {
@@ -146,21 +140,27 @@ object NotificationWithB extends NotificationWithBCirce {
       Notification.Struct()
     }
   }
-  implicit object NotificationWithB_downcast_extend_NotificationWithABStruct extends izumi.idealingua.runtime.IRTExtend[NotificationWithB, NotificationWithAB.Struct] {
-    class Call(private val _value: NotificationWithB) extends AnyVal {
-      def using(): NotificationWithAB.Struct = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        NotificationWithAB.Struct()
-      }
+  implicit object NotificationWithB_cast_into_NotificationWithAStruct extends izumi.idealingua.runtime.IRTCast[NotificationWithB, NotificationWithA.Struct] {
+    override def convert(_value: NotificationWithB): NotificationWithA.Struct = {
+      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+      NotificationWithA.Struct()
     }
-    override type INSTANTIATOR = Call
-    override def next(_value: NotificationWithB): Call = new Call(_value)
   }
   implicit object NotificationWithB_downcast_extend_DataWithAB extends izumi.idealingua.runtime.IRTExtend[NotificationWithB, DataWithAB] {
     class Call(private val _value: NotificationWithB) extends AnyVal {
       def using(): DataWithAB = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         DataWithAB()
+      }
+    }
+    override type INSTANTIATOR = Call
+    override def next(_value: NotificationWithB): Call = new Call(_value)
+  }
+  implicit object NotificationWithB_downcast_extend_NotificationWithABStruct extends izumi.idealingua.runtime.IRTExtend[NotificationWithB, NotificationWithAB.Struct] {
+    class Call(private val _value: NotificationWithB) extends AnyVal {
+      def using(): NotificationWithAB.Struct = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        NotificationWithAB.Struct()
       }
     }
     override type INSTANTIATOR = Call

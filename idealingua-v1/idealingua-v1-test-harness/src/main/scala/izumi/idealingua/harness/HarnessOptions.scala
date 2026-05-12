@@ -52,7 +52,7 @@ object HarnessOptions {
     case IDLLanguage.CSharp     => csharp
   }
 
-  def optionsFor(lang: IDLLanguage): UntypedCompilerOptions = optionsFor(lang, TyperImpl.Legacy)
+  def optionsFor(lang: IDLLanguage): UntypedCompilerOptions = optionsFor(lang, TyperImpl.NewTyper)
 
   /** PR-02 IMPL-7a.2 IMPL-9 compile gate: `regenerateGoldens` / `verifyGoldens`
     * use this entry point with `TyperImpl.NewTyper` so the on-disk Layer A

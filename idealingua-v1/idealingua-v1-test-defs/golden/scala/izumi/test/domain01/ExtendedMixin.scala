@@ -47,16 +47,16 @@ object ExtendedMixin extends ExtendedMixinCirce {
       assert((extendedmixin.asInstanceOf[_root_.scala.AnyRef] ne null) && ((privatemixin.asInstanceOf[_root_.scala.AnyRef] ne null) && ((privatemixinparent.asInstanceOf[_root_.scala.AnyRef] ne null) && (privatemixinprivateparent.asInstanceOf[_root_.scala.AnyRef] ne null))))
       new ExtendedMixin.Struct(parent_embedded = privatemixinprivateparent.parent_embedded, parent = privatemixinparent.parent, embedded = privatemixin.embedded, own = extendedmixin.own)
     }
-    implicit object Struct_cast_into_PrivateTestObject extends izumi.idealingua.runtime.IRTCast[ExtendedMixin.Struct, PrivateTestObject] {
-      override def convert(_value: ExtendedMixin.Struct): PrivateTestObject = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        PrivateTestObject(parent_embedded = _value.parent_embedded, parent = _value.parent, embedded = _value.embedded, own = _value.own)
-      }
-    }
     implicit object Struct_cast_into_AnotherTestObject extends izumi.idealingua.runtime.IRTCast[ExtendedMixin.Struct, AnotherTestObject] {
       override def convert(_value: ExtendedMixin.Struct): AnotherTestObject = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         AnotherTestObject(parent_embedded = _value.parent_embedded, parent = _value.parent, embedded = _value.embedded, own = _value.own)
+      }
+    }
+    implicit object Struct_cast_into_PrivateTestObject extends izumi.idealingua.runtime.IRTCast[ExtendedMixin.Struct, PrivateTestObject] {
+      override def convert(_value: ExtendedMixin.Struct): PrivateTestObject = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        PrivateTestObject(parent_embedded = _value.parent_embedded, parent = _value.parent, embedded = _value.embedded, own = _value.own)
       }
     }
     implicit object Struct_upcast_Struct extends izumi.idealingua.runtime.IRTCast[ExtendedMixin.Struct, ExtendedMixin.Struct] {
@@ -73,17 +73,11 @@ object ExtendedMixin extends ExtendedMixinCirce {
     }
     implicit class StructExtensions(override protected val _value: ExtendedMixin.Struct) extends izumi.idealingua.runtime.IRTConversions[ExtendedMixin.Struct]
   }
-  implicit object ExtendedMixin_cast_into_AnotherTestObject extends izumi.idealingua.runtime.IRTCast[ExtendedMixin, AnotherTestObject] {
-    override def convert(_value: ExtendedMixin): AnotherTestObject = {
-      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-      AnotherTestObject(parent_embedded = _value.parent_embedded, parent = _value.parent, embedded = _value.embedded, own = _value.own)
-    }
-  }
   implicit object ExtendedMixin_downcast_extend_AnotherTestObject extends izumi.idealingua.runtime.IRTExtend[ExtendedMixin, AnotherTestObject] {
     class Call(private val _value: ExtendedMixin) extends AnyVal {
       def using(): AnotherTestObject = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        AnotherTestObject(embedded = _value.embedded, parent = _value.parent, parent_embedded = _value.parent_embedded, own = _value.own)
+        AnotherTestObject(parent_embedded = _value.parent_embedded, parent = _value.parent, embedded = _value.embedded, own = _value.own)
       }
     }
     override type INSTANTIATOR = Call
@@ -93,7 +87,7 @@ object ExtendedMixin extends ExtendedMixinCirce {
     class Call(private val _value: ExtendedMixin) extends AnyVal {
       def using(): PrivateTestObject = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        PrivateTestObject(embedded = _value.embedded, parent = _value.parent, parent_embedded = _value.parent_embedded, own = _value.own)
+        PrivateTestObject(parent_embedded = _value.parent_embedded, parent = _value.parent, embedded = _value.embedded, own = _value.own)
       }
     }
     override type INSTANTIATOR = Call
@@ -103,7 +97,7 @@ object ExtendedMixin extends ExtendedMixinCirce {
     class Call(private val _value: ExtendedMixin) extends AnyVal {
       def using(): ExtendedMixin.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        ExtendedMixin.Struct(embedded = _value.embedded, parent = _value.parent, parent_embedded = _value.parent_embedded, own = _value.own)
+        ExtendedMixin.Struct(parent_embedded = _value.parent_embedded, parent = _value.parent, embedded = _value.embedded, own = _value.own)
       }
     }
     override type INSTANTIATOR = Call

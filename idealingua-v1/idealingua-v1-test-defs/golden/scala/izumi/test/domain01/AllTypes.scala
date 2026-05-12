@@ -93,7 +93,7 @@ object AllTypes extends AllTypesCirce {
     class Call(private val _value: AllTypes) extends AnyVal {
       def using(): AllTypesObject = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        AllTypesObject(int8 = _value.int8, date = _value.date, tslocal = _value.tslocal, f = _value.f, uint64 = _value.uint64, enumMap = _value.enumMap, int16 = _value.int16, selfSet = _value.selfSet, optionDate = _value.optionDate, int64 = _value.int64, optionTime = _value.optionTime, uint32 = _value.uint32, uuid = _value.uuid, int32 = _value.int32, ts = _value.ts, uint8 = _value.uint8, d = _value.d, b = _value.b, selfMap = _value.selfMap, s = _value.s, tsuni = _value.tsuni, uint16 = _value.uint16, another = _value.another, list = _value.list, option = _value.option, time = _value.time)
+        AllTypesObject(b = _value.b, s = _value.s, int8 = _value.int8, int16 = _value.int16, int32 = _value.int32, int64 = _value.int64, f = _value.f, d = _value.d, uuid = _value.uuid, ts = _value.ts, tslocal = _value.tslocal, tsuni = _value.tsuni, time = _value.time, date = _value.date, uint8 = _value.uint8, uint16 = _value.uint16, uint32 = _value.uint32, uint64 = _value.uint64, list = _value.list, another = _value.another, selfMap = _value.selfMap, enumMap = _value.enumMap, option = _value.option, selfSet = _value.selfSet, optionDate = _value.optionDate, optionTime = _value.optionTime)
       }
     }
     override type INSTANTIATOR = Call
@@ -103,7 +103,7 @@ object AllTypes extends AllTypesCirce {
     class Call(private val _value: AllTypes) extends AnyVal {
       def using(): AllTypes.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        AllTypes.Struct(int8 = _value.int8, date = _value.date, tslocal = _value.tslocal, f = _value.f, uint64 = _value.uint64, enumMap = _value.enumMap, int16 = _value.int16, selfSet = _value.selfSet, optionDate = _value.optionDate, int64 = _value.int64, optionTime = _value.optionTime, uint32 = _value.uint32, uuid = _value.uuid, int32 = _value.int32, ts = _value.ts, uint8 = _value.uint8, d = _value.d, b = _value.b, selfMap = _value.selfMap, s = _value.s, tsuni = _value.tsuni, uint16 = _value.uint16, another = _value.another, list = _value.list, option = _value.option, time = _value.time)
+        AllTypes.Struct(b = _value.b, s = _value.s, int8 = _value.int8, int16 = _value.int16, int32 = _value.int32, int64 = _value.int64, f = _value.f, d = _value.d, uuid = _value.uuid, ts = _value.ts, tslocal = _value.tslocal, tsuni = _value.tsuni, time = _value.time, date = _value.date, uint8 = _value.uint8, uint16 = _value.uint16, uint32 = _value.uint32, uint64 = _value.uint64, list = _value.list, another = _value.another, selfMap = _value.selfMap, enumMap = _value.enumMap, option = _value.option, selfSet = _value.selfSet, optionDate = _value.optionDate, optionTime = _value.optionTime)
       }
     }
     override type INSTANTIATOR = Call

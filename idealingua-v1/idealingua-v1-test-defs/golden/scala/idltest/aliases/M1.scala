@@ -57,10 +57,9 @@ object M1 extends M1Circe {
   }
   implicit object M1_downcast_extend_D1 extends izumi.idealingua.runtime.IRTExtend[M1, D1] {
     class Call(private val _value: M1) extends AnyVal {
-      def using(m2: idltest.aliases2.M2): D1 = {
+      def using(f2: String): D1 = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(m2.asInstanceOf[_root_.scala.AnyRef] ne null)
-        D1(value = _value.value, f2 = m2.f2)
+        D1(value = _value.value, f2 = f2)
       }
     }
     override type INSTANTIATOR = Call

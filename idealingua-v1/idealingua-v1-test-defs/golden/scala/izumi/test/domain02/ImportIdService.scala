@@ -188,14 +188,15 @@ object ImportIdService {
     }
     implicit class SomeOutputExtensions(override protected val _value: ImportIdService.SomeOutput) extends izumi.idealingua.runtime.IRTConversions[ImportIdService.SomeOutput]
   }
-  final case class MixiInput(par: izumi.test.domain01.GenericFailureData) extends AnyVal with ImportIdService.MixiInput.Defn
+  final case class MixiInput(par: izumi.test.domain01.GenericFailureData) extends ImportIdService.MixiInput.Defn
   trait MixiInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
+    import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
-    implicit val encodeMixiInput: Encoder.AsObject[MixiInput] = Encoder.forProduct1[MixiInput, izumi.test.domain01.GenericFailureData]("par")((v: MixiInput) => v.par)
-    implicit val decodeMixiInput: Decoder[MixiInput] = Decoder.forProduct1[MixiInput, izumi.test.domain01.GenericFailureData]("par")((d: izumi.test.domain01.GenericFailureData) => new MixiInput(d))
+    implicit val encodeMixiInput: Encoder.AsObject[MixiInput] = deriveEncoder[MixiInput]
+    implicit val decodeMixiInput: Decoder[MixiInput] = deriveDecoder[MixiInput]
   }
   object MixiInput extends ImportIdService.MixiInputCirce {
-    trait Defn extends Any with izumi.idealingua.runtime.model.IDLGeneratedType { def par: izumi.test.domain01.GenericFailureData }
+    trait Defn extends izumi.idealingua.runtime.model.IDLGeneratedType { def par: izumi.test.domain01.GenericFailureData }
     def apply(par: izumi.test.domain01.GenericFailureData): ImportIdService.MixiInput = {
       assert(par.asInstanceOf[_root_.scala.AnyRef] ne null)
       new ImportIdService.MixiInput(par = par)

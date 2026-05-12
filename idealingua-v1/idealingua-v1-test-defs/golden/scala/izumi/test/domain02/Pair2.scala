@@ -71,7 +71,7 @@ object Pair2 extends Pair2Circe {
     class Call(private val _value: Pair2) extends AnyVal {
       def using(): Pair2.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Pair2.Struct(x = _value.x, y = _value.y)
+        Pair2.Struct(y = _value.y, x = _value.x)
       }
     }
     override type INSTANTIATOR = Call

@@ -60,7 +60,8 @@ object CouponData extends CouponDataCirce {
     class Call(private val _value: CouponData) extends AnyVal {
       def using(id: CouponID): Coupon = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Coupon(validTill = _value.validTill, validFrom = _value.validFrom, code = _value.code, id = id)
+        assert(id.asInstanceOf[_root_.scala.AnyRef] ne null)
+        Coupon(validFrom = _value.validFrom, validTill = _value.validTill, code = _value.code, id = id)
       }
     }
     override type INSTANTIATOR = Call
@@ -68,10 +69,10 @@ object CouponData extends CouponDataCirce {
   }
   implicit object CouponData_downcast_extend_MassCoupon extends izumi.idealingua.runtime.IRTExtend[CouponData, MassCoupon] {
     class Call(private val _value: CouponData) extends AnyVal {
-      def using(code: String, limit: Option[Long], coupon: Coupon.Defn): MassCoupon = {
+      def using(id: CouponID, limit: Option[Long]): MassCoupon = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(coupon.asInstanceOf[_root_.scala.AnyRef] ne null)
-        MassCoupon(validTill = _value.validTill, validFrom = _value.validFrom, code = code, limit = limit, id = coupon.id)
+        assert(id.asInstanceOf[_root_.scala.AnyRef] ne null)
+        MassCoupon(validFrom = _value.validFrom, validTill = _value.validTill, code = _value.code, id = id, limit = limit)
       }
     }
     override type INSTANTIATOR = Call
@@ -81,7 +82,7 @@ object CouponData extends CouponDataCirce {
     class Call(private val _value: CouponData) extends AnyVal {
       def using(): CouponData.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        CouponData.Struct(validTill = _value.validTill, validFrom = _value.validFrom, code = _value.code)
+        CouponData.Struct(validFrom = _value.validFrom, validTill = _value.validTill, code = _value.code)
       }
     }
     override type INSTANTIATOR = Call

@@ -812,10 +812,16 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.UnitToUnitInput()
     }
-    implicit object UnitToUnitInput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitInput, TestService.UnitToUnitOutput] {
-      override def convert(_value: TestService.UnitToUnitInput): TestService.UnitToUnitOutput = {
+    implicit object UnitToUnitInput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitInput, TestService.AlternativeGeneric2Input] {
+      override def convert(_value: TestService.UnitToUnitInput): TestService.AlternativeGeneric2Input = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitOutput()
+        TestService.AlternativeGeneric2Input()
+      }
+    }
+    implicit object UnitToUnitInput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitInput, TestService.AlternativeGenericInput] {
+      override def convert(_value: TestService.UnitToUnitInput): TestService.AlternativeGenericInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.AlternativeGenericInput()
       }
     }
     implicit object UnitToUnitInput_cast_into_TestServiceAnotherVoidInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitInput, TestService.AnotherVoidInput] {
@@ -830,12 +836,6 @@ object TestService {
         TestService.AnotherVoidOutput()
       }
     }
-    implicit object UnitToUnitInput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitInput, TestService.UnitResultOutput] {
-      override def convert(_value: TestService.UnitToUnitInput): TestService.UnitResultOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitResultOutput()
-      }
-    }
     implicit object UnitToUnitInput_cast_into_TestServiceParameterlessInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitInput, TestService.ParameterlessInput] {
       override def convert(_value: TestService.UnitToUnitInput): TestService.ParameterlessInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
@@ -848,16 +848,16 @@ object TestService {
         TestService.SimpleVoidOutput()
       }
     }
-    implicit object UnitToUnitInput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitInput, TestService.AlternativeGenericInput] {
-      override def convert(_value: TestService.UnitToUnitInput): TestService.AlternativeGenericInput = {
+    implicit object UnitToUnitInput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitInput, TestService.UnitResultOutput] {
+      override def convert(_value: TestService.UnitToUnitInput): TestService.UnitResultOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGenericInput()
+        TestService.UnitResultOutput()
       }
     }
-    implicit object UnitToUnitInput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitInput, TestService.AlternativeGeneric2Input] {
-      override def convert(_value: TestService.UnitToUnitInput): TestService.AlternativeGeneric2Input = {
+    implicit object UnitToUnitInput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitInput, TestService.UnitToUnitOutput] {
+      override def convert(_value: TestService.UnitToUnitInput): TestService.UnitToUnitOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGeneric2Input()
+        TestService.UnitToUnitOutput()
       }
     }
     implicit object UnitToUnitInput_upcast_UnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitInput, TestService.UnitToUnitInput] {
@@ -881,10 +881,16 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.UnitToUnitOutput()
     }
-    implicit object UnitToUnitOutput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitOutput, TestService.UnitToUnitInput] {
-      override def convert(_value: TestService.UnitToUnitOutput): TestService.UnitToUnitInput = {
+    implicit object UnitToUnitOutput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitOutput, TestService.AlternativeGeneric2Input] {
+      override def convert(_value: TestService.UnitToUnitOutput): TestService.AlternativeGeneric2Input = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitInput()
+        TestService.AlternativeGeneric2Input()
+      }
+    }
+    implicit object UnitToUnitOutput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitOutput, TestService.AlternativeGenericInput] {
+      override def convert(_value: TestService.UnitToUnitOutput): TestService.AlternativeGenericInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.AlternativeGenericInput()
       }
     }
     implicit object UnitToUnitOutput_cast_into_TestServiceAnotherVoidInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitOutput, TestService.AnotherVoidInput] {
@@ -899,12 +905,6 @@ object TestService {
         TestService.AnotherVoidOutput()
       }
     }
-    implicit object UnitToUnitOutput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitOutput, TestService.UnitResultOutput] {
-      override def convert(_value: TestService.UnitToUnitOutput): TestService.UnitResultOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitResultOutput()
-      }
-    }
     implicit object UnitToUnitOutput_cast_into_TestServiceParameterlessInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitOutput, TestService.ParameterlessInput] {
       override def convert(_value: TestService.UnitToUnitOutput): TestService.ParameterlessInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
@@ -917,16 +917,16 @@ object TestService {
         TestService.SimpleVoidOutput()
       }
     }
-    implicit object UnitToUnitOutput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitOutput, TestService.AlternativeGenericInput] {
-      override def convert(_value: TestService.UnitToUnitOutput): TestService.AlternativeGenericInput = {
+    implicit object UnitToUnitOutput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitOutput, TestService.UnitResultOutput] {
+      override def convert(_value: TestService.UnitToUnitOutput): TestService.UnitResultOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGenericInput()
+        TestService.UnitResultOutput()
       }
     }
-    implicit object UnitToUnitOutput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitOutput, TestService.AlternativeGeneric2Input] {
-      override def convert(_value: TestService.UnitToUnitOutput): TestService.AlternativeGeneric2Input = {
+    implicit object UnitToUnitOutput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitOutput, TestService.UnitToUnitInput] {
+      override def convert(_value: TestService.UnitToUnitOutput): TestService.UnitToUnitInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGeneric2Input()
+        TestService.UnitToUnitInput()
       }
     }
     implicit object UnitToUnitOutput_upcast_UnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.UnitToUnitOutput, TestService.UnitToUnitOutput] {
@@ -950,28 +950,22 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.AnotherVoidInput()
     }
-    implicit object AnotherVoidInput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidInput, TestService.UnitToUnitInput] {
-      override def convert(_value: TestService.AnotherVoidInput): TestService.UnitToUnitInput = {
+    implicit object AnotherVoidInput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidInput, TestService.AlternativeGeneric2Input] {
+      override def convert(_value: TestService.AnotherVoidInput): TestService.AlternativeGeneric2Input = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitInput()
+        TestService.AlternativeGeneric2Input()
       }
     }
-    implicit object AnotherVoidInput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidInput, TestService.UnitToUnitOutput] {
-      override def convert(_value: TestService.AnotherVoidInput): TestService.UnitToUnitOutput = {
+    implicit object AnotherVoidInput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidInput, TestService.AlternativeGenericInput] {
+      override def convert(_value: TestService.AnotherVoidInput): TestService.AlternativeGenericInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitOutput()
+        TestService.AlternativeGenericInput()
       }
     }
     implicit object AnotherVoidInput_cast_into_TestServiceAnotherVoidOutput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidInput, TestService.AnotherVoidOutput] {
       override def convert(_value: TestService.AnotherVoidInput): TestService.AnotherVoidOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestService.AnotherVoidOutput()
-      }
-    }
-    implicit object AnotherVoidInput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidInput, TestService.UnitResultOutput] {
-      override def convert(_value: TestService.AnotherVoidInput): TestService.UnitResultOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitResultOutput()
       }
     }
     implicit object AnotherVoidInput_cast_into_TestServiceParameterlessInput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidInput, TestService.ParameterlessInput] {
@@ -986,16 +980,22 @@ object TestService {
         TestService.SimpleVoidOutput()
       }
     }
-    implicit object AnotherVoidInput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidInput, TestService.AlternativeGenericInput] {
-      override def convert(_value: TestService.AnotherVoidInput): TestService.AlternativeGenericInput = {
+    implicit object AnotherVoidInput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidInput, TestService.UnitResultOutput] {
+      override def convert(_value: TestService.AnotherVoidInput): TestService.UnitResultOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGenericInput()
+        TestService.UnitResultOutput()
       }
     }
-    implicit object AnotherVoidInput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidInput, TestService.AlternativeGeneric2Input] {
-      override def convert(_value: TestService.AnotherVoidInput): TestService.AlternativeGeneric2Input = {
+    implicit object AnotherVoidInput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidInput, TestService.UnitToUnitInput] {
+      override def convert(_value: TestService.AnotherVoidInput): TestService.UnitToUnitInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGeneric2Input()
+        TestService.UnitToUnitInput()
+      }
+    }
+    implicit object AnotherVoidInput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidInput, TestService.UnitToUnitOutput] {
+      override def convert(_value: TestService.AnotherVoidInput): TestService.UnitToUnitOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.UnitToUnitOutput()
       }
     }
     implicit object AnotherVoidInput_upcast_AnotherVoidInput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidInput, TestService.AnotherVoidInput] {
@@ -1019,28 +1019,22 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.AnotherVoidOutput()
     }
-    implicit object AnotherVoidOutput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidOutput, TestService.UnitToUnitInput] {
-      override def convert(_value: TestService.AnotherVoidOutput): TestService.UnitToUnitInput = {
+    implicit object AnotherVoidOutput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidOutput, TestService.AlternativeGeneric2Input] {
+      override def convert(_value: TestService.AnotherVoidOutput): TestService.AlternativeGeneric2Input = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitInput()
+        TestService.AlternativeGeneric2Input()
       }
     }
-    implicit object AnotherVoidOutput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidOutput, TestService.UnitToUnitOutput] {
-      override def convert(_value: TestService.AnotherVoidOutput): TestService.UnitToUnitOutput = {
+    implicit object AnotherVoidOutput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidOutput, TestService.AlternativeGenericInput] {
+      override def convert(_value: TestService.AnotherVoidOutput): TestService.AlternativeGenericInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitOutput()
+        TestService.AlternativeGenericInput()
       }
     }
     implicit object AnotherVoidOutput_cast_into_TestServiceAnotherVoidInput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidOutput, TestService.AnotherVoidInput] {
       override def convert(_value: TestService.AnotherVoidOutput): TestService.AnotherVoidInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestService.AnotherVoidInput()
-      }
-    }
-    implicit object AnotherVoidOutput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidOutput, TestService.UnitResultOutput] {
-      override def convert(_value: TestService.AnotherVoidOutput): TestService.UnitResultOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitResultOutput()
       }
     }
     implicit object AnotherVoidOutput_cast_into_TestServiceParameterlessInput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidOutput, TestService.ParameterlessInput] {
@@ -1055,16 +1049,22 @@ object TestService {
         TestService.SimpleVoidOutput()
       }
     }
-    implicit object AnotherVoidOutput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidOutput, TestService.AlternativeGenericInput] {
-      override def convert(_value: TestService.AnotherVoidOutput): TestService.AlternativeGenericInput = {
+    implicit object AnotherVoidOutput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidOutput, TestService.UnitResultOutput] {
+      override def convert(_value: TestService.AnotherVoidOutput): TestService.UnitResultOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGenericInput()
+        TestService.UnitResultOutput()
       }
     }
-    implicit object AnotherVoidOutput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidOutput, TestService.AlternativeGeneric2Input] {
-      override def convert(_value: TestService.AnotherVoidOutput): TestService.AlternativeGeneric2Input = {
+    implicit object AnotherVoidOutput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidOutput, TestService.UnitToUnitInput] {
+      override def convert(_value: TestService.AnotherVoidOutput): TestService.UnitToUnitInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGeneric2Input()
+        TestService.UnitToUnitInput()
+      }
+    }
+    implicit object AnotherVoidOutput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidOutput, TestService.UnitToUnitOutput] {
+      override def convert(_value: TestService.AnotherVoidOutput): TestService.UnitToUnitOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.UnitToUnitOutput()
       }
     }
     implicit object AnotherVoidOutput_upcast_AnotherVoidOutput extends izumi.idealingua.runtime.IRTCast[TestService.AnotherVoidOutput, TestService.AnotherVoidOutput] {
@@ -1119,16 +1119,16 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.UnitResultOutput()
     }
-    implicit object UnitResultOutput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitResultOutput, TestService.UnitToUnitInput] {
-      override def convert(_value: TestService.UnitResultOutput): TestService.UnitToUnitInput = {
+    implicit object UnitResultOutput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.UnitResultOutput, TestService.AlternativeGeneric2Input] {
+      override def convert(_value: TestService.UnitResultOutput): TestService.AlternativeGeneric2Input = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitInput()
+        TestService.AlternativeGeneric2Input()
       }
     }
-    implicit object UnitResultOutput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.UnitResultOutput, TestService.UnitToUnitOutput] {
-      override def convert(_value: TestService.UnitResultOutput): TestService.UnitToUnitOutput = {
+    implicit object UnitResultOutput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitResultOutput, TestService.AlternativeGenericInput] {
+      override def convert(_value: TestService.UnitResultOutput): TestService.AlternativeGenericInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitOutput()
+        TestService.AlternativeGenericInput()
       }
     }
     implicit object UnitResultOutput_cast_into_TestServiceAnotherVoidInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitResultOutput, TestService.AnotherVoidInput] {
@@ -1155,16 +1155,16 @@ object TestService {
         TestService.SimpleVoidOutput()
       }
     }
-    implicit object UnitResultOutput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitResultOutput, TestService.AlternativeGenericInput] {
-      override def convert(_value: TestService.UnitResultOutput): TestService.AlternativeGenericInput = {
+    implicit object UnitResultOutput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.UnitResultOutput, TestService.UnitToUnitInput] {
+      override def convert(_value: TestService.UnitResultOutput): TestService.UnitToUnitInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGenericInput()
+        TestService.UnitToUnitInput()
       }
     }
-    implicit object UnitResultOutput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.UnitResultOutput, TestService.AlternativeGeneric2Input] {
-      override def convert(_value: TestService.UnitResultOutput): TestService.AlternativeGeneric2Input = {
+    implicit object UnitResultOutput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.UnitResultOutput, TestService.UnitToUnitOutput] {
+      override def convert(_value: TestService.UnitResultOutput): TestService.UnitToUnitOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGeneric2Input()
+        TestService.UnitToUnitOutput()
       }
     }
     implicit object UnitResultOutput_upcast_UnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.UnitResultOutput, TestService.UnitResultOutput] {
@@ -1188,16 +1188,16 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.ParameterlessInput()
     }
-    implicit object ParameterlessInput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessInput, TestService.UnitToUnitInput] {
-      override def convert(_value: TestService.ParameterlessInput): TestService.UnitToUnitInput = {
+    implicit object ParameterlessInput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessInput, TestService.AlternativeGeneric2Input] {
+      override def convert(_value: TestService.ParameterlessInput): TestService.AlternativeGeneric2Input = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitInput()
+        TestService.AlternativeGeneric2Input()
       }
     }
-    implicit object ParameterlessInput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessInput, TestService.UnitToUnitOutput] {
-      override def convert(_value: TestService.ParameterlessInput): TestService.UnitToUnitOutput = {
+    implicit object ParameterlessInput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessInput, TestService.AlternativeGenericInput] {
+      override def convert(_value: TestService.ParameterlessInput): TestService.AlternativeGenericInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitOutput()
+        TestService.AlternativeGenericInput()
       }
     }
     implicit object ParameterlessInput_cast_into_TestServiceAnotherVoidInput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessInput, TestService.AnotherVoidInput] {
@@ -1212,28 +1212,28 @@ object TestService {
         TestService.AnotherVoidOutput()
       }
     }
-    implicit object ParameterlessInput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessInput, TestService.UnitResultOutput] {
-      override def convert(_value: TestService.ParameterlessInput): TestService.UnitResultOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitResultOutput()
-      }
-    }
     implicit object ParameterlessInput_cast_into_TestServiceSimpleVoidOutput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessInput, TestService.SimpleVoidOutput] {
       override def convert(_value: TestService.ParameterlessInput): TestService.SimpleVoidOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestService.SimpleVoidOutput()
       }
     }
-    implicit object ParameterlessInput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessInput, TestService.AlternativeGenericInput] {
-      override def convert(_value: TestService.ParameterlessInput): TestService.AlternativeGenericInput = {
+    implicit object ParameterlessInput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessInput, TestService.UnitResultOutput] {
+      override def convert(_value: TestService.ParameterlessInput): TestService.UnitResultOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGenericInput()
+        TestService.UnitResultOutput()
       }
     }
-    implicit object ParameterlessInput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessInput, TestService.AlternativeGeneric2Input] {
-      override def convert(_value: TestService.ParameterlessInput): TestService.AlternativeGeneric2Input = {
+    implicit object ParameterlessInput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessInput, TestService.UnitToUnitInput] {
+      override def convert(_value: TestService.ParameterlessInput): TestService.UnitToUnitInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGeneric2Input()
+        TestService.UnitToUnitInput()
+      }
+    }
+    implicit object ParameterlessInput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessInput, TestService.UnitToUnitOutput] {
+      override def convert(_value: TestService.ParameterlessInput): TestService.UnitToUnitOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.UnitToUnitOutput()
       }
     }
     implicit object ParameterlessInput_upcast_ParameterlessInput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessInput, TestService.ParameterlessInput] {
@@ -1264,16 +1264,10 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.ParameterlessOutput(value = defn.value)
     }
-    implicit object ParameterlessOutput_cast_into_TestServiceSimpleMethodOutput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessOutput, TestService.SimpleMethodOutput] {
-      override def convert(_value: TestService.ParameterlessOutput): TestService.SimpleMethodOutput = {
+    implicit object ParameterlessOutput_cast_into_TestServiceGreetSingularOutOutput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessOutput, TestService.GreetSingularOutOutput] {
+      override def convert(_value: TestService.ParameterlessOutput): TestService.GreetSingularOutOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleMethodOutput(value = _value.value)
-      }
-    }
-    implicit object ParameterlessOutput_cast_into_TestServiceSimpleEnumOutput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessOutput, TestService.SimpleEnumOutput] {
-      override def convert(_value: TestService.ParameterlessOutput): TestService.SimpleEnumOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleEnumOutput(value = _value.value)
+        TestService.GreetSingularOutOutput(value = _value.value)
       }
     }
     implicit object ParameterlessOutput_cast_into_TestServiceSimpleEnum2Output extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessOutput, TestService.SimpleEnum2Output] {
@@ -1282,10 +1276,16 @@ object TestService {
         TestService.SimpleEnum2Output(value = _value.value)
       }
     }
-    implicit object ParameterlessOutput_cast_into_TestServiceGreetSingularOutOutput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessOutput, TestService.GreetSingularOutOutput] {
-      override def convert(_value: TestService.ParameterlessOutput): TestService.GreetSingularOutOutput = {
+    implicit object ParameterlessOutput_cast_into_TestServiceSimpleEnumOutput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessOutput, TestService.SimpleEnumOutput] {
+      override def convert(_value: TestService.ParameterlessOutput): TestService.SimpleEnumOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetSingularOutOutput(value = _value.value)
+        TestService.SimpleEnumOutput(value = _value.value)
+      }
+    }
+    implicit object ParameterlessOutput_cast_into_TestServiceSimpleMethodOutput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessOutput, TestService.SimpleMethodOutput] {
+      override def convert(_value: TestService.ParameterlessOutput): TestService.SimpleMethodOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleMethodOutput(value = _value.value)
       }
     }
     implicit object ParameterlessOutput_upcast_ParameterlessOutput extends izumi.idealingua.runtime.IRTCast[TestService.ParameterlessOutput, TestService.ParameterlessOutput] {
@@ -1311,16 +1311,16 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.SimpleMethodInput(a = defn.a)
     }
-    implicit object SimpleMethodInput_cast_into_TestServiceSimpleVoidInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleMethodInput, TestService.SimpleVoidInput] {
-      override def convert(_value: TestService.SimpleMethodInput): TestService.SimpleVoidInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleVoidInput(a = _value.a)
-      }
-    }
     implicit object SimpleMethodInput_cast_into_TestServiceGreetImplicitStructOutOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleMethodInput, TestService.GreetImplicitStructOutOutput] {
       override def convert(_value: TestService.SimpleMethodInput): TestService.GreetImplicitStructOutOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestService.GreetImplicitStructOutOutput(a = _value.a)
+      }
+    }
+    implicit object SimpleMethodInput_cast_into_TestServiceSimpleVoidInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleMethodInput, TestService.SimpleVoidInput] {
+      override def convert(_value: TestService.SimpleMethodInput): TestService.SimpleVoidInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleVoidInput(a = _value.a)
       }
     }
     implicit object SimpleMethodInput_upcast_SimpleMethodInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleMethodInput, TestService.SimpleMethodInput] {
@@ -1351,16 +1351,16 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.SimpleMethodOutput(value = defn.value)
     }
+    implicit object SimpleMethodOutput_cast_into_TestServiceGreetSingularOutOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleMethodOutput, TestService.GreetSingularOutOutput] {
+      override def convert(_value: TestService.SimpleMethodOutput): TestService.GreetSingularOutOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetSingularOutOutput(value = _value.value)
+      }
+    }
     implicit object SimpleMethodOutput_cast_into_TestServiceParameterlessOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleMethodOutput, TestService.ParameterlessOutput] {
       override def convert(_value: TestService.SimpleMethodOutput): TestService.ParameterlessOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestService.ParameterlessOutput(value = _value.value)
-      }
-    }
-    implicit object SimpleMethodOutput_cast_into_TestServiceSimpleEnumOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleMethodOutput, TestService.SimpleEnumOutput] {
-      override def convert(_value: TestService.SimpleMethodOutput): TestService.SimpleEnumOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleEnumOutput(value = _value.value)
       }
     }
     implicit object SimpleMethodOutput_cast_into_TestServiceSimpleEnum2Output extends izumi.idealingua.runtime.IRTCast[TestService.SimpleMethodOutput, TestService.SimpleEnum2Output] {
@@ -1369,10 +1369,10 @@ object TestService {
         TestService.SimpleEnum2Output(value = _value.value)
       }
     }
-    implicit object SimpleMethodOutput_cast_into_TestServiceGreetSingularOutOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleMethodOutput, TestService.GreetSingularOutOutput] {
-      override def convert(_value: TestService.SimpleMethodOutput): TestService.GreetSingularOutOutput = {
+    implicit object SimpleMethodOutput_cast_into_TestServiceSimpleEnumOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleMethodOutput, TestService.SimpleEnumOutput] {
+      override def convert(_value: TestService.SimpleMethodOutput): TestService.SimpleEnumOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetSingularOutOutput(value = _value.value)
+        TestService.SimpleEnumOutput(value = _value.value)
       }
     }
     implicit object SimpleMethodOutput_upcast_SimpleMethodOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleMethodOutput, TestService.SimpleMethodOutput] {
@@ -1506,34 +1506,10 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.SimpleInput(firstName = defn.firstName, secondName = defn.secondName)
     }
-    implicit object SimpleInput_cast_into_TestServiceSimpleOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, TestService.SimpleOutput] {
-      override def convert(_value: TestService.SimpleInput): TestService.SimpleOutput = {
+    implicit object SimpleInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, Request.Struct] {
+      override def convert(_value: TestService.SimpleInput): Request.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleOutput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object SimpleInput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, TestService.GreetSingularOutInput] {
-      override def convert(_value: TestService.SimpleInput): TestService.GreetSingularOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object SimpleInput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, TestService.GreetImplicitStructOutInput] {
-      override def convert(_value: TestService.SimpleInput): TestService.GreetImplicitStructOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object SimpleInput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, TestService.GreetAlgebraicOutInput] {
-      override def convert(_value: TestService.SimpleInput): TestService.GreetAlgebraicOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object SimpleInput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, TestService.GreetAlgebraicMultilineSyntaxInput] {
-      override def convert(_value: TestService.SimpleInput): TestService.GreetAlgebraicMultilineSyntaxInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
+        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object SimpleInput_cast_into_TestServiceAlternativeInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, TestService.AlternativeInput] {
@@ -1548,10 +1524,34 @@ object TestService {
         TestService.AlternativeSameInput(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
-    implicit object SimpleInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, Request.Struct] {
-      override def convert(_value: TestService.SimpleInput): Request.Struct = {
+    implicit object SimpleInput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, TestService.GreetAlgebraicMultilineSyntaxInput] {
+      override def convert(_value: TestService.SimpleInput): TestService.GreetAlgebraicMultilineSyntaxInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
+        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object SimpleInput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, TestService.GreetAlgebraicOutInput] {
+      override def convert(_value: TestService.SimpleInput): TestService.GreetAlgebraicOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object SimpleInput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, TestService.GreetImplicitStructOutInput] {
+      override def convert(_value: TestService.SimpleInput): TestService.GreetImplicitStructOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object SimpleInput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, TestService.GreetSingularOutInput] {
+      override def convert(_value: TestService.SimpleInput): TestService.GreetSingularOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object SimpleInput_cast_into_TestServiceSimpleOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, TestService.SimpleOutput] {
+      override def convert(_value: TestService.SimpleInput): TestService.SimpleOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleOutput(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object SimpleInput_upcast_SimpleInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleInput, TestService.SimpleInput] {
@@ -1588,34 +1588,10 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.SimpleOutput(firstName = defn.firstName, secondName = defn.secondName)
     }
-    implicit object SimpleOutput_cast_into_TestServiceSimpleInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, TestService.SimpleInput] {
-      override def convert(_value: TestService.SimpleOutput): TestService.SimpleInput = {
+    implicit object SimpleOutput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, Request.Struct] {
+      override def convert(_value: TestService.SimpleOutput): Request.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object SimpleOutput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, TestService.GreetSingularOutInput] {
-      override def convert(_value: TestService.SimpleOutput): TestService.GreetSingularOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object SimpleOutput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, TestService.GreetImplicitStructOutInput] {
-      override def convert(_value: TestService.SimpleOutput): TestService.GreetImplicitStructOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object SimpleOutput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, TestService.GreetAlgebraicOutInput] {
-      override def convert(_value: TestService.SimpleOutput): TestService.GreetAlgebraicOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object SimpleOutput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, TestService.GreetAlgebraicMultilineSyntaxInput] {
-      override def convert(_value: TestService.SimpleOutput): TestService.GreetAlgebraicMultilineSyntaxInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
+        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object SimpleOutput_cast_into_TestServiceAlternativeInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, TestService.AlternativeInput] {
@@ -1630,10 +1606,34 @@ object TestService {
         TestService.AlternativeSameInput(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
-    implicit object SimpleOutput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, Request.Struct] {
-      override def convert(_value: TestService.SimpleOutput): Request.Struct = {
+    implicit object SimpleOutput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, TestService.GreetAlgebraicMultilineSyntaxInput] {
+      override def convert(_value: TestService.SimpleOutput): TestService.GreetAlgebraicMultilineSyntaxInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
+        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object SimpleOutput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, TestService.GreetAlgebraicOutInput] {
+      override def convert(_value: TestService.SimpleOutput): TestService.GreetAlgebraicOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object SimpleOutput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, TestService.GreetImplicitStructOutInput] {
+      override def convert(_value: TestService.SimpleOutput): TestService.GreetImplicitStructOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object SimpleOutput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, TestService.GreetSingularOutInput] {
+      override def convert(_value: TestService.SimpleOutput): TestService.GreetSingularOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object SimpleOutput_cast_into_TestServiceSimpleInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, TestService.SimpleInput] {
+      override def convert(_value: TestService.SimpleOutput): TestService.SimpleInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleInput(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object SimpleOutput_upcast_SimpleOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleOutput, TestService.SimpleOutput] {
@@ -1694,16 +1694,16 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.SimpleEnumOutput(value = defn.value)
     }
+    implicit object SimpleEnumOutput_cast_into_TestServiceGreetSingularOutOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnumOutput, TestService.GreetSingularOutOutput] {
+      override def convert(_value: TestService.SimpleEnumOutput): TestService.GreetSingularOutOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetSingularOutOutput(value = _value.value)
+      }
+    }
     implicit object SimpleEnumOutput_cast_into_TestServiceParameterlessOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnumOutput, TestService.ParameterlessOutput] {
       override def convert(_value: TestService.SimpleEnumOutput): TestService.ParameterlessOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestService.ParameterlessOutput(value = _value.value)
-      }
-    }
-    implicit object SimpleEnumOutput_cast_into_TestServiceSimpleMethodOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnumOutput, TestService.SimpleMethodOutput] {
-      override def convert(_value: TestService.SimpleEnumOutput): TestService.SimpleMethodOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleMethodOutput(value = _value.value)
       }
     }
     implicit object SimpleEnumOutput_cast_into_TestServiceSimpleEnum2Output extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnumOutput, TestService.SimpleEnum2Output] {
@@ -1712,10 +1712,10 @@ object TestService {
         TestService.SimpleEnum2Output(value = _value.value)
       }
     }
-    implicit object SimpleEnumOutput_cast_into_TestServiceGreetSingularOutOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnumOutput, TestService.GreetSingularOutOutput] {
-      override def convert(_value: TestService.SimpleEnumOutput): TestService.GreetSingularOutOutput = {
+    implicit object SimpleEnumOutput_cast_into_TestServiceSimpleMethodOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnumOutput, TestService.SimpleMethodOutput] {
+      override def convert(_value: TestService.SimpleEnumOutput): TestService.SimpleMethodOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetSingularOutOutput(value = _value.value)
+        TestService.SimpleMethodOutput(value = _value.value)
       }
     }
     implicit object SimpleEnumOutput_upcast_SimpleEnumOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnumOutput, TestService.SimpleEnumOutput] {
@@ -1782,16 +1782,16 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.SimpleEnum2Output(value = defn.value)
     }
+    implicit object SimpleEnum2Output_cast_into_TestServiceGreetSingularOutOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnum2Output, TestService.GreetSingularOutOutput] {
+      override def convert(_value: TestService.SimpleEnum2Output): TestService.GreetSingularOutOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetSingularOutOutput(value = _value.value)
+      }
+    }
     implicit object SimpleEnum2Output_cast_into_TestServiceParameterlessOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnum2Output, TestService.ParameterlessOutput] {
       override def convert(_value: TestService.SimpleEnum2Output): TestService.ParameterlessOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestService.ParameterlessOutput(value = _value.value)
-      }
-    }
-    implicit object SimpleEnum2Output_cast_into_TestServiceSimpleMethodOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnum2Output, TestService.SimpleMethodOutput] {
-      override def convert(_value: TestService.SimpleEnum2Output): TestService.SimpleMethodOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleMethodOutput(value = _value.value)
       }
     }
     implicit object SimpleEnum2Output_cast_into_TestServiceSimpleEnumOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnum2Output, TestService.SimpleEnumOutput] {
@@ -1800,10 +1800,10 @@ object TestService {
         TestService.SimpleEnumOutput(value = _value.value)
       }
     }
-    implicit object SimpleEnum2Output_cast_into_TestServiceGreetSingularOutOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnum2Output, TestService.GreetSingularOutOutput] {
-      override def convert(_value: TestService.SimpleEnum2Output): TestService.GreetSingularOutOutput = {
+    implicit object SimpleEnum2Output_cast_into_TestServiceSimpleMethodOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnum2Output, TestService.SimpleMethodOutput] {
+      override def convert(_value: TestService.SimpleEnum2Output): TestService.SimpleMethodOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetSingularOutOutput(value = _value.value)
+        TestService.SimpleMethodOutput(value = _value.value)
       }
     }
     implicit object SimpleEnum2Output_upcast_SimpleEnum2Output extends izumi.idealingua.runtime.IRTCast[TestService.SimpleEnum2Output, TestService.SimpleEnum2Output] {
@@ -1830,16 +1830,16 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.ReturnsListInput(e = defn.e)
     }
-    implicit object ReturnsListInput_cast_into_TestServiceSimpleEnum2Input extends izumi.idealingua.runtime.IRTCast[TestService.ReturnsListInput, TestService.SimpleEnum2Input] {
-      override def convert(_value: TestService.ReturnsListInput): TestService.SimpleEnum2Input = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleEnum2Input(e = _value.e)
-      }
-    }
     implicit object ReturnsListInput_cast_into_TestServiceReturnsMapInput extends izumi.idealingua.runtime.IRTCast[TestService.ReturnsListInput, TestService.ReturnsMapInput] {
       override def convert(_value: TestService.ReturnsListInput): TestService.ReturnsMapInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestService.ReturnsMapInput(e = _value.e)
+      }
+    }
+    implicit object ReturnsListInput_cast_into_TestServiceSimpleEnum2Input extends izumi.idealingua.runtime.IRTCast[TestService.ReturnsListInput, TestService.SimpleEnum2Input] {
+      override def convert(_value: TestService.ReturnsListInput): TestService.SimpleEnum2Input = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleEnum2Input(e = _value.e)
       }
     }
     implicit object ReturnsListInput_upcast_ReturnsListInput extends izumi.idealingua.runtime.IRTCast[TestService.ReturnsListInput, TestService.ReturnsListInput] {
@@ -1894,16 +1894,16 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.ReturnsMapInput(e = defn.e)
     }
-    implicit object ReturnsMapInput_cast_into_TestServiceSimpleEnum2Input extends izumi.idealingua.runtime.IRTCast[TestService.ReturnsMapInput, TestService.SimpleEnum2Input] {
-      override def convert(_value: TestService.ReturnsMapInput): TestService.SimpleEnum2Input = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleEnum2Input(e = _value.e)
-      }
-    }
     implicit object ReturnsMapInput_cast_into_TestServiceReturnsListInput extends izumi.idealingua.runtime.IRTCast[TestService.ReturnsMapInput, TestService.ReturnsListInput] {
       override def convert(_value: TestService.ReturnsMapInput): TestService.ReturnsListInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestService.ReturnsListInput(e = _value.e)
+      }
+    }
+    implicit object ReturnsMapInput_cast_into_TestServiceSimpleEnum2Input extends izumi.idealingua.runtime.IRTCast[TestService.ReturnsMapInput, TestService.SimpleEnum2Input] {
+      override def convert(_value: TestService.ReturnsMapInput): TestService.SimpleEnum2Input = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleEnum2Input(e = _value.e)
       }
     }
     implicit object ReturnsMapInput_upcast_ReturnsMapInput extends izumi.idealingua.runtime.IRTCast[TestService.ReturnsMapInput, TestService.ReturnsMapInput] {
@@ -2016,16 +2016,16 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.SimpleVoidInput(a = defn.a)
     }
-    implicit object SimpleVoidInput_cast_into_TestServiceSimpleMethodInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidInput, TestService.SimpleMethodInput] {
-      override def convert(_value: TestService.SimpleVoidInput): TestService.SimpleMethodInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleMethodInput(a = _value.a)
-      }
-    }
     implicit object SimpleVoidInput_cast_into_TestServiceGreetImplicitStructOutOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidInput, TestService.GreetImplicitStructOutOutput] {
       override def convert(_value: TestService.SimpleVoidInput): TestService.GreetImplicitStructOutOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestService.GreetImplicitStructOutOutput(a = _value.a)
+      }
+    }
+    implicit object SimpleVoidInput_cast_into_TestServiceSimpleMethodInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidInput, TestService.SimpleMethodInput] {
+      override def convert(_value: TestService.SimpleVoidInput): TestService.SimpleMethodInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleMethodInput(a = _value.a)
       }
     }
     implicit object SimpleVoidInput_upcast_SimpleVoidInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidInput, TestService.SimpleVoidInput] {
@@ -2049,16 +2049,16 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.SimpleVoidOutput()
     }
-    implicit object SimpleVoidOutput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidOutput, TestService.UnitToUnitInput] {
-      override def convert(_value: TestService.SimpleVoidOutput): TestService.UnitToUnitInput = {
+    implicit object SimpleVoidOutput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidOutput, TestService.AlternativeGeneric2Input] {
+      override def convert(_value: TestService.SimpleVoidOutput): TestService.AlternativeGeneric2Input = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitInput()
+        TestService.AlternativeGeneric2Input()
       }
     }
-    implicit object SimpleVoidOutput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidOutput, TestService.UnitToUnitOutput] {
-      override def convert(_value: TestService.SimpleVoidOutput): TestService.UnitToUnitOutput = {
+    implicit object SimpleVoidOutput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidOutput, TestService.AlternativeGenericInput] {
+      override def convert(_value: TestService.SimpleVoidOutput): TestService.AlternativeGenericInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitOutput()
+        TestService.AlternativeGenericInput()
       }
     }
     implicit object SimpleVoidOutput_cast_into_TestServiceAnotherVoidInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidOutput, TestService.AnotherVoidInput] {
@@ -2073,28 +2073,28 @@ object TestService {
         TestService.AnotherVoidOutput()
       }
     }
-    implicit object SimpleVoidOutput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidOutput, TestService.UnitResultOutput] {
-      override def convert(_value: TestService.SimpleVoidOutput): TestService.UnitResultOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitResultOutput()
-      }
-    }
     implicit object SimpleVoidOutput_cast_into_TestServiceParameterlessInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidOutput, TestService.ParameterlessInput] {
       override def convert(_value: TestService.SimpleVoidOutput): TestService.ParameterlessInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestService.ParameterlessInput()
       }
     }
-    implicit object SimpleVoidOutput_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidOutput, TestService.AlternativeGenericInput] {
-      override def convert(_value: TestService.SimpleVoidOutput): TestService.AlternativeGenericInput = {
+    implicit object SimpleVoidOutput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidOutput, TestService.UnitResultOutput] {
+      override def convert(_value: TestService.SimpleVoidOutput): TestService.UnitResultOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGenericInput()
+        TestService.UnitResultOutput()
       }
     }
-    implicit object SimpleVoidOutput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidOutput, TestService.AlternativeGeneric2Input] {
-      override def convert(_value: TestService.SimpleVoidOutput): TestService.AlternativeGeneric2Input = {
+    implicit object SimpleVoidOutput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidOutput, TestService.UnitToUnitInput] {
+      override def convert(_value: TestService.SimpleVoidOutput): TestService.UnitToUnitInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGeneric2Input()
+        TestService.UnitToUnitInput()
+      }
+    }
+    implicit object SimpleVoidOutput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidOutput, TestService.UnitToUnitOutput] {
+      override def convert(_value: TestService.SimpleVoidOutput): TestService.UnitToUnitOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.UnitToUnitOutput()
       }
     }
     implicit object SimpleVoidOutput_upcast_SimpleVoidOutput extends izumi.idealingua.runtime.IRTCast[TestService.SimpleVoidOutput, TestService.SimpleVoidOutput] {
@@ -2124,34 +2124,10 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.GreetSingularOutInput(firstName = defn.firstName, secondName = defn.secondName)
     }
-    implicit object GreetSingularOutInput_cast_into_TestServiceSimpleInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, TestService.SimpleInput] {
-      override def convert(_value: TestService.GreetSingularOutInput): TestService.SimpleInput = {
+    implicit object GreetSingularOutInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, Request.Struct] {
+      override def convert(_value: TestService.GreetSingularOutInput): Request.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetSingularOutInput_cast_into_TestServiceSimpleOutput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, TestService.SimpleOutput] {
-      override def convert(_value: TestService.GreetSingularOutInput): TestService.SimpleOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleOutput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetSingularOutInput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, TestService.GreetImplicitStructOutInput] {
-      override def convert(_value: TestService.GreetSingularOutInput): TestService.GreetImplicitStructOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetSingularOutInput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, TestService.GreetAlgebraicOutInput] {
-      override def convert(_value: TestService.GreetSingularOutInput): TestService.GreetAlgebraicOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetSingularOutInput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, TestService.GreetAlgebraicMultilineSyntaxInput] {
-      override def convert(_value: TestService.GreetSingularOutInput): TestService.GreetAlgebraicMultilineSyntaxInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
+        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object GreetSingularOutInput_cast_into_TestServiceAlternativeInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, TestService.AlternativeInput] {
@@ -2166,10 +2142,34 @@ object TestService {
         TestService.AlternativeSameInput(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
-    implicit object GreetSingularOutInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, Request.Struct] {
-      override def convert(_value: TestService.GreetSingularOutInput): Request.Struct = {
+    implicit object GreetSingularOutInput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, TestService.GreetAlgebraicMultilineSyntaxInput] {
+      override def convert(_value: TestService.GreetSingularOutInput): TestService.GreetAlgebraicMultilineSyntaxInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
+        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetSingularOutInput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, TestService.GreetAlgebraicOutInput] {
+      override def convert(_value: TestService.GreetSingularOutInput): TestService.GreetAlgebraicOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetSingularOutInput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, TestService.GreetImplicitStructOutInput] {
+      override def convert(_value: TestService.GreetSingularOutInput): TestService.GreetImplicitStructOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetSingularOutInput_cast_into_TestServiceSimpleInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, TestService.SimpleInput] {
+      override def convert(_value: TestService.GreetSingularOutInput): TestService.SimpleInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetSingularOutInput_cast_into_TestServiceSimpleOutput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, TestService.SimpleOutput] {
+      override def convert(_value: TestService.GreetSingularOutInput): TestService.SimpleOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleOutput(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object GreetSingularOutInput_upcast_GreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutInput, TestService.GreetSingularOutInput] {
@@ -2206,10 +2206,10 @@ object TestService {
         TestService.ParameterlessOutput(value = _value.value)
       }
     }
-    implicit object GreetSingularOutOutput_cast_into_TestServiceSimpleMethodOutput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutOutput, TestService.SimpleMethodOutput] {
-      override def convert(_value: TestService.GreetSingularOutOutput): TestService.SimpleMethodOutput = {
+    implicit object GreetSingularOutOutput_cast_into_TestServiceSimpleEnum2Output extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutOutput, TestService.SimpleEnum2Output] {
+      override def convert(_value: TestService.GreetSingularOutOutput): TestService.SimpleEnum2Output = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleMethodOutput(value = _value.value)
+        TestService.SimpleEnum2Output(value = _value.value)
       }
     }
     implicit object GreetSingularOutOutput_cast_into_TestServiceSimpleEnumOutput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutOutput, TestService.SimpleEnumOutput] {
@@ -2218,10 +2218,10 @@ object TestService {
         TestService.SimpleEnumOutput(value = _value.value)
       }
     }
-    implicit object GreetSingularOutOutput_cast_into_TestServiceSimpleEnum2Output extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutOutput, TestService.SimpleEnum2Output] {
-      override def convert(_value: TestService.GreetSingularOutOutput): TestService.SimpleEnum2Output = {
+    implicit object GreetSingularOutOutput_cast_into_TestServiceSimpleMethodOutput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutOutput, TestService.SimpleMethodOutput] {
+      override def convert(_value: TestService.GreetSingularOutOutput): TestService.SimpleMethodOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleEnum2Output(value = _value.value)
+        TestService.SimpleMethodOutput(value = _value.value)
       }
     }
     implicit object GreetSingularOutOutput_upcast_GreetSingularOutOutput extends izumi.idealingua.runtime.IRTCast[TestService.GreetSingularOutOutput, TestService.GreetSingularOutOutput] {
@@ -2251,34 +2251,10 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.GreetImplicitStructOutInput(firstName = defn.firstName, secondName = defn.secondName)
     }
-    implicit object GreetImplicitStructOutInput_cast_into_TestServiceSimpleInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, TestService.SimpleInput] {
-      override def convert(_value: TestService.GreetImplicitStructOutInput): TestService.SimpleInput = {
+    implicit object GreetImplicitStructOutInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, Request.Struct] {
+      override def convert(_value: TestService.GreetImplicitStructOutInput): Request.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetImplicitStructOutInput_cast_into_TestServiceSimpleOutput extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, TestService.SimpleOutput] {
-      override def convert(_value: TestService.GreetImplicitStructOutInput): TestService.SimpleOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleOutput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetImplicitStructOutInput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, TestService.GreetSingularOutInput] {
-      override def convert(_value: TestService.GreetImplicitStructOutInput): TestService.GreetSingularOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetImplicitStructOutInput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, TestService.GreetAlgebraicOutInput] {
-      override def convert(_value: TestService.GreetImplicitStructOutInput): TestService.GreetAlgebraicOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetImplicitStructOutInput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, TestService.GreetAlgebraicMultilineSyntaxInput] {
-      override def convert(_value: TestService.GreetImplicitStructOutInput): TestService.GreetAlgebraicMultilineSyntaxInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
+        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object GreetImplicitStructOutInput_cast_into_TestServiceAlternativeInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, TestService.AlternativeInput] {
@@ -2293,10 +2269,34 @@ object TestService {
         TestService.AlternativeSameInput(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
-    implicit object GreetImplicitStructOutInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, Request.Struct] {
-      override def convert(_value: TestService.GreetImplicitStructOutInput): Request.Struct = {
+    implicit object GreetImplicitStructOutInput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, TestService.GreetAlgebraicMultilineSyntaxInput] {
+      override def convert(_value: TestService.GreetImplicitStructOutInput): TestService.GreetAlgebraicMultilineSyntaxInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
+        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetImplicitStructOutInput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, TestService.GreetAlgebraicOutInput] {
+      override def convert(_value: TestService.GreetImplicitStructOutInput): TestService.GreetAlgebraicOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetImplicitStructOutInput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, TestService.GreetSingularOutInput] {
+      override def convert(_value: TestService.GreetImplicitStructOutInput): TestService.GreetSingularOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetImplicitStructOutInput_cast_into_TestServiceSimpleInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, TestService.SimpleInput] {
+      override def convert(_value: TestService.GreetImplicitStructOutInput): TestService.SimpleInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetImplicitStructOutInput_cast_into_TestServiceSimpleOutput extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, TestService.SimpleOutput] {
+      override def convert(_value: TestService.GreetImplicitStructOutInput): TestService.SimpleOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleOutput(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object GreetImplicitStructOutInput_upcast_GreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetImplicitStructOutInput, TestService.GreetImplicitStructOutInput] {
@@ -2507,34 +2507,10 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.GreetAlgebraicOutInput(firstName = defn.firstName, secondName = defn.secondName)
     }
-    implicit object GreetAlgebraicOutInput_cast_into_TestServiceSimpleInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, TestService.SimpleInput] {
-      override def convert(_value: TestService.GreetAlgebraicOutInput): TestService.SimpleInput = {
+    implicit object GreetAlgebraicOutInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, Request.Struct] {
+      override def convert(_value: TestService.GreetAlgebraicOutInput): Request.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetAlgebraicOutInput_cast_into_TestServiceSimpleOutput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, TestService.SimpleOutput] {
-      override def convert(_value: TestService.GreetAlgebraicOutInput): TestService.SimpleOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleOutput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetAlgebraicOutInput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, TestService.GreetSingularOutInput] {
-      override def convert(_value: TestService.GreetAlgebraicOutInput): TestService.GreetSingularOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetAlgebraicOutInput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, TestService.GreetImplicitStructOutInput] {
-      override def convert(_value: TestService.GreetAlgebraicOutInput): TestService.GreetImplicitStructOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetAlgebraicOutInput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, TestService.GreetAlgebraicMultilineSyntaxInput] {
-      override def convert(_value: TestService.GreetAlgebraicOutInput): TestService.GreetAlgebraicMultilineSyntaxInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
+        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object GreetAlgebraicOutInput_cast_into_TestServiceAlternativeInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, TestService.AlternativeInput] {
@@ -2549,10 +2525,34 @@ object TestService {
         TestService.AlternativeSameInput(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
-    implicit object GreetAlgebraicOutInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, Request.Struct] {
-      override def convert(_value: TestService.GreetAlgebraicOutInput): Request.Struct = {
+    implicit object GreetAlgebraicOutInput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, TestService.GreetAlgebraicMultilineSyntaxInput] {
+      override def convert(_value: TestService.GreetAlgebraicOutInput): TestService.GreetAlgebraicMultilineSyntaxInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
+        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetAlgebraicOutInput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, TestService.GreetImplicitStructOutInput] {
+      override def convert(_value: TestService.GreetAlgebraicOutInput): TestService.GreetImplicitStructOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetAlgebraicOutInput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, TestService.GreetSingularOutInput] {
+      override def convert(_value: TestService.GreetAlgebraicOutInput): TestService.GreetSingularOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetAlgebraicOutInput_cast_into_TestServiceSimpleInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, TestService.SimpleInput] {
+      override def convert(_value: TestService.GreetAlgebraicOutInput): TestService.SimpleInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetAlgebraicOutInput_cast_into_TestServiceSimpleOutput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, TestService.SimpleOutput] {
+      override def convert(_value: TestService.GreetAlgebraicOutInput): TestService.SimpleOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleOutput(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object GreetAlgebraicOutInput_upcast_GreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicOutInput, TestService.GreetAlgebraicOutInput] {
@@ -2618,34 +2618,10 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.GreetAlgebraicMultilineSyntaxInput(firstName = defn.firstName, secondName = defn.secondName)
     }
-    implicit object GreetAlgebraicMultilineSyntaxInput_cast_into_TestServiceSimpleInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, TestService.SimpleInput] {
-      override def convert(_value: TestService.GreetAlgebraicMultilineSyntaxInput): TestService.SimpleInput = {
+    implicit object GreetAlgebraicMultilineSyntaxInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, Request.Struct] {
+      override def convert(_value: TestService.GreetAlgebraicMultilineSyntaxInput): Request.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetAlgebraicMultilineSyntaxInput_cast_into_TestServiceSimpleOutput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, TestService.SimpleOutput] {
-      override def convert(_value: TestService.GreetAlgebraicMultilineSyntaxInput): TestService.SimpleOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.SimpleOutput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetAlgebraicMultilineSyntaxInput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, TestService.GreetSingularOutInput] {
-      override def convert(_value: TestService.GreetAlgebraicMultilineSyntaxInput): TestService.GreetSingularOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetAlgebraicMultilineSyntaxInput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, TestService.GreetImplicitStructOutInput] {
-      override def convert(_value: TestService.GreetAlgebraicMultilineSyntaxInput): TestService.GreetImplicitStructOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object GreetAlgebraicMultilineSyntaxInput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, TestService.GreetAlgebraicOutInput] {
-      override def convert(_value: TestService.GreetAlgebraicMultilineSyntaxInput): TestService.GreetAlgebraicOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
+        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object GreetAlgebraicMultilineSyntaxInput_cast_into_TestServiceAlternativeInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, TestService.AlternativeInput] {
@@ -2660,10 +2636,34 @@ object TestService {
         TestService.AlternativeSameInput(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
-    implicit object GreetAlgebraicMultilineSyntaxInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, Request.Struct] {
-      override def convert(_value: TestService.GreetAlgebraicMultilineSyntaxInput): Request.Struct = {
+    implicit object GreetAlgebraicMultilineSyntaxInput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, TestService.GreetAlgebraicOutInput] {
+      override def convert(_value: TestService.GreetAlgebraicMultilineSyntaxInput): TestService.GreetAlgebraicOutInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
+        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetAlgebraicMultilineSyntaxInput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, TestService.GreetImplicitStructOutInput] {
+      override def convert(_value: TestService.GreetAlgebraicMultilineSyntaxInput): TestService.GreetImplicitStructOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetAlgebraicMultilineSyntaxInput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, TestService.GreetSingularOutInput] {
+      override def convert(_value: TestService.GreetAlgebraicMultilineSyntaxInput): TestService.GreetSingularOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetAlgebraicMultilineSyntaxInput_cast_into_TestServiceSimpleInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, TestService.SimpleInput] {
+      override def convert(_value: TestService.GreetAlgebraicMultilineSyntaxInput): TestService.SimpleInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object GreetAlgebraicMultilineSyntaxInput_cast_into_TestServiceSimpleOutput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, TestService.SimpleOutput] {
+      override def convert(_value: TestService.GreetAlgebraicMultilineSyntaxInput): TestService.SimpleOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.SimpleOutput(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object GreetAlgebraicMultilineSyntaxInput_upcast_GreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.GreetAlgebraicMultilineSyntaxInput, TestService.GreetAlgebraicMultilineSyntaxInput] {
@@ -2729,6 +2729,42 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.AlternativeInput(firstName = defn.firstName, secondName = defn.secondName)
     }
+    implicit object AlternativeInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, Request.Struct] {
+      override def convert(_value: TestService.AlternativeInput): Request.Struct = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object AlternativeInput_cast_into_TestServiceAlternativeSameInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, TestService.AlternativeSameInput] {
+      override def convert(_value: TestService.AlternativeInput): TestService.AlternativeSameInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.AlternativeSameInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object AlternativeInput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, TestService.GreetAlgebraicMultilineSyntaxInput] {
+      override def convert(_value: TestService.AlternativeInput): TestService.GreetAlgebraicMultilineSyntaxInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object AlternativeInput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, TestService.GreetAlgebraicOutInput] {
+      override def convert(_value: TestService.AlternativeInput): TestService.GreetAlgebraicOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object AlternativeInput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, TestService.GreetImplicitStructOutInput] {
+      override def convert(_value: TestService.AlternativeInput): TestService.GreetImplicitStructOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object AlternativeInput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, TestService.GreetSingularOutInput] {
+      override def convert(_value: TestService.AlternativeInput): TestService.GreetSingularOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
     implicit object AlternativeInput_cast_into_TestServiceSimpleInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, TestService.SimpleInput] {
       override def convert(_value: TestService.AlternativeInput): TestService.SimpleInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
@@ -2739,42 +2775,6 @@ object TestService {
       override def convert(_value: TestService.AlternativeInput): TestService.SimpleOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestService.SimpleOutput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object AlternativeInput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, TestService.GreetSingularOutInput] {
-      override def convert(_value: TestService.AlternativeInput): TestService.GreetSingularOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object AlternativeInput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, TestService.GreetImplicitStructOutInput] {
-      override def convert(_value: TestService.AlternativeInput): TestService.GreetImplicitStructOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object AlternativeInput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, TestService.GreetAlgebraicOutInput] {
-      override def convert(_value: TestService.AlternativeInput): TestService.GreetAlgebraicOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object AlternativeInput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, TestService.GreetAlgebraicMultilineSyntaxInput] {
-      override def convert(_value: TestService.AlternativeInput): TestService.GreetAlgebraicMultilineSyntaxInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object AlternativeInput_cast_into_TestServiceAlternativeSameInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, TestService.AlternativeSameInput] {
-      override def convert(_value: TestService.AlternativeInput): TestService.AlternativeSameInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeSameInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object AlternativeInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, Request.Struct] {
-      override def convert(_value: TestService.AlternativeInput): Request.Struct = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object AlternativeInput_upcast_AlternativeInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeInput, TestService.AlternativeInput] {
@@ -2840,6 +2840,42 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.AlternativeSameInput(firstName = defn.firstName, secondName = defn.secondName)
     }
+    implicit object AlternativeSameInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, Request.Struct] {
+      override def convert(_value: TestService.AlternativeSameInput): Request.Struct = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object AlternativeSameInput_cast_into_TestServiceAlternativeInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, TestService.AlternativeInput] {
+      override def convert(_value: TestService.AlternativeSameInput): TestService.AlternativeInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.AlternativeInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object AlternativeSameInput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, TestService.GreetAlgebraicMultilineSyntaxInput] {
+      override def convert(_value: TestService.AlternativeSameInput): TestService.GreetAlgebraicMultilineSyntaxInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object AlternativeSameInput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, TestService.GreetAlgebraicOutInput] {
+      override def convert(_value: TestService.AlternativeSameInput): TestService.GreetAlgebraicOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object AlternativeSameInput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, TestService.GreetImplicitStructOutInput] {
+      override def convert(_value: TestService.AlternativeSameInput): TestService.GreetImplicitStructOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
+    implicit object AlternativeSameInput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, TestService.GreetSingularOutInput] {
+      override def convert(_value: TestService.AlternativeSameInput): TestService.GreetSingularOutInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
+      }
+    }
     implicit object AlternativeSameInput_cast_into_TestServiceSimpleInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, TestService.SimpleInput] {
       override def convert(_value: TestService.AlternativeSameInput): TestService.SimpleInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
@@ -2850,42 +2886,6 @@ object TestService {
       override def convert(_value: TestService.AlternativeSameInput): TestService.SimpleOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestService.SimpleOutput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object AlternativeSameInput_cast_into_TestServiceGreetSingularOutInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, TestService.GreetSingularOutInput] {
-      override def convert(_value: TestService.AlternativeSameInput): TestService.GreetSingularOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetSingularOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object AlternativeSameInput_cast_into_TestServiceGreetImplicitStructOutInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, TestService.GreetImplicitStructOutInput] {
-      override def convert(_value: TestService.AlternativeSameInput): TestService.GreetImplicitStructOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetImplicitStructOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object AlternativeSameInput_cast_into_TestServiceGreetAlgebraicOutInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, TestService.GreetAlgebraicOutInput] {
-      override def convert(_value: TestService.AlternativeSameInput): TestService.GreetAlgebraicOutInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicOutInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object AlternativeSameInput_cast_into_TestServiceGreetAlgebraicMultilineSyntaxInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, TestService.GreetAlgebraicMultilineSyntaxInput] {
-      override def convert(_value: TestService.AlternativeSameInput): TestService.GreetAlgebraicMultilineSyntaxInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetAlgebraicMultilineSyntaxInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object AlternativeSameInput_cast_into_TestServiceAlternativeInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, TestService.AlternativeInput] {
-      override def convert(_value: TestService.AlternativeSameInput): TestService.AlternativeInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeInput(firstName = _value.firstName, secondName = _value.secondName)
-      }
-    }
-    implicit object AlternativeSameInput_cast_into_RequestStruct extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, Request.Struct] {
-      override def convert(_value: TestService.AlternativeSameInput): Request.Struct = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Request.Struct(firstName = _value.firstName, secondName = _value.secondName)
       }
     }
     implicit object AlternativeSameInput_upcast_AlternativeSameInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeSameInput, TestService.AlternativeSameInput] {
@@ -2945,16 +2945,10 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.AlternativeGenericInput()
     }
-    implicit object AlternativeGenericInput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGenericInput, TestService.UnitToUnitInput] {
-      override def convert(_value: TestService.AlternativeGenericInput): TestService.UnitToUnitInput = {
+    implicit object AlternativeGenericInput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGenericInput, TestService.AlternativeGeneric2Input] {
+      override def convert(_value: TestService.AlternativeGenericInput): TestService.AlternativeGeneric2Input = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitInput()
-      }
-    }
-    implicit object AlternativeGenericInput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGenericInput, TestService.UnitToUnitOutput] {
-      override def convert(_value: TestService.AlternativeGenericInput): TestService.UnitToUnitOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitOutput()
+        TestService.AlternativeGeneric2Input()
       }
     }
     implicit object AlternativeGenericInput_cast_into_TestServiceAnotherVoidInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGenericInput, TestService.AnotherVoidInput] {
@@ -2969,12 +2963,6 @@ object TestService {
         TestService.AnotherVoidOutput()
       }
     }
-    implicit object AlternativeGenericInput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGenericInput, TestService.UnitResultOutput] {
-      override def convert(_value: TestService.AlternativeGenericInput): TestService.UnitResultOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitResultOutput()
-      }
-    }
     implicit object AlternativeGenericInput_cast_into_TestServiceParameterlessInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGenericInput, TestService.ParameterlessInput] {
       override def convert(_value: TestService.AlternativeGenericInput): TestService.ParameterlessInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
@@ -2987,10 +2975,22 @@ object TestService {
         TestService.SimpleVoidOutput()
       }
     }
-    implicit object AlternativeGenericInput_cast_into_TestServiceAlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGenericInput, TestService.AlternativeGeneric2Input] {
-      override def convert(_value: TestService.AlternativeGenericInput): TestService.AlternativeGeneric2Input = {
+    implicit object AlternativeGenericInput_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGenericInput, TestService.UnitResultOutput] {
+      override def convert(_value: TestService.AlternativeGenericInput): TestService.UnitResultOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGeneric2Input()
+        TestService.UnitResultOutput()
+      }
+    }
+    implicit object AlternativeGenericInput_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGenericInput, TestService.UnitToUnitInput] {
+      override def convert(_value: TestService.AlternativeGenericInput): TestService.UnitToUnitInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.UnitToUnitInput()
+      }
+    }
+    implicit object AlternativeGenericInput_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGenericInput, TestService.UnitToUnitOutput] {
+      override def convert(_value: TestService.AlternativeGenericInput): TestService.UnitToUnitOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.UnitToUnitOutput()
       }
     }
     implicit object AlternativeGenericInput_upcast_AlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGenericInput, TestService.AlternativeGenericInput] {
@@ -3050,16 +3050,10 @@ object TestService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestService.AlternativeGeneric2Input()
     }
-    implicit object AlternativeGeneric2Input_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGeneric2Input, TestService.UnitToUnitInput] {
-      override def convert(_value: TestService.AlternativeGeneric2Input): TestService.UnitToUnitInput = {
+    implicit object AlternativeGeneric2Input_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGeneric2Input, TestService.AlternativeGenericInput] {
+      override def convert(_value: TestService.AlternativeGeneric2Input): TestService.AlternativeGenericInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitInput()
-      }
-    }
-    implicit object AlternativeGeneric2Input_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGeneric2Input, TestService.UnitToUnitOutput] {
-      override def convert(_value: TestService.AlternativeGeneric2Input): TestService.UnitToUnitOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitToUnitOutput()
+        TestService.AlternativeGenericInput()
       }
     }
     implicit object AlternativeGeneric2Input_cast_into_TestServiceAnotherVoidInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGeneric2Input, TestService.AnotherVoidInput] {
@@ -3074,12 +3068,6 @@ object TestService {
         TestService.AnotherVoidOutput()
       }
     }
-    implicit object AlternativeGeneric2Input_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGeneric2Input, TestService.UnitResultOutput] {
-      override def convert(_value: TestService.AlternativeGeneric2Input): TestService.UnitResultOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.UnitResultOutput()
-      }
-    }
     implicit object AlternativeGeneric2Input_cast_into_TestServiceParameterlessInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGeneric2Input, TestService.ParameterlessInput] {
       override def convert(_value: TestService.AlternativeGeneric2Input): TestService.ParameterlessInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
@@ -3092,10 +3080,22 @@ object TestService {
         TestService.SimpleVoidOutput()
       }
     }
-    implicit object AlternativeGeneric2Input_cast_into_TestServiceAlternativeGenericInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGeneric2Input, TestService.AlternativeGenericInput] {
-      override def convert(_value: TestService.AlternativeGeneric2Input): TestService.AlternativeGenericInput = {
+    implicit object AlternativeGeneric2Input_cast_into_TestServiceUnitResultOutput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGeneric2Input, TestService.UnitResultOutput] {
+      override def convert(_value: TestService.AlternativeGeneric2Input): TestService.UnitResultOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.AlternativeGenericInput()
+        TestService.UnitResultOutput()
+      }
+    }
+    implicit object AlternativeGeneric2Input_cast_into_TestServiceUnitToUnitInput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGeneric2Input, TestService.UnitToUnitInput] {
+      override def convert(_value: TestService.AlternativeGeneric2Input): TestService.UnitToUnitInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.UnitToUnitInput()
+      }
+    }
+    implicit object AlternativeGeneric2Input_cast_into_TestServiceUnitToUnitOutput extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGeneric2Input, TestService.UnitToUnitOutput] {
+      override def convert(_value: TestService.AlternativeGeneric2Input): TestService.UnitToUnitOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestService.UnitToUnitOutput()
       }
     }
     implicit object AlternativeGeneric2Input_upcast_AlternativeGeneric2Input extends izumi.idealingua.runtime.IRTCast[TestService.AlternativeGeneric2Input, TestService.AlternativeGeneric2Input] {

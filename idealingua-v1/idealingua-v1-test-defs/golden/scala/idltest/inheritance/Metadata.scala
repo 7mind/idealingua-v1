@@ -11,25 +11,25 @@ trait MetadataCirce {
   import _root_.io.circe.syntax.*
   import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
   implicit val encodeMetadata: Encoder.AsObject[Metadata] = Encoder.AsObject.instance {
-    case v: Metadata.Struct =>
-      Map("idltest.inheritance.Metadata.Struct" -> v).asJsonObject
     case v: Point =>
       Map("idltest.inheritance.Point" -> v).asJsonObject
+    case v: Metadata.Struct =>
+      Map("idltest.inheritance.Metadata.Struct" -> v).asJsonObject
     case v: PointLike.Struct =>
       Map("idltest.inheritance.PointLike.Struct" -> v).asJsonObject
   }
   implicit val decodeMetadata: Decoder[Metadata] = Decoder.instance(c => {
     val maybeContent = c.keys.flatMap(_.headOption).toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \"type_name\": { ...fields } }", c.history))
     for (fname <- maybeContent; value = c.downField(fname); result <- fname match {
-      case "idltest.inheritance.Metadata.Struct" =>
-        value.as[Metadata.Struct]
       case "idltest.inheritance.Point" =>
         value.as[Point]
+      case "idltest.inheritance.Metadata.Struct" =>
+        value.as[Metadata.Struct]
       case "idltest.inheritance.PointLike.Struct" =>
         value.as[PointLike.Struct]
       case _ =>
         val cname = "idltest.inheritance.Metadata"
-        val alts = List("idltest.inheritance.Metadata.Struct", "idltest.inheritance.Point", "idltest.inheritance.PointLike.Struct").mkString(",")
+        val alts = List("idltest.inheritance.Point", "idltest.inheritance.Metadata.Struct", "idltest.inheritance.PointLike.Struct").mkString(",")
         Left(DecodingFailure(s"Can't decode type $fname as $cname, expected one of [$alts]", value.history))
     }) yield result
   })
@@ -63,22 +63,21 @@ object Metadata extends MetadataCirce {
     }
     implicit class StructExtensions(override protected val _value: Metadata.Struct) extends izumi.idealingua.runtime.IRTConversions[Metadata.Struct]
   }
-  implicit object Metadata_downcast_extend_MetadataStruct extends izumi.idealingua.runtime.IRTExtend[Metadata, Metadata.Struct] {
+  implicit object Metadata_downcast_extend_Point extends izumi.idealingua.runtime.IRTExtend[Metadata, Point] {
     class Call(private val _value: Metadata) extends AnyVal {
-      def using(): Metadata.Struct = {
+      def using(x: Int, y: Int): Point = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Metadata.Struct(name = _value.name, id = _value.id)
+        Point(id = _value.id, name = _value.name, x = x, y = y)
       }
     }
     override type INSTANTIATOR = Call
     override def next(_value: Metadata): Call = new Call(_value)
   }
-  implicit object Metadata_downcast_extend_Point extends izumi.idealingua.runtime.IRTExtend[Metadata, Point] {
+  implicit object Metadata_downcast_extend_MetadataStruct extends izumi.idealingua.runtime.IRTExtend[Metadata, Metadata.Struct] {
     class Call(private val _value: Metadata) extends AnyVal {
-      def using(intpair: IntPair): Point = {
+      def using(): Metadata.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(intpair.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Point(name = _value.name, id = _value.id, x = intpair.x, y = intpair.y)
+        Metadata.Struct(id = _value.id, name = _value.name)
       }
     }
     override type INSTANTIATOR = Call
@@ -86,10 +85,9 @@ object Metadata extends MetadataCirce {
   }
   implicit object Metadata_downcast_extend_PointLikeStruct extends izumi.idealingua.runtime.IRTExtend[Metadata, PointLike.Struct] {
     class Call(private val _value: Metadata) extends AnyVal {
-      def using(intpair: IntPair): PointLike.Struct = {
+      def using(x: Int, y: Int): PointLike.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(intpair.asInstanceOf[_root_.scala.AnyRef] ne null)
-        PointLike.Struct(name = _value.name, id = _value.id, x = intpair.x, y = intpair.y)
+        PointLike.Struct(id = _value.id, name = _value.name, x = x, y = y)
       }
     }
     override type INSTANTIATOR = Call

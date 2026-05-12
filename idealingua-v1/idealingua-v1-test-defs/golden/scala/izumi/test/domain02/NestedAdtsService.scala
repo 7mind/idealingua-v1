@@ -82,16 +82,16 @@ object NestedAdtsService {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new NestedAdtsService.AdtNestedInput()
     }
-    implicit object AdtNestedInput_cast_into_TestAliasServTestADTIdReturnInput extends izumi.idealingua.runtime.IRTCast[NestedAdtsService.AdtNestedInput, TestAliasServ.TestADTIdReturnInput] {
-      override def convert(_value: NestedAdtsService.AdtNestedInput): TestAliasServ.TestADTIdReturnInput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestAliasServ.TestADTIdReturnInput()
-      }
-    }
     implicit object AdtNestedInput_cast_into_TestAliasServTestADTIdImportedReturnInput extends izumi.idealingua.runtime.IRTCast[NestedAdtsService.AdtNestedInput, TestAliasServ.TestADTIdImportedReturnInput] {
       override def convert(_value: NestedAdtsService.AdtNestedInput): TestAliasServ.TestADTIdImportedReturnInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestAliasServ.TestADTIdImportedReturnInput()
+      }
+    }
+    implicit object AdtNestedInput_cast_into_TestAliasServTestADTIdReturnInput extends izumi.idealingua.runtime.IRTCast[NestedAdtsService.AdtNestedInput, TestAliasServ.TestADTIdReturnInput] {
+      override def convert(_value: NestedAdtsService.AdtNestedInput): TestAliasServ.TestADTIdReturnInput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestAliasServ.TestADTIdReturnInput()
       }
     }
     implicit object AdtNestedInput_upcast_AdtNestedInput extends izumi.idealingua.runtime.IRTCast[NestedAdtsService.AdtNestedInput, NestedAdtsService.AdtNestedInput] {

@@ -8,21 +8,21 @@ trait BoolNodeCirce {
   import _root_.io.circe.syntax.*
   import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
   implicit val encodeBoolNode: Encoder.AsObject[BoolNode] = Encoder.AsObject.instance {
-    case v: TBoolNode.Struct =>
-      Map("idltest.ast.TBoolNode.Struct" -> v).asJsonObject
     case v: BoolNode.Struct =>
       Map("idltest.ast.BoolNode.Struct" -> v).asJsonObject
+    case v: TBoolNode.Struct =>
+      Map("idltest.ast.TBoolNode.Struct" -> v).asJsonObject
   }
   implicit val decodeBoolNode: Decoder[BoolNode] = Decoder.instance(c => {
     val maybeContent = c.keys.flatMap(_.headOption).toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \"type_name\": { ...fields } }", c.history))
     for (fname <- maybeContent; value = c.downField(fname); result <- fname match {
-      case "idltest.ast.TBoolNode.Struct" =>
-        value.as[TBoolNode.Struct]
       case "idltest.ast.BoolNode.Struct" =>
         value.as[BoolNode.Struct]
+      case "idltest.ast.TBoolNode.Struct" =>
+        value.as[TBoolNode.Struct]
       case _ =>
         val cname = "idltest.ast.BoolNode"
-        val alts = List("idltest.ast.TBoolNode.Struct", "idltest.ast.BoolNode.Struct").mkString(",")
+        val alts = List("idltest.ast.BoolNode.Struct", "idltest.ast.TBoolNode.Struct").mkString(",")
         Left(DecodingFailure(s"Can't decode type $fname as $cname, expected one of [$alts]", value.history))
     }) yield result
   })
@@ -55,22 +55,22 @@ object BoolNode extends BoolNodeCirce {
     }
     implicit class StructExtensions(override protected val _value: BoolNode.Struct) extends izumi.idealingua.runtime.IRTConversions[BoolNode.Struct]
   }
-  implicit object BoolNode_downcast_extend_TBoolNodeStruct extends izumi.idealingua.runtime.IRTExtend[BoolNode, TBoolNode.Struct] {
-    class Call(private val _value: BoolNode) extends AnyVal {
-      def using(typeinfo: TypeInfo): TBoolNode.Struct = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(typeinfo.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TBoolNode.Struct(lit = _value.lit, tpe = typeinfo.tpe)
-      }
-    }
-    override type INSTANTIATOR = Call
-    override def next(_value: BoolNode): Call = new Call(_value)
-  }
   implicit object BoolNode_downcast_extend_BoolNodeStruct extends izumi.idealingua.runtime.IRTExtend[BoolNode, BoolNode.Struct] {
     class Call(private val _value: BoolNode) extends AnyVal {
       def using(): BoolNode.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         BoolNode.Struct(lit = _value.lit)
+      }
+    }
+    override type INSTANTIATOR = Call
+    override def next(_value: BoolNode): Call = new Call(_value)
+  }
+  implicit object BoolNode_downcast_extend_TBoolNodeStruct extends izumi.idealingua.runtime.IRTExtend[BoolNode, TBoolNode.Struct] {
+    class Call(private val _value: BoolNode) extends AnyVal {
+      def using(tpe: Type): TBoolNode.Struct = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        assert(tpe.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TBoolNode.Struct(lit = _value.lit, tpe = tpe)
       }
     }
     override type INSTANTIATOR = Call

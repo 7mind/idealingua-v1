@@ -73,7 +73,7 @@ object NotiWithFile extends NotiWithFileCirce {
     class Call(private val _value: NotiWithFile) extends AnyVal {
       def using(): NotiWithFile.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        NotiWithFile.Struct(fileName = _value.fileName, userID = _value.userID, message = _value.message, at = _value.at, userName = _value.userName, fileID = _value.fileID)
+        NotiWithFile.Struct(at = _value.at, userID = _value.userID, userName = _value.userName, message = _value.message, fileID = _value.fileID, fileName = _value.fileName)
       }
     }
     override type INSTANTIATOR = Call
@@ -81,10 +81,9 @@ object NotiWithFile extends NotiWithFileCirce {
   }
   implicit object NotiWithFile_downcast_extend_NotiWithFileRevisionStruct extends izumi.idealingua.runtime.IRTExtend[NotiWithFile, NotiWithFileRevision.Struct] {
     class Call(private val _value: NotiWithFile) extends AnyVal {
-      def using(notiwithfilerevision: NotiWithFileRevision): NotiWithFileRevision.Struct = {
+      def using(fileRevision: Long): NotiWithFileRevision.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(notiwithfilerevision.asInstanceOf[_root_.scala.AnyRef] ne null)
-        NotiWithFileRevision.Struct(fileName = _value.fileName, userID = _value.userID, message = _value.message, at = _value.at, userName = _value.userName, fileID = _value.fileID, fileRevision = notiwithfilerevision.fileRevision)
+        NotiWithFileRevision.Struct(at = _value.at, userID = _value.userID, userName = _value.userName, message = _value.message, fileID = _value.fileID, fileName = _value.fileName, fileRevision = fileRevision)
       }
     }
     override type INSTANTIATOR = Call

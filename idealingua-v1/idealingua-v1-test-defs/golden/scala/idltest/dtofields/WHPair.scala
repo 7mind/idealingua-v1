@@ -11,21 +11,21 @@ trait WHPairCirce {
   import _root_.io.circe.syntax.*
   import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
   implicit val encodeWHPair: Encoder.AsObject[WHPair] = Encoder.AsObject.instance {
-    case v: WHPair.Struct =>
-      Map("idltest.dtofields.WHPair.Struct" -> v).asJsonObject
     case v: Point =>
       Map("idltest.dtofields.Point" -> v).asJsonObject
+    case v: WHPair.Struct =>
+      Map("idltest.dtofields.WHPair.Struct" -> v).asJsonObject
   }
   implicit val decodeWHPair: Decoder[WHPair] = Decoder.instance(c => {
     val maybeContent = c.keys.flatMap(_.headOption).toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \"type_name\": { ...fields } }", c.history))
     for (fname <- maybeContent; value = c.downField(fname); result <- fname match {
-      case "idltest.dtofields.WHPair.Struct" =>
-        value.as[WHPair.Struct]
       case "idltest.dtofields.Point" =>
         value.as[Point]
+      case "idltest.dtofields.WHPair.Struct" =>
+        value.as[WHPair.Struct]
       case _ =>
         val cname = "idltest.dtofields.WHPair"
-        val alts = List("idltest.dtofields.WHPair.Struct", "idltest.dtofields.Point").mkString(",")
+        val alts = List("idltest.dtofields.Point", "idltest.dtofields.WHPair.Struct").mkString(",")
         Left(DecodingFailure(s"Can't decode type $fname as $cname, expected one of [$alts]", value.history))
     }) yield result
   })
@@ -59,22 +59,21 @@ object WHPair extends WHPairCirce {
     }
     implicit class StructExtensions(override protected val _value: WHPair.Struct) extends izumi.idealingua.runtime.IRTConversions[WHPair.Struct]
   }
-  implicit object WHPair_downcast_extend_WHPairStruct extends izumi.idealingua.runtime.IRTExtend[WHPair, WHPair.Struct] {
+  implicit object WHPair_downcast_extend_Point extends izumi.idealingua.runtime.IRTExtend[WHPair, Point] {
     class Call(private val _value: WHPair) extends AnyVal {
-      def using(): WHPair.Struct = {
+      def using(id: String, name: String, x: Int, y: Int, ownfield: String, `export`: Boolean): Point = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        WHPair.Struct(h = _value.h, w = _value.w)
+        Point(w = _value.w, h = _value.h, id = id, name = name, x = x, y = y, ownfield = ownfield, `export` = `export`)
       }
     }
     override type INSTANTIATOR = Call
     override def next(_value: WHPair): Call = new Call(_value)
   }
-  implicit object WHPair_downcast_extend_Point extends izumi.idealingua.runtime.IRTExtend[WHPair, Point] {
+  implicit object WHPair_downcast_extend_WHPairStruct extends izumi.idealingua.runtime.IRTExtend[WHPair, WHPair.Struct] {
     class Call(private val _value: WHPair) extends AnyVal {
-      def using(name: String, ownfield: String, `export`: Boolean, metadata: Metadata, intpair: IntPair): Point = {
+      def using(): WHPair.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert((intpair.asInstanceOf[_root_.scala.AnyRef] ne null) && (metadata.asInstanceOf[_root_.scala.AnyRef] ne null))
-        Point(h = _value.h, w = _value.w, name = name, ownfield = ownfield, `export` = `export`, id = metadata.id, x = intpair.x, y = intpair.y)
+        WHPair.Struct(w = _value.w, h = _value.h)
       }
     }
     override type INSTANTIATOR = Call

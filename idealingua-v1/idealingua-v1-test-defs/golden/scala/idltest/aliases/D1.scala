@@ -36,12 +36,6 @@ object D1 extends D1Circe {
       M1.Struct(value = _value.value)
     }
   }
-  implicit object D1_upcast_M2 extends izumi.idealingua.runtime.IRTCast[D1, idltest.aliases2.M2] {
-    override def convert(_value: D1): idltest.aliases2.M2 = {
-      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-      idltest.aliases2.M2.Struct(f2 = _value.f2)
-    }
-  }
   implicit class D1Extensions(override protected val _value: D1) extends izumi.idealingua.runtime.IRTConversions[D1]
 }
        

@@ -140,14 +140,14 @@ final class NewTyperFeatureFlagSpec extends AnyWordSpec {
       assert(out.emodules.nonEmpty, "new-typer C# path produced zero output modules")
     }
 
-    "default to TyperImpl.Legacy when typerImpl is not provided" in {
+    "default to TyperImpl.NewTyper when typerImpl is not provided (post-IMPL-9 flip)" in {
       val defaults = UntypedCompilerOptions(
         language   = IDLLanguage.Scala,
         extensions = Seq.empty,
         target     = None,
         manifest   = pinnedScala,
       )
-      assert(defaults.typerImpl == TyperImpl.Legacy)
+      assert(defaults.typerImpl == TyperImpl.NewTyper)
     }
   }
 }

@@ -55,6 +55,26 @@ object PersonalAttributes extends PersonalAttributesCirce {
     }
     implicit class StructExtensions(override protected val _value: PersonalAttributes.Struct) extends izumi.idealingua.runtime.IRTConversions[PersonalAttributes.Struct]
   }
+  implicit object PersonalAttributes_downcast_extend_PublicUser2 extends izumi.idealingua.runtime.IRTExtend[PersonalAttributes, PublicUser2] {
+    class Call(private val _value: PersonalAttributes) extends AnyVal {
+      def using(name: String): PublicUser2 = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        PublicUser2(name = name)
+      }
+    }
+    override type INSTANTIATOR = Call
+    override def next(_value: PersonalAttributes): Call = new Call(_value)
+  }
+  implicit object PersonalAttributes_downcast_extend_User2 extends izumi.idealingua.runtime.IRTExtend[PersonalAttributes, User2] {
+    class Call(private val _value: PersonalAttributes) extends AnyVal {
+      def using(password: String, name: String): User2 = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        User2(ssn = _value.ssn, password = password, name = name)
+      }
+    }
+    override type INSTANTIATOR = Call
+    override def next(_value: PersonalAttributes): Call = new Call(_value)
+  }
   implicit object PersonalAttributes_downcast_extend_PersonalAttributesStruct extends izumi.idealingua.runtime.IRTExtend[PersonalAttributes, PersonalAttributes.Struct] {
     class Call(private val _value: PersonalAttributes) extends AnyVal {
       def using(): PersonalAttributes.Struct = {
@@ -65,34 +85,11 @@ object PersonalAttributes extends PersonalAttributesCirce {
     override type INSTANTIATOR = Call
     override def next(_value: PersonalAttributes): Call = new Call(_value)
   }
-  implicit object PersonalAttributes_downcast_extend_PublicUser2 extends izumi.idealingua.runtime.IRTExtend[PersonalAttributes, PublicUser2] {
-    class Call(private val _value: PersonalAttributes) extends AnyVal {
-      def using(user2: User2.Defn): PublicUser2 = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(user2.asInstanceOf[_root_.scala.AnyRef] ne null)
-        PublicUser2(name = user2.name)
-      }
-    }
-    override type INSTANTIATOR = Call
-    override def next(_value: PersonalAttributes): Call = new Call(_value)
-  }
   implicit object PersonalAttributes_downcast_extend_SecurityAttributesStruct extends izumi.idealingua.runtime.IRTExtend[PersonalAttributes, SecurityAttributes.Struct] {
     class Call(private val _value: PersonalAttributes) extends AnyVal {
-      def using(securityattributes: SecurityAttributes): SecurityAttributes.Struct = {
+      def using(password: String): SecurityAttributes.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(securityattributes.asInstanceOf[_root_.scala.AnyRef] ne null)
-        SecurityAttributes.Struct(ssn = _value.ssn, password = securityattributes.password)
-      }
-    }
-    override type INSTANTIATOR = Call
-    override def next(_value: PersonalAttributes): Call = new Call(_value)
-  }
-  implicit object PersonalAttributes_downcast_extend_User2 extends izumi.idealingua.runtime.IRTExtend[PersonalAttributes, User2] {
-    class Call(private val _value: PersonalAttributes) extends AnyVal {
-      def using(name: String, securityattributes: SecurityAttributes): User2 = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(securityattributes.asInstanceOf[_root_.scala.AnyRef] ne null)
-        User2(ssn = _value.ssn, name = name, password = securityattributes.password)
+        SecurityAttributes.Struct(ssn = _value.ssn, password = password)
       }
     }
     override type INSTANTIATOR = Call

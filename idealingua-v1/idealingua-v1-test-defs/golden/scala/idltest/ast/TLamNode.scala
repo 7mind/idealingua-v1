@@ -66,7 +66,7 @@ object TLamNode extends TLamNodeCirce {
     class Call(private val _value: TLamNode) extends AnyVal {
       def using(): TLamNode.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TLamNode.Struct(body = _value.body, tpe = _value.tpe, paramNames = _value.paramNames)
+        TLamNode.Struct(tpe = _value.tpe, paramNames = _value.paramNames, body = _value.body)
       }
     }
     override type INSTANTIATOR = Call

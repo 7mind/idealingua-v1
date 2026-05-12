@@ -2,7 +2,7 @@ package idltest.diamonds
 
 
 
-final case class DTO1(if1Field_overriden: Int, if1Field_inherited: Int, if3Field: Long, if2Field: Long, sameField: Long, sameEverywhereField: Long) extends DTO1.Defn
+final case class DTO1(if1Field_overriden: Int, if1Field_inherited: Int, sameField: Long, sameEverywhereField: Long, if3Field: Long, if2Field: Long) extends DTO1.Defn
 
 trait DTO1Circe extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
   import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
@@ -15,23 +15,23 @@ object DTO1 extends DTO1Circe {
   trait Defn extends izumi.idealingua.runtime.model.IDLGeneratedType {
     def if1Field_overriden: Int
     def if1Field_inherited: Int
-    def if3Field: Long
-    def if2Field: Long
     def sameField: Long
     def sameEverywhereField: Long
+    def if3Field: Long
+    def if2Field: Long
   }
-  def apply(testinterface1: TestInterface1, testinterface3: TestInterface3, testinterface2: TestInterface2, sameEverywhereField: Long, sameField: Long, if1Field_overriden: Int): DTO1 = {
+  def apply(testinterface1: TestInterface1, testinterface3: TestInterface3, testinterface2: TestInterface2, if1Field_overriden: Int, sameField: Long, sameEverywhereField: Long): DTO1 = {
     assert((testinterface2.asInstanceOf[_root_.scala.AnyRef] ne null) && ((testinterface3.asInstanceOf[_root_.scala.AnyRef] ne null) && (testinterface1.asInstanceOf[_root_.scala.AnyRef] ne null)))
-    new DTO1(if1Field_inherited = testinterface1.if1Field_inherited, if3Field = testinterface3.if3Field, if2Field = testinterface2.if2Field, sameEverywhereField = sameEverywhereField, sameField = sameField, if1Field_overriden = if1Field_overriden)
+    new DTO1(if1Field_inherited = testinterface1.if1Field_inherited, if3Field = testinterface3.if3Field, if2Field = testinterface2.if2Field, if1Field_overriden = if1Field_overriden, sameField = sameField, sameEverywhereField = sameEverywhereField)
   }
   def apply(defn: DTO1.Defn): DTO1 = {
     assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
-    new DTO1(if1Field_overriden = defn.if1Field_overriden, if1Field_inherited = defn.if1Field_inherited, if3Field = defn.if3Field, if2Field = defn.if2Field, sameField = defn.sameField, sameEverywhereField = defn.sameEverywhereField)
+    new DTO1(if1Field_overriden = defn.if1Field_overriden, if1Field_inherited = defn.if1Field_inherited, sameField = defn.sameField, sameEverywhereField = defn.sameEverywhereField, if3Field = defn.if3Field, if2Field = defn.if2Field)
   }
   implicit object DTO1_upcast_DTO1 extends izumi.idealingua.runtime.IRTCast[DTO1, DTO1] {
     override def convert(_value: DTO1): DTO1 = {
       assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-      DTO1(if1Field_overriden = _value.if1Field_overriden, if1Field_inherited = _value.if1Field_inherited, if3Field = _value.if3Field, if2Field = _value.if2Field, sameField = _value.sameField, sameEverywhereField = _value.sameEverywhereField)
+      DTO1(if1Field_overriden = _value.if1Field_overriden, if1Field_inherited = _value.if1Field_inherited, sameField = _value.sameField, sameEverywhereField = _value.sameEverywhereField, if3Field = _value.if3Field, if2Field = _value.if2Field)
     }
   }
   implicit object DTO1_upcast_TestInterface2 extends izumi.idealingua.runtime.IRTCast[DTO1, TestInterface2] {

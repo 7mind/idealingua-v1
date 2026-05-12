@@ -39,6 +39,12 @@ object CovariantDTO2 extends CovariantDTO2Circe {
       InheritedCovariant.Struct(field = _value.field)
     }
   }
+  implicit object CovariantDTO2_upcast_WithCovariance extends izumi.idealingua.runtime.IRTCast[CovariantDTO2, WithCovariance] {
+    override def convert(_value: CovariantDTO2): WithCovariance = {
+      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+      WithCovariance.Struct(field = _value.field)
+    }
+  }
   implicit class CovariantDTO2Extensions(override protected val _value: CovariantDTO2) extends izumi.idealingua.runtime.IRTConversions[CovariantDTO2]
 }
        

@@ -50,6 +50,24 @@ object PrivateTestObject extends PrivateTestObjectCirce {
       ExtendedMixin.Struct(parent_embedded = _value.parent_embedded, parent = _value.parent, embedded = _value.embedded, own = _value.own)
     }
   }
+  implicit object PrivateTestObject_upcast_PrivateMixin extends izumi.idealingua.runtime.IRTCast[PrivateTestObject, PrivateMixin] {
+    override def convert(_value: PrivateTestObject): PrivateMixin = {
+      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+      PrivateMixin.Struct(parent_embedded = _value.parent_embedded, parent = _value.parent, embedded = _value.embedded)
+    }
+  }
+  implicit object PrivateTestObject_upcast_PrivateMixinParent extends izumi.idealingua.runtime.IRTCast[PrivateTestObject, PrivateMixinParent] {
+    override def convert(_value: PrivateTestObject): PrivateMixinParent = {
+      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+      PrivateMixinParent.Struct(parent = _value.parent)
+    }
+  }
+  implicit object PrivateTestObject_upcast_PrivateMixinPrivateParent extends izumi.idealingua.runtime.IRTCast[PrivateTestObject, PrivateMixinPrivateParent] {
+    override def convert(_value: PrivateTestObject): PrivateMixinPrivateParent = {
+      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+      PrivateMixinPrivateParent.Struct(parent_embedded = _value.parent_embedded)
+    }
+  }
   implicit class PrivateTestObjectExtensions(override protected val _value: PrivateTestObject) extends izumi.idealingua.runtime.IRTConversions[PrivateTestObject]
 }
        

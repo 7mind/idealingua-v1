@@ -60,7 +60,7 @@ object M2 extends M2Circe {
     class Call(private val _value: M2) extends AnyVal {
       def using(): M2.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        M2.Struct(str = _value.str, value = _value.value, i32 = _value.i32)
+        M2.Struct(value = _value.value, str = _value.str, i32 = _value.i32)
       }
     }
     override type INSTANTIATOR = Call

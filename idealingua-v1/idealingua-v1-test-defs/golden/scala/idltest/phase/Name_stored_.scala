@@ -11,21 +11,21 @@ trait Name_stored_Circe {
   import _root_.io.circe.syntax.*
   import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
   implicit val encodeName_stored_ : Encoder.AsObject[Name_stored_] = Encoder.AsObject.instance {
-    case v: Name_stored_.Struct =>
-      Map("idltest.phase.Name_stored_.Struct" -> v).asJsonObject
     case v: Name_stored =>
       Map("idltest.phase.Name_stored" -> v).asJsonObject
+    case v: Name_stored_.Struct =>
+      Map("idltest.phase.Name_stored_.Struct" -> v).asJsonObject
   }
   implicit val decodeName_stored_ : Decoder[Name_stored_] = Decoder.instance(c => {
     val maybeContent = c.keys.flatMap(_.headOption).toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \"type_name\": { ...fields } }", c.history))
     for (fname <- maybeContent; value = c.downField(fname); result <- fname match {
-      case "idltest.phase.Name_stored_.Struct" =>
-        value.as[Name_stored_.Struct]
       case "idltest.phase.Name_stored" =>
         value.as[Name_stored]
+      case "idltest.phase.Name_stored_.Struct" =>
+        value.as[Name_stored_.Struct]
       case _ =>
         val cname = "idltest.phase.Name_stored_"
-        val alts = List("idltest.phase.Name_stored_.Struct", "idltest.phase.Name_stored").mkString(",")
+        val alts = List("idltest.phase.Name_stored", "idltest.phase.Name_stored_.Struct").mkString(",")
         Left(DecodingFailure(s"Can't decode type $fname as $cname, expected one of [$alts]", value.history))
     }) yield result
   })
@@ -71,11 +71,11 @@ object Name_stored_ extends Name_stored_Circe {
     }
     implicit class StructExtensions(override protected val _value: Name_stored_.Struct) extends izumi.idealingua.runtime.IRTConversions[Name_stored_.Struct]
   }
-  implicit object Name_stored__downcast_extend_Name_stored_Struct extends izumi.idealingua.runtime.IRTExtend[Name_stored_, Name_stored_.Struct] {
+  implicit object Name_stored__downcast_extend_Name_stored extends izumi.idealingua.runtime.IRTExtend[Name_stored_, Name_stored] {
     class Call(private val _value: Name_stored_) extends AnyVal {
-      def using(): Name_stored_.Struct = {
+      def using(): Name_stored = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Name_stored_.Struct(name = _value.name, bytes = _value.bytes)
+        Name_stored(name = _value.name, bytes = _value.bytes)
       }
     }
     override type INSTANTIATOR = Call
@@ -83,19 +83,19 @@ object Name_stored_ extends Name_stored_Circe {
   }
   implicit object Name_stored__downcast_extend_Name_view extends izumi.idealingua.runtime.IRTExtend[Name_stored_, Name_view] {
     class Call(private val _value: Name_stored_) extends AnyVal {
-      def using(name: String, relatives: List[Name]): Name_view = {
+      def using(relatives: List[Name]): Name_view = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Name_view(bytes = _value.bytes, name = name, relatives = relatives)
+        Name_view(bytes = _value.bytes, name = _value.name, relatives = relatives)
       }
     }
     override type INSTANTIATOR = Call
     override def next(_value: Name_stored_): Call = new Call(_value)
   }
-  implicit object Name_stored__downcast_extend_Name_stored extends izumi.idealingua.runtime.IRTExtend[Name_stored_, Name_stored] {
+  implicit object Name_stored__downcast_extend_Name_stored_Struct extends izumi.idealingua.runtime.IRTExtend[Name_stored_, Name_stored_.Struct] {
     class Call(private val _value: Name_stored_) extends AnyVal {
-      def using(): Name_stored = {
+      def using(): Name_stored_.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Name_stored(name = _value.name, bytes = _value.bytes)
+        Name_stored_.Struct(name = _value.name, bytes = _value.bytes)
       }
     }
     override type INSTANTIATOR = Call

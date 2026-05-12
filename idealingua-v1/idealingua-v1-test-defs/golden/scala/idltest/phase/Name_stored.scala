@@ -48,6 +48,12 @@ object Name_stored extends Name_storedCirce {
       Name.Struct(name = _value.name)
     }
   }
+  implicit object Name_stored_upcast_LengthInBytes extends izumi.idealingua.runtime.IRTCast[Name_stored, LengthInBytes] {
+    override def convert(_value: Name_stored): LengthInBytes = {
+      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+      LengthInBytes.Struct(bytes = _value.bytes)
+    }
+  }
   implicit class Name_storedExtensions(override protected val _value: Name_stored) extends izumi.idealingua.runtime.IRTConversions[Name_stored]
 }
        

@@ -79,7 +79,7 @@ object PointLike extends PointLikeCirce {
     class Call(private val _value: PointLike) extends AnyVal {
       def using(): PointLike.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        PointLike.Struct(x = _value.x, name = _value.name, y = _value.y, id = _value.id)
+        PointLike.Struct(id = _value.id, name = _value.name, x = _value.x, y = _value.y)
       }
     }
     override type INSTANTIATOR = Call

@@ -14,21 +14,21 @@ trait TestInterfaceCirce {
   import _root_.io.circe.syntax.*
   import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
   implicit val encodeTestInterface: Encoder.AsObject[TestInterface] = Encoder.AsObject.instance {
-    case v: TestInterface.Struct =>
-      Map("izumi.test.domain01.TestInterface.Struct" -> v).asJsonObject
     case v: TestObject =>
       Map("izumi.test.domain01.TestObject" -> v).asJsonObject
+    case v: TestInterface.Struct =>
+      Map("izumi.test.domain01.TestInterface.Struct" -> v).asJsonObject
   }
   implicit val decodeTestInterface: Decoder[TestInterface] = Decoder.instance(c => {
     val maybeContent = c.keys.flatMap(_.headOption).toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \"type_name\": { ...fields } }", c.history))
     for (fname <- maybeContent; value = c.downField(fname); result <- fname match {
-      case "izumi.test.domain01.TestInterface.Struct" =>
-        value.as[TestInterface.Struct]
       case "izumi.test.domain01.TestObject" =>
         value.as[TestObject]
+      case "izumi.test.domain01.TestInterface.Struct" =>
+        value.as[TestInterface.Struct]
       case _ =>
         val cname = "izumi.test.domain01.TestInterface"
-        val alts = List("izumi.test.domain01.TestInterface.Struct", "izumi.test.domain01.TestObject").mkString(",")
+        val alts = List("izumi.test.domain01.TestObject", "izumi.test.domain01.TestInterface.Struct").mkString(",")
         Left(DecodingFailure(s"Can't decode type $fname as $cname, expected one of [$alts]", value.history))
     }) yield result
   })
@@ -68,21 +68,21 @@ object TestInterface extends TestInterfaceCirce {
     }
     implicit class StructExtensions(override protected val _value: TestInterface.Struct) extends izumi.idealingua.runtime.IRTConversions[TestInterface.Struct]
   }
-  implicit object TestInterface_downcast_extend_TestInterfaceStruct extends izumi.idealingua.runtime.IRTExtend[TestInterface, TestInterface.Struct] {
+  implicit object TestInterface_downcast_extend_TestObject extends izumi.idealingua.runtime.IRTExtend[TestInterface, TestObject] {
     class Call(private val _value: TestInterface) extends AnyVal {
-      def using(): TestInterface.Struct = {
+      def using(): TestObject = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestInterface.Struct(accountBalance = _value.accountBalance, latestLogin = _value.latestLogin, keys = _value.keys, nicknames = _value.nicknames, userId = _value.userId)
+        TestObject(userId = _value.userId, accountBalance = _value.accountBalance, latestLogin = _value.latestLogin, keys = _value.keys, nicknames = _value.nicknames)
       }
     }
     override type INSTANTIATOR = Call
     override def next(_value: TestInterface): Call = new Call(_value)
   }
-  implicit object TestInterface_downcast_extend_TestObject extends izumi.idealingua.runtime.IRTExtend[TestInterface, TestObject] {
+  implicit object TestInterface_downcast_extend_TestInterfaceStruct extends izumi.idealingua.runtime.IRTExtend[TestInterface, TestInterface.Struct] {
     class Call(private val _value: TestInterface) extends AnyVal {
-      def using(): TestObject = {
+      def using(): TestInterface.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestObject(accountBalance = _value.accountBalance, latestLogin = _value.latestLogin, keys = _value.keys, nicknames = _value.nicknames, userId = _value.userId)
+        TestInterface.Struct(userId = _value.userId, accountBalance = _value.accountBalance, latestLogin = _value.latestLogin, keys = _value.keys, nicknames = _value.nicknames)
       }
     }
     override type INSTANTIATOR = Call

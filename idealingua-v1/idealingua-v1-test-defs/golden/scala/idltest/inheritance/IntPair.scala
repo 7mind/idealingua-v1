@@ -55,22 +55,21 @@ object IntPair extends IntPairCirce {
     }
     implicit class StructExtensions(override protected val _value: IntPair.Struct) extends izumi.idealingua.runtime.IRTConversions[IntPair.Struct]
   }
-  implicit object IntPair_downcast_extend_IntPairStruct extends izumi.idealingua.runtime.IRTExtend[IntPair, IntPair.Struct] {
+  implicit object IntPair_downcast_extend_Point extends izumi.idealingua.runtime.IRTExtend[IntPair, Point] {
     class Call(private val _value: IntPair) extends AnyVal {
-      def using(): IntPair.Struct = {
+      def using(id: String, name: String): Point = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        IntPair.Struct(x = _value.x, y = _value.y)
+        Point(x = _value.x, y = _value.y, id = id, name = name)
       }
     }
     override type INSTANTIATOR = Call
     override def next(_value: IntPair): Call = new Call(_value)
   }
-  implicit object IntPair_downcast_extend_Point extends izumi.idealingua.runtime.IRTExtend[IntPair, Point] {
+  implicit object IntPair_downcast_extend_IntPairStruct extends izumi.idealingua.runtime.IRTExtend[IntPair, IntPair.Struct] {
     class Call(private val _value: IntPair) extends AnyVal {
-      def using(metadata: Metadata): Point = {
+      def using(): IntPair.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(metadata.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Point(x = _value.x, y = _value.y, name = metadata.name, id = metadata.id)
+        IntPair.Struct(x = _value.x, y = _value.y)
       }
     }
     override type INSTANTIATOR = Call

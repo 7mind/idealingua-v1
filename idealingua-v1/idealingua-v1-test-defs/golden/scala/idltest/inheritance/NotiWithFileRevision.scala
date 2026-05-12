@@ -76,7 +76,7 @@ object NotiWithFileRevision extends NotiWithFileRevisionCirce {
     class Call(private val _value: NotiWithFileRevision) extends AnyVal {
       def using(): NotiWithFileRevision.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        NotiWithFileRevision.Struct(message = _value.message, fileName = _value.fileName, fileRevision = _value.fileRevision, userName = _value.userName, fileID = _value.fileID, userID = _value.userID, at = _value.at)
+        NotiWithFileRevision.Struct(at = _value.at, userID = _value.userID, userName = _value.userName, message = _value.message, fileID = _value.fileID, fileName = _value.fileName, fileRevision = _value.fileRevision)
       }
     }
     override type INSTANTIATOR = Call

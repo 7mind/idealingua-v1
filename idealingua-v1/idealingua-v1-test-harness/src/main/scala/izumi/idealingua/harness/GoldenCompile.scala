@@ -16,23 +16,21 @@ private[harness] object GoldenCompile {
     * Returns a map from the expected on-disk path (relative to goldenRoot) to the UTF-8 content bytes.
     * Only DomainModule entries are included — RuntimeModule entries are excluded.
     *
-    * PR-02 IMPL-7a.2 IMPL-9 compile gate (opt-in): `scalaTyper` is `TyperImpl.Legacy`
-    * by default (preserves the stable legacy goldens that sbt compiles via
-    * `Compile / unmanagedSourceDirectories += golden/scala`). The
-    * `regenerateGoldensNewTyper` sbt task passes `TyperImpl.NewTyper`,
-    * regenerating the goldens as the new-typer output. The harness's standard
-    * `Compile/compile` then transitively type-checks every emitted module
-    * across the 28-domain corpus, surfacing any type error in the new-typer
-    * Scala backend that bytewise-equality (`ScalaTranslatorByteParitySpec`)
-    * alone cannot detect. TS / C# stay on the Legacy typer in both modes —
-    * IMPL-7b / IMPL-7c only land Phase A delegation (TS and C# already
-    * re-derive a legacy Typespace internally), so the Layer B fixtures keep
-    * exercising the legacy frontend on those languages until Phase B lands.
+    * PR-02 IMPL-9: `scalaTyper` defaults to `TyperImpl.NewTyper` — the IMPL-9
+    * flip makes the new typer the canonical default for the Scala backend.
+    * `regenerateGoldens` (via `RegenerateMain`) now produces new-typer Scala
+    * goldens; the previously-opt-in `regenerateGoldensNewTyper` sbt task is now
+    * redundant but retained for callers that pin the target typer explicitly.
+    * The harness's standard `Compile/compile` then transitively type-checks
+    * every emitted module across the 28-domain corpus, surfacing any type
+    * error in the new-typer Scala backend that bytewise-equality
+    * (`ScalaTranslatorByteParitySpec`) alone cannot detect. TS / C# stay on
+    * the Legacy typer until their Phase B ports land (IMPL-10 / IMPL-11 gating).
     */
   def compileAll(
     loaded: Seq[LoadedDomain.Success],
     goldenRoot: Path,
-    scalaTyper: TyperImpl = TyperImpl.Legacy,
+    scalaTyper: TyperImpl = TyperImpl.NewTyper,
   ): Map[Path, Array[Byte]] = {
     val builder = Map.newBuilder[Path, Array[Byte]]
 

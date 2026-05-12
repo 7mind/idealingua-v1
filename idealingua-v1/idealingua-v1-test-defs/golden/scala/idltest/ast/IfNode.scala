@@ -12,21 +12,21 @@ trait IfNodeCirce {
   import _root_.io.circe.syntax.*
   import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
   implicit val encodeIfNode: Encoder.AsObject[IfNode] = Encoder.AsObject.instance {
-    case v: TIfNode.Struct =>
-      Map("idltest.ast.TIfNode.Struct" -> v).asJsonObject
     case v: IfNode.Struct =>
       Map("idltest.ast.IfNode.Struct" -> v).asJsonObject
+    case v: TIfNode.Struct =>
+      Map("idltest.ast.TIfNode.Struct" -> v).asJsonObject
   }
   implicit val decodeIfNode: Decoder[IfNode] = Decoder.instance(c => {
     val maybeContent = c.keys.flatMap(_.headOption).toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \"type_name\": { ...fields } }", c.history))
     for (fname <- maybeContent; value = c.downField(fname); result <- fname match {
-      case "idltest.ast.TIfNode.Struct" =>
-        value.as[TIfNode.Struct]
       case "idltest.ast.IfNode.Struct" =>
         value.as[IfNode.Struct]
+      case "idltest.ast.TIfNode.Struct" =>
+        value.as[TIfNode.Struct]
       case _ =>
         val cname = "idltest.ast.IfNode"
-        val alts = List("idltest.ast.TIfNode.Struct", "idltest.ast.IfNode.Struct").mkString(",")
+        val alts = List("idltest.ast.IfNode.Struct", "idltest.ast.TIfNode.Struct").mkString(",")
         Left(DecodingFailure(s"Can't decode type $fname as $cname, expected one of [$alts]", value.history))
     }) yield result
   })
@@ -60,22 +60,22 @@ object IfNode extends IfNodeCirce {
     }
     implicit class StructExtensions(override protected val _value: IfNode.Struct) extends izumi.idealingua.runtime.IRTConversions[IfNode.Struct]
   }
-  implicit object IfNode_downcast_extend_TIfNodeStruct extends izumi.idealingua.runtime.IRTExtend[IfNode, TIfNode.Struct] {
+  implicit object IfNode_downcast_extend_IfNodeStruct extends izumi.idealingua.runtime.IRTExtend[IfNode, IfNode.Struct] {
     class Call(private val _value: IfNode) extends AnyVal {
-      def using(typeinfo: TypeInfo): TIfNode.Struct = {
+      def using(): IfNode.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(typeinfo.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TIfNode.Struct(thenNode = _value.thenNode, elseNode = _value.elseNode, cond = _value.cond, tpe = typeinfo.tpe)
+        IfNode.Struct(cond = _value.cond, thenNode = _value.thenNode, elseNode = _value.elseNode)
       }
     }
     override type INSTANTIATOR = Call
     override def next(_value: IfNode): Call = new Call(_value)
   }
-  implicit object IfNode_downcast_extend_IfNodeStruct extends izumi.idealingua.runtime.IRTExtend[IfNode, IfNode.Struct] {
+  implicit object IfNode_downcast_extend_TIfNodeStruct extends izumi.idealingua.runtime.IRTExtend[IfNode, TIfNode.Struct] {
     class Call(private val _value: IfNode) extends AnyVal {
-      def using(): IfNode.Struct = {
+      def using(tpe: Type): TIfNode.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        IfNode.Struct(thenNode = _value.thenNode, elseNode = _value.elseNode, cond = _value.cond)
+        assert(tpe.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TIfNode.Struct(cond = _value.cond, thenNode = _value.thenNode, elseNode = _value.elseNode, tpe = tpe)
       }
     }
     override type INSTANTIATOR = Call

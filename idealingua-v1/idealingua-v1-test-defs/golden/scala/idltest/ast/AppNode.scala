@@ -71,10 +71,10 @@ object AppNode extends AppNodeCirce {
   }
   implicit object AppNode_downcast_extend_TAppNodeStruct extends izumi.idealingua.runtime.IRTExtend[AppNode, TAppNode.Struct] {
     class Call(private val _value: AppNode) extends AnyVal {
-      def using(typeinfo: TypeInfo): TAppNode.Struct = {
+      def using(tpe: Type): TAppNode.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(typeinfo.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TAppNode.Struct(fun = _value.fun, args = _value.args, tpe = typeinfo.tpe)
+        assert(tpe.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TAppNode.Struct(fun = _value.fun, args = _value.args, tpe = tpe)
       }
     }
     override type INSTANTIATOR = Call

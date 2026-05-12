@@ -58,10 +58,9 @@ object TestInterface2 extends TestInterface2Circe {
   }
   implicit object TestInterface2_downcast_extend_DTO1 extends izumi.idealingua.runtime.IRTExtend[TestInterface2, DTO1] {
     class Call(private val _value: TestInterface2) extends AnyVal {
-      def using(sameEverywhereField: Long, sameField: Long, if1Field_overriden: Int, testinterface3: TestInterface3, testinterface1: TestInterface1): DTO1 = {
+      def using(if1Field_overriden: Int, if1Field_inherited: Int, if3Field: Long): DTO1 = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert((testinterface1.asInstanceOf[_root_.scala.AnyRef] ne null) && (testinterface3.asInstanceOf[_root_.scala.AnyRef] ne null))
-        DTO1(if2Field = _value.if2Field, sameEverywhereField = sameEverywhereField, sameField = sameField, if1Field_overriden = if1Field_overriden, if3Field = testinterface3.if3Field, if1Field_inherited = testinterface1.if1Field_inherited)
+        DTO1(sameField = _value.sameField, sameEverywhereField = _value.sameEverywhereField, if2Field = _value.if2Field, if1Field_overriden = if1Field_overriden, if1Field_inherited = if1Field_inherited, if3Field = if3Field)
       }
     }
     override type INSTANTIATOR = Call
@@ -71,7 +70,7 @@ object TestInterface2 extends TestInterface2Circe {
     class Call(private val _value: TestInterface2) extends AnyVal {
       def using(): TestInterface2.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestInterface2.Struct(if2Field = _value.if2Field, sameEverywhereField = _value.sameEverywhereField, sameField = _value.sameField)
+        TestInterface2.Struct(if2Field = _value.if2Field, sameField = _value.sameField, sameEverywhereField = _value.sameEverywhereField)
       }
     }
     override type INSTANTIATOR = Call

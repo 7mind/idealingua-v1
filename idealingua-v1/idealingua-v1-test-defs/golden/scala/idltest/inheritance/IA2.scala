@@ -36,12 +36,6 @@ object IA2 extends IA2Circe {
     def apply(Int: Int): IA2.Struct = {
       new IA2.Struct(Int = Int)
     }
-    implicit object Struct_cast_into_IA1Struct extends izumi.idealingua.runtime.IRTCast[IA2.Struct, IA1.Struct] {
-      override def convert(_value: IA2.Struct): IA1.Struct = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        IA1.Struct(Int = _value.Int)
-      }
-    }
     implicit object Struct_upcast_Struct extends izumi.idealingua.runtime.IRTCast[IA2.Struct, IA2.Struct] {
       override def convert(_value: IA2.Struct): IA2.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
@@ -62,17 +56,11 @@ object IA2 extends IA2Circe {
     }
     implicit class StructExtensions(override protected val _value: IA2.Struct) extends izumi.idealingua.runtime.IRTConversions[IA2.Struct]
   }
-  implicit object IA2_cast_into_IA1Struct extends izumi.idealingua.runtime.IRTCast[IA2, IA1.Struct] {
-    override def convert(_value: IA2): IA1.Struct = {
-      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-      IA1.Struct(Int = _value.Int)
-    }
-  }
   implicit object IA2_downcast_extend_IA2Struct extends izumi.idealingua.runtime.IRTExtend[IA2, IA2.Struct] {
     class Call(private val _value: IA2) extends AnyVal {
-      def using(Int: Int): IA2.Struct = {
+      def using(): IA2.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        IA2.Struct(Int = Int)
+        IA2.Struct(Int = _value.Int)
       }
     }
     override type INSTANTIATOR = Call

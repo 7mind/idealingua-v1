@@ -60,14 +60,19 @@ object InheritedCovariant extends InheritedCovariantCirce {
         InheritedCovariant.Struct(field = _value.field)
       }
     }
+    implicit object Struct_upcast_WithCovariance extends izumi.idealingua.runtime.IRTCast[InheritedCovariant.Struct, WithCovariance] {
+      override def convert(_value: InheritedCovariant.Struct): WithCovariance = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        WithCovariance.Struct(field = _value.field)
+      }
+    }
     implicit class StructExtensions(override protected val _value: InheritedCovariant.Struct) extends izumi.idealingua.runtime.IRTConversions[InheritedCovariant.Struct]
   }
   implicit object InheritedCovariant_downcast_extend_CovariantDTO2 extends izumi.idealingua.runtime.IRTExtend[InheritedCovariant, CovariantDTO2] {
     class Call(private val _value: InheritedCovariant) extends AnyVal {
-      def using(field: CovariantA): CovariantDTO2 = {
+      def using(): CovariantDTO2 = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(field.asInstanceOf[_root_.scala.AnyRef] ne null)
-        CovariantDTO2(field = field)
+        CovariantDTO2(field = _value.field)
       }
     }
     override type INSTANTIATOR = Call
@@ -75,10 +80,9 @@ object InheritedCovariant extends InheritedCovariantCirce {
   }
   implicit object InheritedCovariant_downcast_extend_InheritedCovariantStruct extends izumi.idealingua.runtime.IRTExtend[InheritedCovariant, InheritedCovariant.Struct] {
     class Call(private val _value: InheritedCovariant) extends AnyVal {
-      def using(field: CovariantA): InheritedCovariant.Struct = {
+      def using(): InheritedCovariant.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(field.asInstanceOf[_root_.scala.AnyRef] ne null)
-        InheritedCovariant.Struct(field = field)
+        InheritedCovariant.Struct(field = _value.field)
       }
     }
     override type INSTANTIATOR = Call
@@ -88,6 +92,12 @@ object InheritedCovariant extends InheritedCovariantCirce {
     override def convert(_value: InheritedCovariant): InheritedCovariant = {
       assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
       InheritedCovariant.Struct(field = _value.field)
+    }
+  }
+  implicit object InheritedCovariant_upcast_WithCovariance extends izumi.idealingua.runtime.IRTCast[InheritedCovariant, WithCovariance] {
+    override def convert(_value: InheritedCovariant): WithCovariance = {
+      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+      WithCovariance.Struct(field = _value.field)
     }
   }
   implicit class InheritedCovariantExtensions(override protected val _value: InheritedCovariant) extends izumi.idealingua.runtime.IRTConversions[InheritedCovariant]

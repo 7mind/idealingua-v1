@@ -64,10 +64,9 @@ object PrivateMixin extends PrivateMixinCirce {
   }
   implicit object PrivateMixin_downcast_extend_AnotherTestObject extends izumi.idealingua.runtime.IRTExtend[PrivateMixin, AnotherTestObject] {
     class Call(private val _value: PrivateMixin) extends AnyVal {
-      def using(extendedmixin: ExtendedMixin): AnotherTestObject = {
+      def using(own: Byte): AnotherTestObject = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(extendedmixin.asInstanceOf[_root_.scala.AnyRef] ne null)
-        AnotherTestObject(embedded = _value.embedded, parent = _value.parent, parent_embedded = _value.parent_embedded, own = extendedmixin.own)
+        AnotherTestObject(parent_embedded = _value.parent_embedded, parent = _value.parent, embedded = _value.embedded, own = own)
       }
     }
     override type INSTANTIATOR = Call
@@ -77,7 +76,7 @@ object PrivateMixin extends PrivateMixinCirce {
     class Call(private val _value: PrivateMixin) extends AnyVal {
       def using(): PrivateMixin.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        PrivateMixin.Struct(embedded = _value.embedded, parent = _value.parent, parent_embedded = _value.parent_embedded)
+        PrivateMixin.Struct(parent_embedded = _value.parent_embedded, parent = _value.parent, embedded = _value.embedded)
       }
     }
     override type INSTANTIATOR = Call

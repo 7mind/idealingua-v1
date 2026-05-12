@@ -40,9 +40,9 @@ object TestInterface3 extends TestInterface3Circe {
     implicit val decodeStruct: Decoder[Struct] = deriveDecoder[Struct]
   }
   object Struct extends TestInterface3.StructCirce {
-    def apply(testinterface1: TestInterface1, testinterface3: TestInterface3, sameEverywhereField: Long, if1Field_overriden: Int): TestInterface3.Struct = {
+    def apply(testinterface1: TestInterface1, testinterface3: TestInterface3, if1Field_overriden: Int, sameEverywhereField: Long): TestInterface3.Struct = {
       assert((testinterface3.asInstanceOf[_root_.scala.AnyRef] ne null) && (testinterface1.asInstanceOf[_root_.scala.AnyRef] ne null))
-      new TestInterface3.Struct(if1Field_inherited = testinterface1.if1Field_inherited, sameField = testinterface1.sameField, if3Field = testinterface3.if3Field, sameEverywhereField = sameEverywhereField, if1Field_overriden = if1Field_overriden)
+      new TestInterface3.Struct(if1Field_inherited = testinterface1.if1Field_inherited, sameField = testinterface1.sameField, if3Field = testinterface3.if3Field, if1Field_overriden = if1Field_overriden, sameEverywhereField = sameEverywhereField)
     }
     implicit object Struct_upcast_Struct extends izumi.idealingua.runtime.IRTCast[TestInterface3.Struct, TestInterface3.Struct] {
       override def convert(_value: TestInterface3.Struct): TestInterface3.Struct = {
@@ -60,10 +60,9 @@ object TestInterface3 extends TestInterface3Circe {
   }
   implicit object TestInterface3_downcast_extend_DTO1 extends izumi.idealingua.runtime.IRTExtend[TestInterface3, DTO1] {
     class Call(private val _value: TestInterface3) extends AnyVal {
-      def using(sameEverywhereField: Long, sameField: Long, if1Field_overriden: Int, testinterface2: TestInterface2): DTO1 = {
+      def using(if2Field: Long): DTO1 = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(testinterface2.asInstanceOf[_root_.scala.AnyRef] ne null)
-        DTO1(if3Field = _value.if3Field, if1Field_inherited = _value.if1Field_inherited, sameEverywhereField = sameEverywhereField, sameField = sameField, if1Field_overriden = if1Field_overriden, if2Field = testinterface2.if2Field)
+        DTO1(if1Field_overriden = _value.if1Field_overriden, if1Field_inherited = _value.if1Field_inherited, sameField = _value.sameField, sameEverywhereField = _value.sameEverywhereField, if3Field = _value.if3Field, if2Field = if2Field)
       }
     }
     override type INSTANTIATOR = Call
@@ -71,9 +70,9 @@ object TestInterface3 extends TestInterface3Circe {
   }
   implicit object TestInterface3_downcast_extend_TestInterface3Struct extends izumi.idealingua.runtime.IRTExtend[TestInterface3, TestInterface3.Struct] {
     class Call(private val _value: TestInterface3) extends AnyVal {
-      def using(sameEverywhereField: Long, if1Field_overriden: Int): TestInterface3.Struct = {
+      def using(): TestInterface3.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestInterface3.Struct(if3Field = _value.if3Field, if1Field_inherited = _value.if1Field_inherited, sameField = _value.sameField, sameEverywhereField = sameEverywhereField, if1Field_overriden = if1Field_overriden)
+        TestInterface3.Struct(if1Field_overriden = _value.if1Field_overriden, if1Field_inherited = _value.if1Field_inherited, sameField = _value.sameField, sameEverywhereField = _value.sameEverywhereField, if3Field = _value.if3Field)
       }
     }
     override type INSTANTIATOR = Call

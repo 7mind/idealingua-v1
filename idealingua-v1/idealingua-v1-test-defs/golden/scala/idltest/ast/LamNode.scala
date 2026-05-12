@@ -11,21 +11,21 @@ trait LamNodeCirce {
   import _root_.io.circe.syntax.*
   import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
   implicit val encodeLamNode: Encoder.AsObject[LamNode] = Encoder.AsObject.instance {
-    case v: TLamNode.Struct =>
-      Map("idltest.ast.TLamNode.Struct" -> v).asJsonObject
     case v: LamNode.Struct =>
       Map("idltest.ast.LamNode.Struct" -> v).asJsonObject
+    case v: TLamNode.Struct =>
+      Map("idltest.ast.TLamNode.Struct" -> v).asJsonObject
   }
   implicit val decodeLamNode: Decoder[LamNode] = Decoder.instance(c => {
     val maybeContent = c.keys.flatMap(_.headOption).toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \"type_name\": { ...fields } }", c.history))
     for (fname <- maybeContent; value = c.downField(fname); result <- fname match {
-      case "idltest.ast.TLamNode.Struct" =>
-        value.as[TLamNode.Struct]
       case "idltest.ast.LamNode.Struct" =>
         value.as[LamNode.Struct]
+      case "idltest.ast.TLamNode.Struct" =>
+        value.as[TLamNode.Struct]
       case _ =>
         val cname = "idltest.ast.LamNode"
-        val alts = List("idltest.ast.TLamNode.Struct", "idltest.ast.LamNode.Struct").mkString(",")
+        val alts = List("idltest.ast.LamNode.Struct", "idltest.ast.TLamNode.Struct").mkString(",")
         Left(DecodingFailure(s"Can't decode type $fname as $cname, expected one of [$alts]", value.history))
     }) yield result
   })
@@ -59,22 +59,22 @@ object LamNode extends LamNodeCirce {
     }
     implicit class StructExtensions(override protected val _value: LamNode.Struct) extends izumi.idealingua.runtime.IRTConversions[LamNode.Struct]
   }
-  implicit object LamNode_downcast_extend_TLamNodeStruct extends izumi.idealingua.runtime.IRTExtend[LamNode, TLamNode.Struct] {
+  implicit object LamNode_downcast_extend_LamNodeStruct extends izumi.idealingua.runtime.IRTExtend[LamNode, LamNode.Struct] {
     class Call(private val _value: LamNode) extends AnyVal {
-      def using(typeinfo: TypeInfo): TLamNode.Struct = {
+      def using(): LamNode.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(typeinfo.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TLamNode.Struct(body = _value.body, paramNames = _value.paramNames, tpe = typeinfo.tpe)
+        LamNode.Struct(paramNames = _value.paramNames, body = _value.body)
       }
     }
     override type INSTANTIATOR = Call
     override def next(_value: LamNode): Call = new Call(_value)
   }
-  implicit object LamNode_downcast_extend_LamNodeStruct extends izumi.idealingua.runtime.IRTExtend[LamNode, LamNode.Struct] {
+  implicit object LamNode_downcast_extend_TLamNodeStruct extends izumi.idealingua.runtime.IRTExtend[LamNode, TLamNode.Struct] {
     class Call(private val _value: LamNode) extends AnyVal {
-      def using(): LamNode.Struct = {
+      def using(tpe: Type): TLamNode.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        LamNode.Struct(body = _value.body, paramNames = _value.paramNames)
+        assert(tpe.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TLamNode.Struct(paramNames = _value.paramNames, body = _value.body, tpe = tpe)
       }
     }
     override type INSTANTIATOR = Call

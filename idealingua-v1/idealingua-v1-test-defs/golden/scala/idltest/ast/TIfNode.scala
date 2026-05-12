@@ -67,7 +67,7 @@ object TIfNode extends TIfNodeCirce {
     class Call(private val _value: TIfNode) extends AnyVal {
       def using(): TIfNode.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TIfNode.Struct(tpe = _value.tpe, thenNode = _value.thenNode, elseNode = _value.elseNode, cond = _value.cond)
+        TIfNode.Struct(tpe = _value.tpe, cond = _value.cond, thenNode = _value.thenNode, elseNode = _value.elseNode)
       }
     }
     override type INSTANTIATOR = Call

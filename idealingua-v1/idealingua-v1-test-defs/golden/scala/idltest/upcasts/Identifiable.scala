@@ -53,10 +53,9 @@ object Identifiable extends IdentifiableCirce {
   }
   implicit object Identifiable_downcast_extend_Item extends izumi.idealingua.runtime.IRTExtend[Identifiable, Item] {
     class Call(private val _value: Identifiable) extends AnyVal {
-      def using(price: Int, itemcontent: ItemContent): Item = {
+      def using(name: String, price: Int): Item = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(itemcontent.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Item(id = _value.id, price = price, name = itemcontent.name)
+        Item(id = _value.id, name = name, price = price)
       }
     }
     override type INSTANTIATOR = Call

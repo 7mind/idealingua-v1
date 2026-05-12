@@ -17,9 +17,9 @@ object Name_view extends Name_viewCirce {
     def name: String
     def relatives: List[Name]
   }
-  def apply(lengthinbytes: LengthInBytes, name: String, relatives: List[Name]): Name_view = {
-    assert(lengthinbytes.asInstanceOf[_root_.scala.AnyRef] ne null)
-    new Name_view(bytes = lengthinbytes.bytes, name = name, relatives = relatives)
+  def apply(lengthinbytes: LengthInBytes, name: Name, relatives: List[Name]): Name_view = {
+    assert((name.asInstanceOf[_root_.scala.AnyRef] ne null) && (lengthinbytes.asInstanceOf[_root_.scala.AnyRef] ne null))
+    new Name_view(bytes = lengthinbytes.bytes, name = name.name, relatives = relatives)
   }
   def apply(defn: Name_view.Defn): Name_view = {
     assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)

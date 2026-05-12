@@ -56,22 +56,22 @@ object GenericFailureData extends GenericFailureDataCirce {
     }
     implicit class StructExtensions(override protected val _value: GenericFailureData.Struct) extends izumi.idealingua.runtime.IRTConversions[GenericFailureData.Struct]
   }
-  implicit object GenericFailureData_downcast_extend_GenericFailureDataStruct extends izumi.idealingua.runtime.IRTExtend[GenericFailureData, GenericFailureData.Struct] {
-    class Call(private val _value: GenericFailureData) extends AnyVal {
-      def using(): GenericFailureData.Struct = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        GenericFailureData.Struct(reserved = _value.reserved, diagnostics = _value.diagnostics, message = _value.message)
-      }
-    }
-    override type INSTANTIATOR = Call
-    override def next(_value: GenericFailureData): Call = new Call(_value)
-  }
   implicit object GenericFailureData_downcast_extend_GenericFailure extends izumi.idealingua.runtime.IRTExtend[GenericFailureData, GenericFailure] {
     class Call(private val _value: GenericFailureData) extends AnyVal {
       def using(code: GenericFailureCode): GenericFailure = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         assert(code.asInstanceOf[_root_.scala.AnyRef] ne null)
-        GenericFailure(reserved = _value.reserved, diagnostics = _value.diagnostics, message = _value.message, code = code)
+        GenericFailure(message = _value.message, diagnostics = _value.diagnostics, reserved = _value.reserved, code = code)
+      }
+    }
+    override type INSTANTIATOR = Call
+    override def next(_value: GenericFailureData): Call = new Call(_value)
+  }
+  implicit object GenericFailureData_downcast_extend_GenericFailureDataStruct extends izumi.idealingua.runtime.IRTExtend[GenericFailureData, GenericFailureData.Struct] {
+    class Call(private val _value: GenericFailureData) extends AnyVal {
+      def using(): GenericFailureData.Struct = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        GenericFailureData.Struct(message = _value.message, diagnostics = _value.diagnostics, reserved = _value.reserved)
       }
     }
     override type INSTANTIATOR = Call

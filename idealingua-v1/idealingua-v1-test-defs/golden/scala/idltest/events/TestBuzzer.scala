@@ -262,16 +262,16 @@ object TestBuzzer {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestBuzzer.EmptyInput()
     }
+    implicit object EmptyInput_cast_into_TestBuzzerAdtInputVoidOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyInput, TestBuzzer.AdtInputVoidOutput] {
+      override def convert(_value: TestBuzzer.EmptyInput): TestBuzzer.AdtInputVoidOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestBuzzer.AdtInputVoidOutput()
+      }
+    }
     implicit object EmptyInput_cast_into_TestBuzzerEmptyOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyInput, TestBuzzer.EmptyOutput] {
       override def convert(_value: TestBuzzer.EmptyInput): TestBuzzer.EmptyOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestBuzzer.EmptyOutput()
-      }
-    }
-    implicit object EmptyInput_cast_into_TestBuzzerUserRegisteredOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyInput, TestBuzzer.UserRegisteredOutput] {
-      override def convert(_value: TestBuzzer.EmptyInput): TestBuzzer.UserRegisteredOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestBuzzer.UserRegisteredOutput()
       }
     }
     implicit object EmptyInput_cast_into_TestBuzzerEnumInputVoidOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyInput, TestBuzzer.EnumInputVoidOutput] {
@@ -280,10 +280,10 @@ object TestBuzzer {
         TestBuzzer.EnumInputVoidOutput()
       }
     }
-    implicit object EmptyInput_cast_into_TestBuzzerAdtInputVoidOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyInput, TestBuzzer.AdtInputVoidOutput] {
-      override def convert(_value: TestBuzzer.EmptyInput): TestBuzzer.AdtInputVoidOutput = {
+    implicit object EmptyInput_cast_into_TestBuzzerUserRegisteredOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyInput, TestBuzzer.UserRegisteredOutput] {
+      override def convert(_value: TestBuzzer.EmptyInput): TestBuzzer.UserRegisteredOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestBuzzer.AdtInputVoidOutput()
+        TestBuzzer.UserRegisteredOutput()
       }
     }
     implicit object EmptyInput_upcast_EmptyInput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyInput, TestBuzzer.EmptyInput] {
@@ -307,16 +307,16 @@ object TestBuzzer {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestBuzzer.EmptyOutput()
     }
+    implicit object EmptyOutput_cast_into_TestBuzzerAdtInputVoidOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyOutput, TestBuzzer.AdtInputVoidOutput] {
+      override def convert(_value: TestBuzzer.EmptyOutput): TestBuzzer.AdtInputVoidOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestBuzzer.AdtInputVoidOutput()
+      }
+    }
     implicit object EmptyOutput_cast_into_TestBuzzerEmptyInput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyOutput, TestBuzzer.EmptyInput] {
       override def convert(_value: TestBuzzer.EmptyOutput): TestBuzzer.EmptyInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestBuzzer.EmptyInput()
-      }
-    }
-    implicit object EmptyOutput_cast_into_TestBuzzerUserRegisteredOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyOutput, TestBuzzer.UserRegisteredOutput] {
-      override def convert(_value: TestBuzzer.EmptyOutput): TestBuzzer.UserRegisteredOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestBuzzer.UserRegisteredOutput()
       }
     }
     implicit object EmptyOutput_cast_into_TestBuzzerEnumInputVoidOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyOutput, TestBuzzer.EnumInputVoidOutput] {
@@ -325,10 +325,10 @@ object TestBuzzer {
         TestBuzzer.EnumInputVoidOutput()
       }
     }
-    implicit object EmptyOutput_cast_into_TestBuzzerAdtInputVoidOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyOutput, TestBuzzer.AdtInputVoidOutput] {
-      override def convert(_value: TestBuzzer.EmptyOutput): TestBuzzer.AdtInputVoidOutput = {
+    implicit object EmptyOutput_cast_into_TestBuzzerUserRegisteredOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyOutput, TestBuzzer.UserRegisteredOutput] {
+      override def convert(_value: TestBuzzer.EmptyOutput): TestBuzzer.UserRegisteredOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestBuzzer.AdtInputVoidOutput()
+        TestBuzzer.UserRegisteredOutput()
       }
     }
     implicit object EmptyOutput_upcast_EmptyOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EmptyOutput, TestBuzzer.EmptyOutput] {
@@ -379,6 +379,12 @@ object TestBuzzer {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestBuzzer.UserRegisteredOutput()
     }
+    implicit object UserRegisteredOutput_cast_into_TestBuzzerAdtInputVoidOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.UserRegisteredOutput, TestBuzzer.AdtInputVoidOutput] {
+      override def convert(_value: TestBuzzer.UserRegisteredOutput): TestBuzzer.AdtInputVoidOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestBuzzer.AdtInputVoidOutput()
+      }
+    }
     implicit object UserRegisteredOutput_cast_into_TestBuzzerEmptyInput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.UserRegisteredOutput, TestBuzzer.EmptyInput] {
       override def convert(_value: TestBuzzer.UserRegisteredOutput): TestBuzzer.EmptyInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
@@ -395,12 +401,6 @@ object TestBuzzer {
       override def convert(_value: TestBuzzer.UserRegisteredOutput): TestBuzzer.EnumInputVoidOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestBuzzer.EnumInputVoidOutput()
-      }
-    }
-    implicit object UserRegisteredOutput_cast_into_TestBuzzerAdtInputVoidOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.UserRegisteredOutput, TestBuzzer.AdtInputVoidOutput] {
-      override def convert(_value: TestBuzzer.UserRegisteredOutput): TestBuzzer.AdtInputVoidOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestBuzzer.AdtInputVoidOutput()
       }
     }
     implicit object UserRegisteredOutput_upcast_UserRegisteredOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.UserRegisteredOutput, TestBuzzer.UserRegisteredOutput] {
@@ -454,16 +454,16 @@ object TestBuzzer {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestBuzzer.HelloOutput(value = defn.value)
     }
-    implicit object HelloOutput_cast_into_TestBuzzerEnumInputOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.HelloOutput, TestBuzzer.EnumInputOutput] {
-      override def convert(_value: TestBuzzer.HelloOutput): TestBuzzer.EnumInputOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestBuzzer.EnumInputOutput(value = _value.value)
-      }
-    }
     implicit object HelloOutput_cast_into_TestBuzzerAdtInputOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.HelloOutput, TestBuzzer.AdtInputOutput] {
       override def convert(_value: TestBuzzer.HelloOutput): TestBuzzer.AdtInputOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestBuzzer.AdtInputOutput(value = _value.value)
+      }
+    }
+    implicit object HelloOutput_cast_into_TestBuzzerEnumInputOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.HelloOutput, TestBuzzer.EnumInputOutput] {
+      override def convert(_value: TestBuzzer.HelloOutput): TestBuzzer.EnumInputOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestBuzzer.EnumInputOutput(value = _value.value)
       }
     }
     implicit object HelloOutput_upcast_HelloOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.HelloOutput, TestBuzzer.HelloOutput] {
@@ -524,16 +524,16 @@ object TestBuzzer {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestBuzzer.EnumInputOutput(value = defn.value)
     }
-    implicit object EnumInputOutput_cast_into_TestBuzzerHelloOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EnumInputOutput, TestBuzzer.HelloOutput] {
-      override def convert(_value: TestBuzzer.EnumInputOutput): TestBuzzer.HelloOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestBuzzer.HelloOutput(value = _value.value)
-      }
-    }
     implicit object EnumInputOutput_cast_into_TestBuzzerAdtInputOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EnumInputOutput, TestBuzzer.AdtInputOutput] {
       override def convert(_value: TestBuzzer.EnumInputOutput): TestBuzzer.AdtInputOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestBuzzer.AdtInputOutput(value = _value.value)
+      }
+    }
+    implicit object EnumInputOutput_cast_into_TestBuzzerHelloOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EnumInputOutput, TestBuzzer.HelloOutput] {
+      override def convert(_value: TestBuzzer.EnumInputOutput): TestBuzzer.HelloOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestBuzzer.HelloOutput(value = _value.value)
       }
     }
     implicit object EnumInputOutput_upcast_EnumInputOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EnumInputOutput, TestBuzzer.EnumInputOutput] {
@@ -587,6 +587,12 @@ object TestBuzzer {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestBuzzer.EnumInputVoidOutput()
     }
+    implicit object EnumInputVoidOutput_cast_into_TestBuzzerAdtInputVoidOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EnumInputVoidOutput, TestBuzzer.AdtInputVoidOutput] {
+      override def convert(_value: TestBuzzer.EnumInputVoidOutput): TestBuzzer.AdtInputVoidOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestBuzzer.AdtInputVoidOutput()
+      }
+    }
     implicit object EnumInputVoidOutput_cast_into_TestBuzzerEmptyInput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EnumInputVoidOutput, TestBuzzer.EmptyInput] {
       override def convert(_value: TestBuzzer.EnumInputVoidOutput): TestBuzzer.EmptyInput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
@@ -603,12 +609,6 @@ object TestBuzzer {
       override def convert(_value: TestBuzzer.EnumInputVoidOutput): TestBuzzer.UserRegisteredOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestBuzzer.UserRegisteredOutput()
-      }
-    }
-    implicit object EnumInputVoidOutput_cast_into_TestBuzzerAdtInputVoidOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EnumInputVoidOutput, TestBuzzer.AdtInputVoidOutput] {
-      override def convert(_value: TestBuzzer.EnumInputVoidOutput): TestBuzzer.AdtInputVoidOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestBuzzer.AdtInputVoidOutput()
       }
     }
     implicit object EnumInputVoidOutput_upcast_EnumInputVoidOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.EnumInputVoidOutput, TestBuzzer.EnumInputVoidOutput] {
@@ -670,16 +670,16 @@ object TestBuzzer {
       assert(defn.asInstanceOf[_root_.scala.AnyRef] ne null)
       new TestBuzzer.AdtInputOutput(value = defn.value)
     }
-    implicit object AdtInputOutput_cast_into_TestBuzzerHelloOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.AdtInputOutput, TestBuzzer.HelloOutput] {
-      override def convert(_value: TestBuzzer.AdtInputOutput): TestBuzzer.HelloOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestBuzzer.HelloOutput(value = _value.value)
-      }
-    }
     implicit object AdtInputOutput_cast_into_TestBuzzerEnumInputOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.AdtInputOutput, TestBuzzer.EnumInputOutput] {
       override def convert(_value: TestBuzzer.AdtInputOutput): TestBuzzer.EnumInputOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestBuzzer.EnumInputOutput(value = _value.value)
+      }
+    }
+    implicit object AdtInputOutput_cast_into_TestBuzzerHelloOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.AdtInputOutput, TestBuzzer.HelloOutput] {
+      override def convert(_value: TestBuzzer.AdtInputOutput): TestBuzzer.HelloOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestBuzzer.HelloOutput(value = _value.value)
       }
     }
     implicit object AdtInputOutput_upcast_AdtInputOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.AdtInputOutput, TestBuzzer.AdtInputOutput] {
@@ -746,16 +746,16 @@ object TestBuzzer {
         TestBuzzer.EmptyOutput()
       }
     }
-    implicit object AdtInputVoidOutput_cast_into_TestBuzzerUserRegisteredOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.AdtInputVoidOutput, TestBuzzer.UserRegisteredOutput] {
-      override def convert(_value: TestBuzzer.AdtInputVoidOutput): TestBuzzer.UserRegisteredOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestBuzzer.UserRegisteredOutput()
-      }
-    }
     implicit object AdtInputVoidOutput_cast_into_TestBuzzerEnumInputVoidOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.AdtInputVoidOutput, TestBuzzer.EnumInputVoidOutput] {
       override def convert(_value: TestBuzzer.AdtInputVoidOutput): TestBuzzer.EnumInputVoidOutput = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         TestBuzzer.EnumInputVoidOutput()
+      }
+    }
+    implicit object AdtInputVoidOutput_cast_into_TestBuzzerUserRegisteredOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.AdtInputVoidOutput, TestBuzzer.UserRegisteredOutput] {
+      override def convert(_value: TestBuzzer.AdtInputVoidOutput): TestBuzzer.UserRegisteredOutput = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TestBuzzer.UserRegisteredOutput()
       }
     }
     implicit object AdtInputVoidOutput_upcast_AdtInputVoidOutput extends izumi.idealingua.runtime.IRTCast[TestBuzzer.AdtInputVoidOutput, TestBuzzer.AdtInputVoidOutput] {

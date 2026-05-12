@@ -60,7 +60,7 @@ object ImportIdTest extends ImportIdTestCirce {
     class Call(private val _value: ImportIdTest) extends AnyVal {
       def using(): ImportIdTest.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        ImportIdTest.Struct(fail = _value.fail, mix = _value.mix, id = _value.id)
+        ImportIdTest.Struct(id = _value.id, fail = _value.fail, mix = _value.mix)
       }
     }
     override type INSTANTIATOR = Call

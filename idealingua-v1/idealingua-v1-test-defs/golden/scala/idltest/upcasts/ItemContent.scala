@@ -55,21 +55,21 @@ object ItemContent extends ItemContentCirce {
     }
     implicit class StructExtensions(override protected val _value: ItemContent.Struct) extends izumi.idealingua.runtime.IRTConversions[ItemContent.Struct]
   }
-  implicit object ItemContent_downcast_extend_ItemContentStruct extends izumi.idealingua.runtime.IRTExtend[ItemContent, ItemContent.Struct] {
+  implicit object ItemContent_downcast_extend_Item extends izumi.idealingua.runtime.IRTExtend[ItemContent, Item] {
     class Call(private val _value: ItemContent) extends AnyVal {
-      def using(): ItemContent.Struct = {
+      def using(price: Int): Item = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        ItemContent.Struct(name = _value.name, id = _value.id)
+        Item(id = _value.id, name = _value.name, price = price)
       }
     }
     override type INSTANTIATOR = Call
     override def next(_value: ItemContent): Call = new Call(_value)
   }
-  implicit object ItemContent_downcast_extend_Item extends izumi.idealingua.runtime.IRTExtend[ItemContent, Item] {
+  implicit object ItemContent_downcast_extend_ItemContentStruct extends izumi.idealingua.runtime.IRTExtend[ItemContent, ItemContent.Struct] {
     class Call(private val _value: ItemContent) extends AnyVal {
-      def using(price: Int): Item = {
+      def using(): ItemContent.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        Item(name = _value.name, id = _value.id, price = price)
+        ItemContent.Struct(id = _value.id, name = _value.name)
       }
     }
     override type INSTANTIATOR = Call

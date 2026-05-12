@@ -53,10 +53,9 @@ object PrivateMixinPrivateParent extends PrivateMixinPrivateParentCirce {
   }
   implicit object PrivateMixinPrivateParent_downcast_extend_AnotherTestObject extends izumi.idealingua.runtime.IRTExtend[PrivateMixinPrivateParent, AnotherTestObject] {
     class Call(private val _value: PrivateMixinPrivateParent) extends AnyVal {
-      def using(extendedmixin: ExtendedMixin, privatemixin: PrivateMixin, privatemixinparent: PrivateMixinParent): AnotherTestObject = {
+      def using(parent: String, embedded: Boolean, own: Byte): AnotherTestObject = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert((privatemixinparent.asInstanceOf[_root_.scala.AnyRef] ne null) && ((privatemixin.asInstanceOf[_root_.scala.AnyRef] ne null) && (extendedmixin.asInstanceOf[_root_.scala.AnyRef] ne null)))
-        AnotherTestObject(parent_embedded = _value.parent_embedded, own = extendedmixin.own, embedded = privatemixin.embedded, parent = privatemixinparent.parent)
+        AnotherTestObject(parent_embedded = _value.parent_embedded, parent = parent, embedded = embedded, own = own)
       }
     }
     override type INSTANTIATOR = Call

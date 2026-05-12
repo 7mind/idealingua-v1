@@ -80,7 +80,14 @@ final class EphemeralSynthesizerSpec extends AnyFunSpec with Matchers {
       rd.ephemeralOwner(adtId) shouldBe svcId
     }
 
-    it("auto-wraps list-typed alt-output branch in a synthesized DTO") {
+    it("passes Singular(Builtin) list/i32 alt-output branches through as inline AdtMember typeIds (post-Fi1)") {
+      // IMPL-7a.2-Fi1 (commit bbe08f2): `Singular(Builtin)` alt-output branches
+      // are no longer wrapped in a synthesized `<Base><Success|Failure>` DTO —
+      // the original Builtin `typeId` flows directly into the ephemeral ADT's
+      // `AdtMember.typeId`. The legacy renderer emits inline
+      // `case class Success(value: List[Str]) extends <Output>` from that
+      // AdtMember.typeId. See `EphemeralSynthesizer.synthesizeAltBranch`
+      // (Singular case) for the rationale.
       val svcId = ServiceId(domA, "Svc")
       val method = RawMethod.RPCMethod(
         name = "doList",
@@ -99,32 +106,21 @@ final class EphemeralSynthesizerSpec extends AnyFunSpec with Matchers {
 
       val ownerPath = TypePath(domA, Seq("Svc"))
       val adtId     = AdtId(ownerPath, "DoListOutput")
-      val successId = DTOId(ownerPath, "DoListSuccess")
-      val failureId = DTOId(ownerPath, "DoListFailure")
+      val successWrapperId = DTOId(ownerPath, "DoListSuccess")
+      val failureWrapperId = DTOId(ownerPath, "DoListFailure")
 
       val adt = rd.userTypes(adtId).asInstanceOf[IRTypeDef.Adt]
-      adt.alternatives.map(_.typeId) shouldBe List(successId, failureId)
-
-      // Wrapper DTOs exist as Member.Ephemeral.
-      rd.members(successId) shouldBe a[Member.Ephemeral]
-      rd.members(failureId) shouldBe a[Member.Ephemeral]
-
-      // Wrapper DTO carries a single `value` field with the original branch
-      // type (a `Generic.TList` for the success branch, a `Primitive.TInt32`
-      // for the failure branch).
-      val successEph = rd.members(successId).asInstanceOf[Member.Ephemeral].defn
-      successEph.struct.fields.map(_.name) shouldBe List("value")
-      successEph.struct.fields.head.typeId shouldBe Generic.TList(Primitive.TString)
-
-      val failureEph = rd.members(failureId).asInstanceOf[Member.Ephemeral].defn
-      failureEph.struct.fields.map(_.name) shouldBe List("value")
-      failureEph.struct.fields.head.typeId shouldBe Primitive.TInt32
-
-      rd.ephemeralOwner(successId) shouldBe svcId
-      rd.ephemeralOwner(failureId) shouldBe svcId
+      // AdtMember.typeId is the original Builtin — NOT a wrapper DTO.
+      adt.alternatives.map(_.typeId) shouldBe List(
+        Generic.TList(Primitive.TString),
+        Primitive.TInt32,
+      )
+      // No wrapper DTOs synthesized.
+      rd.members.contains(successWrapperId) shouldBe false
+      rd.members.contains(failureWrapperId) shouldBe false
     }
 
-    it("auto-wraps map-typed alt-output branch") {
+    it("passes Singular(Builtin) map/set alt-output branches through (post-Fi1)") {
       val svcId = ServiceId(domA, "Svc")
       val method = RawMethod.RPCMethod(
         name = "doMap",
@@ -142,14 +138,14 @@ final class EphemeralSynthesizerSpec extends AnyFunSpec with Matchers {
       val rd  = EphemeralSynthesizer(StructuralFlattener(CycleDetector(rd0)))
 
       val ownerPath = TypePath(domA, Seq("Svc"))
-      val successId = DTOId(ownerPath, "DoMapSuccess")
-      val failureId = DTOId(ownerPath, "DoMapFailure")
-
-      val successEph = rd.members(successId).asInstanceOf[Member.Ephemeral].defn
-      successEph.struct.fields.head.typeId shouldBe Generic.TMap(Primitive.TString, Primitive.TString)
-
-      val failureEph = rd.members(failureId).asInstanceOf[Member.Ephemeral].defn
-      failureEph.struct.fields.head.typeId shouldBe Generic.TSet(Primitive.TString)
+      val adtId     = AdtId(ownerPath, "DoMapOutput")
+      val adt = rd.userTypes(adtId).asInstanceOf[IRTypeDef.Adt]
+      adt.alternatives.map(_.typeId) shouldBe List(
+        Generic.TMap(Primitive.TString, Primitive.TString),
+        Generic.TSet(Primitive.TString),
+      )
+      rd.members.contains(DTOId(ownerPath, "DoMapSuccess")) shouldBe false
+      rd.members.contains(DTOId(ownerPath, "DoMapFailure")) shouldBe false
     }
 
     it("does NOT wrap DTO-typed alt-output branch (passes through)") {
@@ -202,7 +198,7 @@ final class EphemeralSynthesizerSpec extends AnyFunSpec with Matchers {
       rd.members.contains(DTOId(ownerPath, "DoDtoFailure")) shouldBe false
     }
 
-    it("wrapper DTO names follow `<MethodBase><Success|Failure>` convention") {
+    it("ADT name follows `<MethodBase>Output` convention; no wrapper DTOs for Singular(Builtin) branches (post-Fi1)") {
       val svcId = ServiceId(domA, "TestService")
       val method = RawMethod.RPCMethod(
         name = "alternativeGeneric",
@@ -220,9 +216,10 @@ final class EphemeralSynthesizerSpec extends AnyFunSpec with Matchers {
       val rd  = EphemeralSynthesizer(StructuralFlattener(CycleDetector(rd0)))
 
       val ownerPath = TypePath(domA, Seq("TestService"))
-      rd.members.contains(DTOId(ownerPath, "AlternativeGenericSuccess")) shouldBe true
-      rd.members.contains(DTOId(ownerPath, "AlternativeGenericFailure")) shouldBe true
       rd.members.contains(AdtId(ownerPath, "AlternativeGenericOutput")) shouldBe true
+      // Post-Fi1: no wrapper DTOs for Singular(Builtin) alt-output branches.
+      rd.members.contains(DTOId(ownerPath, "AlternativeGenericSuccess")) shouldBe false
+      rd.members.contains(DTOId(ownerPath, "AlternativeGenericFailure")) shouldBe false
     }
 
     it("synthesizes an interface mirror DTO (Struct) for every interface") {

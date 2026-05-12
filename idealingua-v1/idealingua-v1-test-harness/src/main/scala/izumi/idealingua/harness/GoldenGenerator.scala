@@ -13,13 +13,13 @@ object GoldenGenerator {
     * run with a different corpus do not persist. Only the per-language subdirs are deleted —
     * goldenRoot itself and any sibling files (e.g. .gitkeep) are preserved.
     *
-    * `scalaTyper` selects the Scala backend's typer (default `TyperImpl.Legacy`).
-    * Pass `TyperImpl.NewTyper` to regenerate as the new-typer output for the
-    * IMPL-9 compile gate (see `GoldenCompile.compileAll` for context).
+    * `scalaTyper` selects the Scala backend's typer (default `TyperImpl.NewTyper`
+    * — IMPL-9 flip). Pass `TyperImpl.Legacy` to regenerate via the legacy typer
+    * (retained for parity / diagnostic use; see `GoldenCompile.compileAll`).
     *
     * No logging inside; caller is responsible for progress reporting.
     */
-  def regenerate(corpusRoot: Path, goldenRoot: Path, scalaTyper: TyperImpl = TyperImpl.Legacy): Unit = {
+  def regenerate(corpusRoot: Path, goldenRoot: Path, scalaTyper: TyperImpl = TyperImpl.NewTyper): Unit = {
     val loaded = HarnessCorpus.loadCorpus(corpusRoot)
     val produced = GoldenCompile.compileAll(loaded, goldenRoot, scalaTyper)
 

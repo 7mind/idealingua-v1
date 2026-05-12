@@ -57,22 +57,21 @@ object TestInterface1 extends TestInterface1Circe {
     }
     implicit class StructExtensions(override protected val _value: TestInterface1.Struct) extends izumi.idealingua.runtime.IRTConversions[TestInterface1.Struct]
   }
-  implicit object TestInterface1_downcast_extend_TestInterface1Struct extends izumi.idealingua.runtime.IRTExtend[TestInterface1, TestInterface1.Struct] {
+  implicit object TestInterface1_downcast_extend_DTO1 extends izumi.idealingua.runtime.IRTExtend[TestInterface1, DTO1] {
     class Call(private val _value: TestInterface1) extends AnyVal {
-      def using(): TestInterface1.Struct = {
+      def using(if3Field: Long, if2Field: Long): DTO1 = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestInterface1.Struct(if1Field_inherited = _value.if1Field_inherited, sameEverywhereField = _value.sameEverywhereField, sameField = _value.sameField, if1Field_overriden = _value.if1Field_overriden)
+        DTO1(if1Field_overriden = _value.if1Field_overriden, if1Field_inherited = _value.if1Field_inherited, sameField = _value.sameField, sameEverywhereField = _value.sameEverywhereField, if3Field = if3Field, if2Field = if2Field)
       }
     }
     override type INSTANTIATOR = Call
     override def next(_value: TestInterface1): Call = new Call(_value)
   }
-  implicit object TestInterface1_downcast_extend_DTO1 extends izumi.idealingua.runtime.IRTExtend[TestInterface1, DTO1] {
+  implicit object TestInterface1_downcast_extend_TestInterface1Struct extends izumi.idealingua.runtime.IRTExtend[TestInterface1, TestInterface1.Struct] {
     class Call(private val _value: TestInterface1) extends AnyVal {
-      def using(sameEverywhereField: Long, sameField: Long, if1Field_overriden: Int, testinterface3: TestInterface3, testinterface2: TestInterface2): DTO1 = {
+      def using(): TestInterface1.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert((testinterface2.asInstanceOf[_root_.scala.AnyRef] ne null) && (testinterface3.asInstanceOf[_root_.scala.AnyRef] ne null))
-        DTO1(if1Field_inherited = _value.if1Field_inherited, sameEverywhereField = sameEverywhereField, sameField = sameField, if1Field_overriden = if1Field_overriden, if3Field = testinterface3.if3Field, if2Field = testinterface2.if2Field)
+        TestInterface1.Struct(if1Field_overriden = _value.if1Field_overriden, if1Field_inherited = _value.if1Field_inherited, sameField = _value.sameField, sameEverywhereField = _value.sameEverywhereField)
       }
     }
     override type INSTANTIATOR = Call

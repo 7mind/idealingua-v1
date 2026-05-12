@@ -67,10 +67,10 @@ object FloatNode extends FloatNodeCirce {
   }
   implicit object FloatNode_downcast_extend_TFloatNodeStruct extends izumi.idealingua.runtime.IRTExtend[FloatNode, TFloatNode.Struct] {
     class Call(private val _value: FloatNode) extends AnyVal {
-      def using(typeinfo: TypeInfo): TFloatNode.Struct = {
+      def using(tpe: Type): TFloatNode.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(typeinfo.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TFloatNode.Struct(lit = _value.lit, tpe = typeinfo.tpe)
+        assert(tpe.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TFloatNode.Struct(lit = _value.lit, tpe = tpe)
       }
     }
     override type INSTANTIATOR = Call

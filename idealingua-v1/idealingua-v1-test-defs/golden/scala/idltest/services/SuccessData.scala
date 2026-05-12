@@ -8,21 +8,21 @@ trait SuccessDataCirce {
   import _root_.io.circe.syntax.*
   import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
   implicit val encodeSuccessData: Encoder.AsObject[SuccessData] = Encoder.AsObject.instance {
-    case v: SuccessData.Struct =>
-      Map("idltest.services.SuccessData.Struct" -> v).asJsonObject
     case v: SuccessDataData =>
       Map("idltest.services.SuccessDataData" -> v).asJsonObject
+    case v: SuccessData.Struct =>
+      Map("idltest.services.SuccessData.Struct" -> v).asJsonObject
   }
   implicit val decodeSuccessData: Decoder[SuccessData] = Decoder.instance(c => {
     val maybeContent = c.keys.flatMap(_.headOption).toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \"type_name\": { ...fields } }", c.history))
     for (fname <- maybeContent; value = c.downField(fname); result <- fname match {
-      case "idltest.services.SuccessData.Struct" =>
-        value.as[SuccessData.Struct]
       case "idltest.services.SuccessDataData" =>
         value.as[SuccessDataData]
+      case "idltest.services.SuccessData.Struct" =>
+        value.as[SuccessData.Struct]
       case _ =>
         val cname = "idltest.services.SuccessData"
-        val alts = List("idltest.services.SuccessData.Struct", "idltest.services.SuccessDataData").mkString(",")
+        val alts = List("idltest.services.SuccessDataData", "idltest.services.SuccessData.Struct").mkString(",")
         Left(DecodingFailure(s"Can't decode type $fname as $cname, expected one of [$alts]", value.history))
     }) yield result
   })
@@ -61,11 +61,11 @@ object SuccessData extends SuccessDataCirce {
     }
     implicit class StructExtensions(override protected val _value: SuccessData.Struct) extends izumi.idealingua.runtime.IRTConversions[SuccessData.Struct]
   }
-  implicit object SuccessData_downcast_extend_TestServiceGreetImplicitStructureMultilineCurlyBracesSyntaxOutput extends izumi.idealingua.runtime.IRTExtend[SuccessData, TestService.GreetImplicitStructureMultilineCurlyBracesSyntaxOutput] {
+  implicit object SuccessData_downcast_extend_SuccessDataData extends izumi.idealingua.runtime.IRTExtend[SuccessData, SuccessDataData] {
     class Call(private val _value: SuccessData) extends AnyVal {
-      def using(bullshit: String): TestService.GreetImplicitStructureMultilineCurlyBracesSyntaxOutput = {
+      def using(): SuccessDataData = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetImplicitStructureMultilineCurlyBracesSyntaxOutput(greeting = _value.greeting, bullshit = bullshit)
+        SuccessDataData(greeting = _value.greeting)
       }
     }
     override type INSTANTIATOR = Call
@@ -76,26 +76,6 @@ object SuccessData extends SuccessDataCirce {
       def using(): SuccessData.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         SuccessData.Struct(greeting = _value.greeting)
-      }
-    }
-    override type INSTANTIATOR = Call
-    override def next(_value: SuccessData): Call = new Call(_value)
-  }
-  implicit object SuccessData_downcast_extend_TestServiceGreetImplicitStructMultilineSyntaxOutput extends izumi.idealingua.runtime.IRTExtend[SuccessData, TestService.GreetImplicitStructMultilineSyntaxOutput] {
-    class Call(private val _value: SuccessData) extends AnyVal {
-      def using(bullshit: String): TestService.GreetImplicitStructMultilineSyntaxOutput = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TestService.GreetImplicitStructMultilineSyntaxOutput(greeting = _value.greeting, bullshit = bullshit)
-      }
-    }
-    override type INSTANTIATOR = Call
-    override def next(_value: SuccessData): Call = new Call(_value)
-  }
-  implicit object SuccessData_downcast_extend_SuccessDataData extends izumi.idealingua.runtime.IRTExtend[SuccessData, SuccessDataData] {
-    class Call(private val _value: SuccessData) extends AnyVal {
-      def using(): SuccessDataData = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        SuccessDataData(greeting = _value.greeting)
       }
     }
     override type INSTANTIATOR = Call

@@ -8,21 +8,21 @@ trait CommonFailureCirce {
   import _root_.io.circe.syntax.*
   import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
   implicit val encodeCommonFailure: Encoder.AsObject[CommonFailure] = Encoder.AsObject.instance {
-    case v: CommonFailure.Struct =>
-      Map("izumi.test.domain01.CommonFailure.Struct" -> v).asJsonObject
     case v: BasicFailure =>
       Map("izumi.test.domain01.BasicFailure" -> v).asJsonObject
+    case v: CommonFailure.Struct =>
+      Map("izumi.test.domain01.CommonFailure.Struct" -> v).asJsonObject
   }
   implicit val decodeCommonFailure: Decoder[CommonFailure] = Decoder.instance(c => {
     val maybeContent = c.keys.flatMap(_.headOption).toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \"type_name\": { ...fields } }", c.history))
     for (fname <- maybeContent; value = c.downField(fname); result <- fname match {
-      case "izumi.test.domain01.CommonFailure.Struct" =>
-        value.as[CommonFailure.Struct]
       case "izumi.test.domain01.BasicFailure" =>
         value.as[BasicFailure]
+      case "izumi.test.domain01.CommonFailure.Struct" =>
+        value.as[CommonFailure.Struct]
       case _ =>
         val cname = "izumi.test.domain01.CommonFailure"
-        val alts = List("izumi.test.domain01.CommonFailure.Struct", "izumi.test.domain01.BasicFailure").mkString(",")
+        val alts = List("izumi.test.domain01.BasicFailure", "izumi.test.domain01.CommonFailure.Struct").mkString(",")
         Left(DecodingFailure(s"Can't decode type $fname as $cname, expected one of [$alts]", value.history))
     }) yield result
   })
@@ -61,21 +61,21 @@ object CommonFailure extends CommonFailureCirce {
     }
     implicit class StructExtensions(override protected val _value: CommonFailure.Struct) extends izumi.idealingua.runtime.IRTConversions[CommonFailure.Struct]
   }
-  implicit object CommonFailure_downcast_extend_CommonFailureStruct extends izumi.idealingua.runtime.IRTExtend[CommonFailure, CommonFailure.Struct] {
-    class Call(private val _value: CommonFailure) extends AnyVal {
-      def using(): CommonFailure.Struct = {
-        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        CommonFailure.Struct(code = _value.code)
-      }
-    }
-    override type INSTANTIATOR = Call
-    override def next(_value: CommonFailure): Call = new Call(_value)
-  }
   implicit object CommonFailure_downcast_extend_BasicFailure extends izumi.idealingua.runtime.IRTExtend[CommonFailure, BasicFailure] {
     class Call(private val _value: CommonFailure) extends AnyVal {
       def using(): BasicFailure = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
         BasicFailure(code = _value.code)
+      }
+    }
+    override type INSTANTIATOR = Call
+    override def next(_value: CommonFailure): Call = new Call(_value)
+  }
+  implicit object CommonFailure_downcast_extend_CommonFailureStruct extends izumi.idealingua.runtime.IRTExtend[CommonFailure, CommonFailure.Struct] {
+    class Call(private val _value: CommonFailure) extends AnyVal {
+      def using(): CommonFailure.Struct = {
+        assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+        CommonFailure.Struct(code = _value.code)
       }
     }
     override type INSTANTIATOR = Call

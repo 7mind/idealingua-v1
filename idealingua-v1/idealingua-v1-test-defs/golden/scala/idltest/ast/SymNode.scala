@@ -67,10 +67,10 @@ object SymNode extends SymNodeCirce {
   }
   implicit object SymNode_downcast_extend_TSymNodeStruct extends izumi.idealingua.runtime.IRTExtend[SymNode, TSymNode.Struct] {
     class Call(private val _value: SymNode) extends AnyVal {
-      def using(typeinfo: TypeInfo): TSymNode.Struct = {
+      def using(tpe: Type): TSymNode.Struct = {
         assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-        assert(typeinfo.asInstanceOf[_root_.scala.AnyRef] ne null)
-        TSymNode.Struct(lit = _value.lit, tpe = typeinfo.tpe)
+        assert(tpe.asInstanceOf[_root_.scala.AnyRef] ne null)
+        TSymNode.Struct(lit = _value.lit, tpe = tpe)
       }
     }
     override type INSTANTIATOR = Call
