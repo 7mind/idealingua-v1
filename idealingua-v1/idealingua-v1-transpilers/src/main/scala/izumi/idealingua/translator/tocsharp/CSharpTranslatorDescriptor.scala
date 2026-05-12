@@ -7,6 +7,7 @@ import izumi.idealingua.model.typespace.verification.VerificationRule
 import izumi.idealingua.model.typespace.verification.rules.ReservedKeywordRule
 import izumi.idealingua.translator.CompilerOptions.CSharpTranslatorOptions
 import izumi.idealingua.translator._
+import izumi.idealingua.translator.tocsharp.domain.DomainCSharpTranslator
 import izumi.idealingua.translator.tocsharp.extensions.NUnitExtension
 import izumi.idealingua.translator.tocsharp.layout.CSharpLayouter
 
@@ -30,7 +31,11 @@ object CSharpTranslatorDescriptor extends TranslatorDescriptor[CSharpTranslatorO
     domain: izumi.idealingua.typer.ir.Domain,
     parsed: izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved,
     options: UntypedCompilerOptions,
-  ): Translator = throw new NotImplementedError("CSharp Domain-consuming translator pending IMPL-7a.2/7b/7c")
+  ): Translator = {
+    val typed     = typedOptions(options)
+    val withNUnit = if (typed.manifest.enableNUnit && !typed.extensions.contains(NUnitExtension)) typed.copy(extensions = typed.extensions :+ NUnitExtension) else typed
+    new DomainCSharpTranslator(domain, parsed, withNUnit)
+  }
 
   override def rules: Seq[VerificationRule] = Seq(
     ReservedKeywordRule.warning("c#", keywords)

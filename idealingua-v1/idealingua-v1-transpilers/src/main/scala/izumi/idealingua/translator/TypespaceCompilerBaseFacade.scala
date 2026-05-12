@@ -1,7 +1,7 @@
 package izumi.idealingua.translator
 
 import izumi.idealingua.model.loader.LoadedDomain
-import izumi.idealingua.translator.compat.{DomainAsTypespace, NewTyperPipeline}
+import izumi.idealingua.translator.compat.NewTyperPipeline
 import izumi.idealingua.translator.tocsharp.CSharpTranslatorDescriptor
 import izumi.idealingua.translator.toscala.ScalaTranslatorDescriptor
 import izumi.idealingua.translator.totypescript.TypescriptTranslatorDescriptor
@@ -15,14 +15,12 @@ class TypespaceCompilerBaseFacade(options: UntypedCompilerOptions) {
           case TyperImpl.Legacy =>
             descriptor.make(loaded.typespace, options).translate()
           case TyperImpl.NewTyper =>
+            // IMPL-7b/7c Phase A: all three languages (Scala/TypeScript/CSharp)
+            // now have Domain-consuming translator surfaces, so the per-language
+            // match collapses. The `DomainAsTypespace` adapter is left in place
+            // for IMPL-10/11 to delete alongside the legacy adapter machinery.
             val newDomain = NewTyperPipeline.run(loaded.parsed)
-            options.language match {
-              case IDLLanguage.Scala =>
-                descriptor.makeDomain(newDomain, loaded.parsed, options).translate()
-              case _ =>
-                val adapter = new DomainAsTypespace(newDomain, loaded.typespace)
-                descriptor.make(adapter, options).translate()
-            }
+            descriptor.makeDomain(newDomain, loaded.parsed, options).translate()
         }
     }
 

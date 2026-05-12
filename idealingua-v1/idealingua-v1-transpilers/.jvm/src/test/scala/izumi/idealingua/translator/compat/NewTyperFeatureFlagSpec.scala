@@ -2,7 +2,13 @@ package izumi.idealingua.translator.compat
 
 import izumi.idealingua.il.loader.{LocalModelLoaderContext, ModelResolver}
 import izumi.idealingua.model.publishing.BuildManifest
-import izumi.idealingua.model.publishing.manifests.{ScalaBuildManifest, ScalaProjectLayout, SbtOptions}
+import izumi.idealingua.model.publishing.manifests.{
+  CSharpBuildManifest,
+  ScalaBuildManifest,
+  ScalaProjectLayout,
+  SbtOptions,
+  TypeScriptBuildManifest,
+}
 import izumi.idealingua.model.publishing.ProjectVersion
 import izumi.idealingua.translator.{IDLLanguage, TypespaceCompilerBaseFacade, TyperImpl, UntypedCompilerOptions}
 import org.scalatest.wordspec.AnyWordSpec
@@ -89,11 +95,49 @@ final class NewTyperFeatureFlagSpec extends AnyWordSpec {
       typerImpl          = impl,
     )
 
+  private def tsOptions(impl: TyperImpl): UntypedCompilerOptions =
+    UntypedCompilerOptions(
+      language           = IDLLanguage.Typescript,
+      extensions         = TypespaceCompilerBaseFacade.descriptor(IDLLanguage.Typescript).defaultExtensions,
+      target             = None,
+      manifest           = TypeScriptBuildManifest.example,
+      withBundledRuntime = false,
+      providedRuntime    = None,
+      zipOutput          = false,
+      typerImpl          = impl,
+    )
+
+  private def csOptions(impl: TyperImpl): UntypedCompilerOptions =
+    UntypedCompilerOptions(
+      language           = IDLLanguage.CSharp,
+      extensions         = TypespaceCompilerBaseFacade.descriptor(IDLLanguage.CSharp).defaultExtensions,
+      target             = None,
+      manifest           = CSharpBuildManifest.example,
+      withBundledRuntime = false,
+      providedRuntime    = None,
+      zipOutput          = false,
+      typerImpl          = impl,
+    )
+
   "TypespaceCompilerBaseFacade with TyperImpl.NewTyper" should {
     "compile a small fixture domain to Scala source via the new typer pipeline" in {
       val loaded = loadEnumsDomain()
       val out    = new TypespaceCompilerBaseFacade(optionsFor(TyperImpl.NewTyper)).compile(Seq(loaded))
       assert(out.emodules.nonEmpty, "new-typer path produced zero output modules")
+    }
+
+    // IMPL-7b Phase A: structural delegation for TypeScript.
+    "compile a small fixture domain to TypeScript via DomainTypeScriptTranslator" in {
+      val loaded = loadEnumsDomain()
+      val out    = new TypespaceCompilerBaseFacade(tsOptions(TyperImpl.NewTyper)).compile(Seq(loaded))
+      assert(out.emodules.nonEmpty, "new-typer TS path produced zero output modules")
+    }
+
+    // IMPL-7c Phase A: structural delegation for C#.
+    "compile a small fixture domain to C# via DomainCSharpTranslator" in {
+      val loaded = loadEnumsDomain()
+      val out    = new TypespaceCompilerBaseFacade(csOptions(TyperImpl.NewTyper)).compile(Seq(loaded))
+      assert(out.emodules.nonEmpty, "new-typer C# path produced zero output modules")
     }
 
     "default to TyperImpl.Legacy when typerImpl is not provided" in {
