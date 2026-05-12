@@ -31,6 +31,9 @@ final class DomainTSContext(
 
   final def extensions = options.extensions
 
-  final val aliasRenderer = new DomainTSAliasRenderer(this)
-  final val enumRenderer  = new DomainTSEnumRenderer(this)
+  final val aliasRenderer     = new DomainTSAliasRenderer(this)
+  final val enumRenderer      = new DomainTSEnumRenderer(this)
+  final val idRenderer        = new DomainTSIdRenderer(this)
+  final val compositeRenderer = new DomainTSCompositeRenderer(this)
+  final val interfaceRenderer = new DomainTSInterfaceRenderer(this)
 }
