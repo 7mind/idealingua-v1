@@ -2,6 +2,7 @@ package izumi.idealingua.translator.tocsharp.domain
 
 import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.translator.CompilerOptions.CSharpTranslatorOptions
+import izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension
 import izumi.idealingua.translator.tocsharp.tools.ModuleTools
 import izumi.idealingua.typer.ir.Domain
 
@@ -44,4 +45,11 @@ final class DomainCSContext(
   final val adtRenderer         = new DomainCSAdtRenderer(this)
   final val serviceMethodProduct = new DomainCSServiceMethodProduct(this, adtRenderer)
   final val serviceRenderer     = new DomainCSServiceRenderer(this, adtRenderer)
+
+  /** Domain-consuming counterpart of the legacy `JsonNetExtension`.
+    * Exposed as a stable handle so M5 production-swap can splice
+    * `pre*` / `post*` attributes + converter blocks into the
+    * renderer outputs without re-importing the object.
+    */
+  final val jsonNetExtension: DomainCSJsonNetExtension.type = DomainCSJsonNetExtension
 }
