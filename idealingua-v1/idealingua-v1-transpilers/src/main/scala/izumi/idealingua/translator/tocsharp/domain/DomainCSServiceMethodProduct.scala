@@ -4,23 +4,15 @@ import izumi.idealingua.model.common.TypeId.{BuzzerId, DTOId, ServiceId}
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.{Algebraic, Alternative, Singular, Struct, Void}
 import izumi.idealingua.model.il.ast.typed.SimpleStructure
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.tocsharp.CSharpImports
-import izumi.idealingua.translator.tocsharp.types.{CSharpClass => LegacyCSharpClass}
 import izumi.idealingua.typer.ir.{Domain, TypeDef => NewTypeDef}
 
 /** Per-method rendering helpers for the C# service / buzzer renderer.
   *
-  * IMPL-10-prep-Cs1: body uses `DomainCSharpType` / `DomainCSClass` /
+  * IMPL-10-prep-Cs2: body uses `DomainCSharpType` / `DomainCSClass` /
   * `DomainCSField` (Domain-backed) for renderer-internal codegen. The
-  * `Typespace` parameter is retained on the JsonNet-touching call paths
-  * (`renderServiceMethodInModel(withExtensions=true)`, `renderAlternativeImpl`,
-  * `renderMethodOutModelImpl`) because `DomainCSJsonNetExtension.post*`
-  * still operates on the legacy `CSharpClass` and reads `Typespace` for
-  * `CSharpType` predicate chains. The JsonNet port is deferred to Cs2.
-  *
-  * The legacy `CSharpClass` is constructed at the JsonNet splice site
-  * only — the renderer's own emit body uses `DomainCSClass`.
+  * JsonNet extension is itself fully Domain-backed (Cs2), so no
+  * `Typespace` parameter is threaded anywhere on the new-typer path.
   */
 final class DomainCSServiceMethodProduct(ctx: DomainCSContext, adtRenderer: DomainCSAdtRenderer) {
 
@@ -88,14 +80,14 @@ final class DomainCSServiceMethodProduct(ctx: DomainCSContext, adtRenderer: Doma
   // -- Models --------------------------------------------------------------
 
   def renderServiceMethodInModel(i: DTOId, structure: SimpleStructure)(implicit imports: CSharpImports, domain: Domain): String =
-    renderServiceMethodInModel(i, structure, withExtensions = false, tsForJsonNet = None)
+    renderServiceMethodInModel(i, structure, withExtensions = false)
 
   /** When `withExtensions = true`, splices the JsonNet pre/post around the
-    * per-method I/O DTO emission. The JsonNet extension still consumes
-    * legacy `CSharpClass` + `Typespace` (Cs2 scope), so the caller threads
-    * `tsForJsonNet`.
+    * per-method I/O DTO emission. Both renderer-internal codegen and the
+    * JsonNet extension are Domain-backed (Cs2), so no `Typespace` is
+    * threaded on this path.
     */
-  def renderServiceMethodInModel(i: DTOId, structure: SimpleStructure, withExtensions: Boolean, tsForJsonNet: Option[Typespace])(
+  def renderServiceMethodInModel(i: DTOId, structure: SimpleStructure, withExtensions: Boolean)(
     implicit imports: CSharpImports,
     domain: Domain,
   ): String = {
@@ -106,17 +98,8 @@ final class DomainCSServiceMethodProduct(ctx: DomainCSContext, adtRenderer: Doma
          |${csClass.render(withWrapper = true, withSlices = false, withRTTI = true)}
          |""".stripMargin
     } else {
-      val ts = tsForJsonNet.getOrElse(
-        throw new IllegalStateException("JsonNet splice requested without Typespace (Cs2 will eliminate this dependency)")
-      )
-      // The JsonNet extension still consumes legacy CSharpClass / Typespace.
-      // Build a legacy CSharpClass with the same shape as the Domain one for
-      // the JsonNet splice. This is the only place the legacy converter
-      // family is touched in the renderer body; Cs2 will eliminate it.
-      implicit val _ts: Typespace = ts
-      val legacyCsClass = LegacyCSharpClass(i, structure)
-      val pre  = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.preStruct(legacyCsClass.id.name)
-      val post = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.postStruct(ctx.domain, legacyCsClass.id.name, legacyCsClass)
+      val pre  = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.preStruct(csClass.id.name)
+      val post = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.postStruct(ctx.domain, csClass.id.name, csClass)
       s"""$pre
          |${csClass.render(withWrapper = true, withSlices = false, withRTTI = true)}
          |$post""".stripMargin
@@ -126,34 +109,31 @@ final class DomainCSServiceMethodProduct(ctx: DomainCSContext, adtRenderer: Doma
   def renderServiceMethodOutModel(serviceId: ServiceId, name: String, out: DefMethod.Output)(
     implicit imports: CSharpImports,
     domain: Domain,
-  ): String = renderServiceMethodOutModel(serviceId, name, out, withExtensions = false, tsForJsonNet = None)
+  ): String = renderServiceMethodOutModel(serviceId, name, out, withExtensions = false)
 
-  def renderServiceMethodOutModel(serviceId: ServiceId, name: String, out: DefMethod.Output, withExtensions: Boolean, tsForJsonNet: Option[Typespace])(
+  def renderServiceMethodOutModel(serviceId: ServiceId, name: String, out: DefMethod.Output, withExtensions: Boolean)(
     implicit imports: CSharpImports,
     domain: Domain,
-  ): String = renderMethodOutModelImpl(DTOId(serviceId, name), name, out, withExtensions, tsForJsonNet)
+  ): String = renderMethodOutModelImpl(DTOId(serviceId, name), name, out, withExtensions)
 
   def renderBuzzerMethodOutModel(buzzerId: BuzzerId, name: String, out: DefMethod.Output)(
     implicit imports: CSharpImports,
     domain: Domain,
-  ): String = renderBuzzerMethodOutModel(buzzerId, name, out, withExtensions = false, tsForJsonNet = None)
+  ): String = renderBuzzerMethodOutModel(buzzerId, name, out, withExtensions = false)
 
-  def renderBuzzerMethodOutModel(buzzerId: BuzzerId, name: String, out: DefMethod.Output, withExtensions: Boolean, tsForJsonNet: Option[Typespace])(
+  def renderBuzzerMethodOutModel(buzzerId: BuzzerId, name: String, out: DefMethod.Output, withExtensions: Boolean)(
     implicit imports: CSharpImports,
     domain: Domain,
-  ): String = renderMethodOutModelImpl(DTOId(buzzerId, name), name, out, withExtensions, tsForJsonNet)
+  ): String = renderMethodOutModelImpl(DTOId(buzzerId, name), name, out, withExtensions)
 
-  private def renderMethodOutModelImpl(dtoId: DTOId, name: String, out: DefMethod.Output, withExtensions: Boolean, tsForJsonNet: Option[Typespace])(
+  private def renderMethodOutModelImpl(dtoId: DTOId, name: String, out: DefMethod.Output, withExtensions: Boolean)(
     implicit imports: CSharpImports,
     domain: Domain,
   ): String = out match {
-    case st: Struct => renderServiceMethodInModel(dtoId, st.struct, withExtensions, tsForJsonNet)
+    case st: Struct => renderServiceMethodInModel(dtoId, st.struct, withExtensions)
     case al: Algebraic =>
       if (!withExtensions) adtRenderer.renderAdtImpl(name, al.alternatives, renderUsings = false)
       else {
-        val ts = tsForJsonNet.getOrElse(
-          throw new IllegalStateException("JsonNet splice requested without Typespace (Cs2 will eliminate this dependency)")
-        )
         val syntheticAdt = NewTypeDef.Adt(
           izumi.idealingua.model.common.TypeId.AdtId(
             izumi.idealingua.model.common.TypePath(izumi.idealingua.model.common.DomainId.Undefined, Seq.empty),
@@ -163,27 +143,27 @@ final class DomainCSServiceMethodProduct(ctx: DomainCSContext, adtRenderer: Doma
           izumi.idealingua.model.il.ast.typed.NodeMeta.empty,
         )
         val pre  = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.preAdt(syntheticAdt)
-        val post = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.postAdt(syntheticAdt, ts, imports)
+        val post = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.postAdt(syntheticAdt, imports)
         adtRenderer.renderAdtImpl(name, al.alternatives, renderUsings = false, preSplice = pre, postSplice = post)
       }
     case si: Singular    => s"// ${si.typeId}"
     case _: Void         => ""
-    case at: Alternative => renderAlternativeImpl(dtoId, name, at, withExtensions, tsForJsonNet)
+    case at: Alternative => renderAlternativeImpl(dtoId, name, at, withExtensions)
   }
 
-  private def renderAlternativeImpl(structId: DTOId, name: String, alternative: Alternative, withExtensions: Boolean, tsForJsonNet: Option[Typespace])(
+  private def renderAlternativeImpl(structId: DTOId, name: String, alternative: Alternative, withExtensions: Boolean)(
     implicit im: CSharpImports,
     domain: Domain,
   ): String = {
     val left = alternative.failure match {
       case al: Algebraic => adtRenderer.renderAdtImpl(renderServiceMethodAlternativeOutput(name, alternative, success = false), al.alternatives, renderUsings = false)
-      case st: Struct    => renderServiceMethodInModel(DTOId(structId.path, structId.name + "Failure"), st.struct, withExtensions, tsForJsonNet)
+      case st: Struct    => renderServiceMethodInModel(DTOId(structId.path, structId.name + "Failure"), st.struct, withExtensions)
       case _             => ""
     }
 
     val right = alternative.success match {
       case al: Algebraic => adtRenderer.renderAdtImpl(renderServiceMethodAlternativeOutput(name, alternative, success = true), al.alternatives, renderUsings = false)
-      case st: Struct    => renderServiceMethodInModel(DTOId(structId.path, structId.name + "Success"), st.struct, withExtensions, tsForJsonNet)
+      case st: Struct    => renderServiceMethodInModel(DTOId(structId.path, structId.name + "Success"), st.struct, withExtensions)
       case _             => ""
     }
 

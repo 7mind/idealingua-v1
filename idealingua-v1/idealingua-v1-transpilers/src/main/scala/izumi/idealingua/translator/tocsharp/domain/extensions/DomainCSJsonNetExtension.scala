@@ -6,13 +6,11 @@ import izumi.idealingua.model.common.{Generic, Primitive, TypeId}
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.{Alternative, Singular}
 import izumi.idealingua.model.problems.IDLException
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.tocsharp.CSharpImports
-import izumi.idealingua.translator.tocsharp.domain.DomainCSStruct
-import izumi.idealingua.translator.tocsharp.types.{CSharpClass, CSharpField, CSharpType}
+import izumi.idealingua.translator.tocsharp.domain.{DomainCSClass, DomainCSField, DomainCSStruct, DomainCSharpType}
 import izumi.idealingua.typer.ir.{Domain, FlatStruct, TypeDef => NewTypeDef}
 
-/** PR-02 IMPL-7c Phase B M4: new-IR port of `JsonNetExtension`.
+/** PR-02 IMPL-10-prep-Cs2: Domain-consuming `JsonNetExtension`.
   *
   * Wire-format-critical. For each `TypeDef.Dto` / `Interface` / `Identifier`
   * / `Adt` / `Enum`, emits the `[JsonConverter(typeof(...))]` attribute
@@ -36,11 +34,11 @@ import izumi.idealingua.typer.ir.{Domain, FlatStruct, TypeDef => NewTypeDef}
   *    target, so no recursion needed (the alias-target may still be a
   *    `Generic`, which is handled by the recursive value-encoding cases).
   *
-  * `Typespace` is threaded per-call for `CSharpType(...).renderType(...)`
-  * / `renderFromString(...)` — `CSharpType` reads `ts.dealias` and
-  * `ts.inheritance.parentsInherited` for `renderType` paths that touch
-  * inheritance (used in `prepareReadProperty` for nested types).
-  * This mirrors the renderer M1–M3 convention.
+  * Cs2 removes the last `Typespace` dependency: the post-model converter
+  * bodies now construct `DomainCSharpType` (Domain-backed) and consume
+  * `DomainCSClass` / `DomainCSField` exclusively. Implicit threading is
+  * `(implicit im: CSharpImports, domain: Domain)` — same shape the
+  * renderers already use.
   *
   * `TBLOB` paths preserve the legacy `???` defects (legacy `:188, 241, 351`).
   * Per Q3 lock the wire format is base64-string for all three languages;
@@ -83,11 +81,7 @@ object DomainCSJsonNetExtension {
 
   /** Legacy emits the same attribute for both the interface itself AND
     * for its synthetic impl-DTO (`DTO(eid, ...)` in `renderInterface :365`,
-    * spliced via `${ext.preModelEmit(ctx, dto)}` at `:378`). The new
-    * `DomainCSInterfaceRenderer` doesn't currently splice this — M5
-    * production-swap will. For now we expose the impl-DTO attribute as
-    * a helper so the test harness and the future renderer can both
-    * reach it.
+    * spliced via `${ext.preModelEmit(ctx, dto)}` at `:378`).
     */
   def preInterfaceImplStruct(i: NewTypeDef.Interface): String = {
     val eid           = DomainCSStruct.implId(i.id)
@@ -139,16 +133,16 @@ object DomainCSJsonNetExtension {
        |}
      """.stripMargin
 
-  def postDto(domain: Domain, i: NewTypeDef.Dto, ts: Typespace, im: CSharpImports): String = {
-    implicit val _ts: Typespace     = ts
+  def postDto(domain: Domain, i: NewTypeDef.Dto, im: CSharpImports): String = {
     implicit val _im: CSharpImports = im
+    implicit val _domain: Domain    = domain
 
     val flat = domain.flattenedStructs.getOrElse(
       i.id,
       FlatStruct(i.id, List.empty, List.empty, List.empty),
     )
     val structure = DomainCSStruct.fromFlat(i.id, flat, i.struct.superclasses, domain)
-    val struct    = CSharpClass(i.id, i.id.name, structure, List.empty)
+    val struct    = DomainCSClass(i.id, i.id.name, structure, List.empty)
     val converterName = implIfaceOf(domain, i.id).map(p => p.name + i.id.name).getOrElse(i.id.name)
     renderStructConverter(domain, converterName, struct)
   }
@@ -186,9 +180,9 @@ object DomainCSJsonNetExtension {
     * `JsonNetExtension.postModelEmit(ctx, i: DTO)` produces when the
     * `implIface.isDefined` branch fires.
     */
-  def postInterfaceImplStruct(domain: Domain, i: NewTypeDef.Interface, ts: Typespace, im: CSharpImports): String = {
-    implicit val _ts: Typespace     = ts
+  def postInterfaceImplStruct(domain: Domain, i: NewTypeDef.Interface, im: CSharpImports): String = {
     implicit val _im: CSharpImports = im
+    implicit val _domain: Domain    = domain
 
     val eid           = DomainCSStruct.implId(i.id)
     val converterName = i.id.name + eid.name
@@ -202,12 +196,11 @@ object DomainCSJsonNetExtension {
     // `struct.fields` to write/read JSON properties, so the iface
     // structure (which already carries all inherited fields, like the
     // impl-struct) gives a byte-equal serializer body.
-    val struct = CSharpClass(eid, converterName, ifaceStruct, List(i.id))
+    val struct = DomainCSClass(eid, converterName, ifaceStruct, List(i.id))
     renderStructConverter(domain, converterName, struct)
   }
 
-  def postAdt(i: NewTypeDef.Adt, ts: Typespace, im: CSharpImports): String = {
-    implicit val _ts: Typespace     = ts
+  def postAdt(i: NewTypeDef.Adt, im: CSharpImports)(implicit domain: Domain): String = {
     implicit val _im: CSharpImports = im
     s"""public class ${i.id.name}_JsonNetConverter: JsonNetConverter<${i.id.name}> {
        |
@@ -236,7 +229,7 @@ object DomainCSJsonNetExtension {
        |        switch (kv.Name) {
        |${i.alternatives
         .map(m => s"""case "${m.wireId}": {
-                     |    var v = serializer.Deserialize<${CSharpType(m.typeId).renderType(true)}>(kv.Value.CreateReader());
+                     |    var v = serializer.Deserialize<${DomainCSharpType(m.typeId).renderType(true)}>(kv.Value.CreateReader());
                      |    return new ${i.id.name}.${m.typename}(v);
                      |}
            """.stripMargin).mkString("\n").shift(12)}
@@ -248,11 +241,10 @@ object DomainCSJsonNetExtension {
      """.stripMargin
   }
 
-  def postAlternative(name: String, alternative: Alternative, leftType: TypeId, rightType: TypeId, ts: Typespace, im: CSharpImports): String = {
-    implicit val _ts: Typespace     = ts
+  def postAlternative(name: String, alternative: Alternative, leftType: TypeId, rightType: TypeId, im: CSharpImports)(implicit domain: Domain): String = {
     implicit val _im: CSharpImports = im
-    val left  = CSharpType(leftType).renderType(true)
-    val right = CSharpType(rightType).renderType(true)
+    val left  = DomainCSharpType(leftType).renderType(true)
+    val right = DomainCSharpType(rightType).renderType(true)
     s"""public class ${name}_JsonNetConverter: JsonNetConverter<$name> {
        |
        |$unityScriptingAttribute
@@ -312,7 +304,7 @@ object DomainCSJsonNetExtension {
     * critical: the JSON converter is the only way the C# leg can
     * round-trip a method I/O struct.
     */
-  def postStruct(domain: Domain, name: String, struct: CSharpClass)(implicit im: CSharpImports, ts: Typespace): String =
+  def postStruct(domain: Domain, name: String, struct: DomainCSClass)(implicit im: CSharpImports): String =
     renderStructConverter(domain, name, struct)
 
   // ---- imports ----------------------------------------------------------
@@ -329,7 +321,7 @@ object DomainCSJsonNetExtension {
     domain.parents.getOrElse(dtoId, Set.empty).find(p => DomainCSStruct.implId(p) == dtoId)
   }
 
-  private def renderStructConverter(domain: Domain, name: String, struct: CSharpClass)(implicit im: CSharpImports, ts: Typespace): String = {
+  private def renderStructConverter(domain: Domain, name: String, struct: DomainCSClass)(implicit im: CSharpImports): String = {
     val currentDomain = struct.id.uniqueDomainName
     s"""public class ${name}_JsonNetConverter: JsonNetConverter<$name> {
        |
@@ -381,18 +373,19 @@ object DomainCSJsonNetExtension {
     case _ => s"""serializer.Serialize(writer, $varName);"""
   }
 
-  private def writeProperty(domain: Domain, f: CSharpField)(implicit im: CSharpImports, ts: Typespace): String =
+  private def writeProperty(domain: Domain, f: DomainCSField)(implicit im: CSharpImports): String =
     writePropertyValue(domain, "v." + f.renderMemberName(), f.tp, Some(f.name))
 
-  private def writePropertyValue(domain: Domain, src: String, t: CSharpType, key: Option[String] = None, depth: Int = 1)(implicit im: CSharpImports, ts: Typespace): String = {
+  private def writePropertyValue(domain: Domain, src: String, t: DomainCSharpType, key: Option[String] = None, depth: Int = 1)(implicit im: CSharpImports): String = {
+    implicit val _domain: Domain = domain
     t.id match {
       case g: Generic.TOption =>
-        val optionType = CSharpType(g.valueType)
+        val optionType = DomainCSharpType(g.valueType)
         s"""if (${if (optionType.isNullable) src + " != null" else src + ".HasValue"}) {
            |${writePropertyValue(domain, if (optionType.isNullable) src else src + ".Value", optionType, key).shift(4)}
            |}
          """.stripMargin
-      case al: AliasId => writePropertyValue(domain, src, CSharpType(domain.aliases.getOrElse(al, al)), key, depth)
+      case al: AliasId => writePropertyValue(domain, src, DomainCSharpType(domain.aliases.getOrElse(al, al)), key, depth)
       case _ =>
         (if (key.isDefined) s"""writer.WritePropertyName("${key.get}");\n""" else "") + (
           t.id match {
@@ -403,7 +396,7 @@ object DomainCSJsonNetExtension {
                   s"""writer.WriteStartObject();
                      |foreach(var $iter in $src) {
                      |    writer.WritePropertyName($iter.Key.ToString());
-                     |${writePropertyValue(domain, s"$iter.Value", CSharpType(m.valueType), depth = depth + 1).shift(4)}
+                     |${writePropertyValue(domain, s"$iter.Value", DomainCSharpType(m.valueType), depth = depth + 1).shift(4)}
                      |}
                      |writer.WriteEndObject();
                  """.stripMargin
@@ -411,7 +404,7 @@ object DomainCSJsonNetExtension {
                   val iter = s"lv${if (depth > 1) depth.toString else ""}"
                   s"""writer.WriteStartArray();
                      |foreach (var $iter in $src) {
-                     |${writePropertyValue(domain, s"$iter", CSharpType(l.valueType), depth = depth + 1).shift(4)}
+                     |${writePropertyValue(domain, s"$iter", DomainCSharpType(l.valueType), depth = depth + 1).shift(4)}
                      |}
                      |writer.WriteEndArray();
                  """.stripMargin
@@ -419,7 +412,7 @@ object DomainCSJsonNetExtension {
                   val iter = s"lv${if (depth > 1) depth.toString else ""}"
                   s"""writer.WriteStartArray();
                      |foreach (var $iter in $src) {
-                     |${writePropertyValue(domain, s"$iter", CSharpType(s.valueType), depth = depth + 1).shift(4)}
+                     |${writePropertyValue(domain, s"$iter", DomainCSharpType(s.valueType), depth = depth + 1).shift(4)}
                      |}
                      |writer.WriteEndArray();
                  """.stripMargin
@@ -499,21 +492,21 @@ object DomainCSJsonNetExtension {
       }
   }
 
-  private def prepareReadProperty(domain: Domain, f: CSharpField, currentDomain: String)(implicit im: CSharpImports, ts: Typespace): Option[String] = {
+  private def prepareReadProperty(domain: Domain, f: DomainCSField, currentDomain: String)(implicit im: CSharpImports): Option[String] = {
     if (!propertyNeedsPrepare(domain, f.tp.id)) None
     else prepareReadPropertyValue(domain, s"""json["${f.name}"]""", s"_${f.name}", f.tp, createDst = true, currentDomain)
   }
 
-  private def prepareReadPropertyValue(domain: Domain, src: String, dst: String, i: CSharpType, createDst: Boolean, currentDomain: String)(implicit
+  private def prepareReadPropertyValue(domain: Domain, src: String, dst: String, i: DomainCSharpType, createDst: Boolean, currentDomain: String)(implicit
     im: CSharpImports,
-    ts: Typespace,
   ): Option[String] = {
+    implicit val _domain: Domain = domain
     if (!propertyNeedsPrepare(domain, i.id)) None
     else {
       i.id match {
         case gm: Generic.TMap =>
-          val mk = CSharpType(gm.keyType)
-          val mt = CSharpType(gm.valueType)
+          val mk = DomainCSharpType(gm.keyType)
+          val mt = DomainCSharpType(gm.valueType)
           Some(
             s"""${if (createDst) "var " else " "}$dst = new ${i.renderType(true)}();
                |foreach (var ${dst}_kv in ((JObject)$src).Properties()) {
@@ -525,7 +518,7 @@ object DomainCSJsonNetExtension {
              """.stripMargin
           )
         case gl: Generic.TList =>
-          val lt = CSharpType(gl.valueType)
+          val lt = DomainCSharpType(gl.valueType)
           Some(
             s"""${if (createDst) "var " else " "}$dst = new ${i.renderType(true)}();
                |foreach (var ${dst}_sv in (JArray)$src) {
@@ -537,7 +530,7 @@ object DomainCSJsonNetExtension {
              """.stripMargin
           )
         case gs: Generic.TSet =>
-          val st = CSharpType(gs.valueType)
+          val st = DomainCSharpType(gs.valueType)
           Some(
             s"""${if (createDst) "var " else " "}$dst = new ${i.renderType(true)}();
                |foreach (var ${dst}_lv in (JArray)$src) {
@@ -549,7 +542,7 @@ object DomainCSJsonNetExtension {
              """.stripMargin
           )
         case o: Generic.TOption =>
-          val ot       = CSharpType(o.valueType)
+          val ot       = DomainCSharpType(o.valueType)
           val proxySrc = dst + "Raw"
           Some(s"""${i.renderType(true)} $dst = null;
                   |var $proxySrc = $src;
@@ -559,7 +552,7 @@ object DomainCSJsonNetExtension {
                   |}
              """.stripMargin)
         case al: AliasId =>
-          prepareReadPropertyValue(domain, src, dst, CSharpType(domain.aliases.getOrElse(al, al)), createDst = createDst, currentDomain)
+          prepareReadPropertyValue(domain, src, dst, DomainCSharpType(domain.aliases.getOrElse(al, al)), createDst = createDst, currentDomain)
         case _: DTOId =>
           Some(s"""${if (createDst) "var " else ""}$dst = serializer.Deserialize<${i.renderType(true)}>($src.CreateReader());""".stripMargin)
         case _ => throw new Exception("Other cases should have been checked already.")
@@ -567,7 +560,8 @@ object DomainCSJsonNetExtension {
     }
   }
 
-  private def readPropertyValue(domain: Domain, src: String, t: CSharpType, currentDomain: String)(implicit im: CSharpImports, ts: Typespace): String = {
+  private def readPropertyValue(domain: Domain, src: String, t: DomainCSharpType, currentDomain: String)(implicit im: CSharpImports): String = {
+    implicit val _domain: Domain = domain
     t.id match {
       case p: Primitive =>
         p match {
@@ -596,13 +590,13 @@ object DomainCSJsonNetExtension {
           case _: EnumId                 => s"${t.renderType(t.id.uniqueDomainName != currentDomain)}Helpers.From($src.Value<string>())"
           case _: IdentifierId           => s"${t.renderType(true)}.From($src.Value<string>())"
           case _: InterfaceId | _: AdtId => s"serializer.Deserialize<${t.renderType(true)}>($src.CreateReader())"
-          case al: AliasId               => readPropertyValue(domain, src, CSharpType(domain.aliases.getOrElse(al, al)), currentDomain)
+          case al: AliasId               => readPropertyValue(domain, src, DomainCSharpType(domain.aliases.getOrElse(al, al)), currentDomain)
           case _                         => throw new IDLException(s"Impossible readPropertyValue type: ${t.id}")
         }
     }
   }
 
-  private def readProperty(domain: Domain, f: CSharpField, currentDomain: String)(implicit im: CSharpImports, ts: Typespace): String = {
+  private def readProperty(domain: Domain, f: DomainCSField, currentDomain: String)(implicit im: CSharpImports): String = {
     if (propertyNeedsPrepare(domain, f.tp.id)) s"_${f.name}"
     else readPropertyValue(domain, s"""json["${f.name}"]""", f.tp, currentDomain)
   }

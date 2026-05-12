@@ -180,7 +180,7 @@ final class DomainCSJsonNetExtensionSpec extends AnyFunSuite {
     val expectedImports = JsonNetExtension.imports(lctx, legacyDto).toList
 
     val actualPre     = newCtx.jsonNetExtension.preDto(domain, newDto)
-    val actualPost    = newCtx.jsonNetExtension.postDto(domain, newDto, ts, im)
+    val actualPost    = newCtx.jsonNetExtension.postDto(domain, newDto, im)
     val actualImports = newCtx.jsonNetExtension.importsDto
 
     assert(expectedPre == actualPre, s"dto pre attr diverges\nlegacy=$expectedPre\nnew   =$actualPre")
@@ -209,7 +209,7 @@ final class DomainCSJsonNetExtensionSpec extends AnyFunSuite {
     val lctx = legacyCtx(ts)
 
     val expectedPost = JsonNetExtension.postModelEmit(lctx, legacyDto)
-    val actualPost   = newCtx.jsonNetExtension.postDto(domain, newDto, ts, im)
+    val actualPost   = newCtx.jsonNetExtension.postDto(domain, newDto, im)
 
     assert(expectedPost == actualPost, s"multi-field dto post converter diverges\nlegacy=$expectedPost\nnew   =$actualPost")
   }
@@ -230,7 +230,7 @@ final class DomainCSJsonNetExtensionSpec extends AnyFunSuite {
     val lctx = legacyCtx(ts)
 
     val expectedPost = JsonNetExtension.postModelEmit(lctx, legacyDto)
-    val actualPost   = newCtx.jsonNetExtension.postDto(domain, newDto, ts, im)
+    val actualPost   = newCtx.jsonNetExtension.postDto(domain, newDto, im)
 
     assert(expectedPost == actualPost, s"empty-dto post converter diverges\nlegacy=$expectedPost\nnew   =$actualPost")
     assert(actualPost.contains("reader.Skip();"), "empty-dto path must emit reader.Skip()")
@@ -298,7 +298,7 @@ final class DomainCSJsonNetExtensionSpec extends AnyFunSuite {
     val expectedPost = JsonNetExtension.postModelEmit(lctx, legacyDto)
 
     val actualPre  = newCtx.jsonNetExtension.preInterfaceImplStruct(newI)
-    val actualPost = newCtx.jsonNetExtension.postInterfaceImplStruct(domain, newI, ts, im)
+    val actualPost = newCtx.jsonNetExtension.postInterfaceImplStruct(domain, newI, im)
 
     assert(expectedPre == actualPre, s"iface impl-struct pre attr diverges\nlegacy=$expectedPre\nnew   =$actualPre")
     assert(expectedPost == actualPost, s"iface impl-struct post converter diverges\nlegacy=$expectedPost\nnew   =$actualPost")
@@ -324,8 +324,9 @@ final class DomainCSJsonNetExtensionSpec extends AnyFunSuite {
     val expectedPost    = JsonNetExtension.postModelEmit(lctx, legacyA)
     val expectedImports = JsonNetExtension.imports(lctx, legacyA).toList
 
+    val domain = emptyDomain(domainId).copy(userTypes = Map(adtId -> newA))
     val actualPre     = DomainCSJsonNetExtension.preAdt(newA)
-    val actualPost    = DomainCSJsonNetExtension.postAdt(newA, ts, im)
+    val actualPost    = DomainCSJsonNetExtension.postAdt(newA, im)(domain)
     val actualImports = DomainCSJsonNetExtension.importsAdt
 
     assert(expectedPre == actualPre, s"adt pre attr diverges\nlegacy=$expectedPre\nnew   =$actualPre")

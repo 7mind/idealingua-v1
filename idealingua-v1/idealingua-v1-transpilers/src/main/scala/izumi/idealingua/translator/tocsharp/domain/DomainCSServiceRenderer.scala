@@ -4,7 +4,6 @@ import izumi.fundamentals.platform.strings.IzString._
 import izumi.idealingua.model.common.TypeId.DTOId
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.Algebraic
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.tocsharp.CSharpImports
 import izumi.idealingua.translator.tocsharp.products.CogenProduct.{BuzzerProduct, ServiceProduct}
 import izumi.idealingua.typer.ir.{Domain, TypeDef => NewTypeDef}
@@ -13,28 +12,25 @@ import izumi.idealingua.typer.ir.{Domain, TypeDef => NewTypeDef}
   * `ServiceProduct` / `BuzzerProduct` the legacy
   * `CSharpTranslator.renderService` / `renderBuzzer` produces.
   *
-  * IMPL-10-prep-Cs1: body uses Domain-backed converter family. `Typespace`
-  * is still threaded (as an `Option`) into `renderServiceMethodInModel` /
-  * `renderServiceMethodOutModel` / `renderBuzzerMethodOutModel` for the
-  * JsonNet splice paths only — the JsonNet extension port is Cs2 scope.
+  * IMPL-10-prep-Cs2: body uses Domain-backed converter family AND
+  * Domain-backed JsonNet extension. `Typespace` is no longer threaded
+  * anywhere on the C# new-typer path.
   */
 final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSAdtRenderer) {
 
   private val methodProduct = new DomainCSServiceMethodProduct(ctx, adtRenderer)
 
   private var spliceJsonNet: Boolean = false
-  private var tsForJsonNet: Option[Typespace] = None
 
   // -- Service -------------------------------------------------------------
 
   def renderService(i: NewTypeDef.Service, im: CSharpImports): ServiceProduct =
-    renderService(i, im, withJsonNet = false, ts = None)
+    renderService(i, im, withJsonNet = false)
 
-  def renderService(i: NewTypeDef.Service, im: CSharpImports, withJsonNet: Boolean, ts: Option[Typespace]): ServiceProduct = {
+  def renderService(i: NewTypeDef.Service, im: CSharpImports, withJsonNet: Boolean): ServiceProduct = {
     implicit val _domain: Domain    = ctx.domain
     implicit val _im: CSharpImports = im
     spliceJsonNet = withJsonNet
-    tsForJsonNet  = ts
 
     val svc =
       s"""${renderServiceUsings(i)}
@@ -73,8 +69,8 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
 
   private def renderServiceMethodModels(i: NewTypeDef.Service, method: DefMethod)(implicit imports: CSharpImports, domain: Domain): String = method match {
     case m: DefMethod.RPCMethod =>
-      s"""${if (m.signature.input.fields.isEmpty) "" else methodProduct.renderServiceMethodInModel(DTOId(i.id, s"In${m.name.capitalize}"), m.signature.input, spliceJsonNet, tsForJsonNet)}
-         |${methodProduct.renderServiceMethodOutModel(i.id, s"Out${m.name.capitalize}", m.signature.output, spliceJsonNet, tsForJsonNet)}
+      s"""${if (m.signature.input.fields.isEmpty) "" else methodProduct.renderServiceMethodInModel(DTOId(i.id, s"In${m.name.capitalize}"), m.signature.input, spliceJsonNet)}
+         |${methodProduct.renderServiceMethodOutModel(i.id, s"Out${m.name.capitalize}", m.signature.output, spliceJsonNet)}
        """.stripMargin
   }
 
@@ -157,13 +153,12 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
   // -- Buzzer --------------------------------------------------------------
 
   def renderBuzzer(i: NewTypeDef.Buzzer, im: CSharpImports): BuzzerProduct =
-    renderBuzzer(i, im, withJsonNet = false, ts = None)
+    renderBuzzer(i, im, withJsonNet = false)
 
-  def renderBuzzer(i: NewTypeDef.Buzzer, im: CSharpImports, withJsonNet: Boolean, ts: Option[Typespace]): BuzzerProduct = {
+  def renderBuzzer(i: NewTypeDef.Buzzer, im: CSharpImports, withJsonNet: Boolean): BuzzerProduct = {
     implicit val _domain: Domain    = ctx.domain
     implicit val _im: CSharpImports = im
     spliceJsonNet = withJsonNet
-    tsForJsonNet  = ts
 
     val svc =
       s"""${renderBuzzerUsings(i)}
@@ -202,8 +197,8 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
 
   private def renderBuzzerMethodModels(i: NewTypeDef.Buzzer, method: DefMethod)(implicit imports: CSharpImports, domain: Domain): String = method match {
     case m: DefMethod.RPCMethod =>
-      s"""${if (m.signature.input.fields.isEmpty) "" else methodProduct.renderServiceMethodInModel(DTOId(i.id, s"In${m.name.capitalize}"), m.signature.input, spliceJsonNet, tsForJsonNet)}
-         |${methodProduct.renderBuzzerMethodOutModel(i.id, s"Out${m.name.capitalize}", m.signature.output, spliceJsonNet, tsForJsonNet)}
+      s"""${if (m.signature.input.fields.isEmpty) "" else methodProduct.renderServiceMethodInModel(DTOId(i.id, s"In${m.name.capitalize}"), m.signature.input, spliceJsonNet)}
+         |${methodProduct.renderBuzzerMethodOutModel(i.id, s"Out${m.name.capitalize}", m.signature.output, spliceJsonNet)}
        """.stripMargin
   }
 

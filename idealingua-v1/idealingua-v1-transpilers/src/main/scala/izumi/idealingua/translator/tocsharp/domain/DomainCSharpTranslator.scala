@@ -3,26 +3,19 @@ package izumi.idealingua.translator.tocsharp.domain
 import izumi.idealingua.model.il.ast.raw.defns.RawTopLevelDefn
 import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.model.output.Module
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.CompilerOptions.CSharpTranslatorOptions
-import izumi.idealingua.translator.compat.DomainTypespaceFacade
 import izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension
 import izumi.idealingua.translator.{Translated, Translator}
 import izumi.idealingua.typer.ir.{Domain => NewDomain, TypeDef => NewTypeDef}
 
 /** C# translator surface that consumes the new-typer `Domain` IR.
   *
-  * IMPL-10-prep-Cs1: the C# converter family (`DomainCSharpType`,
-  * `DomainCSClass`, `DomainCSField`) is Domain-backed; the renderers
-  * (`DomainCSAliasRenderer`, `DomainCSEnumRenderer`,
-  * `DomainCSIdRenderer`, `DomainCSCompositeRenderer`,
-  * `DomainCSInterfaceRenderer`, `DomainCSAdtRenderer`) no longer thread
-  * `Typespace`. The `DomainTypespaceFacade` is retained transitionally
-  * only to feed the legacy `JsonNetExtension`-equivalent
-  * (`DomainCSJsonNetExtension`) which still consumes legacy `CSharpType`/
-  * `CSharpClass`/`CSharpField` for the wire-format converter blocks.
-  * Cs2 will port that extension off the legacy converter and remove the
-  * façade dependency entirely.
+  * IMPL-10-prep-Cs2: the C# new-typer path is fully `Typespace`-free.
+  * The converter family (`DomainCSharpType`, `DomainCSClass`,
+  * `DomainCSField`), the renderers (`DomainCS{Alias,Enum,Id,Composite,
+  * Interface,Adt,Service}Renderer`), and the wire-format-critical
+  * `DomainCSJsonNetExtension` all consume `Domain` directly. The
+  * `DomainTypespaceFacade` is no longer instantiated on this path.
   */
 final class DomainCSharpTranslator(
   domain: NewDomain,
@@ -31,10 +24,6 @@ final class DomainCSharpTranslator(
 ) extends Translator {
 
   private val ctx = new DomainCSContext(domain, parsed, options)
-
-  // Re-derive a legacy `Typespace` only for the JsonNet extension splice
-  // calls below — the renderers themselves no longer consume it.
-  private lazy val ts: Typespace = DomainTypespaceFacade(domain, parsed)
 
   override def translate(): Translated = {
     val typesByName: Map[String, NewTypeDef] =
@@ -107,7 +96,7 @@ final class DomainCSharpTranslator(
   private def emitDto(d: NewTypeDef.Dto): Seq[Module] = {
     val im   = DomainCSImports.forTypeDef(d, d.id.path.toPackage, domain)
     val pre  = DomainCSJsonNetExtension.preDto(domain, d)
-    val post = DomainCSJsonNetExtension.postDto(domain, d, ts, im)
+    val post = DomainCSJsonNetExtension.postDto(domain, d, im)
     val product = ctx.compositeRenderer.renderDto(
       d, im,
       preSplice    = pre,
@@ -123,7 +112,7 @@ final class DomainCSharpTranslator(
     val ifacePre  = DomainCSJsonNetExtension.preInterface(i)
     val ifacePost = DomainCSJsonNetExtension.postInterface(domain, i)
     val compPre   = DomainCSJsonNetExtension.preInterfaceImplStruct(i)
-    val compPost  = DomainCSJsonNetExtension.postInterfaceImplStruct(domain, i, ts, im)
+    val compPost  = DomainCSJsonNetExtension.postInterfaceImplStruct(domain, i, im)
     val product = ctx.interfaceRenderer.renderInterface(
       i, im,
       ifacePreSplice      = ifacePre,
@@ -137,9 +126,10 @@ final class DomainCSharpTranslator(
 
   // -- ADT ----------------------------------------------------------------
   private def emitAdt(a: NewTypeDef.Adt): Seq[Module] = {
+    implicit val _domain: NewDomain = domain
     val im   = DomainCSImports.forTypeDef(a, a.id.path.toPackage, domain)
     val pre  = DomainCSJsonNetExtension.preAdt(a)
-    val post = DomainCSJsonNetExtension.postAdt(a, ts, im)
+    val post = DomainCSJsonNetExtension.postAdt(a, im)
     val product = ctx.adtRenderer.renderAdt(
       a, im,
       preSplice    = pre,
@@ -152,13 +142,13 @@ final class DomainCSharpTranslator(
   // -- Service / Buzzer ---------------------------------------------------
   private def emitService(svc: NewTypeDef.Service): Seq[Module] = {
     val im      = DomainCSImports.forService(svc, svc.id.domain.toPackage, domain)
-    val product = ctx.serviceRenderer.renderService(svc, im, withJsonNet = true, ts = Some(ts))
+    val product = ctx.serviceRenderer.renderService(svc, im, withJsonNet = true)
     ctx.modules.toSource(svc.id.domain, ctx.modules.toModuleId(svc.id), product)
   }
 
   private def emitBuzzer(bz: NewTypeDef.Buzzer): Seq[Module] = {
     val im      = DomainCSImports.forBuzzer(bz, bz.id.domain.toPackage, domain)
-    val product = ctx.serviceRenderer.renderBuzzer(bz, im, withJsonNet = true, ts = Some(ts))
+    val product = ctx.serviceRenderer.renderBuzzer(bz, im, withJsonNet = true)
     ctx.modules.toSource(bz.id.domain, ctx.modules.toModuleId(bz.id), product)
   }
 
