@@ -75,6 +75,8 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     "{idltest.inheritance}::idltest/inheritance/NotificationWithA.scala",
     "{idltest.inheritance}::idltest/inheritance/NotificationWithB.scala",
     "{idltest.inheritance}::idltest/inheritance/WithCovariance.scala",
+    "{idltest.inheritance}::idltest/inheritance/NotiBase.scala",
+    "{idltest.inheritance}::idltest/inheritance/NotiWithFile.scala",
     "{idltest.phase}::idltest/phase/Name_stored_.scala",
     "{izumi.test.domain01}::izumi/test/domain01/CommonFailure.scala",
     "{izumi.test.domain01}::izumi/test/domain01/RtestMixin2.scala",
@@ -96,6 +98,10 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     "{idltest.datainheritancetransitive}::idltest/datainheritancetransitive/CouponData.scala",
     "{idltest.ast}::idltest/ast/TIfNode.scala",
     "{idltest.ast}::idltest/ast/TLamNode.scala",
+    "{idltest.ast}::idltest/ast/BoolNode.scala",
+    "{idltest.ast}::idltest/ast/IntNode.scala",
+    "{idltest.ast}::idltest/ast/IfNode.scala",
+    "{idltest.ast}::idltest/ast/LamNode.scala",
     "{idltest.dtofields}::idltest/dtofields/PointLike.scala",
     // (B) Set iteration — singleton peer selection in cast/downcast extensions
     "{idltest.inheritance}::idltest/inheritance/CovariantA.scala",
@@ -166,8 +172,15 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *     entries (`{idltest.ast}::idltest/ast/TypeInfo.scala`,
     *     `{idltest.phase}::idltest/phase/LengthInBytes.scala`) became
     *     byte-identical as a side-effect of the parents-graph realignment.
+    *   - 2026-05-12 (Fh3: F-implementing-dtos-missing — surface descendant
+    *     interfaces' mirror DTOs as encoder-implementors in
+    *     `DomainCirceTranslatorExtensionBase.emitForInterface`): 24. The
+    *     missing-case-arms divergences (NotiBase/NotiWithFile + AST encoder
+    *     case-arm pairs BoolNode/IntNode/IfNode/LamNode) collapse to
+    *     legacy-HashMap iteration-order residuals — added to
+    *     `AcceptedDivergences` (category A).
     */
-  private val SubstantiveBaseline: Int = 30
+  private val SubstantiveBaseline: Int = 24
 
   private def keyOf(id: ModuleId): String =
     (id.path :+ id.name).mkString("/")

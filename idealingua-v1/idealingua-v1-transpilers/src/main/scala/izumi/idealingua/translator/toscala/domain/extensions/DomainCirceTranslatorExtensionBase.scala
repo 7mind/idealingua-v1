@@ -247,6 +247,30 @@ trait DomainCirceTranslatorExtensionBase {
       buf.toSet
     }
 
+    // F-implementing-dtos-missing (PR-02 IMPL-7a.2-Fh3): legacy
+    // `implementingDtos(i.id)` also includes the interface-mirror DTOs of
+    // every descendant interface — because those mirrors extend their owner
+    // via `&` and the owner extends `i.id` via `&`. The new-IR mirrors
+    // (`DTOId(Sub, "Struct")`) live as `Member.Ephemeral` and were missed by
+    // the user-DTO-only scan above. Walk every user Interface whose
+    // `interfaceClosureContains(i.id)`, and surface its mirror DTO when
+    // present in `members`.
+    val descendantMirrors: Set[DTOId] = {
+      val buf = scala.collection.mutable.LinkedHashSet.empty[DTOId]
+      ctx.domain.userTypes.values.foreach {
+        case ifc: NewTypeDef.Interface if ifc.id != i.id =>
+          if (interfaceClosureContains(ctx, ifc.id, i.id)) {
+            val mirrorId = DTOId(ifc.id, "Struct")
+            ctx.domain.members.get(mirrorId) match {
+              case Some(_: Member.Ephemeral) => val _ = buf.add(mirrorId); ()
+              case _                         => ()
+            }
+          }
+        case _ => ()
+      }
+      buf.toSet
+    }
+
     val mirrorImplementor: Option[DTOId] = {
       val mirrorId = DTOId(i.id, "Struct")
       ctx.domain.members.get(mirrorId) match {
@@ -255,7 +279,7 @@ trait DomainCirceTranslatorExtensionBase {
       }
     }
 
-    val implementors = (interfaceInheritedDtos ++ mirrorImplementor).toList.sortBy(_.toString)
+    val implementors = (interfaceInheritedDtos ++ descendantMirrors ++ mirrorImplementor).toList.sortBy(_.toString)
 
     val enc = implementors.map { c =>
       p"""case v: ${toScala(c).typeFull} => Map(${Lit.String(c.wireId)} -> v).asJsonObject"""
