@@ -84,8 +84,15 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
     // ran on the synthesized impl, prepending `AnyVal` to the impl case class
     // when its single field qualifies. Replicate by computing the predicate
     // off the synthetic flat (impl ID is not in `Domain.flattenedStructs`).
+    //
+    // Use the deduped field set (`implFields.all`) rather than raw
+    // `implFlat.fields`: when an interface re-declares a parent's same-typed
+    // field (e.g. `IA2 { & IA1; Int: i32 }` with `IA1 { Int: i32 }`), the raw
+    // flat carries both occurrences but legacy `Struct.all` (and the emitted
+    // case-class parameter list) carries only one. The AnyVal predicate must
+    // count the same set the case class actually emits.
     val implAnyvalBases: List[Init] = {
-      val all = implFlat.fields.map(_.field)
+      val all = implFields.all.map(_.field.field)
       val canBeAnyVal = all.size == 1 && all.forall(f => structFieldQualifiesForAnyVal(f.typeId))
       if (canBeAnyVal) List(ctx.conv.toScala(izumi.idealingua.model.JavaType(Seq.empty, "AnyVal")).init())
       else List.empty

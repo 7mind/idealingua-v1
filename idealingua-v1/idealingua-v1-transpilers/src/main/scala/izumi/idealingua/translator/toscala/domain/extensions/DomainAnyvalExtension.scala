@@ -45,7 +45,7 @@ object DomainAnyvalExtension {
   /** AnyVal bases for a service / buzzer method Input or Output ephemeral
     * DTO. Single-scalar inputs and Singular-output wrappers qualify. */
   def withAnyvalForMethodStruct(ctx: DomainSTContext, flat: izumi.idealingua.typer.ir.FlatStruct): List[Init] = {
-    val all = flat.fields.map(_.field)
+    val all = dedupByName(flat.fields).map(_.field)
     val ok  = all.size == 1 && all.forall(f => canBeAnyValField(ctx, f.typeId))
     doModify(ctx, "AnyVal", ok)
   }
@@ -55,7 +55,7 @@ object DomainAnyvalExtension {
     val flat = ctx.domain.flattenedStructs.get(i.id)
     val canBeAny = flat match {
       case Some(fs) =>
-        val all          = fs.fields.map(_.field)
+        val all          = dedupByName(fs.fields).map(_.field)
         val scalarOrEmpty = all.size <= 1
         scalarOrEmpty && all.forall(f => canBeAnyValField(ctx, f.typeId))
       case None => false
@@ -87,10 +87,20 @@ object DomainAnyvalExtension {
   def structCanBeAnyVal(ctx: DomainSTContext, dto: NewTypeDef.Dto): Boolean = {
     val fs = ctx.domain.flattenedStructs.get(dto.id)
     fs.exists { struct =>
-      val all = struct.fields.map(_.field)
+      val all = dedupByName(struct.fields).map(_.field)
       all.size == 1 && all.forall(f => canBeAnyValField(ctx, f.typeId))
     }
   }
+
+  /** Deduplicate a `FlatStruct.fields` list by field name. The BFS-flattener
+    * preserves every occurrence (parent + child re-declaration with the same
+    * type); the legacy `Struct.all` and the emitted case-class parameter list
+    * deduplicate them. AnyVal predicates and forProduct1 codec paths must
+    * count the deduped set, not the raw flat. */
+  private def dedupByName(
+    fields: List[izumi.idealingua.typer.ir.FlatField]
+  ): List[izumi.idealingua.typer.ir.FlatField] =
+    fields.groupBy(_.field.name).values.map(_.head).toList
 
   private def doModify(ctx: DomainSTContext, base: String, modify: Boolean): List[Init] = {
     if (modify) List(ctx.conv.toScala(JavaType(Seq.empty, base)).init())

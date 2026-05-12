@@ -344,13 +344,22 @@ trait DomainCirceTranslatorExtensionBase {
     // one scalar field qualifying for AnyVal AND we're targeting Scala 3,
     // emit a manual forProduct1 codec — circe's deriver does not handle
     // AnyVal on Scala 3.
+    //
+    // Deduplicate `flatFields` by field name before counting: when an
+    // interface re-declares a same-typed parent field (e.g. IA2 { & IA1;
+    // Int: i32 } with IA1 { Int: i32 }), the BFS-flattener carries both
+    // occurrences in `flat.fields` but the emitted case class deduplicates
+    // (see `DomainScalaStruct.fromFlat`). The AnyVal predicate must match
+    // the structure that actually appears in the generated source.
     val isScala3 = scalaVersions.exists(_.startsWith("3"))
+    val dedupedFields: List[izumi.idealingua.typer.ir.FlatField] =
+      flatFields.groupBy(_.field.name).values.map(_.head).toList
     val anyvalCase: Boolean = {
-      flatFields.size == 1 && flatFields.forall(ff => isAnyValField(ctx, ff.field.typeId))
+      dedupedFields.size == 1 && dedupedFields.forall(ff => isAnyValField(ctx, ff.field.typeId))
     }
 
     if (anyvalCase && isScala3) {
-      val singleField = flatFields.head.field
+      val singleField = dedupedFields.head.field
       val ftpe = ctx.conv.toScala(singleField.typeId).typeFull
       CirceTrait(
         s"${name}Circe",
