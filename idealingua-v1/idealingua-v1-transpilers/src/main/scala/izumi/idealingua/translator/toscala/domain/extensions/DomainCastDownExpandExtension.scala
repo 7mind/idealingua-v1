@@ -36,11 +36,22 @@ object DomainCastDownExpandExtension {
 
     implementors.flatMap { dtoId =>
       ctx.domain.flattenedStructs.get(dtoId).map { dtoFlat =>
-        // Defect #7 (IMPL-7a.2-Fa): dedup covariant duplicates by name in the
-        // DTO's flat field list so the synthesized `Cast.using(...)` factory
-        // never emits two `name =` keys for the same logical field.
-        val seen: scala.collection.mutable.LinkedHashSet[String] = scala.collection.mutable.LinkedHashSet.empty
-        val dtoFields = dtoFlat.fields.sortBy(_.distance).filter(ff => seen.add(ff.field.name)).map(_.field)
+        // Apply the legacy sort key
+        // `(distance, definedBy.toString, -definedWithIndex).reverse`
+        // via `DomainScalaStruct.fromFlat` so the synthesized
+        // `Cast.using(...)` factory orders assignments to match legacy
+        // `StructuralQueriesImpl.structure`. Plain `sortBy(_.distance)` is
+        // insufficient — when two fields share a distance (e.g. two
+        // separate ancestor interfaces both at d=2), the legacy emits in
+        // sorted-by-definedBy order, which `_.distance`-only sort does
+        // not produce.  Defect #7 dedup is folded into `fromFlat`.
+        val supers = ctx.domain.userTypes.get(dtoId) match {
+          case Some(d: NewTypeDef.Dto)       => d.struct.superclasses
+          case Some(i: NewTypeDef.Interface) => i.struct.superclasses
+          case _                              => izumi.idealingua.model.il.ast.typed.Super.empty
+        }
+        val sortedDto = izumi.idealingua.translator.toscala.domain.DomainScalaStruct.fromFlat(dtoId, dtoFlat, supers, ctx.domain)
+        val dtoFields = sortedDto.all.map(_.field)
         val ifaceFieldNames: Set[String] = ifaceFlat.map(_.name)
         val parentFields = dtoFields.filter(f => ifaceFieldNames.contains(f.name))
         val localFields  = dtoFields.filterNot(f => ifaceFieldNames.contains(f.name))

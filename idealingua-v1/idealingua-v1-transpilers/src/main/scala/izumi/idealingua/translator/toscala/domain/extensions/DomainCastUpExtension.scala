@@ -85,9 +85,14 @@ object DomainCastUpExtension {
       }
     }
 
-    // Order: self FIRST, then ancestors sorted alphabetically (matches the
-    // legacy emit order for `T_upcast_*` — self leads).
-    val parents: List[StructureId] = implId :: qualifiedAncestors.sortBy(_.toString)
+    // Order: self FIRST, then ancestors in BFS distance order (closest
+    // parent next, deepest ancestor last). Legacy `structuralParents`
+    // returns `id :: allParents(id)` in declaration/BFS order, NOT
+    // alphabetical — sorting alphabetically inverted `Struct_upcast_*`
+    // emission order for chains like
+    // NotiWithFileRevision.Struct → {Struct, NotiWithFileRevision,
+    // NotiWithFile, NotiBase}.
+    val parents: List[StructureId] = implId :: qualifiedAncestors
 
     parents.map { parentId =>
       val parentImplId: StructureId = parentId match {
@@ -203,14 +208,46 @@ object DomainCastUpExtension {
   private def structuralParents(ctx: DomainSTContext, thisId: StructureId): List[StructureId] = {
     val thisFlat = ctx.domain.flattenedStructs.get(thisId).map(_.fields.map(_.field).toSet).getOrElse(Set.empty)
 
-    val rawParents: Set[StructureId] = ctx.domain.parents.getOrElse(thisId, Set.empty).map(_.asInstanceOf[StructureId])
+    // Compute BFS-order over the structural supertype graph so the emit
+    // order respects domain declaration order (legacy `allParents`
+    // delegates to `safeParentsInherited` which prepends parents in
+    // declared `struct.superclasses.interfaces` order).
+    // Alphabetical sort (`sortBy(_.toString)`) was inverting pairs like
+    // `Point → {Metadata, IntPair}` (declared `& Metadata + IntPair`)
+    // to `IntPair < Metadata`.
+    val bfsOrder: List[InterfaceId] = {
+      val visited = scala.collection.mutable.LinkedHashSet.empty[InterfaceId]
+      val queue   = scala.collection.mutable.Queue.empty[StructureId]
+      queue.enqueue(thisId)
+      while (queue.nonEmpty) {
+        val cur = queue.dequeue()
+        val rawSupers: List[izumi.idealingua.model.common.TypeId] = ctx.domain.userTypes.get(cur) match {
+          case Some(d: NewTypeDef.Dto)       => d.struct.superclasses.interfaces ++ d.struct.superclasses.concepts
+          case Some(i: NewTypeDef.Interface) => i.struct.superclasses.interfaces ++ i.struct.superclasses.concepts
+          case _                              =>
+            ctx.domain.members.get(cur) match {
+              case Some(izumi.idealingua.typer.ir.Member.Ephemeral(eph)) =>
+                eph.struct.superclasses.interfaces ++ eph.struct.superclasses.concepts
+              case _ => Nil
+            }
+        }
+        rawSupers.foreach {
+          case iid: InterfaceId =>
+            if (visited.add(iid)) queue.enqueue(iid)
+          case sid: StructureId =>
+            queue.enqueue(sid)
+          case _ => ()
+        }
+      }
+      visited.toList
+    }
 
     // Defect #3 (IMPL-7a.2-Fc): include `thisId` in the cast-up parent
     // closure so a reflexive `T_upcast_T` instance is emitted. Legacy
     // `StructuralQueriesImpl.structuralParents` keeps `id` in
     // `allStructuralParents` — the filter `pFields.diff(thisFlat).isEmpty`
     // trivially admits self because `thisFlat.diff(thisFlat) == ∅`.
-    val ancestors = rawParents.toList
+    val ancestors: List[StructureId] = bfsOrder
       .filter(p => p != thisId)
       .filter { p =>
         ctx.domain.flattenedStructs.get(p) match {
@@ -222,7 +259,6 @@ object DomainCastUpExtension {
         }
       }
       .distinct
-      .sortBy(_.toString)
 
     // Self placed FIRST to match legacy emit order (legacy emits
     // `List(id) ++ allParents.sortBy(...)` — id is the head element).

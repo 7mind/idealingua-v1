@@ -38,6 +38,13 @@ object DomainCastSimilarExtension {
   def mkConvertersForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[Stat] =
     mkConverters(ctx, i.id)
 
+  /** Companion-object stats for `cast_into_*` helpers on the synthesized
+    * impl-struct DTO of an interface (`<I>.Struct`). Mirrors legacy
+    * `CastSimilarExtension.handleComposite` running on the impl emitted
+    * by `CompositeRenderer.defns(_, CsInterface)`. */
+  def mkConvertersForImplStruct(ctx: DomainSTContext, implId: izumi.idealingua.model.common.TypeId.DTOId): List[Stat] =
+    mkConverters(ctx, implId)
+
   private def mkConverters(ctx: DomainSTContext, thisId: StructureId): List[Stat] = {
     sameSignature(ctx, thisId).map { same =>
       val flat = ctx.domain.flattenedStructs.get(thisId)

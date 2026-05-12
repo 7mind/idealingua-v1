@@ -3,6 +3,7 @@ package izumi.idealingua.translator.toscala.domain
 import izumi.idealingua.model.il.ast.typed.{Interfaces, TypeDef => LegacyTypeDef}
 import izumi.idealingua.translator.toscala.domain.extensions.{
   DomainAnyvalExtension,
+  DomainCastSimilarExtension,
   DomainCastUpExtension,
   DomainCirceDerivationTranslatorExtension,
 }
@@ -73,6 +74,10 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
     val scalaVersions = ctx.options.manifest.sbt.scalaVersions
     val structCirce = DomainCirceDerivationTranslatorExtension.emitForImplStruct(ctx, implId, implFlat, scalaVersions)
     val structCirceInit = ctx.conv.toScala(implId).sibling(structCirce.name).init()
+    // Legacy `defaultExtensions` order: CastSimilar before CastUp. Emit
+    // `Struct_cast_into_<peer>` BEFORE `Struct_upcast_*` so the inner
+    // companion stat order matches legacy.
+    val structSims    = DomainCastSimilarExtension.mkConvertersForImplStruct(ctx, implId)
     val structUpcasts = DomainCastUpExtension.generateUpcastsForImplStruct(ctx, i.id, implId, implFlat)
 
     // AnyVal-eligibility for the impl DTO: legacy `AnyvalExtension.handleComposite`
@@ -97,7 +102,7 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
       case cp: CogenProduct[_] =>
         val typedCp = cp.asInstanceOf[CogenProduct[Defn.Class]]
         val classWithAnyVal = typedCp.defn.prependBase(implAnyvalBases)
-        val newCompanionBase = typedCp.companionBase.prependBase(structCirceInit).appendDefinitions(structUpcasts)
+        val newCompanionBase = typedCp.companionBase.prependBase(structCirceInit).appendDefinitions(structSims ++ structUpcasts)
         val newProduct = CogenProduct[Defn.Class](
           defn          = classWithAnyVal,
           companionBase = newCompanionBase,

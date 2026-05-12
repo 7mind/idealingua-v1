@@ -71,6 +71,26 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *     (4) `DomainCastSimilarExtension.sameSignature` no longer
     *     early-returns on empty signatures, matching legacy emission of
     *     `Struct_cast_into_<other-empty-DTO>` for empty-fielded mixins.
+    *   - 2026-05-12 (Fe2: cast-down sort + parent BFS order + impl-struct
+    *     peer `cast_into`): 96 → **86** (–10 modules).  Four coupled fixes:
+    *     (5) `DomainCastDownExpandExtension.constructorsForInterface` now
+    *     orders the `using(...)` assignments via `DomainScalaStruct.fromFlat`,
+    *     so multi-distance fields (e.g. `TBoolNode.Struct(tpe = …, lit = …)`)
+    *     match the legacy `(distance, definedBy, -idx).reverse` ordering.
+    *     (6) `DomainCastUpExtension.generateUpcastsForImplStruct` no longer
+    *     alphabetises `qualifiedAncestors`; it keeps BFS-distance order so
+    *     `Struct_upcast_<closest>` precedes `Struct_upcast_<deeper>`
+    *     (legacy emits parents in declaration order, not alphabetical).
+    *     (7) `DomainCastUpExtension.structuralParents` likewise replaces
+    *     `sortBy(_.toString)` with a BFS-order traversal over
+    *     `struct.superclasses.interfaces ++ concepts`, restoring `Point →
+    *     {Metadata, IntPair}` declaration order.
+    *     (8) `DomainInterfaceRenderer` now appends
+    *     `DomainCastSimilarExtension.mkConvertersForImplStruct` on the
+    *     mirror `<I>.Struct` companion, emitting
+    *     `Struct_cast_into_<peer-mirror>` entries the legacy
+    *     `defaultExtensions` chain produced on the synthesised impl DTO
+    *     (Pair1.Struct ↔ Pair2.Struct etc.).
     *
     * Remaining catalog entries (each becomes a future F-followup):
     * `cast_into` vs `downcast_extend_TStruct` naming/IRTCast-vs-IRTExtend on
@@ -81,7 +101,7 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *
     * Symmetric on Scala 2.13.18 and 3.8.3.
     */
-  private val KnownDivergenceBaseline: Int = 96
+  private val KnownDivergenceBaseline: Int = 86
 
   private def keyOf(id: ModuleId): String =
     (id.path :+ id.name).mkString("/")
