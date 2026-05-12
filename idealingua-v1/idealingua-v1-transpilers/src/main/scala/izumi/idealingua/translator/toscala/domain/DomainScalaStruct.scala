@@ -74,18 +74,37 @@ object DomainScalaStruct {
       )
     }
 
-    // Defect #7: covariant duplicate-field dedup. Group by field name,
-    // keep only the smallest-distance entry per name. This matches the
-    // legacy `Struct.all`, which carries one `ExtendedField` per name.
+    // Defect #7 / IMPL-7a.2-Fe4: field-name dedup matching legacy
+    // `StructuralQueriesImpl.NonContradictive`.
+    //
+    // Legacy `FieldExtractor.extractFields` returns
+    // `superFields ++ embeddedFields ++ thisFields`, so parent
+    // declarations (deeper distance) appear FIRST in the conflict list.
+    // The legacy `NonContradictive` branch for equal-type duplicates
+    // returns `Some(fields.head)` — the head is therefore the deepest
+    // (parent) occurrence.
+    //
+    // The new IR's BFS-flattener emits in the opposite order
+    // (`thisFields ++ embeddedFields`, self-first), so the equivalent
+    // "first-encounter in legacy order" is the entry with the LARGEST
+    // distance.  Replicate:
+    //   - Group by field name.
+    //   - If all occurrences share the same `Field` value, keep the
+    //     LARGEST-distance entry (the parent in legacy emission order).
+    //   - Otherwise (true covariant override), keep the smallest-
+    //     distance entry — the closest declaration is the type-refined
+    //     primary.
     val deduped: List[ExtendedField] = {
-      val byName = scala.collection.mutable.LinkedHashMap.empty[String, ExtendedField]
+      val byName  = scala.collection.mutable.LinkedHashMap.empty[String, scala.collection.mutable.ListBuffer[ExtendedField]]
       extendedRaw.foreach { f =>
-        byName.get(f.field.name) match {
-          case Some(prev) if prev.defn.distance <= f.defn.distance => ()
-          case _ => val _ = byName.put(f.field.name, f)
-        }
+        val buf = byName.getOrElseUpdate(f.field.name, scala.collection.mutable.ListBuffer.empty)
+        buf += f
       }
-      byName.values.toList
+      byName.values.map { occurrences =>
+        val typesEqual = occurrences.map(_.field).toSet.size == 1
+        if (typesEqual) occurrences.maxBy(_.defn.distance)
+        else occurrences.minBy(_.defn.distance)
+      }.toList
     }
 
     // Defect #5: apply the legacy sort key.

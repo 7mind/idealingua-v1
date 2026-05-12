@@ -79,6 +79,17 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *     `sortBy(_.distance)` produced own-fields-first
     *     (`Target(someInt = …, value = …)`) instead of legacy
     *     parents-first (`Target(value = …, someInt = …)`).
+    *   - 2026-05-12 (Fe4: same-type dedup picks deepest entry): 82 →
+    *     **80** (–2 modules).  `DomainScalaStruct.fromFlat` previously
+    *     deduped same-name duplicates by smallest distance unconditionally.
+    *     Legacy `StructuralQueriesImpl.NonContradictive` returns
+    *     `Some(fields.head)` when all duplicates share the same `Field`
+    *     value — and because legacy `FieldExtractor` emits
+    *     `superFields ++ embeddedFields ++ thisFields` (parents-first),
+    *     `head` is the deepest occurrence.  In the new IR the BFS-flattener
+    *     emits self-first, so the deepest entry is `occurrences.maxBy(_.distance)`.
+    *     `TestInterface3.scala` no longer reorders the trait body's
+    *     `def if1Field_overriden` / `def if1Field_inherited` declarations.
     *   - 2026-05-12 (Fe2: cast-down sort + parent BFS order + impl-struct
     *     peer `cast_into`): 96 → **86** (–10 modules).  Four coupled fixes:
     *     (5) `DomainCastDownExpandExtension.constructorsForInterface` now
@@ -109,7 +120,7 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *
     * Symmetric on Scala 2.13.18 and 3.8.3.
     */
-  private val KnownDivergenceBaseline: Int = 82
+  private val KnownDivergenceBaseline: Int = 80
 
   private def keyOf(id: ModuleId): String =
     (id.path :+ id.name).mkString("/")
