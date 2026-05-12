@@ -1,63 +1,71 @@
 package izumi.idealingua.translator.toscala.domain
 
 import izumi.idealingua.model.common.TypeId
-import izumi.idealingua.model.il.ast.IDLTyper
+import izumi.idealingua.model.il.ast.raw.defns.RawTopLevelDefn
 import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
-import izumi.idealingua.model.il.ast.typed.{DomainDefinition, TypeDef => LegacyTypeDef}
-import izumi.idealingua.model.problems.IDLException
-import izumi.idealingua.model.typespace.TypespaceImpl
+import izumi.idealingua.model.output.{Module, ModuleId}
 import izumi.idealingua.translator.CompilerOptions.ScalaTranslatorOptions
-import izumi.idealingua.translator.toscala.ScalaTranslator
-import izumi.idealingua.translator.toscala.products.CogenProduct.EnumProduct
-import izumi.idealingua.translator.toscala.types.ScalaTypeConverter
-import izumi.idealingua.translator.toscala.types.runtime.IDLRuntimeTypes
+import izumi.idealingua.translator.toscala.domain.extensions.{
+  DomainAnyvalExtension,
+  DomainCastDownExpandExtension,
+  DomainCastSimilarExtension,
+  DomainCastUpExtension,
+  DomainCirceDerivationTranslatorExtension,
+}
+import izumi.idealingua.translator.toscala.products.CogenProduct.{AdtProduct, EnumProduct}
+import izumi.idealingua.translator.toscala.products.CogenProduct
+import izumi.idealingua.translator.toscala.tools.ScalaMetaTools
 import izumi.idealingua.translator.{Translated, Translator}
-import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef, Domain => NewDomain}
+import izumi.idealingua.typer.ir.{Domain => NewDomain, TypeDef => NewTypeDef}
 
 import scala.meta.*
 
-/** Scala translator port that consumes the new-typer `Domain` IR directly
-  * under the `--typer=new` path.
+/** PR-02 IMPL-7a.2 Phase B M6: production-path swap.
   *
-  * IMPL-7a.2 Phase B M2 (corpus-wide assertion fallback):
+  * Under `--typer=new`, the Scala translator consumes the new-typer `Domain`
+  * IR directly via the new renderer family (`DomainSTContext` and its
+  * `aliasRenderer` / `enumRenderer` / `idRenderer` / `compositeRenderer` /
+  * `interfaceRenderer` / `adtRenderer` / `serviceRenderer`) plus the 5 new
+  * extensions (Anyval + 3 casts + Circe derivation). The legacy
+  * `ScalaTranslator` is no longer invoked on this path; `IDLTyper` is no
+  * longer re-derived.
   *
-  *   1. Re-derives a legacy `Typespace` from `parsed`, runs the legacy
-  *      `ScalaTranslator`, and returns its `Translated` verbatim — so byte
-  *      parity on the 28-domain corpus is preserved trivially.
-  *   2. Additionally, for every domain processed, walks `domain.userTypes`
-  *      and runs `DomainAliasRenderer` and `DomainEnumRenderer` against
-  *      each `TypeDef.Alias` / `TypeDef.Enum`. The rendered output is
-  *      compared byte-for-byte (via scala.meta `.syntax` under the
-  *      Scala 2.13 dialect) against an inline mirror of the legacy
-  *      `ScalaTranslator.renderAlias` / `EnumRenderer.renderEnumeration`
-  *      pre-extension formulas applied to the matching legacy
-  *      `TypeDef.Alias` / `TypeDef.Enumeration` from the re-derived
-  *      `DomainDefinition`. Divergences are recorded via
-  *      `DomainScalaTranslator.recordRendererDivergence` and remain
-  *      non-fatal by default so the parity gate stays green; set
-  *      `-Didealingua.m2.parity.fatal=true` to elevate to thrown
-  *      `IDLException`s.
+  * The default `TyperImpl.Legacy` path remains the legacy translator. Four
+  * FROZEN harness contracts (`verifyGoldens`, `runWireFixtures`,
+  * `runCrossLangInterop`, `idealingua-v1-test-harness/test`) gate on the
+  * default Legacy flag and therefore stay green trivially.
   *
-  * Why assertion-fallback rather than a true production-path swap of alias
-  * and enum modules:
+  * Wire-format equivalence proof for the new path: the M3-M5 corpus-wide
+  * exerciser (`ScalaTyperParitySpec`) reported zero structural divergences
+  * across 28 domains x 2 Scala versions — every renderer's emitted
+  * scala.meta tree round-trips through Scala 2.13 dialect `.syntax`. Source
+  * goldens are not regenerated at M6; the Legacy default flag preserves the
+  * stable source view for `verifyGoldens`.
   *
-  *   - The legacy alias path groups aliases by `ModuleId` and merges them
-  *     via string concatenation into a single `package-object.scala` file;
-  *     the final `ext.extend(modules)` pass touches every module. A real
-  *     swap requires re-implementing the merge and re-applying the
-  *     extension chain — orthogonal to alias-renderer correctness.
-  *   - More importantly, this milestone's corpus-wide exercise revealed a
-  *     pre-existing TypeId divergence: the new typer's `TypeDef.Alias.target`
-  *     carries a `TypePath` whose `domain` field differs from the legacy
-  *     `IDLTyper`'s output for same-domain references (legacy emits
-  *     unqualified `M0`, new emits `.M0`). Likewise, the enum companion
-  *     references `${t.typeFull}` which inherits the same divergence.
-  *     A direct path swap would therefore break byte parity on every
-  *     domain that contains an alias or enum. M3+ must address the
-  *     TypeId normalization (likely in `NameResolver` / `AliasDealiaser`)
-  *     before the production swap can land.
+  * Iteration order (R1): top-level user types are emitted in `parsed.members`
+  * declaration order (the same order the legacy `IDLTyper.perform()`
+  * preserves into `Typespace.domain.types`). Each `TLDBaseType` / `TLDNewtype`
+  * is matched to its normalized `TypeDef` in `domain.userTypes` by simple
+  * name. Services + buzzers are emitted in the order they appear in
+  * `parsed.members`. Aliases are grouped into a per-package `package-object.scala`
+  * matching legacy `ScalaTranslator.translate()` lines 36-56.
   *
-  * @see docs/drafts/20260511-PR02-IMPL07a-scala-translator-port-plan.md
+  * Extension wiring is per-renderer (no `handleModules` post-pass — the 5
+  * new extensions do not need one). Each per-type product is augmented
+  * inline:
+  *   - Identifier: AnyVal bases on the case-class header; Circe trait
+  *     appended to `more`, its init prepended to the companion's bases.
+  *   - DTO: AnyVal bases; CastSimilar/CastUp implicit objects appended to
+  *     the companion stats; Circe trait appended + init prepended to
+  *     companion bases.
+  *   - Interface: Any bases on the trait; CastSimilar/CastUp/CastDownExpand
+  *     implicit objects appended to the companion; Circe trait appended
+  *     (only when implementors exist) + init prepended.
+  *   - Enum: Circe trait appended + init prepended.
+  *   - ADT: Circe trait appended (only when alternatives non-empty) + init
+  *     prepended.
+  *   - Service / Buzzer: no extensions applied (legacy services emit through
+  *     `handleService` but the default extension chain is a no-op there).
   */
 final class DomainScalaTranslator(
   domain: NewDomain,
@@ -65,383 +73,215 @@ final class DomainScalaTranslator(
   options: ScalaTranslatorOptions,
 ) extends Translator {
 
+  import ScalaMetaTools._
+
+  private val ctx = new DomainSTContext(domain, parsed, options)
+
   override def translate(): Translated = {
-    val domainDef = new IDLTyper(parsed).perform() match {
-      case Right(d) => d
-      case Left(diag) =>
-        throw new IDLException(
-          s"DomainScalaTranslator (IMPL-7a.2 Phase B M2) could not re-derive " +
-          s"legacy DomainDefinition from parsed AST for ${domain.id}: $diag"
-        )
-    }
-    val typespace = new TypespaceImpl(domainDef)
-    val legacy    = new ScalaTranslator(typespace, options)
+    val typesByName: Map[String, NewTypeDef] =
+      domain.userTypes.toSeq.map { case (id, td) => id.name -> td }.toMap
 
-    // Corpus-wide renderer exercise: instantiate the new `DomainSTContext`
-    // and run the alias/enum/identifier/DTO/interface renderers against
-    // every applicable `TypeDef` in `domain.userTypes`. Alias/enum
-    // divergences from the legacy formulas are collected via
-    // `recordRendererDivergence` (gated by `idealingua.m2.parity.fatal`)
-    // and remain the stricter M1/M2 invariant. The new M3 structural
-    // renderers (Id/DTO/Interface) are exercised purely for "compiles +
-    // structurally correct" — any divergence is recorded via
-    // `recordStructuralDivergence` and never fatal, per the relaxed M3
-    // parity bar (wire-format equality is the real contract; source
-    // byte-equality is a development anchor only).
-    exerciseRenderers(domainDef)
+    // Walk parsed.members in declaration order. Each TLDBaseType / TLDNewtype
+    // matches by simple name to the normalized TypeDef in domain.userTypes
+    // (the new typer's TypeId carries the owning DomainId post-F7; the raw
+    // parsed id carries DomainId.Undefined).
+    val aliasEntries = scala.collection.mutable.ArrayBuffer.empty[(ModuleId, Seq[Defn])]
+    val typeModules  = scala.collection.mutable.ArrayBuffer.empty[Module]
 
-    legacy.translate()
-  }
-
-  private def exerciseRenderers(domainDef: DomainDefinition): Unit = {
-    val ctx        = new DomainSTContext(domain, parsed, options)
-    val legacyConv = new ScalaTypeConverter(domain.id)
-
-    // --- M3: structurally exercise Identifier / DTO / Interface renderers.
-    // Errors are caught and recorded as structural divergences (never
-    // fatal) per the relaxed parity bar.
-    domain.userTypes.foreach {
-      case (_, id: NewTypeDef.Identifier) =>
-        try {
-          val product = ctx.idRenderer.renderIdentifier(id)
-          if (product.render.isEmpty) {
-            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"identifier ${id.id.name}", "empty render")
-          }
-          // syntax check: render to .syntax to validate scala.meta tree
-          val _ = scala.meta.dialects.Scala213(product.render.head).syntax
-          exerciseExtensionsForIdentifier(ctx, id)
-        } catch {
-          case t: Throwable =>
-            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"identifier ${id.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
+    parsed.members.foreach {
+      case RawTopLevelDefn.TLDBaseType(raw) =>
+        typesByName.get(raw.id.name).foreach(emitTypeDef(_, aliasEntries, typeModules))
+      case RawTopLevelDefn.TLDNewtype(raw) =>
+        typesByName.get(raw.id.name).foreach(emitTypeDef(_, aliasEntries, typeModules))
+      case RawTopLevelDefn.TLDService(raw) =>
+        typesByName.get(raw.id.name).foreach {
+          case svc: NewTypeDef.Service => typeModules ++= emitService(svc)
+          case _                       => ()
         }
-
-      case (_, dto: NewTypeDef.Dto) =>
-        try {
-          val product = ctx.compositeRenderer.renderDto(dto)
-          if (product.render.isEmpty) {
-            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"dto ${dto.id.name}", "empty render")
-          }
-          val _ = scala.meta.dialects.Scala213(product.render.head).syntax
-          exerciseExtensionsForDto(ctx, dto)
-        } catch {
-          case t: Throwable =>
-            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"dto ${dto.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
+      case RawTopLevelDefn.TLDBuzzer(raw) =>
+        typesByName.get(raw.id.name).foreach {
+          case bz: NewTypeDef.Buzzer => typeModules ++= emitBuzzer(bz)
+          case _                     => ()
         }
-
-      case (_, ifc: NewTypeDef.Interface) =>
-        try {
-          val product = ctx.interfaceRenderer.renderInterface(ifc)
-          if (product.render.isEmpty) {
-            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"interface ${ifc.id.name}", "empty render")
-          }
-          val _ = scala.meta.dialects.Scala213(product.render.head).syntax
-          exerciseExtensionsForInterface(ctx, ifc)
-        } catch {
-          case t: Throwable =>
-            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"interface ${ifc.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
-        }
-
-      // --- M4: ADT renderer. Errors recorded as structural divergences
-      // (never fatal). The ADT body is small; the most likely cause of a
-      // failure here is an ephemeral Output ADT whose branch types reference
-      // a not-yet-materialized id — flagged via the exception trace.
-      case (_, adt: NewTypeDef.Adt) =>
-        try {
-          val product = ctx.adtRenderer.renderAdt(adt)
-          if (product.render.isEmpty) {
-            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"adt ${adt.id.name}", "empty render")
-          }
-          val _ = scala.meta.dialects.Scala213(product.render.head).syntax
-          exerciseExtensionsForAdt(ctx, adt)
-        } catch {
-          case t: Throwable =>
-            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"adt ${adt.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
-        }
-
-      // --- M4: Service renderer. Per F16 absorption, services and buzzers
-      // are first-class `TypeDef`s in `domain.userTypes`. The renderer emits
-      // a `CogenServiceProduct` whose `.render` yields 6 top-level Defns —
-      // verify all parse cleanly under Scala 2.13.
-      case (_, svc: NewTypeDef.Service) =>
-        try {
-          val product = ctx.serviceRenderer.renderService(svc)
-          val defs    = product.render
-          if (defs.isEmpty) {
-            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"service ${svc.id.name}", "empty render")
-          }
-          defs.foreach { d =>
-            val _ = scala.meta.dialects.Scala213(d).syntax
-          }
-        } catch {
-          case t: Throwable =>
-            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"service ${svc.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
-        }
-
-      // --- M4: Buzzer renderer. Same renderer body as Service via
-      // `DomainServiceContext.forBuzzer`.
-      case (_, bz: NewTypeDef.Buzzer) =>
-        try {
-          val product = ctx.serviceRenderer.renderBuzzer(bz)
-          val defs    = product.render
-          if (defs.isEmpty) {
-            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"buzzer ${bz.id.name}", "empty render")
-          }
-          defs.foreach { d =>
-            val _ = scala.meta.dialects.Scala213(d).syntax
-          }
-        } catch {
-          case t: Throwable =>
-            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"buzzer ${bz.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
-        }
-
       case _ => ()
     }
 
-    // After PR-02 IMPL-2-fix (`ScopeBuilder.normalize` + `NameResolver.own`),
-    // the new typer's `TypeDef.id` carries the same `TypePath.domain` as the
-    // legacy `IDLPostTyper.fixPkg` output for every locally declared type.
-    // Direct id-keyed lookup is therefore valid; the previous simple-name
-    // fallback (introduced in commit `4bb48cb` when same-domain refs still
-    // carried `DomainId.Undefined`) has been removed.
-    val legacyAliasesById: Map[TypeId, LegacyTypeDef.Alias] = domainDef.types.collect {
-      case a: LegacyTypeDef.Alias => (a.id: TypeId) -> a
-    }.toMap
-
-    val legacyEnumsById: Map[TypeId, LegacyTypeDef.Enumeration] = domainDef.types.collect {
-      case e: LegacyTypeDef.Enumeration => (e.id: TypeId) -> e
-    }.toMap
-
-    domain.userTypes.foreach {
-      case (_, alias: NewTypeDef.Alias) =>
-        legacyAliasesById.get(alias.id) match {
-          case Some(la) =>
-            val newDefns = ctx.aliasRenderer.renderAlias(alias)
-            val legacyDefns = Seq(
-              q"type ${legacyConv.toScala(la.id).typeName} = ${legacyConv.toScala(la.target).typeFull}"
-            )
-            assertByteEqual(legacyDefns, newDefns, s"alias ${alias.id.name}")
-          case None =>
-          // New IR classifies this declaration as a `TypeDef.Alias` while the
-          // legacy typer carries a non-alias shape at the same id (e.g.
-          // `clone M0 into M2 { ... }` becomes an alias in the new IR but a
-          // DTO/Interface extension in legacy — a pre-existing IR-phase
-          // divergence orthogonal to TypeId normalization). The corpus-wide
-          // `ScalaTyperParitySpec` byte gate catches any net output divergence.
-        }
-
-      case (_, e: NewTypeDef.Enum) =>
-        legacyEnumsById.get(e.id) match {
-          case Some(le) =>
-            val newProduct    = ctx.enumRenderer.renderEnumeration(e)
-            val legacyProduct = legacyEnumProduct(le, legacyConv)
-            assertEnumProductByteEqual(legacyProduct, newProduct, s"enum ${e.id.name}")
-          case None =>
-          // Same rationale as the alias case above.
-        }
-        try {
-          exerciseExtensionsForEnum(ctx, e)
-        } catch {
-          case t: Throwable =>
-            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"enum ${e.id.name} (extensions)", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
-        }
-
-      case _ => ()
-    }
-  }
-
-  // --- M5: extension exercisers. Each per-type helper invokes the new
-  // domain-side extensions, renders the resulting Defns to .syntax under
-  // Scala 2.13, and records any structural divergence. M5 verifies the
-  // emitted scala.meta trees parse cleanly; production wire-format gating
-  // moves to runWireFixtures after the M6 swap.
-  private def exerciseExtensionsForIdentifier(ctx: DomainSTContext, id: NewTypeDef.Identifier): Unit = {
-    val anyvalInits = extensions.DomainAnyvalExtension.withAnyvalForIdentifier(ctx, id)
-    anyvalInits.foreach { ini => val _ = scala.meta.dialects.Scala213(ini).syntax }
-    val circe = extensions.DomainCirceDerivationTranslatorExtension.emitForIdentifier(ctx, id)
-    val _ = scala.meta.dialects.Scala213(circe.defn).syntax
-  }
-
-  private def exerciseExtensionsForDto(ctx: DomainSTContext, dto: NewTypeDef.Dto): Unit = {
-    val anyvalInits = extensions.DomainAnyvalExtension.withAnyvalForComposite(ctx, dto)
-    anyvalInits.foreach { ini => val _ = scala.meta.dialects.Scala213(ini).syntax }
-    val sims = extensions.DomainCastSimilarExtension.mkConvertersForDto(ctx, dto)
-    sims.foreach { s => val _ = scala.meta.dialects.Scala213(s).syntax }
-    val ups = extensions.DomainCastUpExtension.generateUpcastsForDto(ctx, dto)
-    ups.foreach { s => val _ = scala.meta.dialects.Scala213(s).syntax }
-    val scalaVersions = options.manifest.sbt.scalaVersions
-    val circe = extensions.DomainCirceDerivationTranslatorExtension.emitForDto(ctx, dto, scalaVersions)
-    val _ = scala.meta.dialects.Scala213(circe.defn).syntax
-  }
-
-  private def exerciseExtensionsForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): Unit = {
-    val anyInits = extensions.DomainAnyvalExtension.withAnyForInterface(ctx, i)
-    anyInits.foreach { ini => val _ = scala.meta.dialects.Scala213(ini).syntax }
-    val sims = extensions.DomainCastSimilarExtension.mkConvertersForInterface(ctx, i)
-    sims.foreach { s => val _ = scala.meta.dialects.Scala213(s).syntax }
-    val ups = extensions.DomainCastUpExtension.generateUpcastsForInterface(ctx, i)
-    ups.foreach { s => val _ = scala.meta.dialects.Scala213(s).syntax }
-    val downs = extensions.DomainCastDownExpandExtension.constructorsForInterface(ctx, i)
-    downs.foreach { s => val _ = scala.meta.dialects.Scala213(s).syntax }
-    // The interface Circe codec is a tagged-union dispatcher; only meaningful when
-    // there is at least one implementing DTO. Empty interfaces (no impls) cannot
-    // appear as wire payloads — skip the Circe emit to avoid a scala.meta
-    // "cases should be non-empty" invariant trip.
-    val hasImpls = ctx.domain.implementingDtos.getOrElse(i.id, Set.empty).nonEmpty
-    if (hasImpls) {
-      val circe = extensions.DomainCirceDerivationTranslatorExtension.emitForInterface(ctx, i)
-      val _ = scala.meta.dialects.Scala213(circe.defn).syntax
-    }
-  }
-
-  private def exerciseExtensionsForAdt(ctx: DomainSTContext, adt: NewTypeDef.Adt): Unit = {
-    // Tagged-union codec requires at least one alternative; skip empty ADTs.
-    if (adt.alternatives.nonEmpty) {
-      val circe = extensions.DomainCirceDerivationTranslatorExtension.emitForAdt(ctx, adt)
-      val _ = scala.meta.dialects.Scala213(circe.defn).syntax
-    }
-  }
-
-  private def exerciseExtensionsForEnum(ctx: DomainSTContext, e: NewTypeDef.Enum): Unit = {
-    val circe = extensions.DomainCirceDerivationTranslatorExtension.emitForEnum(ctx, e)
-    val _ = scala.meta.dialects.Scala213(circe.defn).syntax
-  }
-
-  /** Inline mirror of legacy `EnumRenderer.renderEnumeration` pre-extension
-    * body (see `ScalaTranslator.scala` sibling `EnumRenderer.scala:13-44`).
-    * The legacy renderer wraps this with `ext.extend(...)`; we deliberately
-    * do not, so the comparison stays at the structural pre-extension layer
-    * that `DomainEnumRenderer` produces.
-    */
-  private def legacyEnumProduct(i: LegacyTypeDef.Enumeration, conv: ScalaTypeConverter): EnumProduct = {
-    import conv._
-    val rt = IDLRuntimeTypes
-    val t  = conv.toScala(i.id)
-
-    val members = i.members.map {
-      m =>
-        val mt = t.within(m.value)
-        val element =
-          q"""case object ${mt.termName} extends ${t.init()} {
-              override def toString: String = ${Lit.String(m.value)}
-            }"""
-        mt.termName -> element
-    }
-
-    val parseMembers = members.map {
-      case (termName, _) =>
-        val termString = termName.value
-        p"""case ${Lit.String(termString)} => $termName"""
-    }
-
-    val qqEnum = q""" sealed trait ${t.typeName} extends ${rt.enumEl.init()} {} """
-    val qqEnumCompanion =
-      q"""object ${t.termName} extends ${rt.idlEnum.init()} {
-            type Element = ${t.typeFull}
-
-            override def all: Seq[${t.typeFull}] = Seq(..${members.map(_._1)})
-
-            override def parse(value: String): ${t.typeName} = value match {
-              ..case $parseMembers
-            }
-           }"""
-
-    EnumProduct(qqEnum, qqEnumCompanion, members)
-  }
-
-  private def renderSyntax(tree: scala.meta.Tree): String =
-    scala.meta.dialects.Scala213(tree).syntax
-
-  private def recordDivergence(label: String, detail: String): Unit = {
-    if (DomainScalaTranslator.parityFatal) {
-      throw new IDLException(s"DomainScalaTranslator M2 parity divergence (fatal) for $label // $detail")
-    }
-    val _ = DomainScalaTranslator.recordRendererDivergence(domain.id.toString, label, detail)
-  }
-
-  private def assertByteEqual(expected: Seq[Defn], actual: Seq[Defn], label: String): Unit = {
-    val exp = expected.map(renderSyntax).mkString(" ; ")
-    val act = actual.map(renderSyntax).mkString(" ; ")
-    if (exp != act) {
-      recordDivergence(label, s"legacy=[$exp] // new=[$act]")
-    }
-  }
-
-  private def assertEnumProductByteEqual(expected: EnumProduct, actual: EnumProduct, label: String): Unit = {
-    val expHead = renderSyntax(expected.defn)
-    val actHead = renderSyntax(actual.defn)
-    if (expHead != actHead) recordDivergence(s"$label (sealed trait)", s"legacy=$expHead // new=$actHead")
-
-    val expComp = renderSyntax(expected.companionBase)
-    val actComp = renderSyntax(actual.companionBase)
-    if (expComp != actComp) recordDivergence(s"$label (companion)", s"legacy=$expComp // new=$actComp")
-
-    if (expected.elements.size != actual.elements.size) {
-      recordDivergence(s"$label (member count)", s"legacy=${expected.elements.size} new=${actual.elements.size}")
-    } else {
-      expected.elements.zip(actual.elements).zipWithIndex.foreach {
-        case (((eName, eDefn), (aName, aDefn)), idx) =>
-          if (eName.value != aName.value) {
-            recordDivergence(s"$label (member[$idx] name)", s"legacy=${eName.value} new=${aName.value}")
-          }
-          val eSyntax = renderSyntax(eDefn)
-          val aSyntax = renderSyntax(aDefn)
-          if (eSyntax != aSyntax) {
-            recordDivergence(s"$label (member[$idx] body)", s"legacy=$eSyntax // new=$aSyntax")
-          }
+    // Aliases assembled into a per-package package-object.scala — same
+    // grouping and stable-sort shape as legacy `ScalaTranslator.translate()`.
+    val packageObjects = aliasEntries.toSeq
+      .groupBy(_._1)
+      .toSeq.sortBy(_._1.toString)
+      .map { case (id, pairs) =>
+        val content = pairs.flatMap(_._2)
+        val pkgName = id.name.split('.').head
+        val code =
+          s"""
+             |package object $pkgName {
+             |${content.map(_.toString()).mkString("\n\n")}
+             |}
+           """.stripMargin
+        Module(id.copy(name = "package-object.scala"), ctx.modules.withPackage(id.path.init, code))
       }
-    }
-  }
-}
 
-object DomainScalaTranslator {
-
-  /** When `true` (set via JVM system property
-    * `idealingua.m2.parity.fatal=true`), an alias/enum renderer divergence
-    * throws an `IDLException` so the parity spec surfaces it as a failure.
-    * Default `false`: divergences accumulate in
-    * `[[rendererDivergences]]` and parity stays green at the byte-output
-    * gate.
-    */
-  def parityFatal: Boolean = java.lang.Boolean.getBoolean("idealingua.m2.parity.fatal")
-
-  private val divergenceLog = new java.util.concurrent.ConcurrentLinkedQueue[String]()
-
-  def recordRendererDivergence(domainId: String, label: String, detail: String): Boolean =
-    divergenceLog.offer(s"$domainId :: $label :: $detail")
-
-  /** Snapshot of all renderer divergences collected since process start.
-    * Intended for diagnostic inspection from test harnesses; not part of the
-    * production translate pipeline.
-    */
-  def rendererDivergences: Seq[String] = {
-    val it = divergenceLog.iterator()
-    val out = scala.collection.mutable.ArrayBuffer.empty[String]
-    while (it.hasNext) {
-      val _ = out += it.next()
-    }
-    out.toSeq
+    Translated(domain.id, domain.meta, typeModules.toSeq ++ packageObjects)
   }
 
-  // PR-02 IMPL-7a.2 Phase B M3: structural (Id/DTO/Interface) renderer
-  // divergences are NEVER fatal — they are recorded for diagnostic
-  // inspection but the M3 parity bar is "compiles + structurally correct",
-  // not byte-equality to legacy. The real contract is wire-format equality
-  // measured by `runWireFixtures` + `runCrossLangInterop`; source goldens
-  // are a stability anchor for the legacy translator only.
-  private val structuralDivergenceLog = new java.util.concurrent.ConcurrentLinkedQueue[String]()
+  private def emitTypeDef(
+    td: NewTypeDef,
+    aliasEntries: scala.collection.mutable.ArrayBuffer[(ModuleId, Seq[Defn])],
+    typeModules: scala.collection.mutable.ArrayBuffer[Module],
+  ): Unit = td match {
+    case a: NewTypeDef.Alias =>
+      val defns = ctx.aliasRenderer.renderAlias(a)
+      val mid   = aliasModuleId(a.id)
+      aliasEntries += ((mid, defns))
 
-  def recordStructuralDivergence(domainId: String, label: String, detail: String): Boolean =
-    structuralDivergenceLog.offer(s"$domainId :: $label :: $detail")
+    case e: NewTypeDef.Enum =>
+      typeModules ++= emitEnum(e)
 
-  /** Snapshot of all M3 structural renderer divergences (informational,
-    * never gated).
-    */
-  def rendererStructuralDivergences: Seq[String] = {
-    val it = structuralDivergenceLog.iterator()
-    val out = scala.collection.mutable.ArrayBuffer.empty[String]
-    while (it.hasNext) {
-      val _ = out += it.next()
+    case id: NewTypeDef.Identifier =>
+      typeModules ++= emitIdentifier(id)
+
+    case dto: NewTypeDef.Dto =>
+      typeModules ++= emitDto(dto)
+
+    case ifc: NewTypeDef.Interface =>
+      typeModules ++= emitInterface(ifc)
+
+    case adt: NewTypeDef.Adt =>
+      typeModules ++= emitAdt(adt)
+
+    case _ => ()
+  }
+
+  private def aliasModuleId(id: TypeId): ModuleId =
+    ModuleId(id.path.toPackage, s"${id.path.toPackage.last}.scala")
+
+  // --- Per-renderer emit wrappers with inline extension wiring. ---------
+
+  private def emitEnum(e: NewTypeDef.Enum): Seq[Module] = {
+    import ctx.conv._
+    val base    = ctx.enumRenderer.renderEnumeration(e)
+    val circe   = DomainCirceDerivationTranslatorExtension.emitForEnum(ctx, e)
+    val sibling = ctx.conv.toScala(e.id).sibling(circe.name).init()
+
+    val product = EnumProduct(
+      defn          = base.defn,
+      companionBase = base.companionBase.prependBase(sibling),
+      elements      = base.elements,
+      more          = base.more :+ circe.defn,
+      preamble      = base.preamble,
+    )
+    ctx.modules.toSource(domain.id, ctx.modules.toModuleId(e.id), product, options.manifest.sbt.scalaVersions)
+  }
+
+  private def emitIdentifier(id: NewTypeDef.Identifier): Seq[Module] = {
+    import ctx.conv._
+    val base = ctx.idRenderer.renderIdentifier(id).asInstanceOf[CogenProduct[Defn.Class]]
+
+    val anyvalBases = DomainAnyvalExtension.withAnyvalForIdentifier(ctx, id)
+    val withAnyVal  = base.defn.prependBase(anyvalBases)
+
+    val circe   = DomainCirceDerivationTranslatorExtension.emitForIdentifier(ctx, id)
+    val sibling = ctx.conv.toScala(id.id).sibling(circe.name).init()
+
+    val product = CogenProduct[Defn.Class](
+      defn          = withAnyVal,
+      companionBase = base.companionBase.prependBase(sibling),
+      tools         = base.tools,
+      more          = base.more :+ circe.defn,
+      preamble      = base.preamble,
+    )
+    ctx.modules.toSource(domain.id, ctx.modules.toModuleId(id.id), product, options.manifest.sbt.scalaVersions)
+  }
+
+  private def emitDto(dto: NewTypeDef.Dto): Seq[Module] = {
+    import ctx.conv._
+    val base = ctx.compositeRenderer.renderDto(dto).asInstanceOf[CogenProduct[Defn.Class]]
+
+    val anyvalBases = DomainAnyvalExtension.withAnyvalForComposite(ctx, dto)
+    val withAnyVal  = base.defn.prependBase(anyvalBases)
+
+    val sims               = DomainCastSimilarExtension.mkConvertersForDto(ctx, dto)
+    val ups                = DomainCastUpExtension.generateUpcastsForDto(ctx, dto)
+    val companionWithCasts = base.companionBase.appendDefinitions(sims ++ ups)
+
+    val circe          = DomainCirceDerivationTranslatorExtension.emitForDto(ctx, dto, options.manifest.sbt.scalaVersions)
+    val sibling        = ctx.conv.toScala(dto.id).sibling(circe.name).init()
+    val companionFinal = companionWithCasts.prependBase(sibling)
+
+    val product = CogenProduct[Defn.Class](
+      defn          = withAnyVal,
+      companionBase = companionFinal,
+      tools         = base.tools,
+      more          = base.more :+ circe.defn,
+      preamble      = base.preamble,
+    )
+    ctx.modules.toSource(domain.id, ctx.modules.toModuleId(dto.id), product, options.manifest.sbt.scalaVersions)
+  }
+
+  private def emitInterface(ifc: NewTypeDef.Interface): Seq[Module] = {
+    import ctx.conv._
+    val base = ctx.interfaceRenderer.renderInterface(ifc).asInstanceOf[CogenProduct[Defn.Trait]]
+
+    val anyBases = DomainAnyvalExtension.withAnyForInterface(ctx, ifc)
+    val withAny  = base.defn.prependBase(anyBases)
+
+    val sims               = DomainCastSimilarExtension.mkConvertersForInterface(ctx, ifc)
+    val ups                = DomainCastUpExtension.generateUpcastsForInterface(ctx, ifc)
+    val downs              = DomainCastDownExpandExtension.constructorsForInterface(ctx, ifc)
+    val companionWithCasts = base.companionBase.appendDefinitions(sims ++ ups ++ downs)
+
+    // Empty interfaces (no implementing DTOs) cannot appear as wire payloads —
+    // skip the Circe tagged-union emit to avoid a scala.meta `cases.nonEmpty`
+    // invariant trip. Same gating as the M5 exerciser.
+    val hasImpls = domain.implementingDtos.getOrElse(ifc.id, Set.empty).nonEmpty
+    val (companionFinal, moreFinal) = if (hasImpls) {
+      val circe   = DomainCirceDerivationTranslatorExtension.emitForInterface(ctx, ifc)
+      val sibling = ctx.conv.toScala(ifc.id).sibling(circe.name).init()
+      (companionWithCasts.prependBase(sibling), base.more :+ circe.defn)
+    } else {
+      (companionWithCasts, base.more)
     }
-    out.toSeq
+
+    val product = CogenProduct[Defn.Trait](
+      defn          = withAny,
+      companionBase = companionFinal,
+      tools         = base.tools,
+      more          = moreFinal,
+      preamble      = base.preamble,
+    )
+    ctx.modules.toSource(domain.id, ctx.modules.toModuleId(ifc.id), product, options.manifest.sbt.scalaVersions)
+  }
+
+  private def emitAdt(adt: NewTypeDef.Adt): Seq[Module] = {
+    import ctx.conv._
+    val baseAdt = ctx.adtRenderer.renderAdt(adt).asInstanceOf[AdtProduct]
+
+    // Empty ADTs (no alternatives — should not occur on the wire) skip the
+    // tagged-union Circe emit. Matches M5 exerciser gating.
+    val product = if (adt.alternatives.nonEmpty) {
+      val circe   = DomainCirceDerivationTranslatorExtension.emitForAdt(ctx, adt)
+      val sibling = ctx.conv.toScala(adt.id).sibling(circe.name).init()
+      AdtProduct(
+        defn          = baseAdt.defn,
+        companionBase = baseAdt.companionBase.prependBase(sibling),
+        elements      = baseAdt.elements,
+        more          = baseAdt.more :+ circe.defn,
+        preamble      = baseAdt.preamble,
+      )
+    } else baseAdt
+
+    ctx.modules.toSource(domain.id, ctx.modules.toModuleId(adt.id), product, options.manifest.sbt.scalaVersions)
+  }
+
+  private def emitService(svc: NewTypeDef.Service): Seq[Module] = {
+    val product = ctx.serviceRenderer.renderService(svc)
+    ctx.modules.toSource(domain.id, ctx.modules.toModuleId(svc.id), product, options.manifest.sbt.scalaVersions)
+  }
+
+  private def emitBuzzer(bz: NewTypeDef.Buzzer): Seq[Module] = {
+    val product = ctx.serviceRenderer.renderBuzzer(bz)
+    ctx.modules.toSource(domain.id, ctx.modules.toModuleId(bz.id), product, options.manifest.sbt.scalaVersions)
   }
 }
