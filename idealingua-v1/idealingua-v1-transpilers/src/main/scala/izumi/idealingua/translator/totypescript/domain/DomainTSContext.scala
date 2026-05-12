@@ -36,4 +36,7 @@ final class DomainTSContext(
   final val idRenderer        = new DomainTSIdRenderer(this)
   final val compositeRenderer = new DomainTSCompositeRenderer(this)
   final val interfaceRenderer = new DomainTSInterfaceRenderer(this)
+  final val adtRenderer       = new DomainTSAdtRenderer(this)
+  final val serviceMethodProduct = new DomainTSServiceMethodProduct(this, adtRenderer)
+  final val serviceRenderer   = new DomainTSServiceRenderer(this, adtRenderer)
 }
