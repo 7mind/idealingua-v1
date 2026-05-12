@@ -23,13 +23,9 @@ final class ScalaTyperParitySpec extends AnyFunSuite {
 
   /** Fixtures excluded from the parity comparison.
     *
-    * These are IR-phase divergences (Phase 6 StructuralFlattener / Phase 8
-    * ConstValueTyper / Phase 12 Validator) — not Scala translator-port
-    * divergences.
+    * These are IR-phase divergences (Phase 8 ConstValueTyper / Phase 12
+    * Validator) — not Scala translator-port divergences.
     *
-    *   - `{idltest.inheritance}`: covariant field overrides flagged
-    *     FieldNameConflict by new StructuralFlattener. Legacy accepts.
-    *     F-followup IMPL-7a.2-F2.
     *   - `{idltest.consts}`: top-level const value categories rejected
     *     by new ConstValueTyper (BadConstValue). F-followup IMPL-7a.2-F3.
     *   - `{idltest.services}`: PrimitiveAdtMember/DuplicateAdtBranch on
@@ -44,9 +40,12 @@ final class ScalaTyperParitySpec extends AnyFunSuite {
     *   - `{izumi.test.clashing}` (F4)  — sub-domain `#`-qualified refs.
     *   - `{idltest.aliases}`     (F5a) — cross-domain alias targets.
     *   - `{izumi.test.domain02}` (F5b) — selective import + identity alias.
+    *
+    * Removed 2026-05-12 after StructuralFlattener covariant-field-merge fix
+    * (`PR-02 IMPL-3-fix: StructuralFlattener allows covariant field-type override`):
+    *   - `{idltest.inheritance}` (F2) — covariant field overrides now soft-merged.
     */
   private val excludedDomainIds: Set[String] = Set(
-    "{idltest.inheritance}",
     "{idltest.consts}",
     "{idltest.services}",
   )

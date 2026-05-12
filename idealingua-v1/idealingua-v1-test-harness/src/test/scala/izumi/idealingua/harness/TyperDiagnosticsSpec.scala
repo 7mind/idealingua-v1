@@ -6,9 +6,9 @@ import org.scalatest.funsuite.AnyFunSuite
 /** PR-02 IMPL-2/3/5 diagnostics: captures the per-domain diagnostic kind +
   * originating phase for each corpus domain rejected by the new typer
   * pipeline. Complements `ScalaTyperParitySpec` (which excludes them as
-  * F-followups IMPL-7a.2-F2..F5c).
+  * F-followups IMPL-7a.2-F3/F5c).
   *
-  * The 3 expected-rejected domains are listed below. The spec is *positive*:
+  * The 2 expected-rejected domains are listed below. The spec is *positive*:
   * it asserts the new typer rejects each one and that the failure message
   * mentions the expected diagnostic kind. Captured messages are appended to
   * the assertion output so per-domain triage stays visible in CI logs.
@@ -24,6 +24,9 @@ import org.scalatest.funsuite.AnyFunSuite
   *     `{izumi.test.domain02}` (F5b) removed 2026-05-12 after the
   *     NameResolver cross-domain-scope + alias-as-mixin dealias fix landed
   *     (`PR-02 IMPL-2/3-fix`). All three are now accepted by the new typer.
+  *   - `{idltest.inheritance}` (F2) removed 2026-05-12 after the
+  *     StructuralFlattener covariant-field-merge fix landed
+  *     (`PR-02 IMPL-3-fix: StructuralFlattener allows covariant field-type override`).
   */
 final class TyperDiagnosticsSpec extends AnyFunSuite {
   private val repoRoot   = HarnessCorpus.repoRootForTests()
@@ -31,12 +34,11 @@ final class TyperDiagnosticsSpec extends AnyFunSuite {
 
   /** Per-domain expectation: id → expected diagnostic-kind substring. */
   private val expectations: Seq[(String, String)] = Seq(
-    "{idltest.inheritance}"   -> "FieldNameConflict",
     "{idltest.consts}"        -> "BadConstValue",
     "{idltest.services}"      -> "",
   )
 
-  test("new typer rejects the 3 documented F-followup domains and captures per-domain diagnostics") {
+  test("new typer rejects the 2 documented F-followup domains and captures per-domain diagnostics") {
     val fullCorpus = HarnessCorpus.loadCorpus(corpusRoot)
     val byId       = fullCorpus.map(d => d.typespace.domain.id.toString -> d).toMap
 

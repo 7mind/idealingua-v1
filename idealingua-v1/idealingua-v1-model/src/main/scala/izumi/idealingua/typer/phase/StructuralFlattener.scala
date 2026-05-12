@@ -1,7 +1,7 @@
 package izumi.idealingua.typer.phase
 
 import izumi.idealingua.model.common.TypeId._
-import izumi.idealingua.model.common.{StructureId, TypeId}
+import izumi.idealingua.model.common.{Primitive, StructureId, TypeId}
 import izumi.idealingua.model.il.ast.InputPosition
 import izumi.idealingua.typer.ir._
 
@@ -25,6 +25,16 @@ import scala.collection.mutable
   * Diagnostics:
   *   - `FieldNameConflict` — two fields with same name + incompatible types.
   *   - `MissingMixin` — supertype reference points at a non-user type.
+  *
+  * Covariant overrides (F2 / IMPL-7a.2): when the same field name appears
+  * on multiple ancestors with non-identical types, the closest (smallest
+  * BFS distance) declaration wins iff its type is a subtype of every
+  * other candidate's type — i.e. `typeId` is in the transitive parent
+  * closure of the closest declaration. This matches the legacy
+  * `StructuralQueriesImpl.NonContradictive` rule
+  * (`StructuralQueriesImpl.scala:72-99`) so a child can refine a parent
+  * field's type to a more derived structural type. Primitives admit no
+  * subtyping (legacy `isParent` requires equality).
   *
   * Per C8/L1, never throws on user input.
   */
@@ -106,11 +116,12 @@ object StructuralFlattener {
     }
 
     // ----- BFS flatten -----
+    val parentsMap: Map[TypeId, Set[InterfaceId]] = parentsBuf.toMap
     rd.userTypes.values.foreach {
       case dto: TypeDef.Dto =>
-        flatBuf.update(dto.id, flatten(dto.id, rd, directSupers, diagBuf))
+        flatBuf.update(dto.id, flatten(dto.id, rd, directSupers, parentsMap, diagBuf))
       case ifc: TypeDef.Interface =>
-        flatBuf.update(ifc.id, flatten(ifc.id, rd, directSupers, diagBuf))
+        flatBuf.update(ifc.id, flatten(ifc.id, rd, directSupers, parentsMap, diagBuf))
       case _ => ()
     }
 
@@ -125,10 +136,33 @@ object StructuralFlattener {
   private def positionOf(rd: ResolvedDomain, id: TypeId): InputPosition =
     rd.userTypes.get(id).map(_.meta.pos).getOrElse(InputPosition.Undefined)
 
+  /** Subtype predicate matching legacy `StructuralQueriesImpl.isParent`
+    * (`StructuralQueriesImpl.scala:93-99`).
+    *
+    *   - `child == ancestor` always succeeds (reflexive).
+    *   - Either side primitive → must be equal (legacy short-circuits on
+    *     `Primitive`; no subtyping between builtins).
+    *   - Otherwise `ancestor` must appear in `child`'s transitive inherited
+    *     parent set — i.e. `parentsMap(child).contains(ancestor)`.
+    *
+    * `parentsMap` carries `InterfaceId` only (structural supertypes), so an
+    * `ancestor` that is not an `InterfaceId` matches only via reflexivity.
+    */
+  private def isSubtypeOrEqual(child: TypeId, ancestor: TypeId, parentsMap: Map[TypeId, Set[InterfaceId]]): Boolean = {
+    if (child == ancestor) true
+    else if (child.isInstanceOf[Primitive] || ancestor.isInstanceOf[Primitive]) false
+    else
+      ancestor match {
+        case iid: InterfaceId => parentsMap.getOrElse(child, Set.empty).contains(iid)
+        case _                => false
+      }
+  }
+
   private def flatten(
     ownerId: StructureId,
     rd: ResolvedDomain,
     directSupers: mutable.LinkedHashMap[StructureId, List[StructureId]],
+    parentsMap: Map[TypeId, Set[InterfaceId]],
     diagBuf: mutable.ArrayBuffer[Diagnostic],
   ): FlatStruct = {
     val all     = mutable.ListBuffer.empty[FlatField]
@@ -176,8 +210,27 @@ object StructuralFlattener {
           if (types.size == 1) {
             softConflicts += FieldConflict(name, fields.toList)
           } else {
-            hardConflicts += FieldConflict(name, fields.toList)
-            diagBuf += Diagnostic.FieldNameConflict(ownerId, name, types, positionOf(rd, ownerId))
+            // Covariant-override rule (mirrors legacy NonContradictive,
+            // `StructuralQueriesImpl.scala:72-91`): sort by BFS distance
+            // ascending, take the closest declaration as the primary, and
+            // accept the merge iff every other candidate's type is in the
+            // primary type's transitive inherited closure (i.e. primary is
+            // a subtype of every other). When two candidates share the
+            // minimum distance the legacy implementation picks the first
+            // by encounter order; `sortBy` is stable, so the same order is
+            // preserved here.
+            val sorted  = fields.toList.sortBy(_.distance)
+            val primary = sorted.head
+            val rest    = sorted.tail
+            val isCovariant = rest.forall { other =>
+              isSubtypeOrEqual(primary.field.typeId, other.field.typeId, parentsMap)
+            }
+            if (isCovariant) {
+              softConflicts += FieldConflict(name, sorted)
+            } else {
+              hardConflicts += FieldConflict(name, sorted)
+              diagBuf += Diagnostic.FieldNameConflict(ownerId, name, types, positionOf(rd, ownerId))
+            }
           }
         }
     }
