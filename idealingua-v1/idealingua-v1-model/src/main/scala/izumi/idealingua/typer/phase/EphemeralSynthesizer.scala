@@ -25,12 +25,11 @@ import scala.collection.mutable
   * are auto-wrapped in a synthesized DTO `<base><Success|Failure>` carrying
   * a single `value: <branchTypeId>` field.  This keeps Phase 12
   * `AdtMembersRule` from rejecting the synthesized ADT as
-  * `PrimitiveAdtMember` while staying invisible to byte-parity (the legacy
-  * Scala renderer re-derives its own Typespace and ignores new-typer IR).
-  * See IMPL-7a.2-F5c (T1 portion).
+  * `PrimitiveAdtMember`.  See IMPL-7a.2-F5c (T1 portion).
   *
-  * Naming constants are inlined (`private val` below) — legacy
-  * `TypespaceToolsImpl` is untouched and stays alive until IMPL-10.
+  * Naming constants are inlined (`private val` below).  The legacy
+  * `TypespaceToolsImpl` (which originally owned these literals) was
+  * removed in IMPL-10d.
   *
   * Diagnostics: `EphemeralNameCollision`.
   */
