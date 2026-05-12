@@ -4,9 +4,7 @@ import izumi.idealingua.model.common.TypeId.AliasId
 import izumi.idealingua.model.il.ast.raw.defns.RawTopLevelDefn
 import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.model.output.{Module, ModuleId}
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.CompilerOptions.TypescriptTranslatorOptions
-import izumi.idealingua.translator.compat.DomainTypespaceFacade
 import izumi.idealingua.translator.totypescript.domain.extensions.{DomainTSEnumHelpersExtension, DomainTSIntrospectionExtension}
 import izumi.idealingua.translator.totypescript.products.RenderableCogenProduct
 import izumi.idealingua.translator.{Translated, Translator}
@@ -24,18 +22,15 @@ import izumi.idealingua.typer.ir.{Domain => NewDomain, TypeDef => NewTypeDef}
   * `DomainTSIntrospectionExtension`). The legacy `TypeScriptTranslator` is
   * no longer invoked on this path.
   *
-  * `Typespace` is still threaded into the per-type renderers because the
-  * `TypeScriptTypeConverter` helper reused from the legacy tree expects it
-  * (for `ts.dealias` chasing inside `deserializeCustomType` /
-  * `toCustomType` / `serializeCustom`). We re-derive it once per
-  * `translate()` via `DomainTypespaceFacade.apply(domain, parsed)`
-  * (IMPL-10-prep) for that purpose only; the renderers themselves consume
-  * only `Domain` for structural fields and now read imports via the
-  * `DomainTSImports` shim (no longer through `TypeScriptImports.apply(ts,
-  * ...)` — see IMPL-7b/7c-post). The remaining `Typespace` surface on the
-  * converter side is the last blocker for IMPL-10 (legacy-typer deletion)
-  * and is tracked as F-followup. The direct `IDLTyper` call has been
-  * lifted into the compat façade so this file no longer references it.
+  * IMPL-10-prep-Ts1 (2026-05-12): the TS path no longer holds a
+  * `Typespace`. The converter has been ported to `DomainTSTypeConverter`
+  * (carries `domain: Domain` as a field, no `Typespace` parameter); the
+  * structural renderer-level queries `ts.inheritance.parentsInherited` and
+  * `ts.structure.structure` are replaced by `DomainTSStruct.parentsInherited`
+  * and `DomainTSStruct.structureOf`; the trivial `ts.tools.implId` and
+  * `ts.dealias` calls fold into `DomainTSStruct.implId` and
+  * `DomainTSImports.dealias`. `DomainTypespaceFacade` is no longer
+  * instantiated for this path.
   *
   * Iteration order: top-level user types are emitted in `parsed.members`
   * declaration order (the same order the legacy `IDLTyper.perform()`
@@ -64,16 +59,6 @@ final class DomainTypeScriptTranslator(
 
   private val ctx = new DomainTSContext(domain, parsed, options)
 
-  // Re-derive a legacy `Typespace`-shaped value from the parsed AST so
-  // the renderers' import/converter plumbing — still routed through
-  // `TypeScriptImports` and `TypeScriptTypeConverter` — has a stable
-  // lookup surface. The new IR consolidation (F16/F17) is not yet wired
-  // through every helper in `idealingua-v1-model/types/`, so this single
-  // derivation per `translate()` is the minimum-impact swap. The
-  // `IDLTyper` invocation is encapsulated in `DomainTypespaceFacade`
-  // (IMPL-10-prep) so this file no longer imports it directly.
-  private lazy val ts: Typespace = DomainTypespaceFacade(domain, parsed)
-
   override def translate(): Translated = {
     val typesByName: Map[String, NewTypeDef] =
       domain.userTypes.toSeq.map { case (id, td) => id.name -> td }.toMap
@@ -88,14 +73,14 @@ final class DomainTypeScriptTranslator(
       case RawTopLevelDefn.TLDService(raw) =>
         typesByName.get(raw.id.name).foreach {
           case svc: NewTypeDef.Service =>
-            val product = ctx.serviceRenderer.renderService(svc, ts)
+            val product = ctx.serviceRenderer.renderService(svc)
             modules ++= ctx.modules.toSource(svc.id.domain, ctx.modules.toModuleId(svc.id), product)
           case _ => ()
         }
       case RawTopLevelDefn.TLDBuzzer(raw) =>
         typesByName.get(raw.id.name).foreach {
           case bz: NewTypeDef.Buzzer =>
-            val product = ctx.serviceRenderer.renderBuzzer(bz, ts)
+            val product = ctx.serviceRenderer.renderBuzzer(bz)
             modules ++= ctx.modules.toSource(bz.id.domain, ctx.modules.toModuleId(bz.id), product)
           case _ => ()
         }
@@ -108,7 +93,7 @@ final class DomainTypeScriptTranslator(
   private def emitTypeDef(td: NewTypeDef): Seq[Module] = {
     val product: RenderableCogenProduct = td match {
       case a: NewTypeDef.Alias =>
-        ctx.aliasRenderer.renderAlias(a, ts)
+        ctx.aliasRenderer.renderAlias(a)
 
       case e: NewTypeDef.Enum =>
         val base    = ctx.enumRenderer.renderEnumeration(e)
@@ -116,19 +101,19 @@ final class DomainTypeScriptTranslator(
         DomainTSIntrospectionExtension.handleEnum(options, e, helpers)
 
       case id: NewTypeDef.Identifier =>
-        val base = ctx.idRenderer.renderIdentifier(id, ts)
+        val base = ctx.idRenderer.renderIdentifier(id)
         DomainTSIntrospectionExtension.handleIdentifier(domain, options, ctx.conv, id, base)
 
       case dto: NewTypeDef.Dto =>
-        val base = ctx.compositeRenderer.renderDto(dto, ts)
+        val base = ctx.compositeRenderer.renderDto(dto)
         DomainTSIntrospectionExtension.handleDTO(domain, options, ctx.conv, dto, base)
 
       case ifc: NewTypeDef.Interface =>
-        val base = ctx.interfaceRenderer.renderInterface(ifc, ts)
+        val base = ctx.interfaceRenderer.renderInterface(ifc)
         DomainTSIntrospectionExtension.handleInterface(domain, options, ctx.conv, ifc, base)
 
       case adt: NewTypeDef.Adt =>
-        val base = ctx.adtRenderer.renderAdt(adt, ts)
+        val base = ctx.adtRenderer.renderAdt(adt)
         DomainTSIntrospectionExtension.handleAdt(options, domain, adt, base)
 
       case _ => RenderableCogenProduct.empty

@@ -122,6 +122,8 @@ final class DomainTSAliasRendererSpec extends AnyFunSuite {
     val _ = assert(expected.preamble == actual.preamble, s"$label: preamble diverges")
   }
 
+  private val legacyConv = new izumi.idealingua.translator.totypescript.types.TypeScriptTypeConverter()
+
   test("alias to primitive: byte-equal to legacy") {
     val ctxNew = newCtxFor(domainId)
     val ts     = legacyTypespaceFor(domainId)
@@ -130,8 +132,8 @@ final class DomainTSAliasRendererSpec extends AnyFunSuite {
     val newAlias    = NewTypeDef.Alias(aliasId, Primitive.TString, emptyMeta)
     val legacyAlias = LegacyTypeDef.Alias(aliasId, Primitive.TString, emptyMeta)
 
-    val actual   = ctxNew.aliasRenderer.renderAlias(newAlias, ts)
-    val expected = legacyRender(legacyAlias, ctxNew.conv, ts)
+    val actual   = ctxNew.aliasRenderer.renderAlias(newAlias)
+    val expected = legacyRender(legacyAlias, legacyConv, ts)
 
     assertProductEqual("alias-primitive", expected, actual)
   }
@@ -145,8 +147,8 @@ final class DomainTSAliasRendererSpec extends AnyFunSuite {
     val newAlias    = NewTypeDef.Alias(aliasId, enumId, emptyMeta)
     val legacyAlias = LegacyTypeDef.Alias(aliasId, enumId, emptyMeta)
 
-    val actual   = ctxNew.aliasRenderer.renderAlias(newAlias, ts)
-    val expected = legacyRender(legacyAlias, ctxNew.conv, ts)
+    val actual   = ctxNew.aliasRenderer.renderAlias(newAlias)
+    val expected = legacyRender(legacyAlias, legacyConv, ts)
 
     assertProductEqual("alias-to-enum", expected, actual)
   }

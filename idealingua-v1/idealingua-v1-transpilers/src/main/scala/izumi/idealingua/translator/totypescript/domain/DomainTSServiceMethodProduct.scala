@@ -4,7 +4,6 @@ import izumi.fundamentals.platform.strings.IzString.*
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.{Algebraic, Alternative, Singular, Struct, Void}
 import izumi.idealingua.model.il.ast.typed.{SimpleStructure}
-import izumi.idealingua.model.typespace.Typespace
 
 /** Per-method rendering helpers for the TypeScript service / buzzer
   * renderer. Mirrors the inline methods on the legacy `TypeScriptTranslator`
@@ -38,42 +37,41 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
 
   /** Mirror of legacy `renderRPCMethodSignature`
     * (`TypeScriptTranslator.scala:637-648`). */
-  def renderRPCMethodSignature(method: DefMethod, ts: Typespace, spread: Boolean = false, forClient: Boolean = true): String = method match {
+  def renderRPCMethodSignature(method: DefMethod, spread: Boolean = false, forClient: Boolean = true): String = method match {
     case m: DefMethod.RPCMethod =>
       if (spread) {
-        val fields = m.signature.input.fields.map(f => conv.safeName(f.name) + s": ${conv.toNativeType(f.typeId, ts)}").mkString(", ")
+        val fields = m.signature.input.fields.map(f => conv.safeName(f.name) + s": ${conv.toNativeType(f.typeId)}").mkString(", ")
         if (forClient)
-          s"""${m.name}($fields): Promise<${renderServiceMethodOutputSignature(m, ts)}>"""
+          s"""${m.name}($fields): Promise<${renderServiceMethodOutputSignature(m)}>"""
         else
-          s"""${m.name}(context: C${if (m.signature.input.fields.nonEmpty) ", " else ""}$fields): Promise<${renderServiceMethodOutputSignature(m, ts)}>"""
+          s"""${m.name}(context: C${if (m.signature.input.fields.nonEmpty) ", " else ""}$fields): Promise<${renderServiceMethodOutputSignature(m)}>"""
       } else {
-        s"""${m.name}(input: In${m.name.capitalize}): Promise<${renderServiceMethodOutputSignature(m, ts)}>"""
+        s"""${m.name}(input: In${m.name.capitalize}): Promise<${renderServiceMethodOutputSignature(m)}>"""
       }
   }
 
-  def renderServiceMethodOutputSignature(method: DefMethod.RPCMethod, ts: Typespace): String =
-    renderServiceMethodOutputType(method.signature.output, method, ts)
+  def renderServiceMethodOutputSignature(method: DefMethod.RPCMethod): String =
+    renderServiceMethodOutputType(method.signature.output, method)
 
-  private def renderServiceMethodOutputType(output: DefMethod.Output, method: DefMethod.RPCMethod, ts: Typespace): String = output match {
+  private def renderServiceMethodOutputType(output: DefMethod.Output, method: DefMethod.RPCMethod): String = output match {
     case _: Struct     => s"Out${method.name.capitalize}"
-    case al: Algebraic => al.alternatives.map(alt => conv.toNativeType(alt.typeId, ts)).mkString(" | ")
-    case si: Singular  => conv.toNativeType(si.typeId, ts)
+    case al: Algebraic => al.alternatives.map(alt => conv.toNativeType(alt.typeId)).mkString(" | ")
+    case si: Singular  => conv.toNativeType(si.typeId)
     case _: Void       => "void"
     case at: Alternative =>
-      s"Either<${renderServiceMethodAlternativeOutput("Out" + method.name.capitalize, at, ts, success = false)}, ${renderServiceMethodAlternativeOutput(
+      s"Either<${renderServiceMethodAlternativeOutput("Out" + method.name.capitalize, at, success = false)}, ${renderServiceMethodAlternativeOutput(
           "Out" + method.name.capitalize,
           at,
-          ts,
           success = true,
         )}>"
   }
 
-  private def renderServiceMethodAlternativeOutput(method: String, at: Alternative, ts: Typespace, success: Boolean): String = {
+  private def renderServiceMethodAlternativeOutput(method: String, at: Alternative, success: Boolean): String = {
     if (success)
       at.success match {
         case _: Algebraic => method + "Success"
         case _: Struct    => method + "Success"
-        case si: Singular => conv.toNativeType(si.typeId, ts)
+        case si: Singular => conv.toNativeType(si.typeId)
         case _: Void      => "Void"
         case _            => throw new Exception("Not supported alternative non singular or algebraic " + at.success.toString)
       }
@@ -81,7 +79,7 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
       at.failure match {
         case _: Algebraic => method + "Failure"
         case _: Struct    => method + "Failure"
-        case si: Singular => conv.toNativeType(si.typeId, ts)
+        case si: Singular => conv.toNativeType(si.typeId)
         case _: Void      => "Void"
         case _            => throw new Exception("Not supported alternative non singular or algebraic " + at.failure.toString)
       }
@@ -91,54 +89,54 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
 
   /** Mirror of legacy `renderRPCMethodModels`
     * (`TypeScriptTranslator.scala:829-835`). */
-  def renderRPCMethodModels(method: DefMethod, ts: Typespace): String = method match {
+  def renderRPCMethodModels(method: DefMethod): String = method match {
     case m: DefMethod.RPCMethod =>
-      s"""${renderServiceMethodInModel(s"In${m.name.capitalize}", "IncomingData", m.signature.input, ts, exported = false)}
-         |${renderServiceMethodOutModel(s"Out${m.name.capitalize}", "OutgoingData", m.signature.output, ts)}
+      s"""${renderServiceMethodInModel(s"In${m.name.capitalize}", "IncomingData", m.signature.input, exported = false)}
+         |${renderServiceMethodOutModel(s"Out${m.name.capitalize}", "OutgoingData", m.signature.output)}
        """.stripMargin
   }
 
-  private def renderServiceMethodInModel(name: String, implements: String, structure: SimpleStructure, ts: Typespace, exported: Boolean): String = {
+  private def renderServiceMethodInModel(name: String, implements: String, structure: SimpleStructure, exported: Boolean): String = {
     s"""${if (exported) "export " else ""}class $name implements $implements {
-       |${structure.fields.map(f => conv.toFieldMember(f, ts)).mkString("\n").shift(4)}
-       |${structure.fields.map(f => conv.toFieldMethods(f, ts)).mkString("\n").shift(4)}
+       |${structure.fields.map(f => conv.toFieldMember(f)).mkString("\n").shift(4)}
+       |${structure.fields.map(f => conv.toFieldMethods(f)).mkString("\n").shift(4)}
        |    constructor(data: ${name}Serialized = undefined) {
        |        if (typeof data === 'undefined' || data === null) {
        |            return;
        |        }
        |
        |${structure.fields
-        .map(f => s"${conv.deserializeName("this." + conv.safeName(f.name), f.typeId)} = ${conv.deserializeType("data." + f.name, f.typeId, ts)};").mkString(
+        .map(f => s"${conv.deserializeName("this." + conv.safeName(f.name), f.typeId)} = ${conv.deserializeType("data." + f.name, f.typeId)};").mkString(
           "\n"
         ).shift(8)}
        |    }
        |
        |    public serialize(): ${name}Serialized {
        |        return {
-       |${renderSerializedObject(structure.fields, ts).shift(12)}
+       |${renderSerializedObject(structure.fields).shift(12)}
        |        };
        |    }
        |}
        |
        |${if (exported) "export " else ""}interface ${name}Serialized {
-       |${structure.fields.map(f => s"${conv.toNativeTypeName(f.name, f.typeId)}: ${conv.toNativeType(f.typeId, ts, forSerialized = true)};").mkString("\n").shift(4)}
+       |${structure.fields.map(f => s"${conv.toNativeTypeName(f.name, f.typeId)}: ${conv.toNativeType(f.typeId, forSerialized = true)};").mkString("\n").shift(4)}
        |}
      """.stripMargin
   }
 
-  private def renderServiceMethodOutModel(name: String, implements: String, out: DefMethod.Output, ts: Typespace): String = out match {
-    case st: Struct      => renderServiceMethodInModel(name, implements, st.struct, ts, exported = true)
-    case al: Algebraic   => adtRenderer.renderAdtImpl(name, al.alternatives, ts, exported = false)
-    case at: Alternative => renderAlternative(name, at, ts, exported = false)
+  private def renderServiceMethodOutModel(name: String, implements: String, out: DefMethod.Output): String = out match {
+    case st: Struct      => renderServiceMethodInModel(name, implements, st.struct, exported = true)
+    case al: Algebraic   => adtRenderer.renderAdtImpl(name, al.alternatives, exported = false)
+    case at: Alternative => renderAlternative(name, at, exported = false)
     case _               => ""
   }
 
-  private def renderAlternative(method: String, alternative: Alternative, ts: Typespace, exported: Boolean = true): String = {
-    val leftTypeName = renderServiceMethodAlternativeOutputForName(method, alternative, ts, success = false)
+  private def renderAlternative(method: String, alternative: Alternative, exported: Boolean = true): String = {
+    val leftTypeName = renderServiceMethodAlternativeOutputForName(method, alternative, success = false)
 
     val left = alternative.failure match {
-      case al: Algebraic => adtRenderer.renderAdtImpl(leftTypeName, al.alternatives, ts, exported = true)
-      case st: Struct    => renderServiceMethodInModel(leftTypeName, "OutgoingData", st.struct, ts, exported = true)
+      case al: Algebraic => adtRenderer.renderAdtImpl(leftTypeName, al.alternatives, exported = true)
+      case st: Struct    => renderServiceMethodInModel(leftTypeName, "OutgoingData", st.struct, exported = true)
       case _             => ""
     }
 
@@ -146,21 +144,21 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
       case _: Algebraic => leftTypeName + "Helpers.serialize(either.value)"
       case _: Void      => "{}"
       case _: Struct    => "(either as any).value.serialize() /* TS will report an error value does not exist on type never, though this is not right. */"
-      case si: Singular => conv.serializeValue("(either as any).value", si.typeId, ts, asAny = true)
+      case si: Singular => conv.serializeValue("(either as any).value", si.typeId, asAny = true)
     }
 
     val leftTypeDeserialize = alternative.failure match {
       case _: Algebraic => leftTypeName + "Helpers.deserialize(content)"
       case _: Void      => "{}"
       case _: Struct    => s"new $leftTypeName(content)"
-      case si: Singular => conv.deserializeType("content", si.typeId, ts, asAny = true)
+      case si: Singular => conv.deserializeType("content", si.typeId, asAny = true)
     }
 
-    val rightTypeName = renderServiceMethodAlternativeOutputForName(method, alternative, ts, success = true)
+    val rightTypeName = renderServiceMethodAlternativeOutputForName(method, alternative, success = true)
 
     val right = alternative.success match {
-      case al: Algebraic => adtRenderer.renderAdtImpl(rightTypeName, al.alternatives, ts, exported = true)
-      case st: Struct    => renderServiceMethodInModel(rightTypeName, "OutgoingData", st.struct, ts, exported = true)
+      case al: Algebraic => adtRenderer.renderAdtImpl(rightTypeName, al.alternatives, exported = true)
+      case st: Struct    => renderServiceMethodInModel(rightTypeName, "OutgoingData", st.struct, exported = true)
       case _             => ""
     }
 
@@ -168,14 +166,14 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
       case _: Algebraic => rightTypeName + "Helpers.serialize(either.value)"
       case _: Void      => "{}"
       case _: Struct    => "either.value.serialize()"
-      case si: Singular => conv.serializeValue("either.value", si.typeId, ts, asAny = true)
+      case si: Singular => conv.serializeValue("either.value", si.typeId, asAny = true)
     }
 
     val rightTypeDeserialize = alternative.success match {
       case _: Algebraic => rightTypeName + "Helpers.deserialize(content)"
       case _: Void      => "{}"
       case _: Struct    => s"new $rightTypeName(content)"
-      case si: Singular => conv.deserializeType("content", si.typeId, ts, asAny = true)
+      case si: Singular => conv.deserializeType("content", si.typeId, asAny = true)
     }
 
     val name = s"$method"
@@ -207,12 +205,12 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
      """.stripMargin
   }
 
-  private def renderServiceMethodAlternativeOutputForName(method: String, at: Alternative, ts: Typespace, success: Boolean): String = {
+  private def renderServiceMethodAlternativeOutputForName(method: String, at: Alternative, success: Boolean): String = {
     if (success)
       at.success match {
         case _: Algebraic => method + "Success"
         case _: Struct    => method + "Success"
-        case si: Singular => conv.toNativeType(si.typeId, ts)
+        case si: Singular => conv.toNativeType(si.typeId)
         case _: Void      => "Void"
         case _            => throw new Exception("Not supported alternative non singular or algebraic " + at.success.toString)
       }
@@ -220,7 +218,7 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
       at.failure match {
         case _: Algebraic => method + "Failure"
         case _: Struct    => method + "Failure"
-        case si: Singular => conv.toNativeType(si.typeId, ts)
+        case si: Singular => conv.toNativeType(si.typeId)
         case _: Void      => "Void"
         case _            => throw new Exception("Not supported alternative non singular or algebraic " + at.failure.toString)
       }
@@ -230,19 +228,19 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
 
   /** Mirror of legacy `renderRPCClientMethod`
     * (`TypeScriptTranslator.scala:682-751`). */
-  def renderRPCClientMethod(service: String, method: DefMethod, ts: Typespace): String = method match {
+  def renderRPCClientMethod(service: String, method: DefMethod): String = method match {
     case m: DefMethod.RPCMethod =>
       m.signature.output match {
         case _: Struct =>
-          s"""public ${renderRPCMethodSignature(method, ts, spread = true)} {
+          s"""public ${renderRPCMethodSignature(method, spread = true)} {
              |    const __data = new In${m.name.capitalize}();
              |${m.signature.input.fields.map(f => s"__data.${conv.safeName(f.name)} = ${conv.safeName(f.name)};").mkString("\n").shift(4)}
-             |    return this.send('${m.name}', __data, In${m.name.capitalize}, ${renderServiceMethodOutputSignature(m, ts)});
+             |    return this.send('${m.name}', __data, In${m.name.capitalize}, ${renderServiceMethodOutputSignature(m)});
              |}
        """.stripMargin
 
         case _: Algebraic | _: Alternative =>
-          s"""public ${renderRPCMethodSignature(method, ts, spread = true)} {
+          s"""public ${renderRPCMethodSignature(method, spread = true)} {
              |    const __data = new In${m.name.capitalize}();
              |${m.signature.input.fields.map(f => s"__data.${conv.safeName(f.name)} = ${conv.safeName(f.name)};").mkString("\n").shift(4)}
              |    return new Promise((resolve, reject) => {
@@ -262,14 +260,14 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
          """.stripMargin
 
         case si: Singular =>
-          s"""public ${renderRPCMethodSignature(method, ts, spread = true)} {
+          s"""public ${renderRPCMethodSignature(method, spread = true)} {
              |    const __data = new In${m.name.capitalize}();
              |${m.signature.input.fields.map(f => s"__data.${conv.safeName(f.name)} = ${conv.safeName(f.name)};").mkString("\n").shift(4)}
              |    return new Promise((resolve, reject) => {
              |        this._transport.send(${service}Client.ClassName, '${m.name}', __data)
              |            .then((data: any) => {
              |                try {
-             |                    const output = ${conv.deserializeType("data", si.typeId, ts, asAny = true)};
+             |                    const output = ${conv.deserializeType("data", si.typeId, asAny = true)};
              |                    resolve(output);
              |                }
              |                catch(err) {
@@ -284,7 +282,7 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
          """.stripMargin
 
         case _: Void =>
-          s"""public ${renderRPCMethodSignature(method, ts, spread = true)} {
+          s"""public ${renderRPCMethodSignature(method, spread = true)} {
              |    const __data = new In${m.name.capitalize}();
              |${m.signature.input.fields.map(f => s"__data.${conv.safeName(f.name)} = ${conv.safeName(f.name)};").mkString("\n").shift(4)}
              |    return new Promise((resolve, reject) => {
@@ -303,13 +301,13 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
 
   /** Mirror of legacy `renderServiceDispatcherHandler`
     * (`TypeScriptTranslator.scala:855-891`). */
-  def renderServiceDispatcherHandler(method: DefMethod, impl: String, ts: Typespace, useRawMarshaller: Boolean = false): String = {
+  def renderServiceDispatcherHandler(method: DefMethod, impl: String, useRawMarshaller: Boolean = false): String = {
     val useRawParam = if (useRawMarshaller) ", true" else ""
     method match {
       case m: DefMethod.RPCMethod =>
         val resolveCode =
           if (isServiceMethodReturnExistent(m))
-            s"""${renderServiceReturnSerialization(m, ts, useRawMarshaller = useRawMarshaller).shift(20)}
+            s"""${renderServiceReturnSerialization(m, useRawMarshaller = useRawMarshaller).shift(20)}
                |                    resolve(serialized);""".stripMargin
           else
             s"                    resolve(this.marshaller.Marshal<Void>(Void.instance$useRawParam));"
@@ -326,7 +324,7 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
            |        try {
            |            this.$impl.${m.name}(context${if (m.signature.input.fields.isEmpty) "" else ", "}${m.signature.input.fields
             .map(f => s"obj.${conv.safeName(f.name)}").mkString(", ")})
-           |                .then((res: ${renderServiceMethodOutputSignature(m, ts)}) => {
+           |                .then((res: ${renderServiceMethodOutputSignature(m)}) => {
            |$resolveCode
            |                })
            |                .catch((err) => {
@@ -346,19 +344,19 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
     case _       => true
   }
 
-  private def renderServiceReturnSerialization(method: DefMethod.RPCMethod, ts: Typespace, useRawMarshaller: Boolean = false): String = {
+  private def renderServiceReturnSerialization(method: DefMethod.RPCMethod, useRawMarshaller: Boolean = false): String = {
     val useRawParam = if (useRawMarshaller) ", true" else ""
     method.signature.output match {
       case _: Algebraic | _: Alternative =>
         s"const serialized = this.marshaller.Marshal<object>(Out${method.name.capitalize}Helpers.serialize(res)$useRawParam);"
-      case _ => s"const serialized = this.marshaller.Marshal<${renderServiceMethodOutputSignature(method, ts)}>(res$useRawParam);"
+      case _ => s"const serialized = this.marshaller.Marshal<${renderServiceMethodOutputSignature(method)}>(res$useRawParam);"
     }
   }
 
   // -- Helpers -------------------------------------------------------------
 
-  private def renderSerializedObject(fields: List[izumi.idealingua.model.il.ast.typed.Field], ts: Typespace): String = {
-    val serialized = fields.map(f => conv.serializeField(f, ts))
+  private def renderSerializedObject(fields: List[izumi.idealingua.model.il.ast.typed.Field]): String = {
+    val serialized = fields.map(f => conv.serializeField(f))
     val it         = serialized.iterator
     it.map(m => s"$m${if (it.hasNext) "," else ""}").mkString("\n")
   }

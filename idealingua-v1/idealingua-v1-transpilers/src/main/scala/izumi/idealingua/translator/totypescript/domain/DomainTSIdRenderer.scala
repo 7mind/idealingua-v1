@@ -4,7 +4,6 @@ import izumi.fundamentals.platform.strings.IzString.*
 import izumi.idealingua.model.common.ExtendedField
 import izumi.idealingua.model.common.TypeId.IdentifierId
 import izumi.idealingua.model.il.ast.typed.{Field, IdField}
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.totypescript.products.CogenProduct.IdentifierProduct
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
@@ -38,15 +37,14 @@ final class DomainTSIdRenderer(ctx: DomainTSContext) {
 
   import ctx._
 
-  def renderIdentifier(i: NewTypeDef.Identifier, ts: Typespace): IdentifierProduct = {
+  def renderIdentifier(i: NewTypeDef.Identifier): IdentifierProduct = {
     val typeName = i.id.name
 
     // IMPL-7b/7c-post: imports are computed from `Domain` via `DomainTSImports`,
     // removing the last legacy `TypeScriptImports.apply(ts, ...)` call on the
-    // identifier path. The renderer's `ts: Typespace` parameter remains in
-    // use for `TypeScriptTypeConverter.{toNativeType, toFieldMethods,
-    // toFieldMember}` calls below; eliminating that surface is tracked as a
-    // follow-up to the IMPL-10 cycle.
+    // identifier path. IMPL-10-prep-Ts1: the `ts: Typespace` parameter has
+    // been removed from the converter (`DomainTSTypeConverter`) and from this
+    // renderer; all type-rendering reads `Domain` directly.
     val imports = DomainTSImports.forTypeDef(i, i.id.path.toPackage, ctx.domain, options.manifest)
 
     val fields: List[ExtendedField] = i.fields.map(idFieldToExtendedField(i.id, _))
@@ -60,16 +58,16 @@ final class DomainTSIdRenderer(ctx: DomainTSContext) {
          |    serialize(): string;
          |
          |${fields
-          .map(f => s"${conv.toNativeTypeName(conv.safeName(f.field.name), f.field.typeId)}: ${conv.toNativeType(f.field.typeId, ts)};").mkString("\n").shift(4)}
+          .map(f => s"${conv.toNativeTypeName(conv.safeName(f.field.name), f.field.typeId)}: ${conv.toNativeType(f.field.typeId)};").mkString("\n").shift(4)}
          |}
          """.stripMargin
 
     val identifier =
       s"""export class $typeName implements I$typeName {
          |${renderRuntimeNames(i.id, typeName).shift(4)}
-         |${fields.map(f => conv.toFieldMember(f.field, ts)).mkString("\n").shift(4)}
+         |${fields.map(f => conv.toFieldMember(f.field)).mkString("\n").shift(4)}
          |
-         |${fields.map(f => conv.toFieldMethods(f.field, ts)).mkString("\n").shift(4)}
+         |${fields.map(f => conv.toFieldMethods(f.field)).mkString("\n").shift(4)}
          |    constructor(data: string | I$typeName = undefined) {
          |        if (typeof data === 'undefined' || data === null) {
          |            return;
@@ -85,7 +83,7 @@ final class DomainTSIdRenderer(ctx: DomainTSContext) {
         }.mkString("\n").shift(12)}
          |        } else {
          |${fields
-          .map(f => s"this.${conv.safeName(f.field.name)} = ${conv.deserializeType("data." + conv.safeName(f.field.name), f.field.typeId, ts)};").mkString(
+          .map(f => s"this.${conv.safeName(f.field.name)} = ${conv.deserializeType("data." + conv.safeName(f.field.name), f.field.typeId)};").mkString(
             "\n"
           ).shift(12)}
          |        }

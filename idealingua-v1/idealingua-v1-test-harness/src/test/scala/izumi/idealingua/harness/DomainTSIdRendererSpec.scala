@@ -193,7 +193,7 @@ final class DomainTSIdRendererSpec extends AnyFunSuite {
     )
     val ts = legacyTypespaceFor(domainId, legacyId)
 
-    val actual   = ctxNew.idRenderer.renderIdentifier(newId, ts)
+    val actual   = ctxNew.idRenderer.renderIdentifier(newId)
     val expected = legacyRender(legacyId, ts)
 
     assertProductEqual("id-single-primitive", expected, actual)
@@ -210,7 +210,7 @@ final class DomainTSIdRendererSpec extends AnyFunSuite {
     val legacyId = LegacyTypeDef.Identifier(id, fields, emptyMeta)
     val ts       = legacyTypespaceFor(domainId, legacyId)
 
-    val actual   = ctxNew.idRenderer.renderIdentifier(newId, ts)
+    val actual   = ctxNew.idRenderer.renderIdentifier(newId)
     val expected = legacyRender(legacyId, ts)
 
     assertProductEqual("id-multi-primitive", expected, actual)

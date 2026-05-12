@@ -3,7 +3,6 @@ package izumi.idealingua.translator.totypescript.domain
 import izumi.fundamentals.platform.strings.IzString.*
 import izumi.idealingua.model.common.TypeId.*
 import izumi.idealingua.model.il.ast.typed.AdtMember
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.totypescript.products.CogenProduct.AdtProduct
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
@@ -32,9 +31,9 @@ final class DomainTSAdtRenderer(ctx: DomainTSContext) {
 
   import ctx._
 
-  def renderAdt(i: NewTypeDef.Adt, ts: Typespace): AdtProduct = {
+  def renderAdt(i: NewTypeDef.Adt): AdtProduct = {
     val imports = DomainTSImports.forTypeDef(i, i.id.path.toPackage, ctx.domain, options.manifest)
-    val base    = renderAdtImpl(i.id.name, i.alternatives, ts, exported = true)
+    val base    = renderAdtImpl(i.id.name, i.alternatives, exported = true)
 
     AdtProduct(
       base,
@@ -47,12 +46,12 @@ final class DomainTSAdtRenderer(ctx: DomainTSContext) {
     * Public so `DomainTSServiceMethodProduct` can reuse it for nested ADT
     * outputs (`Algebraic`) in service methods.
     */
-  def renderAdtImpl(name: String, alternatives: List[AdtMember], ts: Typespace, exported: Boolean = true): String = {
+  def renderAdtImpl(name: String, alternatives: List[AdtMember], exported: Boolean = true): String = {
     val hasInterfaces = alternatives.count(al => al.typeId.isInstanceOf[InterfaceId]) > 0
 
-    s"""${if (exported) "export " else ""}type $name = ${alternatives.map(alt => conv.toNativeType(alt.typeId, ts)).mkString(" | ")};
+    s"""${if (exported) "export " else ""}type $name = ${alternatives.map(alt => conv.toNativeType(alt.typeId)).mkString(" | ")};
        |${if (exported) "export " else ""}type ${name}Serialized = ${alternatives
-        .map(alt => conv.toNativeType(alt.typeId, ts, forSerialized = true)).mkString(" | ")}
+        .map(alt => conv.toNativeType(alt.typeId, forSerialized = true)).mkString(" | ")}
        |
        |${if (exported) "export " else ""}class ${name}Helpers {
        |    public static isInstanceOf(o: any): boolean {
@@ -64,9 +63,9 @@ final class DomainTSAdtRenderer(ctx: DomainTSContext) {
         .map(
           alt =>
             if (alt.typeId.isInstanceOf[InterfaceId])
-              s"${alt.typeId.name}${ts.tools.implId(alt.typeId.asInstanceOf[InterfaceId]).name}.isRegisteredType(fullClassName)"
+              s"${alt.typeId.name}${DomainTSStruct.implId(alt.typeId.asInstanceOf[InterfaceId]).name}.isRegisteredType(fullClassName)"
             else if (alt.typeId.isInstanceOf[AdtId]) s"${alt.typeId.name}Helpers.isInstanceOf(o)"
-            else "o instanceof " + conv.toNativeType(alt.typeId, ts)
+            else "o instanceof " + conv.toNativeType(alt.typeId)
         ).mkString(" || ")};
        |    }
        |
@@ -74,9 +73,9 @@ final class DomainTSAdtRenderer(ctx: DomainTSContext) {
         .map(
           alt =>
             alt.typeId match {
-              case interfaceId: InterfaceId => alt.typeId.name + ts.tools.implId(interfaceId).name + "Serialized"
+              case interfaceId: InterfaceId => alt.typeId.name + DomainTSStruct.implId(interfaceId).name + "Serialized"
               case al: AliasId => {
-                val dealiased = ts.dealias(al)
+                val dealiased = DomainTSImports.dealias(ctx.domain, al)
                 dealiased match {
                   case _: IdentifierId => "string"
                   case _               => dealiased.name + "Serialized"
@@ -97,7 +96,7 @@ final class DomainTSAdtRenderer(ctx: DomainTSContext) {
        |${alternatives
         .filter(al => al.typeId.isInstanceOf[InterfaceId]).map(al => al.typeId.asInstanceOf[InterfaceId]).map(
           interfaceId =>
-            s"if (${interfaceId.name}${ts.tools.implId(interfaceId).name}.isRegisteredType(fullClassName)) {\n    className = '${interfaceId.name}'; serialized = {[fullClassName]: adt.serialize()};\n}"
+            s"if (${interfaceId.name}${DomainTSStruct.implId(interfaceId).name}.isRegisteredType(fullClassName)) {\n    className = '${interfaceId.name}'; serialized = {[fullClassName]: adt.serialize()};\n}"
         ).mkString(" else \n").shift(8)}
        |${alternatives
         .filter(al => al.memberName.isDefined).map(a => s"if (className == '${a.typeId.name}') {\n    className = '${a.memberName.get}'\n}").mkString("\n").shift(8)}
@@ -110,9 +109,9 @@ final class DomainTSAdtRenderer(ctx: DomainTSContext) {
         .map(
           alt =>
             alt.typeId match {
-              case interfaceId: InterfaceId => alt.typeId.name + ts.tools.implId(interfaceId).name + "Serialized"
+              case interfaceId: InterfaceId => alt.typeId.name + DomainTSStruct.implId(interfaceId).name + "Serialized"
               case al: AliasId => {
-                val dealiased = ts.dealias(al)
+                val dealiased = DomainTSImports.dealias(ctx.domain, al)
                 dealiased match {
                   case _: IdentifierId => "string"
                   case _               => dealiased.name + "Serialized"
@@ -125,7 +124,7 @@ final class DomainTSAdtRenderer(ctx: DomainTSContext) {
        |        const id = Object.keys(data)[0];
        |        const content = (data as any)[id];
        |        switch (id) {
-       |${alternatives.map(a => "case '" + a.wireId + "': return " + conv.deserializeType("content", a.typeId, ts, asAny = true) + ";").mkString("\n").shift(12)}
+       |${alternatives.map(a => "case '" + a.wireId + "': return " + conv.deserializeType("content", a.typeId, asAny = true) + ";").mkString("\n").shift(12)}
        |            default:
        |                throw new Error('Unknown type id ' + id + ' for $name');
        |        }

@@ -1,6 +1,5 @@
 package izumi.idealingua.translator.totypescript.domain
 
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.totypescript.products.CogenProduct.AliasProduct
 import izumi.idealingua.typer.ir.TypeDef
 
@@ -33,11 +32,11 @@ final class DomainTSAliasRenderer(ctx: DomainTSContext) {
 
   import ctx._
 
-  def renderAlias(i: TypeDef.Alias, ts: Typespace): AliasProduct = {
+  def renderAlias(i: TypeDef.Alias): AliasProduct = {
     AliasProduct(
       s"""// TypeScript does not natively support well type aliases.
          |// Normally the code would be:
-         |// export type ${i.id.name} = ${conv.toNativeType(i.target, ts)};
+         |// export type ${i.id.name} = ${conv.toNativeType(i.target)};
          |//
          |// However, constructors and casting won't work correctly.
          |// Therefore, all aliases usage was just replaced with the target

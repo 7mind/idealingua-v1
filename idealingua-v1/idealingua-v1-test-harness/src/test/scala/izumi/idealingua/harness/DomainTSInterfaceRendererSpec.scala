@@ -260,7 +260,7 @@ final class DomainTSInterfaceRendererSpec extends AnyFunSuite {
     )
     val ts = legacyTypespaceFor(domainId, legacyIface)
 
-    val actual   = ctxNew.interfaceRenderer.renderInterface(newIface, ts)
+    val actual   = ctxNew.interfaceRenderer.renderInterface(newIface)
     val expected = legacyRender(legacyIface, ts)
 
     assertProductEqual("iface-single-field", expected, actual)
@@ -286,7 +286,7 @@ final class DomainTSInterfaceRendererSpec extends AnyFunSuite {
     )
     val ts = legacyTypespaceFor(domainId, legacyIface)
 
-    val actual   = ctxNew.interfaceRenderer.renderInterface(newIface, ts)
+    val actual   = ctxNew.interfaceRenderer.renderInterface(newIface)
     val expected = legacyRender(legacyIface, ts)
 
     assertProductEqual("iface-multi-field", expected, actual)

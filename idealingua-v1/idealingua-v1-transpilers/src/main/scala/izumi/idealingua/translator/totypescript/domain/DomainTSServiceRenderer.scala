@@ -3,7 +3,6 @@ package izumi.idealingua.translator.totypescript.domain
 import izumi.fundamentals.platform.strings.IzString.*
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.publishing.manifests.TypeScriptProjectLayout
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.totypescript.products.CogenProduct.{BuzzerProduct, ServiceProduct}
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
@@ -48,22 +47,22 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
 
   // -- Service -------------------------------------------------------------
 
-  def renderService(i: NewTypeDef.Service, ts: Typespace): ServiceProduct = {
+  def renderService(i: NewTypeDef.Service): ServiceProduct = {
     val imports  = DomainTSImports.forService(i, i.id.domain.toPackage, ctx.domain, manifest)
     val typeName = i.id.name
 
     val svc =
       s"""// Models
-         |${renderServiceModels(i, ts)}
+         |${renderServiceModels(i)}
          |
          |// Client
-         |${renderServiceClient(i, ts)}
+         |${renderServiceClient(i)}
          |
          |// Dispatcher
-         |${renderServiceDispatcher(i, ts)}
+         |${renderServiceDispatcher(i)}
          |
          |// Base Server
-         |${renderServiceServer(i, ts)}
+         |${renderServiceServer(i)}
          """.stripMargin
 
     val header =
@@ -77,12 +76,12 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
     ServiceProduct(svc, header, s"// $typeName client")
   }
 
-  private def renderServiceModels(i: NewTypeDef.Service, ts: Typespace): String =
-    i.methods.map(me => methodProduct.renderRPCMethodModels(me, ts)).mkString("\n")
+  private def renderServiceModels(i: NewTypeDef.Service): String =
+    i.methods.map(me => methodProduct.renderRPCMethodModels(me)).mkString("\n")
 
-  private def renderServiceClient(i: NewTypeDef.Service, ts: Typespace): String = {
+  private def renderServiceClient(i: NewTypeDef.Service): String = {
     s"""export interface I${i.id.name}Client {
-       |${i.methods.map(me => methodProduct.renderRPCMethodSignature(me, ts, spread = true)).mkString("\n").shift(4)}
+       |${i.methods.map(me => methodProduct.renderRPCMethodSignature(me, spread = true)).mkString("\n").shift(4)}
        |}
        |
        |export class ${i.id.name}Client implements I${i.id.name}Client {
@@ -110,14 +109,14 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
        |                });
        |            });
        |    }
-       |${i.methods.map(me => methodProduct.renderRPCClientMethod(i.id.name, me, ts)).mkString("\n").shift(4)}
+       |${i.methods.map(me => methodProduct.renderRPCClientMethod(i.id.name, me)).mkString("\n").shift(4)}
        |}
      """.stripMargin
   }
 
-  private def renderServiceDispatcher(i: NewTypeDef.Service, ts: Typespace): String = {
+  private def renderServiceDispatcher(i: NewTypeDef.Service): String = {
     s"""export interface I${i.id.name}Server<C> {
-       |${i.methods.map(me => methodProduct.renderRPCMethodSignature(me, ts, spread = true, forClient = false)).mkString("\n").shift(4)}
+       |${i.methods.map(me => methodProduct.renderRPCMethodSignature(me, spread = true, forClient = false)).mkString("\n").shift(4)}
        |}
        |
        |export class ${i.id.name}Dispatcher<C, D> implements ServiceDispatcher<C, D> {
@@ -141,7 +140,7 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
        |
        |    public dispatch(context: C, method: string, data: D | undefined): Promise<D> {
        |        switch (method) {
-       |${i.methods.map(m => methodProduct.renderServiceDispatcherHandler(m, "server", ts)).mkString("\n").shift(12)}
+       |${i.methods.map(m => methodProduct.renderServiceDispatcherHandler(m, "server")).mkString("\n").shift(12)}
        |            default:
        |                throw new Error(`Method $${method} is not supported by ${i.id.name}Dispatcher.`);
        |        }
@@ -150,7 +149,7 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
      """
   }
 
-  private def renderServiceServer(i: NewTypeDef.Service, ts: Typespace): String = {
+  private def renderServiceServer(i: NewTypeDef.Service): String = {
     val name = s"${i.id.name}Server"
     s"""export abstract class $name<C, D> extends ${i.id.name}Dispatcher<C, D> implements I${i.id.name}Server<C> {
        |    constructor(marshaller: Marshaller<D>) {
@@ -158,13 +157,13 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
        |        this.server = this;
        |    }
        |
-       |${i.methods.map(m => renderServiceServerDummyMethod(m, ts)).mkString("\n").shift(4)}
+       |${i.methods.map(m => renderServiceServerDummyMethod(m)).mkString("\n").shift(4)}
        |}
      """.stripMargin
   }
 
-  private def renderServiceServerDummyMethod(member: DefMethod, ts: Typespace): String = {
-    s"""public ${methodProduct.renderRPCMethodSignature(member, ts, spread = true, forClient = false)} {
+  private def renderServiceServerDummyMethod(member: DefMethod): String = {
+    s"""public ${methodProduct.renderRPCMethodSignature(member, spread = true, forClient = false)} {
        |    throw new Error('Not implemented.');
        |}
      """.stripMargin
@@ -172,22 +171,22 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
 
   // -- Buzzer --------------------------------------------------------------
 
-  def renderBuzzer(i: NewTypeDef.Buzzer, ts: Typespace): BuzzerProduct = {
+  def renderBuzzer(i: NewTypeDef.Buzzer): BuzzerProduct = {
     val imports  = DomainTSImports.forBuzzer(i, i.id.domain.toPackage, ctx.domain, manifest)
     val typeName = i.id.name
 
     val svc =
       s"""// Models
-         |${renderBuzzerModels(i, ts)}
+         |${renderBuzzerModels(i)}
          |
          |// Client
-         |${renderBuzzerClient(i, ts)}
+         |${renderBuzzerClient(i)}
          |
          |// Dispatcher
-         |${renderBuzzerDispatcher(i, ts)}
+         |${renderBuzzerDispatcher(i)}
          |
          |// Buzzer Handlers Base
-         |${renderBuzzerBase(i, ts)}
+         |${renderBuzzerBase(i)}
          """.stripMargin
 
     val header =
@@ -211,12 +210,12 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
     BuzzerProduct(svc, header, s"// $typeName")
   }
 
-  private def renderBuzzerModels(i: NewTypeDef.Buzzer, ts: Typespace): String =
-    i.events.map(me => methodProduct.renderRPCMethodModels(me, ts)).mkString("\n")
+  private def renderBuzzerModels(i: NewTypeDef.Buzzer): String =
+    i.events.map(me => methodProduct.renderRPCMethodModels(me)).mkString("\n")
 
-  private def renderBuzzerClient(i: NewTypeDef.Buzzer, ts: Typespace): String = {
+  private def renderBuzzerClient(i: NewTypeDef.Buzzer): String = {
     s"""export interface I${i.id.name}Client {
-       |${i.events.map(me => methodProduct.renderRPCMethodSignature(me, ts, spread = true)).mkString("\n").shift(4)}
+       |${i.events.map(me => methodProduct.renderRPCMethodSignature(me, spread = true)).mkString("\n").shift(4)}
        |}
        |
        |export class ${i.id.name}Client implements I${i.id.name}Client {
@@ -244,14 +243,14 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
        |                });
        |            });
        |    }
-       |${i.events.map(me => methodProduct.renderRPCClientMethod(i.id.name, me, ts)).mkString("\n").shift(4)}
+       |${i.events.map(me => methodProduct.renderRPCClientMethod(i.id.name, me)).mkString("\n").shift(4)}
        |}
      """.stripMargin
   }
 
-  private def renderBuzzerDispatcher(i: NewTypeDef.Buzzer, ts: Typespace): String = {
+  private def renderBuzzerDispatcher(i: NewTypeDef.Buzzer): String = {
     s"""export interface I${i.id.name}BuzzerHandlers<C> {
-       |${i.events.map(me => methodProduct.renderRPCMethodSignature(me, ts, spread = true, forClient = false)).mkString("\n").shift(4)}
+       |${i.events.map(me => methodProduct.renderRPCMethodSignature(me, spread = true, forClient = false)).mkString("\n").shift(4)}
        |}
        |
        |export class ${i.id.name}Dispatcher<C, D> implements ServiceDispatcher<C, D> {
@@ -275,7 +274,7 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
        |
        |    public dispatch(context: C, method: string, data: D | undefined): Promise<D> {
        |        switch (method) {
-       |${i.events.map(m => methodProduct.renderServiceDispatcherHandler(m, "handlers", ts, useRawMarshaller = true)).mkString("\n").shift(12)}
+       |${i.events.map(m => methodProduct.renderServiceDispatcherHandler(m, "handlers", useRawMarshaller = true)).mkString("\n").shift(12)}
        |            default:
        |                throw new Error(`Method $${method} is not supported by ${i.id.name}Dispatcher.`);
        |        }
@@ -284,7 +283,7 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
      """
   }
 
-  private def renderBuzzerBase(i: NewTypeDef.Buzzer, ts: Typespace): String = {
+  private def renderBuzzerBase(i: NewTypeDef.Buzzer): String = {
     val name = s"${i.id.name}BuzzerHandlers"
     s"""export abstract class $name<C, D> extends ${i.id.name}Dispatcher<C, D> implements I${i.id.name}BuzzerHandlers<C> {
        |    constructor(marshaller: Marshaller<D>) {
@@ -292,13 +291,13 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
        |        this.handlers = this;
        |    }
        |
-       |${i.events.map(m => renderBuzzerHandlerDummyMethod(m, ts)).mkString("\n").shift(4)}
+       |${i.events.map(m => renderBuzzerHandlerDummyMethod(m)).mkString("\n").shift(4)}
        |}
      """.stripMargin
   }
 
-  private def renderBuzzerHandlerDummyMethod(member: DefMethod, ts: Typespace): String = {
-    s"""public ${methodProduct.renderRPCMethodSignature(member, ts, spread = true, forClient = false)} {
+  private def renderBuzzerHandlerDummyMethod(member: DefMethod): String = {
+    s"""public ${methodProduct.renderRPCMethodSignature(member, spread = true, forClient = false)} {
        |    throw new Error('Not implemented.');
        |}
      """.stripMargin

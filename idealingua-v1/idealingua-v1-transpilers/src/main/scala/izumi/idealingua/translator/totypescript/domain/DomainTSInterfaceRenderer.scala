@@ -3,7 +3,6 @@ package izumi.idealingua.translator.totypescript.domain
 import izumi.fundamentals.platform.strings.IzString.*
 import izumi.idealingua.model.common.{Generic, TypeId}
 import izumi.idealingua.model.common.TypeId.AliasId
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.totypescript.products.CogenProduct.InterfaceProduct
 import izumi.idealingua.typer.ir.{FlatStruct, TypeDef => NewTypeDef}
 
@@ -36,7 +35,7 @@ final class DomainTSInterfaceRenderer(ctx: DomainTSContext) {
 
   import ctx._
 
-  def renderInterface(i: NewTypeDef.Interface, ts: Typespace): InterfaceProduct = {
+  def renderInterface(i: NewTypeDef.Interface): InterfaceProduct = {
     val imports = DomainTSImports.forTypeDef(i, i.id.path.toPackage, ctx.domain, options.manifest)
 
     val extendsInterfaces =
@@ -71,22 +70,22 @@ final class DomainTSInterfaceRenderer(ctx: DomainTSContext) {
          |    serialize(): ${eid}Serialized;
          |
          |${fields.all
-          .map(f => s"${conv.toNativeTypeName(conv.safeName(f.field.name), f.field.typeId)}: ${conv.toNativeType(f.field.typeId, ts)};").mkString("\n").shift(4)}
+          .map(f => s"${conv.toNativeTypeName(conv.safeName(f.field.name), f.field.typeId)}: ${conv.toNativeType(f.field.typeId)};").mkString("\n").shift(4)}
          |}
          |
          |export interface ${eid}Serialized $extendsInterfacesSerialized{
          |${fields.all
-          .map(f => s"${conv.toNativeTypeName(f.field.name, f.field.typeId)}: ${conv.toNativeType(f.field.typeId, ts, forSerialized = true)};").mkString("\n").shift(4)}
+          .map(f => s"${conv.toNativeTypeName(f.field.name, f.field.typeId)}: ${conv.toNativeType(f.field.typeId, forSerialized = true)};").mkString("\n").shift(4)}
          |}
        """.stripMargin
 
-    val uniqueInterfaces = ts.inheritance.parentsInherited(i.id).distinctBy(_.name)
+    val uniqueInterfaces = DomainTSStruct.parentsInherited(ctx.domain, i.id).distinctBy(_.name)
     val companion =
       s"""export class $eid implements ${i.id.name} {
          |${renderRuntimeNames(implId, eid).shift(4)}
-         |${fields.all.map(f => conv.toFieldMember(f.field, ts)).mkString("\n").shift(4)}
+         |${fields.all.map(f => conv.toFieldMember(f.field)).mkString("\n").shift(4)}
          |
-         |${fields.all.map(f => conv.toFieldMethods(f.field, ts)).mkString("\n").shift(4)}
+         |${fields.all.map(f => conv.toFieldMethods(f.field)).mkString("\n").shift(4)}
          |    constructor(data: ${eid}Serialized = undefined) {
          |        if (typeof data === 'undefined' || data === null) {
          |${distinctFields
@@ -95,14 +94,14 @@ final class DomainTSInterfaceRenderer(ctx: DomainTSContext) {
          |        }
          |
          |${distinctFields
-          .map(f => s"${conv.deserializeName("this." + conv.safeName(f.name), f.typeId)} = ${conv.deserializeType("data." + f.name, f.typeId, ts)};").mkString(
+          .map(f => s"${conv.deserializeName("this." + conv.safeName(f.name), f.typeId)} = ${conv.deserializeType("data." + f.name, f.typeId)};").mkString(
             "\n"
           ).shift(8)}
          |    }
          |
          |    public serialize(): ${eid}Serialized {
          |        return {
-         |${renderSerializedObject(distinctFields.toList, ts).shift(12)}
+         |${renderSerializedObject(distinctFields.toList).shift(12)}
          |        };
          |    }
          |
@@ -143,8 +142,8 @@ final class DomainTSInterfaceRenderer(ctx: DomainTSContext) {
     InterfaceProduct(iface, companion, imports.render, s"// ${i.id.name} Interface")
   }
 
-  private def renderSerializedObject(fields: List[izumi.idealingua.model.il.ast.typed.Field], ts: Typespace): String = {
-    val serialized = fields.map(f => conv.serializeField(f, ts))
+  private def renderSerializedObject(fields: List[izumi.idealingua.model.il.ast.typed.Field]): String = {
+    val serialized = fields.map(f => conv.serializeField(f))
     val it         = serialized.iterator
     it.map(m => s"$m${if (it.hasNext) "," else ""}").mkString("\n")
   }

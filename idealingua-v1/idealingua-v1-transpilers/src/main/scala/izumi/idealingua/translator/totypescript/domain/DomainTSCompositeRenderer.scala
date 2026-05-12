@@ -4,7 +4,6 @@ import izumi.fundamentals.platform.strings.IzString.*
 import izumi.idealingua.model.common.{Generic, TypeId}
 import izumi.idealingua.model.common.TypeId.{InterfaceId, AliasId}
 import izumi.idealingua.model.il.ast.typed.Field
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.totypescript.products.CogenProduct.CompositeProduct
 import izumi.idealingua.typer.ir.{FlatStruct, TypeDef => NewTypeDef}
 
@@ -40,7 +39,7 @@ final class DomainTSCompositeRenderer(ctx: DomainTSContext) {
 
   import ctx._
 
-  def renderDto(i: NewTypeDef.Dto, ts: Typespace): CompositeProduct = {
+  def renderDto(i: NewTypeDef.Dto): CompositeProduct = {
     val imports = DomainTSImports.forTypeDef(i, i.id.path.toPackage, ctx.domain, options.manifest)
 
     val flat = ctx.domain.flattenedStructs.getOrElse(
@@ -65,14 +64,14 @@ final class DomainTSCompositeRenderer(ctx: DomainTSContext) {
         ""
       }
 
-    val uniqueInterfaces = ts.inheritance.parentsInherited(i.id).distinctBy(_.name)
+    val uniqueInterfaces = DomainTSStruct.parentsInherited(ctx.domain, i.id).distinctBy(_.name)
 
     val dto =
       s"""export class ${i.id.name} $implementsInterfaces {
          |${renderRuntimeNames(i.id, i.id.name).shift(4)}
-         |${distinctFields.map(f => conv.toFieldMember(f, ts)).mkString("\n").shift(4)}
+         |${distinctFields.map(f => conv.toFieldMember(f)).mkString("\n").shift(4)}
          |
-         |${distinctFields.map(f => conv.toFieldMethods(f, ts)).mkString("\n").shift(4)}
+         |${distinctFields.map(f => conv.toFieldMethods(f)).mkString("\n").shift(4)}
          |    constructor(data: ${i.id.name}Serialized = undefined) {
          |        if (typeof data === 'undefined' || data === null) {
          |${distinctFields
@@ -81,22 +80,22 @@ final class DomainTSCompositeRenderer(ctx: DomainTSContext) {
          |        }
          |
          |${distinctFields
-          .map(f => s"${conv.deserializeName("this." + conv.safeName(f.name), f.typeId)} = ${conv.deserializeType("data." + f.name, f.typeId, ts)};").mkString(
+          .map(f => s"${conv.deserializeName("this." + conv.safeName(f.name), f.typeId)} = ${conv.deserializeType("data." + f.name, f.typeId)};").mkString(
             "\n"
           ).shift(8)}
          |    }
          |
-         |${uniqueInterfaces.map(si => renderDtoInterfaceSerializer(si, ts)).mkString("\n").shift(4)}
-         |${uniqueInterfaces.map(si => renderDtoInterfaceLoader(si, ts)).mkString("\n").shift(4)}
+         |${uniqueInterfaces.map(si => renderDtoInterfaceSerializer(si)).mkString("\n").shift(4)}
+         |${uniqueInterfaces.map(si => renderDtoInterfaceLoader(si)).mkString("\n").shift(4)}
          |    public serialize(): ${i.id.name}Serialized {
          |        return {
-         |${renderSerializedObject(distinctFields.toList, ts).shift(12)}
+         |${renderSerializedObject(distinctFields.toList).shift(12)}
          |        };
          |    }
          |}
          |
          |export interface ${i.id.name}Serialized $extendsInterfacesSerialized {
-         |${distinctFields.map(f => s"${conv.toNativeTypeName(f.name, f.typeId)}: ${conv.toNativeType(f.typeId, ts, forSerialized = true)};").mkString("\n").shift(4)}
+         |${distinctFields.map(f => s"${conv.toNativeTypeName(f.name, f.typeId)}: ${conv.toNativeType(f.typeId, forSerialized = true)};").mkString("\n").shift(4)}
          |}
          |
          |${uniqueInterfaces.map(sc => sc.name + DomainTSStruct.implId(sc).name + s".register(${i.id.name}.FullClassName, ${i.id.name});").mkString("\n")}
@@ -105,12 +104,12 @@ final class DomainTSCompositeRenderer(ctx: DomainTSContext) {
     CompositeProduct(dto, imports.render, s"// ${i.id.name} DTO")
   }
 
-  private def renderDtoInterfaceSerializer(iid: InterfaceId, ts: Typespace): String = {
-    val fields = ts.structure.structure(iid)
+  private def renderDtoInterfaceSerializer(iid: InterfaceId): String = {
+    val fields = DomainTSStruct.structureOf(ctx.domain, iid)
     val implN  = DomainTSStruct.implId(iid).name
     s"""public to${iid.name}Serialized(): ${iid.name}${implN}Serialized {
        |    return {
-       |${renderSerializedObject(fields.all.map(_.field), ts).shift(8)}
+       |${renderSerializedObject(fields.all.map(_.field)).shift(8)}
        |    };
        |}
        |
@@ -120,11 +119,11 @@ final class DomainTSCompositeRenderer(ctx: DomainTSContext) {
      """.stripMargin
   }
 
-  private def renderDtoInterfaceLoader(iid: InterfaceId, ts: Typespace): String = {
-    val fields = ts.structure.structure(iid)
+  private def renderDtoInterfaceLoader(iid: InterfaceId): String = {
+    val fields = DomainTSStruct.structureOf(ctx.domain, iid)
     val implN  = DomainTSStruct.implId(iid).name
     s"""public load${iid.name}Serialized(slice: ${iid.name}${implN}Serialized) {
-       |${renderDeserializeObject(fields.all.map(_.field), ts).shift(4)}
+       |${renderDeserializeObject(fields.all.map(_.field)).shift(4)}
        |}
        |
        |public load${iid.name}(slice: ${iid.name}$implN) {
@@ -133,14 +132,14 @@ final class DomainTSCompositeRenderer(ctx: DomainTSContext) {
      """.stripMargin
   }
 
-  private def renderSerializedObject(fields: List[Field], ts: Typespace): String = {
-    val serialized = fields.map(f => conv.serializeField(f, ts))
+  private def renderSerializedObject(fields: List[Field]): String = {
+    val serialized = fields.map(f => conv.serializeField(f))
     val it         = serialized.iterator
     it.map(m => s"$m${if (it.hasNext) "," else ""}").mkString("\n")
   }
 
-  private def renderDeserializeObject(fields: List[Field], ts: Typespace): String = {
-    fields.map(f => conv.deserializeField(f, ts)).mkString("\n")
+  private def renderDeserializeObject(fields: List[Field]): String = {
+    fields.map(f => conv.deserializeField(f)).mkString("\n")
   }
 
   private def renderDefaultValue(id: TypeId): Option[String] = id match {

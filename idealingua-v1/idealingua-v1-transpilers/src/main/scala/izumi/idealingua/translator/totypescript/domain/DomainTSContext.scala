@@ -4,7 +4,6 @@ import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.translator.CompilerOptions.TypescriptTranslatorOptions
 import izumi.idealingua.translator.totypescript.domain.extensions.{DomainTSEnumHelpersExtension, DomainTSIntrospectionExtension}
 import izumi.idealingua.translator.totypescript.tools.ModuleTools
-import izumi.idealingua.translator.totypescript.types.TypeScriptTypeConverter
 import izumi.idealingua.typer.ir.Domain
 
 /** Minimal TSTContext for the Domain-consuming TypeScript translator port.
@@ -26,7 +25,7 @@ final class DomainTSContext(
   val parsed: DomainMeshResolved,
   val options: TypescriptTranslatorOptions,
 ) {
-  final val conv     = new TypeScriptTypeConverter()
+  final val conv     = new DomainTSTypeConverter(domain)
   final val modules  = new ModuleTools()
   final val manifest = options.manifest
 

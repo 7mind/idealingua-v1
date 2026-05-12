@@ -582,7 +582,7 @@ final class DomainTSServiceRendererSpec extends AnyFunSuite {
     val ts        = legacyTypespaceForService(domainId, legacySvc)
 
     val ctxNew   = newCtxFor(domainId)
-    val actual   = ctxNew.serviceRenderer.renderService(newSvc, ts)
+    val actual   = ctxNew.serviceRenderer.renderService(newSvc)
     val expected = legacyRenderService(legacySvc, ts)
 
     val _ = assert(expected.client == actual.client, s"client diverges\nlegacy=${expected.client}\nnew   =${actual.client}")
@@ -606,7 +606,7 @@ final class DomainTSServiceRendererSpec extends AnyFunSuite {
     val ts       = legacyTypespaceForBuzzer(domainId, legacyBz)
 
     val ctxNew   = newCtxFor(domainId)
-    val actual   = ctxNew.serviceRenderer.renderBuzzer(newBz, ts)
+    val actual   = ctxNew.serviceRenderer.renderBuzzer(newBz)
     val expected = legacyRenderBuzzer(legacyBz, ts)
 
     val _ = assert(expected.client == actual.client, s"client diverges\nlegacy=${expected.client}\nnew   =${actual.client}")

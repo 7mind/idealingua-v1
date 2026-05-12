@@ -245,7 +245,7 @@ final class DomainTSCompositeRendererSpec extends AnyFunSuite {
     )
     val ts = legacyTypespaceFor(domainId, legacyDto)
 
-    val actual   = ctxNew.compositeRenderer.renderDto(newDto, ts)
+    val actual   = ctxNew.compositeRenderer.renderDto(newDto)
     val expected = legacyRender(legacyDto, ts)
 
     assertProductEqual("dto-single-primitive", expected, actual)
@@ -271,7 +271,7 @@ final class DomainTSCompositeRendererSpec extends AnyFunSuite {
     )
     val ts = legacyTypespaceFor(domainId, legacyDto)
 
-    val actual   = ctxNew.compositeRenderer.renderDto(newDto, ts)
+    val actual   = ctxNew.compositeRenderer.renderDto(newDto)
     val expected = legacyRender(legacyDto, ts)
 
     assertProductEqual("dto-pair", expected, actual)

@@ -116,4 +116,60 @@ object DomainTSStruct {
   def implId(id: InterfaceId): izumi.idealingua.model.common.TypeId.DTOId = {
     izumi.idealingua.model.common.TypeId.DTOId(id, "Struct")
   }
+
+  /** Domain-direct port of `Typespace.inheritance.parentsInherited(id)`.
+    *
+    * Replicates the legacy depth-first traversal from
+    * `InheritanceQueriesImpl.safeParentsInherited`: for an `InterfaceId i`,
+    * the result is `List(i) ++ parents.flatMap(parentsInherited)`; for a
+    * `DTOId d`, the result is `parents.flatMap(parentsInherited)`. Other
+    * `TypeId` kinds (identifier, enum, alias, adt, service-family) return
+    * `Nil`. `parents` for both DTO and Interface comes from
+    * `struct.superclasses.interfaces` in declaration order — the new-IR
+    * `TypeDef.Dto/Interface` preserves that exact list.
+    *
+    * Cycle protection is omitted because the new-typer
+    * `CycleDetector` rejects cyclic inheritance before assembly (and the
+    * legacy `checkCycles` would have thrown anyway). The `excluded`
+    * parameter in the legacy walk is therefore unreachable for any valid
+    * domain.
+    *
+    * Used by `DomainTSInterfaceRenderer` and `DomainTSCompositeRenderer`
+    * for the `.register(...)` chain and the `to<Iface>Serialized` /
+    * `load<Iface>` helper enumeration. The order matters for byte parity —
+    * `distinctBy(_.name)` on the call site preserves the first occurrence.
+    */
+  def parentsInherited(domain: Domain, id: izumi.idealingua.model.common.TypeId): List[InterfaceId] = {
+    id match {
+      case i: InterfaceId =>
+        val parents = domain.userTypes.get(i) match {
+          case Some(iface: NewTypeDef.Interface) => iface.struct.superclasses.interfaces
+          case _                                 => List.empty
+        }
+        List(i) ++ parents.flatMap(parentsInherited(domain, _))
+      case d: izumi.idealingua.model.common.TypeId.DTOId =>
+        val parents = domain.userTypes.get(d) match {
+          case Some(dto: NewTypeDef.Dto) => dto.struct.superclasses.interfaces
+          case _                         => List.empty
+        }
+        parents.flatMap(parentsInherited(domain, _))
+      case _ => List.empty
+    }
+  }
+
+  /** Domain-direct port of `Typespace.structure.structure(id)` for the
+    * single use site in `DomainTSCompositeRenderer.renderDto*Interface*`
+    * (queries the *interface*'s structure, not the DTO's). Builds the
+    * legacy `Struct` shape from `Domain.flattenedStructs(i.id)` plus the
+    * interface's declared superclasses — see `fromFlat` for the per-step
+    * rationale.
+    */
+  def structureOf(domain: Domain, i: InterfaceId): izumi.idealingua.model.typespace.structures.Struct = {
+    val flat = domain.flattenedStructs.getOrElse(i, FlatStruct(i, List.empty, List.empty, List.empty))
+    val supers = domain.userTypes.get(i) match {
+      case Some(iface: NewTypeDef.Interface) => iface.struct.superclasses
+      case _ => izumi.idealingua.model.il.ast.typed.Super.empty
+    }
+    fromFlat(i, flat, supers, domain)
+  }
 }

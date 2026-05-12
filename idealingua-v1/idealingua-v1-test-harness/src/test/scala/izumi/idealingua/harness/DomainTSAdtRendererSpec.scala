@@ -219,7 +219,7 @@ final class DomainTSAdtRendererSpec extends AnyFunSuite {
     val ts = legacyTypespaceFor(domainId, Seq(legacyAdt, branchA, branchB))
 
     val ctxNew   = newCtxFor(domainId)
-    val actual   = ctxNew.adtRenderer.renderAdt(newAdt, ts)
+    val actual   = ctxNew.adtRenderer.renderAdt(newAdt)
     val expected = legacyRender(legacyAdt, ts)
 
     assertProductEqual("adt-two-dto", expected, actual)
@@ -243,7 +243,7 @@ final class DomainTSAdtRendererSpec extends AnyFunSuite {
     val ts = legacyTypespaceFor(domainId, Seq(legacyAdt, branchA, branchB))
 
     val ctxNew   = newCtxFor(domainId)
-    val actual   = ctxNew.adtRenderer.renderAdt(newAdt, ts)
+    val actual   = ctxNew.adtRenderer.renderAdt(newAdt)
     val expected = legacyRender(legacyAdt, ts)
 
     assertProductEqual("adt-renamed-branches", expected, actual)

@@ -6,9 +6,8 @@ import izumi.idealingua.model.common.{Generic, Primitive, TypeId}
 import izumi.idealingua.model.il.ast.typed.{Field, IdField}
 import izumi.idealingua.model.publishing.manifests.TypeScriptProjectLayout
 import izumi.idealingua.translator.CompilerOptions.TypescriptTranslatorOptions
-import izumi.idealingua.translator.totypescript.domain.DomainTSStruct
+import izumi.idealingua.translator.totypescript.domain.{DomainTSStruct, DomainTSTypeConverter}
 import izumi.idealingua.translator.totypescript.products.CogenProduct.*
-import izumi.idealingua.translator.totypescript.types.TypeScriptTypeConverter
 import izumi.idealingua.typer.ir.{Domain, FlatStruct, TypeDef => NewTypeDef}
 
 /** PR-02 IMPL-7b Phase B M4: new-IR port of `IntrospectionExtension`.
@@ -75,7 +74,7 @@ object DomainTSIntrospectionExtension {
     case other            => throw new Exception(s"Unwind type is not implemented for type $other")
   }
 
-  private def unwindField(domain: Domain, conv: TypeScriptTypeConverter, name: String, id: TypeId): String = {
+  private def unwindField(domain: Domain, conv: DomainTSTypeConverter, name: String, id: TypeId): String = {
     s"""{
        |    name: '$name',
        |    accessName: '${conv.safeName(name)}',
@@ -122,7 +121,7 @@ object DomainTSIntrospectionExtension {
   def handleIdentifier(
     domain: Domain,
     options: TypescriptTranslatorOptions,
-    conv: TypeScriptTypeConverter,
+    conv: DomainTSTypeConverter,
     identifier: NewTypeDef.Identifier,
     product: IdentifierProduct,
   ): IdentifierProduct = {
@@ -159,7 +158,7 @@ object DomainTSIntrospectionExtension {
     IdentifierProduct(product.identitier, product.identifierInterface + extension, product.header)
   }
 
-  private def renderDTOIntrospector(domain: Domain, conv: TypeScriptTypeConverter, name: String, fields: Iterable[Field]): String = {
+  private def renderDTOIntrospector(domain: Domain, conv: DomainTSTypeConverter, name: String, fields: Iterable[Field]): String = {
     s"""Introspector.register($name.FullClassName, {
        |        full: $name.FullClassName,
        |        short: $name.ClassName,
@@ -188,7 +187,7 @@ object DomainTSIntrospectionExtension {
   def handleDTO(
     domain: Domain,
     options: TypescriptTranslatorOptions,
-    conv: TypeScriptTypeConverter,
+    conv: DomainTSTypeConverter,
     dto: NewTypeDef.Dto,
     product: CompositeProduct,
   ): CompositeProduct = {
@@ -214,7 +213,7 @@ object DomainTSIntrospectionExtension {
   def handleInterface(
     domain: Domain,
     options: TypescriptTranslatorOptions,
-    conv: TypeScriptTypeConverter,
+    conv: DomainTSTypeConverter,
     interface: NewTypeDef.Interface,
     product: InterfaceProduct,
   ): InterfaceProduct = {
