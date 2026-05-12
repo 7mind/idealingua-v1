@@ -148,18 +148,29 @@ object NameResolver {
       */
     private def collectExportedNames(domain: DomainMeshLoaded): Map[String, TypeId] = {
       domain.types.iterator.collect {
-        case d: RawTypeDef.WithId => d.id.name -> (d.id: TypeId)
-        case d: RawTypeDef.NewType => d.id.name -> (d.id.toAliasId: TypeId)
+        case d: RawTypeDef.WithId  => d.id.name -> ScopeBuilder.normalizeId(d.id, domain.id)
+        case d: RawTypeDef.NewType => d.id.name -> ScopeBuilder.normalizeId(d.id.toAliasId, domain.id)
       }.toMap
     }
 
+    /** Normalise a raw-AST `TypeId` so its `path.domain` (or `domain` for
+      * service-family ids) reflects the owning domain rather than the
+      * `DomainId.Undefined` produced by `ParsedId.typePath` for unqualified
+      * local declarations. Mirrors `ScopeBuilder.normalizeId` and the legacy
+      * `IDLPostTyper.fixPkg` / `fixServiceId` step. Keeps the IR-shape
+      * invariant: every `TypeDef.id` declared in domain `X` carries
+      * `path.domain == X` (closes IMPL-7a.2 Phase B M2 finding).
+      */
+    private def own(t: TypeId): TypeId = ScopeBuilder.normalizeId(t, scoped.domainId)
+
     def fixEnum(d: RawTypeDef.Enumeration): TypeDef.Enum =
-      TypeDef.Enum(d.id, d.struct.members.map(m => EnumMember(m.value, fixMeta(m.meta))), fixMeta(d.meta))
+      TypeDef.Enum(own(d.id).asInstanceOf[EnumId], d.struct.members.map(m => EnumMember(m.value, fixMeta(m.meta))), fixMeta(d.meta))
 
     def fixAlias(d: RawTypeDef.Alias): TypeDef.Alias =
-      TypeDef.Alias(d.id, resolveRef(d.target, d.meta.position), fixMeta(d.meta))
+      TypeDef.Alias(own(d.id).asInstanceOf[AliasId], resolveRef(d.target, d.meta.position), fixMeta(d.meta))
 
     def fixIdentifier(d: RawTypeDef.Identifier): TypeDef.Identifier = {
+      val ownedId = own(d.id).asInstanceOf[IdentifierId]
       val fields = d.fields.map {
         f =>
           val tid  = resolveRef(f.typeId, f.meta.position)
@@ -172,30 +183,31 @@ object NameResolver {
               // Phase 4 (KindChecker) will flag this; here we still need a well-formed
               // IdField so downstream phases don't NPE. Carry the bad type as a
               // PrimitiveField sentinel and let KindChecker emit BadIdentifierFieldType.
-              diagBuf += Diagnostic.BadIdentifierFieldType(d.id, name, other, f.meta.position)
+              diagBuf += Diagnostic.BadIdentifierFieldType(ownedId, name, other, f.meta.position)
               IdField.PrimitiveField(Primitive.TString, name, fixMeta(f.meta))
           }
       }
-      TypeDef.Identifier(d.id, fields, fixMeta(d.meta))
+      TypeDef.Identifier(ownedId, fields, fixMeta(d.meta))
     }
 
     def fixInterface(d: RawTypeDef.Interface): TypeDef.Interface =
-      TypeDef.Interface(d.id, toStruct(d.struct), fixMeta(d.meta))
+      TypeDef.Interface(own(d.id).asInstanceOf[InterfaceId], toStruct(d.struct), fixMeta(d.meta))
 
     def fixDto(d: RawTypeDef.DTO): TypeDef.Dto =
-      TypeDef.Dto(d.id, toStruct(d.struct), fixMeta(d.meta))
+      TypeDef.Dto(own(d.id).asInstanceOf[DTOId], toStruct(d.struct), fixMeta(d.meta))
 
     def fixAdt(d: RawTypeDef.Adt): TypeDef.Adt = {
+      val ownedId = own(d.id).asInstanceOf[AdtId]
       val members = d.alternatives.map {
         case RawAdt.Member.TypeRef(typeId, memberName, m) =>
           AdtMember(resolveRef(typeId, m.position), memberName, fixMeta(m))
         case RawAdt.Member.NestedDefn(nested) =>
           // Nested defns are unsupported; emit diagnostic and synthesize a
           // sentinel AdtMember referencing TString so the shape stays valid.
-          diagBuf += Diagnostic.NestedAdtMemberUnsupported(d.id, nested.id, NodeMetaPos.of(nested))
+          diagBuf += Diagnostic.NestedAdtMemberUnsupported(ownedId, nested.id, NodeMetaPos.of(nested))
           AdtMember(Placeholder, None, NodeMeta.empty)
       }
-      TypeDef.Adt(d.id, members, fixMeta(d.meta))
+      TypeDef.Adt(ownedId, members, fixMeta(d.meta))
     }
 
     /** Newtypes become aliases at this layer (legacy behaviour); the
@@ -203,16 +215,16 @@ object NameResolver {
       * (IMPL-3) will materialise it. For now we synthesize an alias.
       */
     def fixNewType(d: RawTypeDef.NewType): TypeDef.Alias =
-      TypeDef.Alias(d.id.toAliasId, resolveRef(d.source, d.meta.position), fixMeta(d.meta))
+      TypeDef.Alias(own(d.id.toAliasId).asInstanceOf[AliasId], resolveRef(d.source, d.meta.position), fixMeta(d.meta))
 
     def fixService(s: RawService): TypeDef.Service =
-      TypeDef.Service(s.id, s.methods.map(fixMethod), fixMeta(s.meta))
+      TypeDef.Service(own(s.id).asInstanceOf[ServiceId], s.methods.map(fixMethod), fixMeta(s.meta))
 
     def fixBuzzer(b: RawBuzzer): TypeDef.Buzzer =
-      TypeDef.Buzzer(b.id, b.events.map(fixMethod), fixMeta(b.meta))
+      TypeDef.Buzzer(own(b.id).asInstanceOf[BuzzerId], b.events.map(fixMethod), fixMeta(b.meta))
 
     def fixStreams(s: RawStreams): TypeDef.Streams =
-      TypeDef.Streams(s.id, s.streams.map(fixStream), fixMeta(s.meta))
+      TypeDef.Streams(own(s.id).asInstanceOf[StreamsId], s.streams.map(fixStream), fixMeta(s.meta))
 
     private def fixMethod(m: RawMethod): DefMethod = m match {
       case rpc: RawMethod.RPCMethod =>

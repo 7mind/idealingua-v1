@@ -1,5 +1,6 @@
 package izumi.idealingua.translator.toscala.domain
 
+import izumi.idealingua.model.common.TypeId
 import izumi.idealingua.model.il.ast.IDLTyper
 import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.model.il.ast.typed.{DomainDefinition, TypeDef => LegacyTypeDef}
@@ -93,21 +94,23 @@ final class DomainScalaTranslator(
     val ctx        = new DomainSTContext(domain, parsed, options)
     val legacyConv = new ScalaTypeConverter(domain.id)
 
-    // The new typer and legacy IDLTyper assign structurally different
-    // `TypeId`s (different `TypePath`s) for the same source declaration, so
-    // direct id-keyed lookup fails. Match by simple name within the legacy
-    // type table — names are unique within a domain (validator-enforced).
-    val legacyAliasesByName: Map[String, LegacyTypeDef.Alias] = domainDef.types.collect {
-      case a: LegacyTypeDef.Alias => a.id.name -> a
+    // After PR-02 IMPL-2-fix (`ScopeBuilder.normalize` + `NameResolver.own`),
+    // the new typer's `TypeDef.id` carries the same `TypePath.domain` as the
+    // legacy `IDLPostTyper.fixPkg` output for every locally declared type.
+    // Direct id-keyed lookup is therefore valid; the previous simple-name
+    // fallback (introduced in commit `4bb48cb` when same-domain refs still
+    // carried `DomainId.Undefined`) has been removed.
+    val legacyAliasesById: Map[TypeId, LegacyTypeDef.Alias] = domainDef.types.collect {
+      case a: LegacyTypeDef.Alias => (a.id: TypeId) -> a
     }.toMap
 
-    val legacyEnumsByName: Map[String, LegacyTypeDef.Enumeration] = domainDef.types.collect {
-      case e: LegacyTypeDef.Enumeration => e.id.name -> e
+    val legacyEnumsById: Map[TypeId, LegacyTypeDef.Enumeration] = domainDef.types.collect {
+      case e: LegacyTypeDef.Enumeration => (e.id: TypeId) -> e
     }.toMap
 
     domain.userTypes.foreach {
       case (_, alias: NewTypeDef.Alias) =>
-        legacyAliasesByName.get(alias.id.name) match {
+        legacyAliasesById.get(alias.id) match {
           case Some(la) =>
             val newDefns = ctx.aliasRenderer.renderAlias(alias)
             val legacyDefns = Seq(
@@ -115,14 +118,16 @@ final class DomainScalaTranslator(
             )
             assertByteEqual(legacyDefns, newDefns, s"alias ${alias.id.name}")
           case None =>
-          // New IR has an alias the legacy DomainDefinition does not expose
-          // (likely a typer-phase divergence outside the scope of this
-          // renderer parity assertion). Skip; the corpus-wide
+          // New IR classifies this declaration as a `TypeDef.Alias` while the
+          // legacy typer carries a non-alias shape at the same id (e.g.
+          // `clone M0 into M2 { ... }` becomes an alias in the new IR but a
+          // DTO/Interface extension in legacy — a pre-existing IR-phase
+          // divergence orthogonal to TypeId normalization). The corpus-wide
           // `ScalaTyperParitySpec` byte gate catches any net output divergence.
         }
 
       case (_, e: NewTypeDef.Enum) =>
-        legacyEnumsByName.get(e.id.name) match {
+        legacyEnumsById.get(e.id) match {
           case Some(le) =>
             val newProduct    = ctx.enumRenderer.renderEnumeration(e)
             val legacyProduct = legacyEnumProduct(le, legacyConv)

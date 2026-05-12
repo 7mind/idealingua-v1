@@ -1,6 +1,7 @@
 package izumi.idealingua.typer.phase
 
-import izumi.idealingua.model.common.{DomainId, TypeId}
+import izumi.idealingua.model.common.TypeId._
+import izumi.idealingua.model.common.{Builtin, DomainId, TypeId}
 import izumi.idealingua.model.il.ast.InputPosition
 import izumi.idealingua.model.il.ast.raw.defns.{RawNodeMeta, RawTypeDef}
 import izumi.idealingua.model.il.ast.raw.defns.RawTypeDef.{ForeignType, NewType}
@@ -64,7 +65,7 @@ object ScopeBuilder {
 
     parsed.types.foreach {
       case d: RawTypeDef.WithId =>
-        val tid  = d.id
+        val tid  = normalize(d.id, rootId)
         val name = tid.name
         val pos  = withIdMeta(d).position
         localBuilder.get(name) match {
@@ -76,7 +77,7 @@ object ScopeBuilder {
         }
 
       case d: NewType =>
-        val tid  = d.id.toAliasId
+        val tid  = normalize(d.id.toAliasId, rootId).asInstanceOf[AliasId]
         val name = tid.name
         localBuilder.get(name) match {
           case Some(existing) =>
@@ -146,12 +147,49 @@ object ScopeBuilder {
     * `DomainMeshLoaded` (using the pre-extracted `types` field).
     *
     * Used during import resolution to look up the imported domain's local names
-    * via `family.domains(importedDomainId)`.
+    * via `family.domains(importedDomainId)`.  Mirrors the registration path
+    * above: returned `TypeId`s are normalised so a same-domain alias declared
+    * in `domain.id` carries `path.domain == domain.id` (legacy parity with
+    * `IDLPostTyper.fixPkg`).
     */
   private def collectLocalNames(domain: DomainMeshLoaded): Map[String, TypeId] = {
     domain.types.iterator.collect {
-      case d: RawTypeDef.WithId => d.id.name -> (d.id: TypeId)
-      case d: NewType           => d.id.name -> (d.id.toAliasId: TypeId)
+      case d: RawTypeDef.WithId => d.id.name -> normalize(d.id, domain.id)
+      case d: NewType           => d.id.name -> normalize(d.id.toAliasId, domain.id)
     }.toMap
   }
+
+  /** Rewrite a parser-produced `TypeId` so its `TypePath.domain` reflects the
+    * owning `rootId` rather than `DomainId.Undefined`. Mirrors the legacy
+    * `IDLPostTyper.fixPkg` / `fixServiceId` / `fixBuzzerId` / `fixStreamsId`
+    * normalisation step that the new typer was missing — the parser
+    * (`ParsedId.typePath`) produces `DomainId.Undefined` for any locally
+    * declared identifier (no qualifying package), and the legacy typer rewrites
+    * those to the owning domain immediately. Without this step, downstream
+    * consumers see `path.domain == DomainId.Undefined` for every locally
+    * declared `TypeId`, causing rendering divergences in same-domain
+    * references (alias targets, ADT members, field types, etc.).
+    *
+    * Built-ins (whose `path.domain` is `DomainId.Builtin`) and types that
+    * already carry a definite owning domain are returned unchanged.
+    */
+  private def normalize(tid: TypeId, rootId: DomainId): TypeId = tid match {
+    case _: Builtin                                            => tid
+    case t: DTOId        if t.path.domain == DomainId.Undefined => t.copy(path = t.path.copy(domain = rootId))
+    case t: InterfaceId  if t.path.domain == DomainId.Undefined => t.copy(path = t.path.copy(domain = rootId))
+    case t: EnumId       if t.path.domain == DomainId.Undefined => t.copy(path = t.path.copy(domain = rootId))
+    case t: AliasId      if t.path.domain == DomainId.Undefined => t.copy(path = t.path.copy(domain = rootId))
+    case t: IdentifierId if t.path.domain == DomainId.Undefined => t.copy(path = t.path.copy(domain = rootId))
+    case t: AdtId        if t.path.domain == DomainId.Undefined => t.copy(path = t.path.copy(domain = rootId))
+    case t: ServiceId    if t.domain == DomainId.Undefined      => t.copy(domain = rootId)
+    case t: BuzzerId     if t.domain == DomainId.Undefined      => t.copy(domain = rootId)
+    case t: StreamsId    if t.domain == DomainId.Undefined      => t.copy(domain = rootId)
+    case _ => tid
+  }
+
+  /** Public-to-package normalisation entry point so `NameResolver` can apply
+    * the same rewrite to the `d.id` it carries from the raw AST into the IR.
+    * Same semantics as the private `normalize`.
+    */
+  private[phase] def normalizeId(tid: TypeId, rootId: DomainId): TypeId = normalize(tid, rootId)
 }

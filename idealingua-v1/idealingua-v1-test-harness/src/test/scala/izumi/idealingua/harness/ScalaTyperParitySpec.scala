@@ -1,5 +1,6 @@
 package izumi.idealingua.harness
 
+import izumi.idealingua.translator.toscala.domain.DomainScalaTranslator
 import izumi.idealingua.translator.{IDLLanguage, TyperImpl, TypespaceCompilerBaseFacade}
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -92,14 +93,25 @@ final class ScalaTyperParitySpec extends AnyFunSuite {
 
     val _ = assert(checked > 0, "parity spec compared 0 domains; corpus exclusion list is over-broad")
 
-    if (typerRejections.nonEmpty || byteDivergences.nonEmpty) {
+    // IMPL-7a.2 Phase B M2 corpus-wide exerciser must produce ZERO
+    // alias/enum renderer divergences across all 28 domains after the
+    // PR-02 IMPL-2-fix TypeId normalization (same-domain `path.domain`
+    // matches legacy `IDLPostTyper.fixPkg` output). Failure here means a
+    // future refactor reintroduced the IR-shape divergence.
+    val rendererDivergences = DomainScalaTranslator.rendererDivergences
+
+    if (typerRejections.nonEmpty || byteDivergences.nonEmpty || rendererDivergences.nonEmpty) {
       val msg = new StringBuilder()
       val _   = msg.append(s"checked $checked domain(s)\n")
       if (typerRejections.nonEmpty) {
         val _ = msg.append(s"New typer rejected ${typerRejections.size} domain(s):\n").append(typerRejections.mkString("\n")).append("\n")
       }
       if (byteDivergences.nonEmpty) {
-        val _ = msg.append(s"Byte parity diverged in ${byteDivergences.size} domain(s):\n").append(byteDivergences.mkString("\n"))
+        val _ = msg.append(s"Byte parity diverged in ${byteDivergences.size} domain(s):\n").append(byteDivergences.mkString("\n")).append("\n")
+      }
+      if (rendererDivergences.nonEmpty) {
+        val _ = msg.append(s"M2 alias/enum renderer exerciser observed ${rendererDivergences.size} divergence(s):\n")
+          .append(rendererDivergences.take(10).mkString("\n"))
       }
       fail(msg.toString)
     }
