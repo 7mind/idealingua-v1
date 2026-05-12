@@ -1,5 +1,6 @@
 package izumi.idealingua.typer.phase
 
+import izumi.idealingua.model.common.Builtin
 import izumi.idealingua.model.common.TypeId._
 import izumi.idealingua.model.common.{TypeId, TypePath}
 import izumi.idealingua.model.il.ast.typed.{AdtMember, DefMethod, Field, NodeMeta, Super}
@@ -19,6 +20,15 @@ import scala.collection.mutable
   * `Member.User(TypeDef.Adt)`; DTO-shaped ephemerals retain
   * `Member.Ephemeral(EphemeralDto)` with an `EphemeralOrigin`.  Both
   * categories are recorded in `ephemeralsOf` / `ephemeralOwner`.
+  *
+  * Alternative-output ADTs (`X !! Y`) whose `Singular` branches are
+  * `Builtin` (primitives or `Generic` containers — `list`/`set`/`map`/`opt`)
+  * are auto-wrapped in a synthesized DTO `<base><Success|Failure>` carrying
+  * a single `value: <branchTypeId>` field.  This keeps Phase 12
+  * `AdtMembersRule` from rejecting the synthesized ADT as
+  * `PrimitiveAdtMember` while staying invisible to byte-parity (the legacy
+  * Scala renderer re-derives its own Typespace and ignores new-typer IR).
+  * See IMPL-7a.2-F5c (T1 portion).
   *
   * Naming constants are inlined (`private val` below) — legacy
   * `TypespaceToolsImpl` is untouched and stays alive until IMPL-10.
@@ -135,7 +145,26 @@ object EphemeralSynthesizer {
     }
 
     def synthesizeAltBranch(owner: TypeId, ownerPath: TypePath, base: String, suffix: String, out: DefMethod.Output.NonAlternativeOutput): (TypeId, Unit) = out match {
-      case s: DefMethod.Output.Singular => (s.typeId, ())
+      case s: DefMethod.Output.Singular =>
+        // Auto-wrap primitive/Generic branch types (list, set, map, opt, scalar
+        // primitives) in a synthesized DTO `<base><suffix>` so that the outer
+        // alternative ADT references a user type rather than a Builtin (which
+        // Phase 12 `AdtMembersRule` would reject as `PrimitiveAdtMember`).
+        // Non-Builtin TypeIds (DTO, Interface, Identifier, Enum, Adt) pass
+        // through unchanged — they are valid ADT branch types.
+        // See IMPL-7a.2-F5c (T1 portion).
+        if (s.typeId.isInstanceOf[Builtin]) {
+          val id = DTOId(ownerPath, s"$base$suffix")
+          val struct = Struct(
+            fields        = List(Field(s.typeId, "value", NodeMeta.empty)),
+            removedFields = Nil,
+            superclasses  = Super.empty,
+          )
+          placeEphemeralDto(owner, EphemeralDto(id, EphemeralOrigin.MethodOutput(owner, s"$base$suffix"), struct))
+          (id, ())
+        } else {
+          (s.typeId, ())
+        }
       case s: DefMethod.Output.Struct =>
         val id = DTOId(ownerPath, s"$base$suffix")
         val struct = Struct(
