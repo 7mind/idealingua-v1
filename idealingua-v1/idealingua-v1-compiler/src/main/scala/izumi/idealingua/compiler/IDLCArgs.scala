@@ -28,7 +28,7 @@ case class IDLCArgs(
   versionOverlay: Option[Path],
   overrides: Map[String, String],
   publish: Boolean      = false,
-  typerImpl: TyperImpl  = TyperImpl.Legacy,
+  typerImpl: TyperImpl  = TyperImpl.NewTyper,
 )
 
 object IDLCArgs {
@@ -106,7 +106,7 @@ object IDLCArgs {
     val overlayVersion = parameters.findValue(P.overlayVersionFile).asPath
     val publish        = parameters.hasFlag(P.publish)
     val defines        = parseDefs(parameters, P.define)
-    val typerImpl      = parameters.findValue(P.typerImpl).map(v => TyperImpl.parse(v.value)).getOrElse(TyperImpl.Legacy)
+    val typerImpl      = parameters.findValue(P.typerImpl).map(v => TyperImpl.parse(v.value)).getOrElse(TyperImpl.NewTyper)
 
     val internalRoles = Seq("init", "help")
 

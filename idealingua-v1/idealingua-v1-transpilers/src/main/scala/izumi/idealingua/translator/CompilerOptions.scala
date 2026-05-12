@@ -74,7 +74,7 @@ final case class UntypedCompilerOptions(
   withBundledRuntime: Boolean              = true,
   providedRuntime: Option[ProvidedRuntime] = None,
   zipOutput: Boolean                       = true,
-  typerImpl: TyperImpl                     = TyperImpl.Legacy,
+  typerImpl: TyperImpl                     = TyperImpl.NewTyper,
 ) extends AbstractCompilerOptions[TranslatorExtension, BuildManifest] {
   override def toString: String = {
     val rtRepr    = Option(withBundledRuntime).filter(_ == true).map(_ => "+rtb").getOrElse("-rtb")
