@@ -1,12 +1,15 @@
 package izumi.idealingua.harness
 
-import izumi.idealingua.translator.TyperImpl
-
 import java.nio.file.Paths
 
-/**
-  * Entry points for sbt task delegation via (Compile / runMain).
+/** Entry points for sbt task delegation via `(Compile / runMain)`.
+  *
   * Each object accepts a single argument: the repo root path.
+  *
+  * PR-02 IMPL-10b: `RegenerateNewTyperMain` was retired. The harness now runs
+  * `TyperImpl.NewTyper` end-to-end across all three backends, so the dedicated
+  * new-typer regeneration entry point and its `regenerateGoldensNewTyper` sbt
+  * task are redundant — plain `regenerateGoldens` is the canonical path.
   */
 object RegenerateMain {
   def main(args: Array[String]): Unit = {
@@ -15,30 +18,6 @@ object RegenerateMain {
     GoldenGenerator.regenerate(
       HarnessCorpus.corpusRoot(repoRoot),
       HarnessCorpus.goldenRoot(repoRoot),
-    )
-  }
-}
-
-/** PR-02 IMPL-7a.2 IMPL-9 compile gate (opt-in).
-  *
-  * Same shape as `RegenerateMain` but drives the Scala backend through
-  * `TyperImpl.NewTyper`. After this task writes, the standard sbt
-  * `idealingua-v1-test-harness/Compile/compile` (which already has
-  * `golden/scala` on `unmanagedSourceDirectories`) type-checks every
-  * emitted module — any new-typer codegen defect surfaces as a compile
-  * error. Commit the regenerated goldens deliberately; the byte-parity
-  * spec (`ScalaTranslatorByteParitySpec`) continues to compare legacy
-  * vs new in memory at test time and is unaffected by which view is on
-  * disk.
-  */
-object RegenerateNewTyperMain {
-  def main(args: Array[String]): Unit = {
-    require(args.length == 1, s"Usage: RegenerateNewTyperMain <repoRoot>, got ${args.mkString(", ")}")
-    val repoRoot = Paths.get(args(0))
-    GoldenGenerator.regenerate(
-      HarnessCorpus.corpusRoot(repoRoot),
-      HarnessCorpus.goldenRoot(repoRoot),
-      scalaTyper = TyperImpl.NewTyper,
     )
   }
 }
@@ -76,7 +55,7 @@ object CrossLangMain {
   def main(args: Array[String]): Unit = {
     require(args.length == 1, s"Usage: CrossLangMain <repoRoot>, got ${args.mkString(", ")}")
     val repoRoot = java.nio.file.Paths.get(args(0))
-    val report = WireFixtureCrossLangRunner.runAll(repoRoot)
+    val report   = WireFixtureCrossLangRunner.runAll(repoRoot)
     System.out.println(report.formatSummary())
   }
 }

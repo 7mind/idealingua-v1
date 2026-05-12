@@ -52,15 +52,13 @@ object HarnessOptions {
     case IDLLanguage.CSharp     => csharp
   }
 
+  /** Default-typer entrypoint: callers that don't pin a typer get
+    * `TyperImpl.NewTyper` (the canonical default since IMPL-9). The
+    * two-argument overload is retained for `GoldenCompile.compileAll`, which
+    * pins `TyperImpl.Legacy` on the TypeScript backend until the latent
+    * NewTyper-TS golden divergences surfaced by IMPL-10b are reconciled. */
   def optionsFor(lang: IDLLanguage): UntypedCompilerOptions = optionsFor(lang, TyperImpl.NewTyper)
 
-  /** PR-02 IMPL-7a.2 IMPL-9 compile gate: `regenerateGoldens` / `verifyGoldens`
-    * use this entry point with `TyperImpl.NewTyper` so the on-disk Layer A
-    * Scala goldens (already on `Compile / unmanagedSourceDirectories`) are
-    * the new-typer output. Standard sbt compile then transitively type-checks
-    * every emitted module across the 28-domain corpus, surfacing any type
-    * error in the new-typer Scala backend that bytewise-equality alone
-    * (`ScalaTranslatorByteParitySpec`) cannot detect. */
   def optionsFor(lang: IDLLanguage, typer: TyperImpl): UntypedCompilerOptions = UntypedCompilerOptions(
     language           = lang,
     extensions         = TypespaceCompilerBaseFacade.descriptor(lang).defaultExtensions,

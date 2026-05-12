@@ -10,7 +10,6 @@ import scala.sys.process._
 
 lazy val refreshFlakeTask           = taskKey[Unit]("Refresh flake.nix")
 lazy val regenerateGoldens          = taskKey[Unit]("Regenerate Layer A goldens")
-lazy val regenerateGoldensNewTyper  = taskKey[Unit]("Regenerate Layer A Scala goldens via TyperImpl.NewTyper (compile gate)")
 lazy val verifyGoldens              = taskKey[Unit]("Verify Layer A goldens against legacy compiler")
 lazy val runWireFixtures            = taskKey[Unit]("Run Layer B wire-byte fixtures (placeholder for PR-03.2)")
 lazy val runCrossLangInterop        = taskKey[Unit]("Run Layer C cross-language interop (placeholder for PR-03.4)")
@@ -1561,16 +1560,6 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
       r.run("izumi.idealingua.harness.RegenerateMain", cp, Seq(repoRoot), log)
         .failed.foreach(e => throw e)
       log.info("regenerateGoldens: done")
-    },
-    regenerateGoldensNewTyper := {
-      val log      = streams.value.log
-      val repoRoot = (LocalRootProject / baseDirectory).value.getAbsolutePath
-      log.info("regenerateGoldensNewTyper: starting (Scala backend via TyperImpl.NewTyper)")
-      val cp = (Compile / fullClasspath).value.files
-      val r  = (Compile / runner).value
-      r.run("izumi.idealingua.harness.RegenerateNewTyperMain", cp, Seq(repoRoot), log)
-        .failed.foreach(e => throw e)
-      log.info("regenerateGoldensNewTyper: done — run idealingua-v1-test-harness/Compile/compile to gate compile errors")
     },
     verifyGoldens := {
       val log      = streams.value.log
