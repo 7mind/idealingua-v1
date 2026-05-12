@@ -235,17 +235,20 @@ final class DomainScalaTranslator(
     val downs              = DomainCastDownExpandExtension.constructorsForInterface(ctx, ifc)
     val companionWithCasts = base.companionBase.appendDefinitions(sims ++ ups ++ downs)
 
-    // Empty interfaces (no implementing DTOs) cannot appear as wire payloads —
-    // skip the Circe tagged-union emit to avoid a scala.meta `cases.nonEmpty`
-    // invariant trip. Same gating as the M5 exerciser.
-    val hasImpls = domain.implementingDtos.getOrElse(ifc.id, Set.empty).nonEmpty
-    val (companionFinal, moreFinal) = if (hasImpls) {
-      val circe   = DomainCirceDerivationTranslatorExtension.emitForInterface(ctx, ifc)
-      val sibling = ctx.conv.toScala(ifc.id).sibling(circe.name).init()
-      (companionWithCasts.prependBase(sibling), base.more :+ circe.defn)
-    } else {
-      (companionWithCasts, base.more)
-    }
+    // Every user-declared interface receives Circe boilerplate (matches
+    // legacy `CirceTranslatorExtensionBase.handleInterface` which runs
+    // unconditionally). The implementor list always contains at least the
+    // synthesized mirror DTO `<I>.Struct` (Phase 7 `EphemeralSynthesizer`
+    // guarantees one mirror per user interface), so the
+    // `scala.meta` cases-non-empty invariant for the encoder match is
+    // satisfied. Defect #4 (IMPL-7a.2-Fc): previously the gate consulted
+    // `domain.implementingDtos` (user-DTO-only inversion) which could be
+    // empty for interfaces with no user-DTO descendants, even when the
+    // mirror existed.
+    val circe   = DomainCirceDerivationTranslatorExtension.emitForInterface(ctx, ifc)
+    val sibling = ctx.conv.toScala(ifc.id).sibling(circe.name).init()
+    val companionFinal = companionWithCasts.prependBase(sibling)
+    val moreFinal      = base.more :+ circe.defn
 
     val product = CogenProduct[Defn.Trait](
       defn          = withAny,

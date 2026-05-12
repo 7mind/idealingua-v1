@@ -76,7 +76,7 @@ final class DomainCastUpExtensionSpec extends AnyFunSuite {
     assert(syntax.contains("_upcast_"), s"expected upcast helper name pattern: $syntax")
   }
 
-  test("DTO without parents yields no upcast helpers") {
+  test("DTO without parents still emits a reflexive self upcast helper (legacy parity, defect #3)") {
     val dto = DTOId(tp, "Solo")
     val f = Field(Primitive.TString, "v", emptyMeta)
     val dtoTD = NewTypeDef.Dto(dto, Struct(List(f), List.empty, Super.empty), emptyMeta)
@@ -84,6 +84,12 @@ final class DomainCastUpExtensionSpec extends AnyFunSuite {
       dto -> FlatStruct(dto, List(FlatField(f, dto, 0)), List.empty, List.empty)
     )
     val ctx = ctxFor(Map(dto -> dtoTD), flats, Map.empty)
-    assert(DomainCastUpExtension.generateUpcastsForDto(ctx, dtoTD).isEmpty)
+    val ups = DomainCastUpExtension.generateUpcastsForDto(ctx, dtoTD)
+    assert(ups.size == 1, "expected exactly the self-cast helper")
+    val syntax = {
+      import scala.meta.*
+      scala.meta.dialects.Scala213(ups.head).syntax
+    }
+    assert(syntax.contains("Solo_upcast_Solo"), s"expected self-cast `Solo_upcast_Solo`: $syntax")
   }
 }

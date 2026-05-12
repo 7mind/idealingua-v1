@@ -14,7 +14,7 @@ import izumi.idealingua.translator.IDLLanguage
 import izumi.idealingua.translator.toscala.domain.DomainSTContext
 import izumi.idealingua.translator.toscala.domain.extensions.DomainCirceDerivationTranslatorExtension
 import izumi.idealingua.translator.toscala.extensions.ScalaTranslatorExtension
-import izumi.idealingua.typer.ir.{Domain, Fingerprint, FlatField, FlatStruct, Struct, TypeDef => NewTypeDef}
+import izumi.idealingua.typer.ir.{Domain, EphemeralDto, EphemeralOrigin, Fingerprint, FlatField, FlatStruct, Member, Struct, TypeDef => NewTypeDef}
 import org.scalatest.funsuite.AnyFunSuite
 import scodec.bits.ByteVector
 
@@ -43,9 +43,17 @@ final class DomainCirceExtensionSpec extends AnyFunSuite {
     extras: Map[izumi.idealingua.model.common.TypeId, NewTypeDef],
     flats: Map[izumi.idealingua.model.common.StructureId, FlatStruct],
     implementing: Map[InterfaceId, Set[DTOId]] = Map.empty,
+    extraMembers: Map[izumi.idealingua.model.common.TypeId, Member] = Map.empty,
   ): DomainSTContext = {
+    // Auto-promote `extras` into `members` as `Member.User(td)` so the new
+    // `emitForInterface` (defect #4) can walk `userTypes` AND the
+    // ephemeral-mirror lookup via `members` works. `extraMembers` is folded
+    // in last so callers can inject `Member.Ephemeral` mirrors explicitly.
+    val baseMembers: Map[izumi.idealingua.model.common.TypeId, Member] =
+      extras.map { case (tid, td) => tid -> Member.User(td) }
+    val members = baseMembers ++ extraMembers
     val dom = Domain(
-      id = domainId, meta = metaFor(domainId), members = Map.empty, roots = Set.empty,
+      id = domainId, meta = metaFor(domainId), members = members, roots = Set.empty,
       ephemeralsOf = Map.empty, ephemeralOwner = Map.empty, flattenedStructs = flats,
       parents = Map.empty, implementingDtos = implementing, loops = Set.empty,
       fingerprints = Map.empty, domainFingerprint = Fingerprint(ByteVector.empty),
@@ -127,10 +135,11 @@ final class DomainCirceExtensionSpec extends AnyFunSuite {
     val cir   = DTOId(tp, "Circle")
     val sqr   = DTOId(tp, "Square")
     val td = NewTypeDef.Interface(iface, Struct(List.empty, List.empty, Super.empty), emptyMeta)
-    // Provide implementors in deliberately reverse-sorted insertion order to
-    // verify that the extension sorts by `_.toString`.
-    val impl = Map[InterfaceId, Set[DTOId]](iface -> Set(sqr, cir))
-    val ctx = ctxFor(Map(iface -> td), Map.empty, impl)
+    // Circle and Square inherit Shape via `superclasses.interfaces` so the
+    // legacy-parity walker in `emitForInterface` (defect #4) reaches them.
+    val cirTD = NewTypeDef.Dto(cir, Struct(List.empty, List.empty, Super.empty.copy(interfaces = List(iface))), emptyMeta)
+    val sqrTD = NewTypeDef.Dto(sqr, Struct(List.empty, List.empty, Super.empty.copy(interfaces = List(iface))), emptyMeta)
+    val ctx = ctxFor(Map(iface -> td, cir -> cirTD, sqr -> sqrTD), Map.empty)
     val ct = DomainCirceDerivationTranslatorExtension.emitForInterface(ctx, td)
     val s213 = renderSyntax(ct.defn, isScala3 = false)
     assert(s213.contains("ShapeCirce"))
@@ -139,5 +148,21 @@ final class DomainCirceExtensionSpec extends AnyFunSuite {
     val squareIdx = s213.indexOf("Square")
     assert(circleIdx > 0 && squareIdx > 0, s"expected both wire ids: $s213")
     assert(circleIdx < squareIdx, s"expected deterministic Circle-before-Square order: $s213")
+  }
+
+  test("interface circe trait includes the mirror Struct DTO as an implementor (defect #4)") {
+    val iface = InterfaceId(tp, "Marker")
+    val mirrorId = DTOId(iface, "Struct")
+    val td = NewTypeDef.Interface(iface, Struct(List.empty, List.empty, Super.empty), emptyMeta)
+    val mirrorEph = EphemeralDto(mirrorId, EphemeralOrigin.InterfaceMirror(iface), Struct(List.empty, List.empty, Super.empty.copy(interfaces = List(iface))))
+    val ctx = ctxFor(
+      extras = Map(iface -> td),
+      flats = Map.empty,
+      extraMembers = Map[izumi.idealingua.model.common.TypeId, Member](mirrorId -> Member.Ephemeral(mirrorEph)),
+    )
+    val ct = DomainCirceDerivationTranslatorExtension.emitForInterface(ctx, td)
+    val s213 = renderSyntax(ct.defn, isScala3 = false)
+    // Mirror DTO `Marker.Struct` must appear in the encoder cases.
+    assert(s213.contains("Marker.Struct"), s"expected mirror case `Marker.Struct` in: $s213")
   }
 }

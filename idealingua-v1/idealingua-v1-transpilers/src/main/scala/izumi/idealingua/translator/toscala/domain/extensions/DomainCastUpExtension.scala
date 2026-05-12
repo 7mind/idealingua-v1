@@ -10,20 +10,26 @@ import scala.meta.*
 /** PR-02 IMPL-7a.2 Phase B M5: new-IR port of `CastUpExtension`.
   *
   * Emits implicit `Cast[ThisType, ParentType]` `object`s into the companion
-  * for every structural parent of the structure (interface/DTO).
+  * for every structural parent of the structure (interface/DTO), **including
+  * a reflexive self-cast `T_upcast_T`** (IMPL-7a.2-Fc, defect #3).
   *
   * Inlined port of `StructuralQueriesImpl.structuralParents` (legacy
   * `StructuralQueriesImpl.scala:106-113`):
   *
-  *   1. Take `Domain.parents.getOrElse(id, Set.empty)` ∪ `{id}` — every
-  *      structural ancestor reachable from `id` plus `id` itself.
+  *   1. Take `{id}` ∪ `Domain.parents.getOrElse(id, Set.empty)` — `id`
+  *      itself plus every structural ancestor reachable from `id`.
   *   2. Keep only ancestors whose flat-struct field set is a subset of `id`'s
   *      flat-struct field set (`legacy: `_.all.map(_.field).diff(thisStructure.all.map(_.field)).isEmpty`).
-  *   3. Drop `id` from the result (legacy keeps it but the emitted converter
-  *      filters via `name`, here we drop earlier for clarity).
+  *      The self entry trivially passes.
   *
-  * Determinism: the result is sorted by `_.toString` so emitted converter
-  * order is stable across runs.
+  * Self-emission rationale (defect #3): legacy emits `T_upcast_T` because
+  * `allStructuralParents = List(interface.id) ++ ts.inheritance.allParents(interface.id)`
+  * keeps `id` itself in the parent closure. The reflexive cast realises the
+  * `T → T` `IRTCast` typeclass instance which downstream code uses uniformly
+  * (mirror/non-mirror lookup pathways resolve the same way).
+  *
+  * Determinism: the result is sorted by `_.toString` (self placed FIRST to
+  * match legacy emit order) so emitted converter order is stable across runs.
   */
 object DomainCastUpExtension {
 
@@ -85,7 +91,12 @@ object DomainCastUpExtension {
 
     val rawParents: Set[StructureId] = ctx.domain.parents.getOrElse(thisId, Set.empty).map(_.asInstanceOf[StructureId])
 
-    rawParents.toList
+    // Defect #3 (IMPL-7a.2-Fc): include `thisId` in the cast-up parent
+    // closure so a reflexive `T_upcast_T` instance is emitted. Legacy
+    // `StructuralQueriesImpl.structuralParents` keeps `id` in
+    // `allStructuralParents` — the filter `pFields.diff(thisFlat).isEmpty`
+    // trivially admits self because `thisFlat.diff(thisFlat) == ∅`.
+    val ancestors = rawParents.toList
       .filter(p => p != thisId)
       .filter { p =>
         ctx.domain.flattenedStructs.get(p) match {
@@ -98,5 +109,9 @@ object DomainCastUpExtension {
       }
       .distinct
       .sortBy(_.toString)
+
+    // Self placed FIRST to match legacy emit order (legacy emits
+    // `List(id) ++ allParents.sortBy(...)` — id is the head element).
+    thisId :: ancestors
   }
 }

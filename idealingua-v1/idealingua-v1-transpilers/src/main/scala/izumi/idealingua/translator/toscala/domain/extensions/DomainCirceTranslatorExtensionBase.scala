@@ -1,12 +1,13 @@
 package izumi.idealingua.translator.toscala.domain.extensions
 
 import izumi.idealingua.model.common.Generic.TMap
+import izumi.idealingua.model.common.TypeId.DTOId
 import izumi.idealingua.model.common.{Builtin, TypeId}
 import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.runtime.circe.IRTTimeInstances
 import izumi.idealingua.translator.toscala.domain.DomainSTContext
 import izumi.idealingua.translator.toscala.types.runtime
-import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
+import izumi.idealingua.typer.ir.{Member, TypeDef => NewTypeDef}
 
 import scala.annotation.tailrec
 import scala.meta.*
@@ -126,16 +127,55 @@ trait DomainCirceTranslatorExtensionBase {
 
   /** Defns for an Interface — tagged-union codec keyed by implementing DTOs.
     *
-    * **Determinism note**: `Domain.implementingDtos(id)` is a `Set` — we sort
-    * by `_.toString` so the emitted case order is byte-stable across runs.
-    * Without this sort the wire format would non-deterministically pick one
-    * iteration order, breaking goldens / cross-language interop.
+    * **Implementor semantics (IMPL-7a.2-Fc, defect #4)**: legacy
+    * `ts.inheritance.implementingDtos(id)` returns *every* DTO registered in
+    * `ts.types.index` whose `parentsInherited` (interface-chain only, NOT
+    * concept-chain) contains `id`. The legacy index ALSO carries the
+    * synthesized mirror DTO `DTOId(id, "Struct")` so that mirror always
+    * appears in the implementor list — yielding the legacy
+    * `case v: T.Struct => ...` arm. The new-IR `Domain.implementingDtos`
+    * (a) collapses interface- and concept-channel parents and (b) excludes
+    * ephemerals (mirrors) from the user-types-only index. We replicate
+    * legacy semantics here locally:
+    *
+    *   - For every user DTO whose `struct.superclasses.interfaces`
+    *     transitively contains `i.id` → include as implementor.
+    *   - Include the mirror `DTOId(i.id, "Struct")` if it exists as
+    *     `Member.Ephemeral` in `ctx.domain.members` (it always does for
+    *     user-declared interfaces — `EphemeralSynthesizer` Phase 7
+    *     guarantees this).
+    *
+    * **Determinism note**: result is sorted by `_.toString` so the emitted
+    * case order is byte-stable across runs.
     */
   def emitForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): CirceTrait = {
     import ctx.conv.*
     val t            = toScala(i.id)
     val tpe          = t.typeFull
-    val implementors = ctx.domain.implementingDtos.getOrElse(i.id, Set.empty).toList.sortBy(_.toString)
+
+    val interfaceInheritedDtos: Set[DTOId] = {
+      // Walk every user DTO and check whether `i.id` is reachable via the
+      // interface-inheritance closure only (mirroring legacy `parentsInherited`).
+      val buf = scala.collection.mutable.LinkedHashSet.empty[DTOId]
+      ctx.domain.userTypes.values.foreach {
+        case dto: NewTypeDef.Dto =>
+          if (interfaceClosureContains(ctx, dto.id, i.id)) {
+            val _ = buf.add(dto.id)
+          }
+        case _ => ()
+      }
+      buf.toSet
+    }
+
+    val mirrorImplementor: Option[DTOId] = {
+      val mirrorId = DTOId(i.id, "Struct")
+      ctx.domain.members.get(mirrorId) match {
+        case Some(_: Member.Ephemeral) => Some(mirrorId)
+        case _                         => None
+      }
+    }
+
+    val implementors = (interfaceInheritedDtos ++ mirrorImplementor).toList.sortBy(_.toString)
 
     val enc = implementors.map { c =>
       p"""case v: ${toScala(c).typeFull} => Map(${Lit.String(c.wireId)} -> v).asJsonObject"""
@@ -243,6 +283,40 @@ trait DomainCirceTranslatorExtensionBase {
       """,
       )
     }
+  }
+
+  /** Returns true iff `target` is reachable from `from` by walking only the
+    * interface-channel parent links (`struct.superclasses.interfaces`),
+    * stopping when a non-interface link is encountered. Mirrors legacy
+    * `parentsInherited` (`InheritanceQueriesImpl.scala:21-23,36-70`) which
+    * excludes concepts/mixins.
+    *
+    * Used by `emitForInterface` (defect #4) to compute the implementor list
+    * with legacy semantics.
+    */
+  private def interfaceClosureContains(ctx: DomainSTContext, from: TypeId, target: TypeId): Boolean = {
+    val visited = scala.collection.mutable.Set.empty[TypeId]
+    val queue   = scala.collection.mutable.Queue.empty[TypeId]
+    queue.enqueue(from)
+    while (queue.nonEmpty) {
+      val cur = queue.dequeue()
+      if (visited.add(cur)) {
+        ctx.domain.userTypes.get(cur) match {
+          case Some(dto: NewTypeDef.Dto) =>
+            dto.struct.superclasses.interfaces.foreach { iid =>
+              if (iid == target) return true
+              queue.enqueue(iid)
+            }
+          case Some(ifc: NewTypeDef.Interface) =>
+            ifc.struct.superclasses.interfaces.foreach { iid =>
+              if (iid == target) return true
+              queue.enqueue(iid)
+            }
+          case _ => ()
+        }
+      }
+    }
+    false
   }
 
   /** Walks alias targets to determine whether an encoder is an `Encoder.AsObject`
