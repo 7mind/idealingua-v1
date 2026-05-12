@@ -6,7 +6,6 @@ import izumi.idealingua.model.common.{DomainId, TypeId}
 import izumi.idealingua.model.il.ast.raw.models.Inclusion
 import izumi.idealingua.model.il.ast.typed._
 import izumi.idealingua.model.loader.{FSPath, LoadedDomain, ModelParsingResult}
-import izumi.idealingua.model.typespace.verification.MissingDependency
 
 sealed trait IDLError
 
@@ -101,10 +100,6 @@ object TypespaceError {
 
   final case class CyclicUsage(t: TypeId, cycles: Set[TypeId]) extends TypespaceError {
     override def toString: String = s"Cyclic usage disabled due to serialization issues, use opt[T] to break the loop: $t. Cycle caused by: $cycles"
-  }
-
-  final case class MissingDependencies(deps: List[MissingDependency]) extends TypespaceError {
-    override def toString: String = s"Missing dependencies: ${deps.mkString(", ")}"
   }
 
   final case class VerificationException(message: String) extends TypespaceError {

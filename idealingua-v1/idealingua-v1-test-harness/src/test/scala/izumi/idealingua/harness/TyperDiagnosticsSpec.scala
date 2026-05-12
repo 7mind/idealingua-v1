@@ -47,11 +47,11 @@ final class TyperDiagnosticsSpec extends AnyFunSuite {
     val capturedLines        = scala.collection.mutable.Buffer.empty[String]
     val unexpectedlyRejected = scala.collection.mutable.Buffer.empty[String]
     val unexpectedlyAccepted = scala.collection.mutable.Buffer.empty[String]
-    val byId                 = fullCorpus.map(d => d.typespace.domain.id.toString -> d).toMap
+    val byId                 = fullCorpus.map(d => d.parsed.id.toString -> d).toMap
 
     // Pass 1 — every corpus domain must be accepted by the new typer.
     for (domain <- fullCorpus) {
-      val id = domain.typespace.domain.id.toString
+      val id = domain.parsed.id.toString
       try {
         val _ = NewTyperPipeline.run(domain.parsed)
       } catch {

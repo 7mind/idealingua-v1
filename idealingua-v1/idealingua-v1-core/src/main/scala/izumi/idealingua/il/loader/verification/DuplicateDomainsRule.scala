@@ -12,7 +12,7 @@ object DuplicateDomainsRule extends GlobalVerificationRule {
 
   override def check(successful: Seq[LoadedDomain.Success]): IDLDiagnostics = {
     val duplicates: Map[DomainId, Seq[FSPath]] =
-      successful.map(s => s.typespace.domain.id -> s.path).groupBy(_._1).filter(_._2.size > 1).view.mapValues(_.map(_._2)).toMap
+      successful.map(s => s.parsed.id -> s.path).groupBy(_._1).filter(_._2.size > 1).view.mapValues(_.map(_._2)).toMap
 
     if (duplicates.isEmpty) {
       IDLDiagnostics.empty

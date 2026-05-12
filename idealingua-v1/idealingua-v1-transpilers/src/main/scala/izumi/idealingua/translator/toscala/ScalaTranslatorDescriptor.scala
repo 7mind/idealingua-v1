@@ -2,8 +2,6 @@ package izumi.idealingua.translator.toscala
 
 import izumi.idealingua.model.publishing.BuildManifest
 import izumi.idealingua.model.publishing.manifests.ScalaBuildManifest
-import izumi.idealingua.model.typespace.verification.VerificationRule
-import izumi.idealingua.model.typespace.verification.rules.ReservedKeywordRule
 import izumi.idealingua.translator.CompilerOptions.ScalaTranslatorOptions
 import izumi.idealingua.translator._
 import izumi.idealingua.translator.toscala.domain.{DomainScalaTranslator, ScalaDefaultExtensions}
@@ -23,10 +21,6 @@ object ScalaTranslatorDescriptor extends TranslatorDescriptor[ScalaTranslatorOpt
     parsed: izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved,
     options: UntypedCompilerOptions,
   ): Translator = new DomainScalaTranslator(domain, parsed, typedOptions(options))
-
-  override def rules: Seq[VerificationRule] = Seq(
-    ReservedKeywordRule.warning("scala", keywords)
-  )
 
   override def makeHook(options: UntypedCompilerOptions): TranslationLayouter = new ScalaLayouter(typedOptions(options))
 

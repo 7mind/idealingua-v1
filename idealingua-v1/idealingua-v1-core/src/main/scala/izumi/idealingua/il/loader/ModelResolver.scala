@@ -1,16 +1,21 @@
 package izumi.idealingua.il.loader
 
-import izumi.fundamentals.platform.exceptions.IzThrowable._
 import izumi.idealingua.il.loader.verification.DuplicateDomainsRule
-import izumi.idealingua.model.il.ast.IDLTyper
 import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.model.loader._
 import izumi.idealingua.model.problems.IDLDiagnostics
-import izumi.idealingua.model.problems.TypespaceError.VerificationException
-import izumi.idealingua.model.typespace.verification.{TypespaceVerifier, VerificationRule}
-import izumi.idealingua.model.typespace.{Typespace, TypespaceImpl}
 
-class ModelResolver(rules: Seq[VerificationRule]) {
+/** Loader-side wrapper that resolves cross-domain references and collects
+  * post-resolution diagnostics.
+  *
+  * PR-02 IMPL-10d collapsed the legacy two-phase typing/verification pipeline
+  * (`IDLTyper` + `TypespaceVerifier`): both are gone. Typing now runs at
+  * translate-time via `NewTyperPipeline.run`, which accumulates its own
+  * structured diagnostics. The resolver's residual job is to produce a
+  * `LoadedDomain.Success(path, parsed, warnings = Vector.empty)` from each
+  * successfully resolved mesh and to run global checks (duplicate domain ids).
+  */
+class ModelResolver() {
 
   def resolve(domains: UnresolvedDomains): LoadedModels = {
     val globalChecks = Seq(
@@ -20,7 +25,7 @@ class ModelResolver(rules: Seq[VerificationRule]) {
 
     val typed = domains.domains.results
       .map(importResolver.resolveReferences)
-      .map(makeTyped)
+      .map(makeLoaded)
 
     val result = LoadedModels(typed, IDLDiagnostics.empty)
 
@@ -29,35 +34,7 @@ class ModelResolver(rules: Seq[VerificationRule]) {
     result.withDiagnostics(postDiag)
   }
 
-  private def makeTyped(f: Either[LoadedDomain.Failure, DomainMeshResolved]): LoadedDomain = {
-    (for {
-      d      <- f
-      ts     <- runTyper(d)
-      result <- runVerifier(ts, d)
-    } yield {
-      result
-    }).fold(identity, identity)
-  }
-
-  private def runVerifier(ts: Typespace, parsed: DomainMeshResolved): Either[LoadedDomain.VerificationFailed, LoadedDomain.Success] = {
-    try {
-      val issues = new TypespaceVerifier(ts, rules).verify()
-      if (issues.issues.isEmpty) {
-        Right(LoadedDomain.Success(ts.domain.meta.origin, ts, parsed, issues.warnings))
-      } else {
-        Left(LoadedDomain.VerificationFailed(ts.domain.meta.origin, ts.domain.id, issues))
-      }
-    } catch {
-      case t: Throwable =>
-        Left(LoadedDomain.VerificationFailed(ts.domain.meta.origin, ts.domain.id, IDLDiagnostics(Vector(VerificationException(t.stacktraceString)))))
-    }
-  }
-
-  private def runTyper(d: DomainMeshResolved): Either[LoadedDomain.TyperFailed, TypespaceImpl] = {
-    (for {
-      domain <- new IDLTyper(d).perform()
-    } yield {
-      new TypespaceImpl(domain)
-    }).fold(issues => Left(LoadedDomain.TyperFailed(d.origin, d.id, issues)), Right.apply)
+  private def makeLoaded(f: Either[LoadedDomain.Failure, DomainMeshResolved]): LoadedDomain = {
+    f.fold(identity, parsed => LoadedDomain.Success(parsed.origin, parsed, warnings = Vector.empty))
   }
 }

@@ -2,8 +2,6 @@ package izumi.idealingua.translator.tocsharp
 
 import izumi.idealingua.model.publishing.BuildManifest
 import izumi.idealingua.model.publishing.manifests.CSharpBuildManifest
-import izumi.idealingua.model.typespace.verification.VerificationRule
-import izumi.idealingua.model.typespace.verification.rules.ReservedKeywordRule
 import izumi.idealingua.translator.CompilerOptions.CSharpTranslatorOptions
 import izumi.idealingua.translator._
 import izumi.idealingua.translator.tocsharp.domain.{CSharpDefaultExtensions, DomainCSharpTranslator}
@@ -24,10 +22,6 @@ object CSharpTranslatorDescriptor extends TranslatorDescriptor[CSharpTranslatorO
     parsed: izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved,
     options: UntypedCompilerOptions,
   ): Translator = new DomainCSharpTranslator(domain, parsed, typedOptions(options))
-
-  override def rules: Seq[VerificationRule] = Seq(
-    ReservedKeywordRule.warning("c#", keywords)
-  )
 
   override def makeHook(options: UntypedCompilerOptions): TranslationLayouter = new CSharpLayouter(typedOptions(options))
 

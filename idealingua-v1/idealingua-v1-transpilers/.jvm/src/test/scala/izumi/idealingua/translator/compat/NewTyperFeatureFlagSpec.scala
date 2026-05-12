@@ -67,16 +67,15 @@ final class NewTyperFeatureFlagSpec extends AnyWordSpec {
 
   private def loadEnumsDomain() = {
     val context  = new LocalModelLoaderContext(Seq(corpusRoot), Seq.empty[File])
-    val rules    = TypespaceCompilerBaseFacade.descriptors.flatMap(_.rules)
-    val resolver = new ModelResolver(rules)
+    val resolver = new ModelResolver()
     val loaded   = context.loader.load()
     val resolved = resolver.resolve(loaded)
     val all      = resolved.successful
-    val pick     = all.find(_.typespace.domain.id.toPackage.mkString(".") == "idltest.enums")
+    val pick     = all.find(_.parsed.id.toPackage.mkString(".") == "idltest.enums")
     require(
       pick.isDefined,
       s"idltest.enums not found. corpusRoot=$corpusRoot exists=${Files.exists(corpusRoot)} " +
-        s"successful=${all.map(_.typespace.domain.id).mkString(",")}",
+        s"successful=${all.map(_.parsed.id).mkString(",")}",
     )
     pick.get
   }
