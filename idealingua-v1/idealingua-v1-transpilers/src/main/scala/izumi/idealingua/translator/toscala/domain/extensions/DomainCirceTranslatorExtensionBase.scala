@@ -69,6 +69,29 @@ trait DomainCirceTranslatorExtensionBase {
   def emitForDto(ctx: DomainSTContext, dto: NewTypeDef.Dto, scalaVersions: List[String]): CirceTrait =
     withDerivedClass(ctx, dto, scalaVersions)
 
+  /** Defns for an interface-impl mirror DTO (`<Iface>.Struct`) — derived
+    * codec.  Emitted INSIDE the interface companion (legacy parity:
+    * `CirceTranslatorExtensionBase.handleComposite` ran for every impl DTO
+    * synthesized by `CompositeRenderer.defns(_, CsInterface)`).
+    *
+    * Operates off the synthetic `implFlat` because impl IDs are not
+    * first-class user declarations and are absent from
+    * `Domain.flattenedStructs`. AnyVal eligibility on Scala 3 is computed
+    * from the synthetic flat directly.
+    */
+  def emitForImplStruct(
+    ctx: DomainSTContext,
+    implId: izumi.idealingua.model.common.TypeId.DTOId,
+    implFlat: izumi.idealingua.typer.ir.FlatStruct,
+    scalaVersions: List[String],
+  ): CirceTrait =
+    withDerivedStructCore(
+      ctx           = ctx,
+      id            = implId,
+      flatFields    = implFlat.fields,
+      scalaVersions = scalaVersions,
+    )
+
   /** Defns for an ADT — tagged-union codec. */
   def emitForAdt(ctx: DomainSTContext, adt: NewTypeDef.Adt): CirceTrait = {
     import ctx.conv.*
@@ -240,25 +263,37 @@ trait DomainCirceTranslatorExtensionBase {
   }
 
   protected def withDerivedClass(ctx: DomainSTContext, dto: NewTypeDef.Dto, scalaVersions: List[String]): CirceTrait = {
-    val id    = dto.id
+    val flat = ctx.domain.flattenedStructs.get(dto.id).map(_.fields).getOrElse(List.empty)
+    withDerivedStructCore(ctx, dto.id, flat, scalaVersions)
+  }
+
+  /** Common machinery for `withDerivedClass` and `emitForImplStruct`. Builds
+    * the `XCirce` trait carrying derived (or AnyVal-forProduct1) Encoder
+    * and Decoder for `id`. `flatFields` is the resolved field list.
+    */
+  protected def withDerivedStructCore(
+    ctx: DomainSTContext,
+    id: izumi.idealingua.model.common.StructureId,
+    flatFields: List[izumi.idealingua.typer.ir.FlatField],
+    scalaVersions: List[String],
+  ): CirceTrait = {
     val stype = ctx.conv.toScala(id)
     val name  = stype.fullJavaType.name
     val tpe   = stype.typeName
 
     val base = Init(circeRuntimePkg.conv.toScala[IRTTimeInstances].typeAbsolute, Name.Anonymous(), Seq.empty)
 
-    // Field list comes off the flat struct.
-    val flat = ctx.domain.flattenedStructs.get(id)
-
     // Scala 3 AnyVal fallback (mirrors legacy fix): if the struct is exactly
     // one scalar field qualifying for AnyVal AND we're targeting Scala 3,
     // emit a manual forProduct1 codec — circe's deriver does not handle
     // AnyVal on Scala 3.
     val isScala3 = scalaVersions.exists(_.startsWith("3"))
-    val anyvalCase = DomainAnyvalExtension.structCanBeAnyVal(ctx, dto)
+    val anyvalCase: Boolean = {
+      flatFields.size == 1 && flatFields.forall(ff => isAnyValField(ctx, ff.field.typeId))
+    }
 
-    if (anyvalCase && isScala3 && flat.isDefined && flat.get.fields.size == 1) {
-      val singleField = flat.get.fields.head.field
+    if (anyvalCase && isScala3) {
+      val singleField = flatFields.head.field
       val ftpe = ctx.conv.toScala(singleField.typeId).typeFull
       CirceTrait(
         s"${name}Circe",
@@ -283,6 +318,32 @@ trait DomainCirceTranslatorExtensionBase {
       """,
       )
     }
+  }
+
+  /** Mirrors `DomainAnyvalExtension.canBeAnyValField` — duplicated locally
+    * because that helper is `private` and we need to gate the impl-DTO
+    * AnyVal path here too.
+    */
+  private def isAnyValField(ctx: DomainSTContext, typeId: TypeId): Boolean = typeId match {
+    case _: izumi.idealingua.model.common.Generic       => false
+    case _: izumi.idealingua.model.common.Builtin       => true
+    case _: TypeId.EnumId                                => true
+    case _: TypeId.AdtId                                 => false
+    case a: TypeId.AliasId                               =>
+      ctx.domain.aliases.get(a) match {
+        case Some(target) => isAnyValField(ctx, target)
+        case None         => throw new IDLException(s"unresolved alias $a")
+      }
+    case d: TypeId.DTOId =>
+      ctx.domain.flattenedStructs.get(d).exists(_.fields.size > 1)
+    case i: TypeId.InterfaceId =>
+      ctx.domain.flattenedStructs.get(i).exists(_.fields.size > 1)
+    case t: TypeId.IdentifierId =>
+      ctx.domain.userTypes.get(t) match {
+        case Some(NewTypeDef.Identifier(_, fields, _)) => fields.size > 1
+        case _                                          => false
+      }
+    case _ => false
   }
 
   /** Returns true iff `target` is reachable from `from` by walking only the

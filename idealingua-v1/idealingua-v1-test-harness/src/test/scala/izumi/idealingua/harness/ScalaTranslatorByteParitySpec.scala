@@ -46,17 +46,26 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *     Upcast self-target emission + Circe interface mirror inclusion
     *     closed enough catalog entries that 54 modules became byte-identical
     *     end-to-end.
+    *   - 2026-05-12 (Fd: defect #2 Circe layout): 113 → **110** (–3 modules).
+    *     Interface-companion `StructCirce` trait + `Struct_upcast_*` cast
+    *     set on the inner mirror DTO + AnyVal mixin on the impl case class +
+    *     parent-iteration field-order on top-level DTO `_upcast_` bodies.
+    *     Most remaining divergences are dominated by separate defects
+    *     (IRTCast-vs-IRTExtend on the interface-implementor cast, missing
+    *     `Struct_cast_into_<peer>` set, parent-listing ordering, clone-newtype
+    *     shape) so the byte-count metric moves only when EVERY divergence in
+    *     a module is closed.
     *
     * Remaining catalog entries (each becomes a future F-followup):
     * `cast_into` vs `downcast_extend_TStruct` naming/IRTCast-vs-IRTExtend on
-    * the mirror-as-implementor path; missing `StructCirce` companion trait
-    * for the mirror Struct; mirror Struct's own `_upcast_<Self|Iface>` set;
-    * `clone X into Y { ... }` newtype shape; non-matching parent-order
-    * (alphabetical vs legacy declaration order); etc.
+    * the mirror-as-implementor path; missing `Struct_cast_into_*` peer-mirror
+    * set inside interface impl companions; `clone X into Y { ... }` newtype
+    * shape; non-matching parent-order (alphabetical vs legacy declaration
+    * order); etc.
     *
     * Symmetric on Scala 2.13.18 and 3.8.3.
     */
-  private val KnownDivergenceBaseline: Int = 113
+  private val KnownDivergenceBaseline: Int = 110
 
   private def keyOf(id: ModuleId): String =
     (id.path :+ id.name).mkString("/")

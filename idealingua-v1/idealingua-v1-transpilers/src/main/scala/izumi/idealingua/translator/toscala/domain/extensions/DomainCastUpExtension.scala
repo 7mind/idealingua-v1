@@ -39,6 +39,91 @@ object DomainCastUpExtension {
   def generateUpcastsForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[Stat] =
     generateUpcasts(ctx, i.id)
 
+  /** Defect #2-Fd (impl-struct `Struct_upcast_*` set): legacy
+    * `CompositeRenderer.defns(_, CsInterface)` ran the cast extension on the
+    * synthesized impl DTO, emitting `Struct_upcast_Struct` (self) and
+    * `Struct_upcast_<Iface>` (the directly-implemented interface), plus any
+    * further ancestor interface whose flat fields are a subset. New IR does
+    * not register the impl ID in `flattenedStructs`, so the structural parent
+    * set is computed locally: `{implId, ifaceId} ∪ {ancestor ifaces ⊆ implFlat}`.
+    *
+    * Body construction always targets the parent's impl id (`<Parent>.Struct`),
+    * matching legacy.
+    */
+  def generateUpcastsForImplStruct(
+    ctx: DomainSTContext,
+    ifaceId: InterfaceId,
+    implId: DTOId,
+    implFlat: izumi.idealingua.typer.ir.FlatStruct,
+  ): List[Stat] = {
+    // implFlat == iface's flat (constructed in DomainScalaStruct.implFlatStruct).
+    val implFieldNames: Set[String] = implFlat.fields.map(_.field.name).toSet
+
+    // Parents = self + interface + transitive interface ancestors whose flat
+    // field set is a subset of `implFieldNames`.
+    val ifaceAncestors: List[InterfaceId] = {
+      val visited = scala.collection.mutable.LinkedHashSet.empty[InterfaceId]
+      val queue   = scala.collection.mutable.Queue.empty[InterfaceId]
+      queue.enqueue(ifaceId)
+      while (queue.nonEmpty) {
+        val cur = queue.dequeue()
+        if (visited.add(cur)) {
+          ctx.domain.userTypes.get(cur) match {
+            case Some(ifc: NewTypeDef.Interface) =>
+              ifc.struct.superclasses.interfaces.foreach(p => queue.enqueue(p))
+            case _ => ()
+          }
+        }
+      }
+      visited.toList
+    }
+
+    val qualifiedAncestors = ifaceAncestors.filter { p =>
+      ctx.domain.flattenedStructs.get(p) match {
+        case Some(pfs) => pfs.fields.map(_.field.name).toSet.subsetOf(implFieldNames)
+        case None      => true // empty interface trivially admits
+      }
+    }
+
+    // Order: self FIRST, then ancestors sorted alphabetically (matches the
+    // legacy emit order for `T_upcast_*` — self leads).
+    val parents: List[StructureId] = implId :: qualifiedAncestors.sortBy(_.toString)
+
+    parents.map { parentId =>
+      val parentImplId: StructureId = parentId match {
+        case i: InterfaceId => DomainScalaStruct.implId(i)
+        case d: DTOId       => d
+      }
+
+      val parentFlatNames: Set[String] = ctx.domain.flattenedStructs.get(parentId).map(_.fields.map(_.field.name).toSet).getOrElse(implFieldNames)
+      val keep                          = parentFlatNames
+      val seen                          = scala.collection.mutable.LinkedHashSet.empty[String]
+      val constructorCode = implFlat.fields
+        .filter(ff => keep.contains(ff.field.name))
+        .sortBy(ff => (ff.distance, ff.origin.toString))
+        .reverse
+        .filter(ff => seen.add(ff.field.name))
+        .map { ff =>
+          q""" ${Term.Name(ff.field.name)} = _value.${Term.Name(ff.field.name)} """
+        }
+
+      val thisType       = ctx.conv.toScala(implId)
+      val parentType     = ctx.conv.toScala(parentId)
+      val parentImplType = ctx.conv.toScala(parentImplId)
+
+      val name = Term.Name(s"${thisType.termName.value}_upcast_${parentType.termName.value}")
+
+      q"""
+         implicit object $name extends ${ctx.rt.Cast.parameterize(List(thisType.typeFull, parentType.typeFull)).init()} {
+           override def convert(_value: ${thisType.typeFull}): ${parentType.typeFull} = {
+             assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+             ${parentImplType.termFull}(..$constructorCode)
+           }
+         }
+       """
+    }
+  }
+
   private def generateUpcasts(ctx: DomainSTContext, thisId: StructureId): List[Stat] = {
     structuralParents(ctx, thisId).map { parentId =>
       val parentImplId: StructureId = parentId match {
@@ -59,15 +144,36 @@ object DomainCastUpExtension {
       // declaration determines inclusion; the primary's `Field` value matches
       // when the field name is identical and the parent's type is a supertype
       // of the primary's type (covariant rule).
-      val dedupedNames = scala.collection.mutable.LinkedHashSet.empty[String]
-      val constructorCode = flat
-        .map(_.fields.filter(ff => parentFlat.exists(_.name == ff.field.name)))
-        .getOrElse(List.empty)
-        .sortBy(_.distance)
-        .filter(ff => dedupedNames.add(ff.field.name))
-        .map { ff =>
-          q""" ${Term.Name(ff.field.name)} = _value.${Term.Name(ff.field.name)} """
-        }
+      // Legacy iterates `struct.all` *of the parent* (not the child) at the
+      // cast-up site. Replicate by projecting `parentId`'s flat struct
+      // through the legacy sort key (`DomainScalaStruct.fromFlat`) and
+      // emitting in that order. Defect #2-Fd field-order subfix.
+      //
+      // For the reflexive `T_upcast_T` self-cast, `parentId == thisId`, so
+      // the emit order equals the case-class declaration order (which is
+      // already sorted via the legacy key for case-class params).
+      val parentFlatFields = ctx.domain.flattenedStructs.get(parentId)
+      val constructorCode = parentFlatFields match {
+        case Some(pfs) =>
+          val parentSuper = ctx.domain.userTypes.get(parentId) match {
+            case Some(d: NewTypeDef.Dto)       => d.struct.superclasses
+            case Some(i: NewTypeDef.Interface) => i.struct.superclasses
+            case _                              => izumi.idealingua.model.il.ast.typed.Super.empty
+          }
+          val parentStruct = DomainScalaStruct.fromFlat(parentId, pfs, parentSuper, ctx.domain)
+          parentStruct.all.map { f =>
+            q""" ${Term.Name(f.field.name)} = _value.${Term.Name(f.field.name)} """
+          }
+        case None =>
+          // No flat for the parent (interface impl id case) — fall back to
+          // the child's flat fields filtered by the parent's name set.
+          flat
+            .map(_.fields.filter(ff => parentFlat.exists(_.name == ff.field.name)))
+            .getOrElse(List.empty)
+            .map { ff =>
+              q""" ${Term.Name(ff.field.name)} = _value.${Term.Name(ff.field.name)} """
+            }
+      }
 
       val thisType       = ctx.conv.toScala(thisId)
       val parentType     = ctx.conv.toScala(parentId)
