@@ -6,7 +6,7 @@ import org.scalatest.funsuite.AnyFunSuite
 /** PR-02 IMPL-2/3/5 diagnostics: captures the per-domain diagnostic kind +
   * originating phase for each corpus domain rejected by the new typer
   * pipeline. Complements `ScalaTyperParitySpec` (which excludes them as
-  * F-followups IMPL-7a.2-F3/F5c).
+  * F-followups IMPL-7a.2-F5c/F5e).
   *
   * The 2 expected-rejected domains are listed below. The spec is *positive*:
   * it asserts the new typer rejects each one and that the failure message
@@ -27,6 +27,14 @@ import org.scalatest.funsuite.AnyFunSuite
   *   - `{idltest.inheritance}` (F2) removed 2026-05-12 after the
   *     StructuralFlattener covariant-field-merge fix landed
   *     (`PR-02 IMPL-3-fix: StructuralFlattener allows covariant field-type override`).
+  *   - `{idltest.consts}` F3 ConstValueTyper fixes landed 2026-05-12; the
+  *     11 BadConstValue/ConstTypeMismatch diagnostics are gone, but the
+  *     deliberate typo on `anotherString: XXX = """yyy"""` still produces
+  *     a legitimate `UnknownTypeRef(.XXX)`. The fixture stays excluded from
+  *     `ScalaTyperParitySpec` under F5e (legacy silently ignores the typo
+  *     because legacy never processes top-level consts at all, see
+  *     `IDLTyper.scala:44-54` — `IDLPretyper` collects consts into
+  *     `DomainMeshLoaded.consts` but no downstream phase reads them).
   */
 final class TyperDiagnosticsSpec extends AnyFunSuite {
   private val repoRoot   = HarnessCorpus.repoRootForTests()
@@ -34,7 +42,7 @@ final class TyperDiagnosticsSpec extends AnyFunSuite {
 
   /** Per-domain expectation: id → expected diagnostic-kind substring. */
   private val expectations: Seq[(String, String)] = Seq(
-    "{idltest.consts}"        -> "BadConstValue",
+    "{idltest.consts}"        -> "UnknownTypeRef",
     "{idltest.services}"      -> "",
   )
 

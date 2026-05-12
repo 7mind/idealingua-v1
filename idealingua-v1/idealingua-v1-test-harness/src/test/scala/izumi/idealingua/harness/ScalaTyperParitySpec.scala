@@ -23,11 +23,18 @@ final class ScalaTyperParitySpec extends AnyFunSuite {
 
   /** Fixtures excluded from the parity comparison.
     *
-    * These are IR-phase divergences (Phase 8 ConstValueTyper / Phase 12
+    * These are IR-phase divergences (Phase 2 NameResolver / Phase 12
     * Validator) — not Scala translator-port divergences.
     *
-    *   - `{idltest.consts}`: top-level const value categories rejected
-    *     by new ConstValueTyper (BadConstValue). F-followup IMPL-7a.2-F3.
+    *   - `{idltest.consts}`: deliberate-typo `anotherString: XXX = …` still
+    *     surfaces a legitimate `UnknownTypeRef(.XXX)` from Phase 2. Legacy
+    *     silently ignores the typo because legacy never processes top-level
+    *     consts at all (`IDLTyper.scala:44-54`: `IDLPretyper` collects them
+    *     into `DomainMeshLoaded.consts` but no downstream phase reads them).
+    *     F-followup IMPL-7a.2-F5e. The original F3 defects (top-level
+    *     untyped scalar/list/map consts + untyped object literal against
+    *     a structural target inside `lst[T]`) were fixed in
+    *     `PR-02 IMPL-3-fix: ConstValueTyper top-level untyped + list-literal routing`.
     *   - `{idltest.services}`: PrimitiveAdtMember/DuplicateAdtBranch on
     *     synthesized alternative-output ADTs. F-followup IMPL-7a.2-F5c.
     *

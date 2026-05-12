@@ -59,10 +59,15 @@ object ConstValueTyper {
     diagBuf: mutable.ArrayBuffer[Diagnostic],
   ): (ConstValue, Boolean) = {
     // The const's declared target type comes from the wrapping RawVal:
-    // - CTyped(target, _)
-    // - CTypedList(target, _)
-    // - CTypedObject(target, _)
-    // - otherwise: untyped raw — emit BadConstValue + return sentinel.
+    // - CTyped(target, _)        — scalar with explicit target
+    // - CTypedList(target, _)    — list with explicit target
+    // - CTypedObject(target, _)  — object with explicit target
+    // - untyped (CInt/CString/CFloat/CBool/CLong/CList/CMap): legacy
+    //   `IDLPostTyper.translateValue` accepts these and translates to the
+    //   matching untyped `ConstValue`. We mirror that by emitting an
+    //   untyped `ConstValue` without diagnostics (no inference of a target
+    //   type is attempted — legacy does no inference either, see
+    //   `IDLTyper.scala:216-253`).
     raw.const match {
       case RawVal.CTyped(t, inner) =>
         val target = resolver.resolve(t, raw.meta.position)
@@ -90,9 +95,9 @@ object ConstValueTyper {
             (sentinel(target), false)
         }
 
+      // Top-level untyped consts — legacy-compatible passthrough.
       case other =>
-        diagBuf += Diagnostic.BadConstValue(raw.id.name, s"top-level const must be CTyped/CTypedList/CTypedObject, got ${other.getClass.getSimpleName}", raw.meta.position)
-        (translateRawUntyped(other, resolver, raw.meta.position, diagBuf), false)
+        (translateRawUntyped(other, resolver, raw.meta.position, diagBuf), true)
     }
   }
 
@@ -130,6 +135,15 @@ object ConstValueTyper {
     case (g: Generic.TMap, RawVal.CMap(kvs)) =>
       val entries = kvs.map { case (k, v) => k -> typeCheckValue(constName, g.valueType, v, pos, resolver, diagBuf)._1 }
       (ConstValue.CMap(entries), true)
+
+    // Untyped object literal (CMap) against a structural target: the parser
+    // emits `RawVal.CMap` for `{ field = value, ... }` literals that lack an
+    // inline type annotation (e.g. elements of `lst[TestPair]` in
+    // `idltest.consts`). Treat the CMap as a struct literal and type-check
+    // its fields against the target structure.
+    case (sid: StructureId, RawVal.CMap(kvs)) =>
+      val checked = typeCheckObject(constName, sid, kvs, pos, resolver, diagBuf)
+      (ConstValue.CTypedObject(sid, ConstValue.CMap(checked)), true)
 
     // ---- Nested CTyped — recurse ----
     case (_, RawVal.CTyped(t, inner)) =>
