@@ -5,7 +5,6 @@ import izumi.idealingua.model.common.ExtendedField
 import izumi.idealingua.model.common.TypeId.IdentifierId
 import izumi.idealingua.model.il.ast.typed.{Field, IdField}
 import izumi.idealingua.model.typespace.Typespace
-import izumi.idealingua.translator.totypescript.TypeScriptImports
 import izumi.idealingua.translator.totypescript.products.CogenProduct.IdentifierProduct
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
@@ -42,14 +41,13 @@ final class DomainTSIdRenderer(ctx: DomainTSContext) {
   def renderIdentifier(i: NewTypeDef.Identifier, ts: Typespace): IdentifierProduct = {
     val typeName = i.id.name
 
-    // Find a legacy `TypeDef.Identifier` matching this new IR id so the
-    // legacy `TypeScriptImports.apply` can resolve type references the
-    // same way the legacy translator does. The legacy `DomainDefinition`
-    // is re-derived from `parsed` at the test boundary; in production
-    // (M6 swap) the renderer would build imports off `Domain` directly.
-    val legacyDef = ts.domain.types.find(_.id == i.id).get
-
-    val imports = TypeScriptImports(ts, legacyDef, i.id.path.toPackage, manifest = options.manifest)
+    // IMPL-7b/7c-post: imports are computed from `Domain` via `DomainTSImports`,
+    // removing the last legacy `TypeScriptImports.apply(ts, ...)` call on the
+    // identifier path. The renderer's `ts: Typespace` parameter remains in
+    // use for `TypeScriptTypeConverter.{toNativeType, toFieldMethods,
+    // toFieldMember}` calls below; eliminating that surface is tracked as a
+    // follow-up to the IMPL-10 cycle.
+    val imports = DomainTSImports.forTypeDef(i, i.id.path.toPackage, ctx.domain, options.manifest)
 
     val fields: List[ExtendedField] = i.fields.map(idFieldToExtendedField(i.id, _))
     val sortedFields = fields.sortBy(_.field.name)
@@ -105,7 +103,7 @@ final class DomainTSIdRenderer(ctx: DomainTSContext) {
          |}
          """.stripMargin
 
-    IdentifierProduct(identifier, identifierInterface, imports.render(ts), s"// ${i.id.name} Identifier")
+    IdentifierProduct(identifier, identifierInterface, imports.render, s"// ${i.id.name} Identifier")
   }
 
   /** Mirror of legacy `TypeScriptTranslator.renderRuntimeNames(TypeId, String)`

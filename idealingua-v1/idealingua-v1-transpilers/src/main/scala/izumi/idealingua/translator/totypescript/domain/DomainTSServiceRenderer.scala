@@ -4,7 +4,6 @@ import izumi.fundamentals.platform.strings.IzString.*
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.publishing.manifests.TypeScriptProjectLayout
 import izumi.idealingua.model.typespace.Typespace
-import izumi.idealingua.translator.totypescript.TypeScriptImports
 import izumi.idealingua.translator.totypescript.products.CogenProduct.{BuzzerProduct, ServiceProduct}
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
@@ -50,9 +49,8 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
   // -- Service -------------------------------------------------------------
 
   def renderService(i: NewTypeDef.Service, ts: Typespace): ServiceProduct = {
-    val legacyDef = ts.domain.services.find(_.id == i.id).get
-    val imports   = TypeScriptImports(ts, legacyDef, i.id.domain.toPackage, List.empty, manifest)
-    val typeName  = i.id.name
+    val imports  = DomainTSImports.forService(i, i.id.domain.toPackage, ctx.domain, manifest)
+    val typeName = i.id.name
 
     val svc =
       s"""// Models
@@ -69,7 +67,7 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
          """.stripMargin
 
     val header =
-      s"""${imports.render(ts)}
+      s"""${imports.render}
          |${importFromIRT(
           List("ServiceDispatcher", "Marshaller", "Void", "IncomingData", "OutgoingData", "ClientTransport", "Either", "Left as EitherLeft", "Right as EitherRight"),
           i.id.domain.toPackage,
@@ -175,9 +173,8 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
   // -- Buzzer --------------------------------------------------------------
 
   def renderBuzzer(i: NewTypeDef.Buzzer, ts: Typespace): BuzzerProduct = {
-    val legacyDef = ts.domain.buzzers.find(_.id == i.id).get
-    val imports   = TypeScriptImports(ts, legacyDef, i.id.domain.toPackage, List.empty, manifest)
-    val typeName  = i.id.name
+    val imports  = DomainTSImports.forBuzzer(i, i.id.domain.toPackage, ctx.domain, manifest)
+    val typeName = i.id.name
 
     val svc =
       s"""// Models
@@ -194,7 +191,7 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
          """.stripMargin
 
     val header =
-      s"""${imports.render(ts)}
+      s"""${imports.render}
          |${importFromIRT(
           List(
             "ServiceDispatcher",

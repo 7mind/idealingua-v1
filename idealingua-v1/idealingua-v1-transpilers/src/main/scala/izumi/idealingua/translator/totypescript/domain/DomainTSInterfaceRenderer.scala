@@ -4,7 +4,6 @@ import izumi.fundamentals.platform.strings.IzString.*
 import izumi.idealingua.model.common.{Generic, TypeId}
 import izumi.idealingua.model.common.TypeId.AliasId
 import izumi.idealingua.model.typespace.Typespace
-import izumi.idealingua.translator.totypescript.TypeScriptImports
 import izumi.idealingua.translator.totypescript.products.CogenProduct.InterfaceProduct
 import izumi.idealingua.typer.ir.{FlatStruct, TypeDef => NewTypeDef}
 
@@ -38,8 +37,7 @@ final class DomainTSInterfaceRenderer(ctx: DomainTSContext) {
   import ctx._
 
   def renderInterface(i: NewTypeDef.Interface, ts: Typespace): InterfaceProduct = {
-    val legacyDef = ts.domain.types.find(_.id == i.id).get
-    val imports   = TypeScriptImports(ts, legacyDef, i.id.path.toPackage, manifest = options.manifest)
+    val imports = DomainTSImports.forTypeDef(i, i.id.path.toPackage, ctx.domain, options.manifest)
 
     val extendsInterfaces =
       if (i.struct.superclasses.interfaces.nonEmpty) {
@@ -142,7 +140,7 @@ final class DomainTSInterfaceRenderer(ctx: DomainTSContext) {
          |${uniqueInterfaces.map(sc => sc.name + DomainTSStruct.implId(sc).name + s".register($eid.FullClassName, $eid);").mkString("\n")}
        """.stripMargin
 
-    InterfaceProduct(iface, companion, imports.render(ts), s"// ${i.id.name} Interface")
+    InterfaceProduct(iface, companion, imports.render, s"// ${i.id.name} Interface")
   }
 
   private def renderSerializedObject(fields: List[izumi.idealingua.model.il.ast.typed.Field], ts: Typespace): String = {

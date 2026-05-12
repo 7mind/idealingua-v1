@@ -26,11 +26,16 @@ import izumi.idealingua.typer.ir.{Domain => NewDomain, TypeDef => NewTypeDef}
   * no longer invoked on this path.
   *
   * `Typespace` is still threaded into the per-type renderers because the
-  * `TypeScriptImports` and `TypeScriptTypeConverter` helpers reused from
-  * the legacy tree expect it. We re-derive it once per `translate()` via
-  * `IDLTyper(parsed).perform()`; the renderers themselves consume only
-  * `Domain` for structural fields and use the Typespace exclusively for
-  * import / dealias plumbing that has no new-IR equivalent yet.
+  * `TypeScriptTypeConverter` helper reused from the legacy tree expects it
+  * (for `ts.dealias` chasing inside `deserializeCustomType` /
+  * `toCustomType` / `serializeCustom`). We re-derive it once per
+  * `translate()` via `IDLTyper(parsed).perform()` for that purpose only;
+  * the renderers themselves consume only `Domain` for structural fields
+  * and now read imports via the `DomainTSImports` shim (no longer through
+  * `TypeScriptImports.apply(ts, ...)` — see IMPL-7b/7c-post). The
+  * remaining `Typespace` surface on the converter side is the last
+  * blocker for IMPL-10 (legacy-typer deletion) and is tracked as
+  * F-followup.
   *
   * Iteration order: top-level user types are emitted in `parsed.members`
   * declaration order (the same order the legacy `IDLTyper.perform()`

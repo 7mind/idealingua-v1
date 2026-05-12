@@ -4,7 +4,6 @@ import izumi.fundamentals.platform.strings.IzString.*
 import izumi.idealingua.model.common.TypeId.*
 import izumi.idealingua.model.il.ast.typed.AdtMember
 import izumi.idealingua.model.typespace.Typespace
-import izumi.idealingua.translator.totypescript.TypeScriptImports
 import izumi.idealingua.translator.totypescript.products.CogenProduct.AdtProduct
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
@@ -34,13 +33,12 @@ final class DomainTSAdtRenderer(ctx: DomainTSContext) {
   import ctx._
 
   def renderAdt(i: NewTypeDef.Adt, ts: Typespace): AdtProduct = {
-    val legacyDef = ts.domain.types.find(_.id == i.id).get
-    val imports   = TypeScriptImports(ts, legacyDef, i.id.path.toPackage, manifest = options.manifest)
-    val base      = renderAdtImpl(i.id.name, i.alternatives, ts, exported = true)
+    val imports = DomainTSImports.forTypeDef(i, i.id.path.toPackage, ctx.domain, options.manifest)
+    val base    = renderAdtImpl(i.id.name, i.alternatives, ts, exported = true)
 
     AdtProduct(
       base,
-      imports.render(ts),
+      imports.render,
       s"// ${i.id.name} Algebraic Data Type",
     )
   }
