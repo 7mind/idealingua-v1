@@ -2,6 +2,7 @@ package izumi.idealingua.translator.totypescript.domain
 
 import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.translator.CompilerOptions.TypescriptTranslatorOptions
+import izumi.idealingua.translator.totypescript.domain.extensions.{DomainTSEnumHelpersExtension, DomainTSIntrospectionExtension}
 import izumi.idealingua.translator.totypescript.tools.ModuleTools
 import izumi.idealingua.translator.totypescript.types.TypeScriptTypeConverter
 import izumi.idealingua.typer.ir.Domain
@@ -39,4 +40,12 @@ final class DomainTSContext(
   final val adtRenderer       = new DomainTSAdtRenderer(this)
   final val serviceMethodProduct = new DomainTSServiceMethodProduct(this, adtRenderer)
   final val serviceRenderer   = new DomainTSServiceRenderer(this, adtRenderer)
+
+  // IMPL-7b Phase B M4: default extensions ported to consume `Domain` directly.
+  // `DomainTSEnumHelpersExtension` + `DomainTSIntrospectionExtension` are the
+  // wire-format-bridging analogue of the Scala M5 Circe / Anyval / Cast
+  // family. M5/M6 wires these into the production translate() path; for now
+  // they are exercised only by the byte-parity specs.
+  final val enumHelpersExtension  = DomainTSEnumHelpersExtension
+  final val introspectionExtension = DomainTSIntrospectionExtension
 }
