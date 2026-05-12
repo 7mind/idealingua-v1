@@ -461,7 +461,7 @@ final class DomainCSServiceRendererSpec extends AnyFunSuite {
     implicit val im: CSharpImports = CSharpImports(legacySvc, svcId.domain.toPackage, List.empty)
 
     val ctxNew   = newCtxFor(domainId)
-    val actual   = ctxNew.serviceRenderer.renderService(newSvc, ts, im)
+    val actual   = ctxNew.serviceRenderer.renderService(newSvc, im)
     val expected = legacyRenderService(legacySvc)
 
     val _ = assert(expected.client == actual.client, s"client diverges\nlegacy=${expected.client}\nnew   =${actual.client}")
@@ -485,7 +485,7 @@ final class DomainCSServiceRendererSpec extends AnyFunSuite {
     implicit val im: CSharpImports = CSharpImports(legacyBz, bzId.domain.toPackage, List.empty)
 
     val ctxNew   = newCtxFor(domainId)
-    val actual   = ctxNew.serviceRenderer.renderBuzzer(newBz, ts, im)
+    val actual   = ctxNew.serviceRenderer.renderBuzzer(newBz, im)
     val expected = legacyRenderBuzzer(legacyBz)
 
     val _ = assert(expected.client == actual.client, s"client diverges\nlegacy=${expected.client}\nnew   =${actual.client}")

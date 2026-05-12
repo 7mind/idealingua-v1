@@ -154,7 +154,7 @@ final class DomainCSInterfaceRendererSpec extends AnyFunSuite {
     implicit val ts: Typespace     = legacyTypespaceFor(domainId, legacyIf)
     implicit val im: CSharpImports = CSharpImports(List.empty)
 
-    val actual   = ctxNew.interfaceRenderer.renderInterface(newIf, ts, im)
+    val actual   = ctxNew.interfaceRenderer.renderInterface(newIf, im)
     val expected = legacyRender(legacyIf)
 
     assertProductEqual("iface-single-primitive", expected, actual)
@@ -172,7 +172,7 @@ final class DomainCSInterfaceRendererSpec extends AnyFunSuite {
     implicit val ts: Typespace     = legacyTypespaceFor(domainId, legacyIf)
     implicit val im: CSharpImports = CSharpImports(List.empty)
 
-    val actual   = ctxNew.interfaceRenderer.renderInterface(newIf, ts, im)
+    val actual   = ctxNew.interfaceRenderer.renderInterface(newIf, im)
     val expected = legacyRender(legacyIf)
 
     assertProductEqual("iface-multi-primitive", expected, actual)

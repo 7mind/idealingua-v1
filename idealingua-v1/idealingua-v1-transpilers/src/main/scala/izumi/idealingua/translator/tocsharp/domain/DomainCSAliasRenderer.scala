@@ -1,44 +1,36 @@
 package izumi.idealingua.translator.tocsharp.domain
 
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.tocsharp.CSharpImports
 import izumi.idealingua.translator.tocsharp.products.CogenProduct.AliasProduct
-import izumi.idealingua.translator.tocsharp.types.CSharpType
-import izumi.idealingua.typer.ir.TypeDef
+import izumi.idealingua.typer.ir.{Domain, TypeDef}
 
 /** Renders a new-IR `TypeDef.Alias` as the same `AliasProduct` the legacy
   * `CSharpTranslator.renderAlias` produces.
   *
-  * IMPL-7c Phase B M1: C# does not natively support full type aliases
-  * (the `using A = B;` form is file-scoped only and cannot cross
-  * namespace boundaries), so the legacy renderer emits a fixed comment
-  * block referencing the alias's target type. The new renderer
-  * reproduces that block verbatim — the only variable parts of the
-  * comment are `i.id.name` (the alias's local name) and the rendered
-  * native type for `i.target` via `CSharpType(i.target).renderType(true)`
-  * (the `withPackage = true` form, fully-qualified by namespace).
+  * IMPL-10-prep-Cs1: C# converter family ported off `Typespace`; uses
+  * `DomainCSharpType` (Domain-backed) for the rendered native target.
+  * `Typespace` no longer threaded; the renderer carries `ctx.domain`
+  * implicitly so the converter can dealias against `domain.aliases`.
   *
-  * `CSharpType` requires implicit `CSharpImports` + `Typespace` and is
-  * constructed at the call-site rather than held on the context — the
-  * imports object is per-definition in the legacy translator
-  * (`CSharpImports(definition, definition.id.path.toPackage)`). Both are
-  * threaded per-call here for byte parity with the legacy renderer's
-  * implicit-resolution chain. Under the new typer's full dealiasing
-  * pass, `i.target` is never itself an `AliasId`, so the converter's
-  * alias-dereference paths are not exercised; the parameters are only
-  * structurally required by the `CSharpType` constructor.
+  * C# does not natively support full type aliases (the `using A = B;` form
+  * is file-scoped only and cannot cross namespace boundaries), so the
+  * legacy renderer emits a fixed comment block referencing the alias's
+  * target type. The new renderer reproduces that block verbatim — the
+  * only variable parts of the comment are `i.id.name` and the rendered
+  * native type for `i.target` via `DomainCSharpType(i.target).renderType(true)`
+  * (the `withPackage = true` form, fully-qualified by namespace).
   *
   * The legacy renderer does NOT invoke any extension hook on aliases
   * (`CSharpTranslatorExtension` has no `handleAlias`), so this renderer
-  * produces the post-extension byte-equal output at M1 with no
-  * extension chain to thread.
+  * produces the post-extension byte-equal output with no extension chain
+  * to thread.
   */
-final class DomainCSAliasRenderer(@annotation.unused ctx: DomainCSContext) {
+final class DomainCSAliasRenderer(ctx: DomainCSContext) {
 
-  def renderAlias(i: TypeDef.Alias, ts: Typespace, im: CSharpImports): AliasProduct = {
-    implicit val _ts: Typespace      = ts
-    implicit val _im: CSharpImports  = im
-    val cstype = CSharpType(i.target)
+  def renderAlias(i: TypeDef.Alias, im: CSharpImports): AliasProduct = {
+    implicit val _domain: Domain    = ctx.domain
+    implicit val _im: CSharpImports = im
+    val cstype = DomainCSharpType(i.target)
 
     AliasProduct(
       s"""// C# does not natively support full type aliases. They usually

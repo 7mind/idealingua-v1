@@ -158,7 +158,7 @@ final class DomainCSIdRendererSpec extends AnyFunSuite {
     implicit val ts: Typespace     = legacyTypespaceFor(domainId, legacyId)
     implicit val im: CSharpImports = CSharpImports(List.empty)
 
-    val actual   = ctxNew.idRenderer.renderIdentifier(newId, ts, im)
+    val actual   = ctxNew.idRenderer.renderIdentifier(newId, im)
     val expected = legacyRender(legacyId)
 
     assertProductEqual("id-single-primitive", expected, actual)
@@ -176,7 +176,7 @@ final class DomainCSIdRendererSpec extends AnyFunSuite {
     implicit val ts: Typespace     = legacyTypespaceFor(domainId, legacyId)
     implicit val im: CSharpImports = CSharpImports(List.empty)
 
-    val actual   = ctxNew.idRenderer.renderIdentifier(newId, ts, im)
+    val actual   = ctxNew.idRenderer.renderIdentifier(newId, im)
     val expected = legacyRender(legacyId)
 
     assertProductEqual("id-multi-primitive", expected, actual)

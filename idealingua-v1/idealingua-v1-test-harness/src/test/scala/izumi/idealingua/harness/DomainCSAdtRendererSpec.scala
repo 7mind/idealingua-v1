@@ -177,7 +177,7 @@ final class DomainCSAdtRendererSpec extends AnyFunSuite {
     implicit val ts: Typespace     = legacyTypespaceFor(domainId, legacyAdt)
     implicit val im: CSharpImports = CSharpImports(List.empty)
 
-    val actual   = ctxNew.adtRenderer.renderAdt(newAdt, ts, im)
+    val actual   = ctxNew.adtRenderer.renderAdt(newAdt, im)
     val expected = legacyRenderAdt(legacyAdt)
 
     assertProductEqual("adt-single-primitive", expected, actual)
@@ -196,7 +196,7 @@ final class DomainCSAdtRendererSpec extends AnyFunSuite {
     implicit val ts: Typespace     = legacyTypespaceFor(domainId, legacyAdt)
     implicit val im: CSharpImports = CSharpImports(List.empty)
 
-    val actual   = ctxNew.adtRenderer.renderAdt(newAdt, ts, im)
+    val actual   = ctxNew.adtRenderer.renderAdt(newAdt, im)
     val expected = legacyRenderAdt(legacyAdt)
 
     assertProductEqual("adt-multi-primitive", expected, actual)

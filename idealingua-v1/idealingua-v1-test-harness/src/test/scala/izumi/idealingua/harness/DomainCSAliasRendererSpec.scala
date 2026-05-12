@@ -129,7 +129,7 @@ final class DomainCSAliasRendererSpec extends AnyFunSuite {
     val newAlias    = NewTypeDef.Alias(aliasId, Primitive.TString, emptyMeta)
     val legacyAlias = LegacyTypeDef.Alias(aliasId, Primitive.TString, emptyMeta)
 
-    val actual   = ctxNew.aliasRenderer.renderAlias(newAlias, ts, im)
+    val actual   = ctxNew.aliasRenderer.renderAlias(newAlias, im)
     val expected = legacyRender(legacyAlias)
 
     assertProductEqual("alias-primitive", expected, actual)
@@ -145,7 +145,7 @@ final class DomainCSAliasRendererSpec extends AnyFunSuite {
     val newAlias    = NewTypeDef.Alias(aliasId, enumId, emptyMeta)
     val legacyAlias = LegacyTypeDef.Alias(aliasId, enumId, emptyMeta)
 
-    val actual   = ctxNew.aliasRenderer.renderAlias(newAlias, ts, im)
+    val actual   = ctxNew.aliasRenderer.renderAlias(newAlias, im)
     val expected = legacyRender(legacyAlias)
 
     assertProductEqual("alias-to-enum", expected, actual)

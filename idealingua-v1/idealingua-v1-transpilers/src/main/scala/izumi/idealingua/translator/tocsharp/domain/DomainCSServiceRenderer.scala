@@ -7,77 +7,34 @@ import izumi.idealingua.model.il.ast.typed.DefMethod.Output.Algebraic
 import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.tocsharp.CSharpImports
 import izumi.idealingua.translator.tocsharp.products.CogenProduct.{BuzzerProduct, ServiceProduct}
-import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
+import izumi.idealingua.typer.ir.{Domain, TypeDef => NewTypeDef}
 
 /** Renders a new-IR `TypeDef.Service` / `TypeDef.Buzzer` as the same
   * `ServiceProduct` / `BuzzerProduct` the legacy
-  * `CSharpTranslator.renderService` / `renderBuzzer` produces (modulo
-  * the extension chain).
+  * `CSharpTranslator.renderService` / `renderBuzzer` produces.
   *
-  * IMPL-7c Phase B M3: byte-parity port. Emits the four-block service
-  * shape:
-  *   - Usings block: per-method ADT member `using _<Name> = ...`
-  *     aliases (only when method output is `Algebraic`).
-  *   - Holder static class `<Name> { ... }` containing the `In<Method>`
-  *     / `Out<Method>` model classes for every method.
-  *   - Service Client block: `I<Name>Client<C>` + `<Name>ClientGeneric<C>`
-  *     + `<Name>Client : <Name>ClientGeneric<IClientTransportContext>`.
-  *   - Service Dispatcher block: `I<Name>Server<C>` + `<Name>Dispatcher<C, D>`
-  *     with `Dispatch` switch over method names.
-  *   - Service Server Base block: `<Name>Server<C, D> : <Name>Dispatcher`
-  *     with virtual default implementations.
-  *
-  * Buzzer parallel emits the same shape but routed through
-  * `IClientSocketTransport<C, D>` (vs `IClientTransport<C>`) and
-  * `<Name>BuzzerHandlers` (vs `<Name>Server`). Per F16 absorption, the
-  * services + buzzers live in `domain.userTypes` (new IR consolidation).
-  *
-  * `Typespace` + `CSharpImports` are threaded per-call mirroring the M2
-  * convention. The new-IR `Service` / `Buzzer` cases carry `methods` /
-  * `events` directly; iteration order follows declaration order (the
-  * `List` preserves it, see master plan §4 "Field-ordering invariant").
-  *
-  * Extension chain (`ext.imports(ctx, defn)` for the per-defn import
-  * augmentation) is omitted: the default C# extension set
-  * (`JsonNetExtension`) has no `imports` overrides for `Adt` / `Service`
-  * / `Buzzer` / structural cases that would change the import set, so
-  * the pre-extension product is byte-equal to the post-extension
-  * product for the default extension list. The legacy renderer threads
-  * a synthetic `Adt(AdtId(TypePath(DomainId.Undefined, Seq.empty),
-  * "FakeName"), List.empty, NodeMeta.empty)` for the import-collection
-  * pass — left in place at the call site comment but unused in the new
-  * renderer (the synthetic entry's only purpose was to trigger imports
-  * for ADT-using methods through extensions that don't currently exist
-  * in the default set).
+  * IMPL-10-prep-Cs1: body uses Domain-backed converter family. `Typespace`
+  * is still threaded (as an `Option`) into `renderServiceMethodInModel` /
+  * `renderServiceMethodOutModel` / `renderBuzzerMethodOutModel` for the
+  * JsonNet splice paths only — the JsonNet extension port is Cs2 scope.
   */
 final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSAdtRenderer) {
 
   private val methodProduct = new DomainCSServiceMethodProduct(ctx, adtRenderer)
 
-  /** Whether `renderServiceMethodInModel` should splice the JsonNet
-    * `[JsonConverter(...)]` attribute + `<Name>_JsonNetConverter`
-    * converter class around each per-method `In<Method>` /
-    * `Out<Method>` DTO. Set per-call from the production translator;
-    * defaults to `false` so M3 byte-parity unit tests keep their
-    * empty-extension contract.
-    */
   private var spliceJsonNet: Boolean = false
+  private var tsForJsonNet: Option[Typespace] = None
 
   // -- Service -------------------------------------------------------------
 
-  def renderService(i: NewTypeDef.Service, ts: Typespace, im: CSharpImports): ServiceProduct =
-    renderService(i, ts, im, withJsonNet = false)
+  def renderService(i: NewTypeDef.Service, im: CSharpImports): ServiceProduct =
+    renderService(i, im, withJsonNet = false, ts = None)
 
-  /** M5 production-swap variant: when `withJsonNet = true`, splices the
-    * JsonNet `(name, struct)` pre/post into every `In<Method>` /
-    * `Out<Method>` DTO emission and threads the JsonNet imports into
-    * the service product's import list. This restores the legacy
-    * wire-format-critical converter classes for service method I/O.
-    */
-  def renderService(i: NewTypeDef.Service, ts: Typespace, im: CSharpImports, withJsonNet: Boolean): ServiceProduct = {
-    implicit val _ts: Typespace     = ts
+  def renderService(i: NewTypeDef.Service, im: CSharpImports, withJsonNet: Boolean, ts: Option[Typespace]): ServiceProduct = {
+    implicit val _domain: Domain    = ctx.domain
     implicit val _im: CSharpImports = im
     spliceJsonNet = withJsonNet
+    tsForJsonNet  = ts
 
     val svc =
       s"""${renderServiceUsings(i)}
@@ -97,10 +54,6 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
          """.stripMargin
 
     val baseImports = List("IRT", "IRT.Marshaller", "IRT.Transport.Client", "System", "System.Collections", "System.Collections.Generic")
-    // Union of DTO + ADT JsonNet imports — service / buzzer method I/O can
-    // be either a Struct (-> `importsDto`) or an Algebraic (-> `importsAdt`).
-    // The union (deduped) matches the legacy `:676-693` import-collection
-    // pass over every method-output type's `ext.imports(ctx, _)` aggregate.
     val extraImports =
       if (withJsonNet)
         (izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.importsDto ++
@@ -112,20 +65,20 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
     )
   }
 
-  private def renderServiceUsings(i: NewTypeDef.Service)(implicit imports: CSharpImports, ts: Typespace): String =
+  private def renderServiceUsings(i: NewTypeDef.Service)(implicit imports: CSharpImports, domain: Domain): String =
     i.methods.flatMap(me => renderServiceMethodAdtUsings(me)).distinct.mkString("\n")
 
-  private def renderServiceModels(i: NewTypeDef.Service)(implicit imports: CSharpImports, ts: Typespace): String =
+  private def renderServiceModels(i: NewTypeDef.Service)(implicit imports: CSharpImports, domain: Domain): String =
     i.methods.map(me => renderServiceMethodModels(i, me)).mkString("\n")
 
-  private def renderServiceMethodModels(i: NewTypeDef.Service, method: DefMethod)(implicit imports: CSharpImports, ts: Typespace): String = method match {
+  private def renderServiceMethodModels(i: NewTypeDef.Service, method: DefMethod)(implicit imports: CSharpImports, domain: Domain): String = method match {
     case m: DefMethod.RPCMethod =>
-      s"""${if (m.signature.input.fields.isEmpty) "" else methodProduct.renderServiceMethodInModel(DTOId(i.id, s"In${m.name.capitalize}"), m.signature.input, spliceJsonNet)}
-         |${methodProduct.renderServiceMethodOutModel(i.id, s"Out${m.name.capitalize}", m.signature.output, spliceJsonNet)}
+      s"""${if (m.signature.input.fields.isEmpty) "" else methodProduct.renderServiceMethodInModel(DTOId(i.id, s"In${m.name.capitalize}"), m.signature.input, spliceJsonNet, tsForJsonNet)}
+         |${methodProduct.renderServiceMethodOutModel(i.id, s"Out${m.name.capitalize}", m.signature.output, spliceJsonNet, tsForJsonNet)}
        """.stripMargin
   }
 
-  private def renderServiceClient(i: NewTypeDef.Service)(implicit imports: CSharpImports, ts: Typespace): String = {
+  private def renderServiceClient(i: NewTypeDef.Service)(implicit imports: CSharpImports, domain: Domain): String = {
     val name = s"${i.id.name}Client"
     s"""public interface I$name<C> where C: class, IClientTransportContext {
        |${i.methods.map(m => methodProduct.renderRPCMethodSignature(i.id.name, m, forClient = true) + ";").mkString("\n").shift(4)}
@@ -154,7 +107,7 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
      """.stripMargin
   }
 
-  private def renderServiceDispatcher(i: NewTypeDef.Service)(implicit imports: CSharpImports, ts: Typespace): String = {
+  private def renderServiceDispatcher(i: NewTypeDef.Service)(implicit imports: CSharpImports, domain: Domain): String = {
     s"""public interface I${i.id.name}Server<C> {
        |${i.methods.map(m => methodProduct.renderRPCMethodSignature(i.id.name, m, forClient = false) + ";").mkString("\n").shift(4)}
        |}
@@ -189,7 +142,7 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
      """.stripMargin
   }
 
-  private def renderServiceServerBase(i: NewTypeDef.Service)(implicit imports: CSharpImports, ts: Typespace): String = {
+  private def renderServiceServerBase(i: NewTypeDef.Service)(implicit imports: CSharpImports, domain: Domain): String = {
     val name = s"${i.id.name}Server"
     s"""public abstract class $name<C, D>: ${i.id.name}Dispatcher<C, D>,  I${i.id.name}Server<C> {
        |    public $name(IMarshaller<D> marshaller): base(marshaller, null) {
@@ -203,13 +156,14 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
 
   // -- Buzzer --------------------------------------------------------------
 
-  def renderBuzzer(i: NewTypeDef.Buzzer, ts: Typespace, im: CSharpImports): BuzzerProduct =
-    renderBuzzer(i, ts, im, withJsonNet = false)
+  def renderBuzzer(i: NewTypeDef.Buzzer, im: CSharpImports): BuzzerProduct =
+    renderBuzzer(i, im, withJsonNet = false, ts = None)
 
-  def renderBuzzer(i: NewTypeDef.Buzzer, ts: Typespace, im: CSharpImports, withJsonNet: Boolean): BuzzerProduct = {
-    implicit val _ts: Typespace     = ts
+  def renderBuzzer(i: NewTypeDef.Buzzer, im: CSharpImports, withJsonNet: Boolean, ts: Option[Typespace]): BuzzerProduct = {
+    implicit val _domain: Domain    = ctx.domain
     implicit val _im: CSharpImports = im
     spliceJsonNet = withJsonNet
+    tsForJsonNet  = ts
 
     val svc =
       s"""${renderBuzzerUsings(i)}
@@ -229,10 +183,6 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
          """.stripMargin
 
     val baseImports = List("IRT", "IRT.Marshaller", "IRT.Transport.Client", "System", "System.Collections", "System.Collections.Generic")
-    // Union of DTO + ADT JsonNet imports — service / buzzer method I/O can
-    // be either a Struct (-> `importsDto`) or an Algebraic (-> `importsAdt`).
-    // The union (deduped) matches the legacy `:676-693` import-collection
-    // pass over every method-output type's `ext.imports(ctx, _)` aggregate.
     val extraImports =
       if (withJsonNet)
         (izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.importsDto ++
@@ -244,20 +194,20 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
     )
   }
 
-  private def renderBuzzerUsings(i: NewTypeDef.Buzzer)(implicit imports: CSharpImports, ts: Typespace): String =
+  private def renderBuzzerUsings(i: NewTypeDef.Buzzer)(implicit imports: CSharpImports, domain: Domain): String =
     i.events.flatMap(me => renderServiceMethodAdtUsings(me)).distinct.mkString("\n")
 
-  private def renderBuzzerModels(i: NewTypeDef.Buzzer)(implicit imports: CSharpImports, ts: Typespace): String =
+  private def renderBuzzerModels(i: NewTypeDef.Buzzer)(implicit imports: CSharpImports, domain: Domain): String =
     i.events.map(me => renderBuzzerMethodModels(i, me)).mkString("\n")
 
-  private def renderBuzzerMethodModels(i: NewTypeDef.Buzzer, method: DefMethod)(implicit imports: CSharpImports, ts: Typespace): String = method match {
+  private def renderBuzzerMethodModels(i: NewTypeDef.Buzzer, method: DefMethod)(implicit imports: CSharpImports, domain: Domain): String = method match {
     case m: DefMethod.RPCMethod =>
-      s"""${if (m.signature.input.fields.isEmpty) "" else methodProduct.renderServiceMethodInModel(DTOId(i.id, s"In${m.name.capitalize}"), m.signature.input, spliceJsonNet)}
-         |${methodProduct.renderBuzzerMethodOutModel(i.id, s"Out${m.name.capitalize}", m.signature.output, spliceJsonNet)}
+      s"""${if (m.signature.input.fields.isEmpty) "" else methodProduct.renderServiceMethodInModel(DTOId(i.id, s"In${m.name.capitalize}"), m.signature.input, spliceJsonNet, tsForJsonNet)}
+         |${methodProduct.renderBuzzerMethodOutModel(i.id, s"Out${m.name.capitalize}", m.signature.output, spliceJsonNet, tsForJsonNet)}
        """.stripMargin
   }
 
-  private def renderBuzzerClient(i: NewTypeDef.Buzzer)(implicit imports: CSharpImports, ts: Typespace): String = {
+  private def renderBuzzerClient(i: NewTypeDef.Buzzer)(implicit imports: CSharpImports, domain: Domain): String = {
     val name = s"${i.id.name}Client"
     s"""public interface I$name<C> where C: class, IClientTransportContext {
        |${i.events.map(m => methodProduct.renderRPCMethodSignature(i.id.name, m, forClient = true) + ";").mkString("\n").shift(4)}
@@ -279,7 +229,7 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
      """.stripMargin
   }
 
-  private def renderBuzzerDispatcher(i: NewTypeDef.Buzzer)(implicit imports: CSharpImports, ts: Typespace): String = {
+  private def renderBuzzerDispatcher(i: NewTypeDef.Buzzer)(implicit imports: CSharpImports, domain: Domain): String = {
     s"""public interface I${i.id.name}BuzzerHandlers<C> {
        |${i.events.map(m => methodProduct.renderRPCMethodSignature(i.id.name, m, forClient = false) + ";").mkString("\n").shift(4)}
        |}
@@ -314,7 +264,7 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
      """.stripMargin
   }
 
-  private def renderBuzzerHandlersDummy(i: NewTypeDef.Buzzer)(implicit imports: CSharpImports, ts: Typespace): String = {
+  private def renderBuzzerHandlersDummy(i: NewTypeDef.Buzzer)(implicit imports: CSharpImports, domain: Domain): String = {
     val name = s"${i.id.name}BuzzerHandlers"
     s"""public abstract class $name<C, D>: ${i.id.name}Dispatcher<C, D>,  I${i.id.name}BuzzerHandlers<C> {
        |    public $name(IMarshaller<D> marshaller): base(marshaller, null) {
@@ -328,8 +278,7 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
 
   // -- Shared --------------------------------------------------------------
 
-  /** Mirror of legacy `renderServiceMethodAdtUsings` (lines 641-648). */
-  private def renderServiceMethodAdtUsings(method: DefMethod)(implicit imports: CSharpImports, ts: Typespace): List[String] = method match {
+  private def renderServiceMethodAdtUsings(method: DefMethod)(implicit imports: CSharpImports, domain: Domain): List[String] = method match {
     case m: DefMethod.RPCMethod =>
       m.signature.output match {
         case al: Algebraic => al.alternatives.map(adtm => adtRenderer.renderAdtUsings(adtm))

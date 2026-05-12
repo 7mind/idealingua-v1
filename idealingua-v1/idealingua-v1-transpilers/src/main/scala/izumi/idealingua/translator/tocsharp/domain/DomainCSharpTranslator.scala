@@ -10,48 +10,19 @@ import izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExt
 import izumi.idealingua.translator.{Translated, Translator}
 import izumi.idealingua.typer.ir.{Domain => NewDomain, TypeDef => NewTypeDef}
 
-/** C# translator surface that consumes the new-typer `Domain` IR under
-  * the `--typer=new` path.
+/** C# translator surface that consumes the new-typer `Domain` IR.
   *
-  * IMPL-7c Phase B M5 (production-path swap): the translate() body
-  * walks `parsed.members` in declaration order and dispatches each
-  * `TLDBaseType` / `TLDNewtype` / `TLDService` / `TLDBuzzer` to the
-  * matching M1-M3 renderer via `typesByName: Map[String, NewTypeDef]`
-  * derived from `domain.userTypes`. The M4 JsonNet extension is spliced
-  * into each renderer's raw-string template at the legacy splice points
-  * (pre/post model emit) and into the per-product import list. The
-  * legacy `CSharpTranslator` is no longer invoked on this path.
-  *
-  * `Typespace` is still re-derived once per `translate()` via the
-  * `DomainTypespaceFacade` (IMPL-10-prep) because the renderers' deep
-  * helpers (`CSharpType` predicates, `ts.dealias` in nested calls, the
-  * legacy `TypeScriptTypeConverter`-equivalent) consume it for import /
-  * dealias plumbing that has no new-IR equivalent in scope yet. The
-  * `DomainCSImports` shim landed in IMPL-7b/7c-post (PR-02) — it covers
-  * the imports-collection path, but the renderers still take `ts:
-  * Typespace` as a per-call parameter so the converter side remains
-  * functional. The direct `IDLTyper` call previously inlined here has
-  * been lifted into the compat façade so this file no longer references
-  * it. IMPL-10 deletion of the legacy typer is gated on eliminating
-  * that remaining `ts: Typespace` surface from the renderers (tracked
-  * as F-followup).
-  *
-  * Extension wiring mirrors `CSharpTranslator.defaultExtensions` =
-  * `Seq(JsonNetExtension)` (the wire-format-critical authority for the
-  * C# leg of the cross-language matrix):
-  *   - Identifier / Enum / DTO / Interface / ADT — splice JsonNet
-  *     `[JsonConverter(typeof(<Name>_JsonNetConverter))]` attribute
-  *     pre-emit and the corresponding `<Name>_JsonNetConverter` class
-  *     post-emit; thread JsonNet imports
-  *     (`Newtonsoft.Json` + sometimes `Newtonsoft.Json.Linq` /
-  *     `System.Linq` + `IRT.Marshaller`) into the header import list.
-  *   - Interface companion (synthetic impl-DTO) — splice the
-  *     `<Iface>Struct_JsonNetConverter` block.
-  *   - Alias / Service / Buzzer — no JsonNet handler in the legacy
-  *     extension surface, so no splice (the per-method I/O DTO
-  *     wire-format converter is not currently emitted by the M3 service
-  *     renderer; this matches the M3 byte-parity contract under the
-  *     empty extension list).
+  * IMPL-10-prep-Cs1: the C# converter family (`DomainCSharpType`,
+  * `DomainCSClass`, `DomainCSField`) is Domain-backed; the renderers
+  * (`DomainCSAliasRenderer`, `DomainCSEnumRenderer`,
+  * `DomainCSIdRenderer`, `DomainCSCompositeRenderer`,
+  * `DomainCSInterfaceRenderer`, `DomainCSAdtRenderer`) no longer thread
+  * `Typespace`. The `DomainTypespaceFacade` is retained transitionally
+  * only to feed the legacy `JsonNetExtension`-equivalent
+  * (`DomainCSJsonNetExtension`) which still consumes legacy `CSharpType`/
+  * `CSharpClass`/`CSharpField` for the wire-format converter blocks.
+  * Cs2 will port that extension off the legacy converter and remove the
+  * façade dependency entirely.
   */
 final class DomainCSharpTranslator(
   domain: NewDomain,
@@ -61,15 +32,8 @@ final class DomainCSharpTranslator(
 
   private val ctx = new DomainCSContext(domain, parsed, options)
 
-  // Re-derive a legacy `Typespace`-shaped value from the parsed AST so
-  // the renderers' import/converter plumbing
-  // (`CSharpImports.apply(definition, pkg)`, `CSharpType`) has a stable
-  // lookup surface. The new IR (`Domain`) already carries the structural
-  // data the renderers consume; this single derivation per `translate()`
-  // is the minimum-impact swap. The `IDLTyper` invocation is encapsulated
-  // in `DomainTypespaceFacade` (IMPL-10-prep) so this file no longer
-  // imports it directly. IMPL-10/11 will replace the façade with a
-  // `Domain`-backed converter family.
+  // Re-derive a legacy `Typespace` only for the JsonNet extension splice
+  // calls below — the renderers themselves no longer consume it.
   private lazy val ts: Typespace = DomainTypespaceFacade(domain, parsed)
 
   override def translate(): Translated = {
@@ -110,11 +74,9 @@ final class DomainCSharpTranslator(
   }
 
   // -- alias --------------------------------------------------------------
-  // Legacy `JsonNetExtension` has no Alias handler — no splice; matches
-  // legacy `CSharpTranslator.translateDef`.
   private def emitAlias(a: NewTypeDef.Alias): Seq[Module] = {
     val im      = DomainCSImports.forTypeDef(a, a.id.path.toPackage, domain)
-    val product = ctx.aliasRenderer.renderAlias(a, ts, im)
+    val product = ctx.aliasRenderer.renderAlias(a, im)
     ctx.modules.toSource(a.id.path.domain, ctx.modules.toModuleId(a.id), product)
   }
 
@@ -123,10 +85,6 @@ final class DomainCSharpTranslator(
     val im     = DomainCSImports.forTypeDef(e, e.id.path.toPackage, domain)
     val post   = DomainCSJsonNetExtension.postEnum(e)
     val header = im.renderImports(List("System") ++ DomainCSJsonNetExtension.importsEnum)
-    // Legacy `JsonNetExtension.preModelEmit(Enumeration)` IS defined
-    // (`:46`) but the legacy enum renderer `:253-300` does NOT splice
-    // it (only `${ext.postModelEmit(ctx, i)}` at line 292). We follow
-    // the legacy asymmetry: splice ONLY `post` into the enum body.
     val product = ctx.enumRenderer.renderEnumeration(e, postSplice = post, header = header)
     ctx.modules.toSource(e.id.path.domain, ctx.modules.toModuleId(e.id), product)
   }
@@ -137,7 +95,7 @@ final class DomainCSharpTranslator(
     val pre  = DomainCSJsonNetExtension.preIdentifier(i)
     val post = DomainCSJsonNetExtension.postIdentifier(i)
     val product = ctx.idRenderer.renderIdentifier(
-      i, ts, im,
+      i, im,
       preSplice    = pre,
       postSplice   = post,
       extraImports = DomainCSJsonNetExtension.importsIdentifier,
@@ -151,7 +109,7 @@ final class DomainCSharpTranslator(
     val pre  = DomainCSJsonNetExtension.preDto(domain, d)
     val post = DomainCSJsonNetExtension.postDto(domain, d, ts, im)
     val product = ctx.compositeRenderer.renderDto(
-      d, ts, im,
+      d, im,
       preSplice    = pre,
       postSplice   = post,
       extraImports = DomainCSJsonNetExtension.importsDto,
@@ -167,7 +125,7 @@ final class DomainCSharpTranslator(
     val compPre   = DomainCSJsonNetExtension.preInterfaceImplStruct(i)
     val compPost  = DomainCSJsonNetExtension.postInterfaceImplStruct(domain, i, ts, im)
     val product = ctx.interfaceRenderer.renderInterface(
-      i, ts, im,
+      i, im,
       ifacePreSplice      = ifacePre,
       ifacePostSplice     = ifacePost,
       companionPreSplice  = compPre,
@@ -183,7 +141,7 @@ final class DomainCSharpTranslator(
     val pre  = DomainCSJsonNetExtension.preAdt(a)
     val post = DomainCSJsonNetExtension.postAdt(a, ts, im)
     val product = ctx.adtRenderer.renderAdt(
-      a, ts, im,
+      a, im,
       preSplice    = pre,
       postSplice   = post,
       extraImports = DomainCSJsonNetExtension.importsAdt,
@@ -194,13 +152,13 @@ final class DomainCSharpTranslator(
   // -- Service / Buzzer ---------------------------------------------------
   private def emitService(svc: NewTypeDef.Service): Seq[Module] = {
     val im      = DomainCSImports.forService(svc, svc.id.domain.toPackage, domain)
-    val product = ctx.serviceRenderer.renderService(svc, ts, im, withJsonNet = true)
+    val product = ctx.serviceRenderer.renderService(svc, im, withJsonNet = true, ts = Some(ts))
     ctx.modules.toSource(svc.id.domain, ctx.modules.toModuleId(svc.id), product)
   }
 
   private def emitBuzzer(bz: NewTypeDef.Buzzer): Seq[Module] = {
     val im      = DomainCSImports.forBuzzer(bz, bz.id.domain.toPackage, domain)
-    val product = ctx.serviceRenderer.renderBuzzer(bz, ts, im, withJsonNet = true)
+    val product = ctx.serviceRenderer.renderBuzzer(bz, im, withJsonNet = true, ts = Some(ts))
     ctx.modules.toSource(bz.id.domain, ctx.modules.toModuleId(bz.id), product)
   }
 

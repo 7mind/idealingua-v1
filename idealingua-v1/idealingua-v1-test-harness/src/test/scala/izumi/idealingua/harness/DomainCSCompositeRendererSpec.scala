@@ -138,7 +138,7 @@ final class DomainCSCompositeRendererSpec extends AnyFunSuite {
     implicit val ts: Typespace     = legacyTypespaceFor(domainId, legacyDto)
     implicit val im: CSharpImports = CSharpImports(List.empty)
 
-    val actual   = ctxNew.compositeRenderer.renderDto(newDto, ts, im)
+    val actual   = ctxNew.compositeRenderer.renderDto(newDto, im)
     val expected = legacyRender(legacyDto)
 
     assertProductEqual("dto-single-primitive", expected, actual)
@@ -157,7 +157,7 @@ final class DomainCSCompositeRendererSpec extends AnyFunSuite {
     implicit val ts: Typespace     = legacyTypespaceFor(domainId, legacyDto)
     implicit val im: CSharpImports = CSharpImports(List.empty)
 
-    val actual   = ctxNew.compositeRenderer.renderDto(newDto, ts, im)
+    val actual   = ctxNew.compositeRenderer.renderDto(newDto, im)
     val expected = legacyRender(legacyDto)
 
     assertProductEqual("dto-multi-primitive", expected, actual)

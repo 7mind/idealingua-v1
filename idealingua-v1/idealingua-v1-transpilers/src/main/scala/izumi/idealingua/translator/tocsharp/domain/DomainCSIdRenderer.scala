@@ -2,72 +2,51 @@ package izumi.idealingua.translator.tocsharp.domain
 
 import izumi.fundamentals.platform.strings.IzString._
 import izumi.idealingua.model.il.ast.typed.{Field, IdField}
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.tocsharp.CSharpImports
 import izumi.idealingua.translator.tocsharp.products.CogenProduct.IdentifierProduct
-import izumi.idealingua.translator.tocsharp.types.{CSharpClass, CSharpField}
-import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
+import izumi.idealingua.typer.ir.{Domain, TypeDef => NewTypeDef}
 
 /** Renders a new-IR `TypeDef.Identifier` as the same pre-extension
   * `IdentifierProduct` the legacy `CSharpTranslator.renderIdentifier`
   * produces (modulo the extension chain).
   *
-  * IMPL-7c Phase B M2: byte-parity port. Identifiers carry no
-  * inheritance (`TypeDef.Identifier.fields: List[IdField]`); the legacy
-  * renderer's `typespace.structure.structure(i)` call returns the widened
-  * id-field set directly, so we widen `IdField → Field` and feed the
-  * legacy `CSharpField` (via `CSharpField(field, structName)`).
+  * IMPL-10-prep-Cs1: byte-parity port now consumes `DomainCSField` and
+  * `DomainCSClass` (Domain-backed) instead of the legacy `CSharpField`
+  * and `CSharpClass`. `Typespace` no longer threaded — the renderer
+  * carries `ctx.domain` implicitly.
   *
-  * `CSharpImports` + `Typespace` are threaded per-call (mirrors the
-  * Phase A pattern; the legacy `CSharpImports.apply(definition, ...)`
-  * implementation walks the legacy `Typespace`). M5 production-swap will
-  * replace the `Typespace` threading with a `DomainCSImports` shim, but
-  * at M2 we reuse the legacy plumbing exactly as Phase A delegation does.
-  *
-  * Production path remains unchanged — `DomainCSharpTranslator.translate()`
-  * still goes through Phase A delegation. This renderer is exercised only
-  * by the M2 byte-parity unit test until M5 swaps the production path.
+  * Identifiers carry no inheritance (`TypeDef.Identifier.fields: List[IdField]`);
+  * we widen `IdField → Field` and feed the Domain `DomainCSField` factory.
   *
   * Extension chain (`ext.preModelEmit` / `ext.postModelEmit` /
   * `ext.imports`) is omitted: the default C# extension set
   * (`JsonNetExtension`) has no `Identifier` overrides, so the
   * pre-extension product is byte-equal to the post-extension product
-  * for the default extension list. The literal raw-string template
-  * mirrors the legacy renderer with empty-string substitutions for the
-  * extension splice points so the resulting string is byte-equal to the
-  * legacy output under an empty extension list.
+  * for the default extension list.
   */
-final class DomainCSIdRenderer(@annotation.unused ctx: DomainCSContext) {
+final class DomainCSIdRenderer(ctx: DomainCSContext) {
 
-  def renderIdentifier(i: NewTypeDef.Identifier, ts: Typespace, im: CSharpImports): IdentifierProduct =
-    renderIdentifier(i, ts, im, preSplice = "", postSplice = "", extraImports = List.empty)
+  def renderIdentifier(i: NewTypeDef.Identifier, im: CSharpImports): IdentifierProduct =
+    renderIdentifier(i, im, preSplice = "", postSplice = "", extraImports = List.empty)
 
-  /** M5 production-swap variant: splices `preSplice` into the legacy
-    * `${ext.preModelEmit(ctx, i)}` slot (legacy `:311`), `postSplice`
-    * into `${ext.postModelEmit(ctx, i)}` (legacy `:341`), and merges
-    * `extraImports` into the header import list (legacy `:346`).
-    *
-    * The default no-splice call (used by M2 unit tests) preserves the
-    * exact pre-M5 string shape and imports.
+  /** Production-swap variant: splices `preSplice` / `postSplice` into the
+    * legacy `${ext.preModelEmit(ctx, i)}` / `${ext.postModelEmit(ctx, i)}`
+    * slots, and merges `extraImports` into the header import list.
     */
   def renderIdentifier(
     i: NewTypeDef.Identifier,
-    ts: Typespace,
     im: CSharpImports,
     preSplice: String,
     postSplice: String,
     extraImports: List[String],
   ): IdentifierProduct = {
-    implicit val _ts: Typespace     = ts
+    implicit val _domain: Domain    = ctx.domain
     implicit val _im: CSharpImports = im
 
-    // Widen `IdField → Field` so `CSharpField` (which takes a `Field`)
-    // constructs the same name + type pair as the legacy
-    // `structure.structure(i).all.map(f => CSharpField(f.field, i.id.name))`.
     val widened: List[Field] = i.fields.map(idFieldToField)
-    val fields               = widened.map(f => CSharpField(f, i.id.name))
+    val fields               = widened.map(f => DomainCSField(f, i.id.name))
     val fieldsSorted         = fields.sortBy(_.name)
-    val csClass              = CSharpClass(i.id, i.id.name, fields)
+    val csClass              = DomainCSClass(i.id, i.id.name, fields)
     val prefixLength         = i.id.name.length + 1
 
     val decl =
@@ -111,9 +90,7 @@ final class DomainCSIdRenderer(@annotation.unused ctx: DomainCSContext) {
     )
   }
 
-  /** Widen an `IdField` to a `Field`. Matches the legacy
-    * `StructuralQueriesImpl` widening (id-field `name`, `typeId`, `meta`).
-    */
+  /** Widen an `IdField` to a `Field`. */
   private def idFieldToField(idf: IdField): Field =
     Field(idf.typeId, idf.name, idf.meta)
 }

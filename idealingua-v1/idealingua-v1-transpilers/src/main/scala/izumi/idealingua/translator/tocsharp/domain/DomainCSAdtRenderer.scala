@@ -3,81 +3,45 @@ package izumi.idealingua.translator.tocsharp.domain
 import izumi.fundamentals.platform.strings.IzString._
 import izumi.idealingua.model.common.TypeId.InterfaceId
 import izumi.idealingua.model.il.ast.typed.AdtMember
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.tocsharp.CSharpImports
 import izumi.idealingua.translator.tocsharp.products.CogenProduct.AdtProduct
-import izumi.idealingua.translator.tocsharp.types.CSharpType
-import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
+import izumi.idealingua.typer.ir.{Domain, TypeDef => NewTypeDef}
 
 /** Renders a new-IR `TypeDef.Adt` as the same pre-extension `AdtProduct`
-  * the legacy `CSharpTranslator.renderAdt` produces (modulo the extension
-  * chain).
+  * the legacy `CSharpTranslator.renderAdt` produces.
   *
-  * IMPL-7c Phase B M3: byte-parity port. The emitted top-level shape is
-  * the legacy ADT triple:
-  *   - per-member `using _<MemberName> = <NativeType>;` aliases,
-  *   - `public abstract class <Name>` with nested `I<Name>Visitor`
-  *     interface and per-member sealed sub-classes,
-  *   - per-sub-class explicit conversion operators (or commented-out
-  *     dummies when the underlying type is an `InterfaceId`).
-  *
-  * Per-branch helpers (`CSharpType(member.typeId).renderType(true)` for
-  * the unambig name lookup and `CSharpType(member.typeId)` for native
-  * type rendering) keep `Typespace` + `CSharpImports` threaded per-call,
-  * same convention as M2.
-  *
-  * Extension chain (`ext.preModelEmit(ctx, adt)` / `ext.postModelEmit(ctx, adt)`
-  * / `ext.imports(ctx, i)`) is omitted: the default C# extension set
-  * (`JsonNetExtension`) has no `Adt` overrides, so the pre-extension
-  * product is byte-equal to the post-extension product for the default
-  * extension list.
+  * IMPL-10-prep-Cs1: byte-parity port now consumes `DomainCSharpType`
+  * (Domain-backed). `Typespace` no longer threaded.
   *
   * `renderAdtImpl(name, alternatives, renderUsings)` is public so
-  * `DomainCSServiceMethodProduct` can reuse it for nested ADT outputs
-  * (`Algebraic`) in service methods, matching the legacy translator's
-  * sharing pattern (`renderServiceMethodOutModel` → `renderAdtImpl`).
+  * `DomainCSServiceMethodProduct` can reuse it for nested ADT outputs.
   */
 final class DomainCSAdtRenderer(@annotation.unused ctx: DomainCSContext) {
 
-  def renderAdt(i: NewTypeDef.Adt, ts: Typespace, im: CSharpImports): AdtProduct =
-    renderAdt(i, ts, im, preSplice = "", postSplice = "", extraImports = List.empty)
+  def renderAdt(i: NewTypeDef.Adt, im: CSharpImports): AdtProduct =
+    renderAdt(i, im, preSplice = "", postSplice = "", extraImports = List.empty)
 
-  /** M5 production-swap variant: splices `preSplice` into the legacy
-    * `${ext.preModelEmit(ctx, adt)}` slot (legacy `:161`), `postSplice`
-    * into the post slot (legacy `:172`), and merges `extraImports` into
-    * the header import list (legacy `:250`).
-    *
-    * The default no-splice call (used by M3 unit tests) preserves the
-    * exact pre-M5 string shape and imports.
-    */
   def renderAdt(
     i: NewTypeDef.Adt,
-    ts: Typespace,
     im: CSharpImports,
     preSplice: String,
     postSplice: String,
     extraImports: List[String],
   ): AdtProduct = {
-    implicit val _ts: Typespace     = ts
+    implicit val _domain: Domain    = ctx.domain
     implicit val _im: CSharpImports = im
 
     AdtProduct(renderAdtImpl(i.id.name, i.alternatives, renderUsings = true, preSplice = preSplice, postSplice = postSplice), im.renderImports(extraImports))
   }
 
-  /** Mirror of legacy `CSharpTranslator.renderAdtImpl` (lines 156-174).
-    * Public so `DomainCSServiceMethodProduct` can reuse it for nested ADT
-    * outputs in service methods. `preSplice`/`postSplice` default to
-    * `""` for byte-equality with the M3 unit-test fixture; the M5
-    * production-swap supplies the JsonNet attribute + converter blocks
-    * for top-level ADT type definitions.
-    */
+  /** Mirror of legacy `CSharpTranslator.renderAdtImpl`. */
   def renderAdtImpl(
     adtName: String,
     members: List[AdtMember],
     renderUsings: Boolean = true,
     preSplice: String = "",
     postSplice: String = "",
-  )(implicit im: CSharpImports, ts: Typespace): String = {
+  )(implicit im: CSharpImports, domain: Domain): String = {
     s"""${im.renderUsings()}
        |${if (renderUsings) members.map(m => renderAdtUsings(m)).mkString("\n") else ""}
        |
@@ -96,17 +60,15 @@ final class DomainCSAdtRenderer(@annotation.unused ctx: DomainCSContext) {
      """.stripMargin
   }
 
-  /** Mirror of legacy `renderAdtUsings` (line 152-154). */
-  def renderAdtUsings(m: AdtMember)(implicit im: CSharpImports, ts: Typespace): String = {
-    s"using _${m.typename} = ${CSharpType(m.typeId).renderType(true)};"
+  def renderAdtUsings(m: AdtMember)(implicit im: CSharpImports, domain: Domain): String = {
+    s"using _${m.typename} = ${DomainCSharpType(m.typeId).renderType(true)};"
   }
 
-  /** Mirror of legacy `renderAdtMember` (lines 107-150). */
-  private def renderAdtMember(adtName: String, member: AdtMember)(implicit im: CSharpImports, ts: Typespace): String = {
+  private def renderAdtMember(adtName: String, member: AdtMember)(implicit im: CSharpImports, domain: Domain): String = {
     val needsFQN = im.imports.find(i => i.id == member.typeId)
     val nonambName =
       if (needsFQN.isDefined && needsFQN.get.usingName == "")
-        CSharpType(member.typeId).renderType(true)
+        DomainCSharpType(member.typeId).renderType(true)
       else s"_${member.typename}"
 
     val operators =
@@ -146,3 +108,4 @@ final class DomainCSAdtRenderer(@annotation.unused ctx: DomainCSContext) {
      """.stripMargin
   }
 }
+
