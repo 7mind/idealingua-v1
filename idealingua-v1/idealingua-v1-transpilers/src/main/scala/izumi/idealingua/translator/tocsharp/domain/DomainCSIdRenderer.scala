@@ -39,7 +39,25 @@ import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
   */
 final class DomainCSIdRenderer(@annotation.unused ctx: DomainCSContext) {
 
-  def renderIdentifier(i: NewTypeDef.Identifier, ts: Typespace, im: CSharpImports): IdentifierProduct = {
+  def renderIdentifier(i: NewTypeDef.Identifier, ts: Typespace, im: CSharpImports): IdentifierProduct =
+    renderIdentifier(i, ts, im, preSplice = "", postSplice = "", extraImports = List.empty)
+
+  /** M5 production-swap variant: splices `preSplice` into the legacy
+    * `${ext.preModelEmit(ctx, i)}` slot (legacy `:311`), `postSplice`
+    * into `${ext.postModelEmit(ctx, i)}` (legacy `:341`), and merges
+    * `extraImports` into the header import list (legacy `:346`).
+    *
+    * The default no-splice call (used by M2 unit tests) preserves the
+    * exact pre-M5 string shape and imports.
+    */
+  def renderIdentifier(
+    i: NewTypeDef.Identifier,
+    ts: Typespace,
+    im: CSharpImports,
+    preSplice: String,
+    postSplice: String,
+    extraImports: List[String],
+  ): IdentifierProduct = {
     implicit val _ts: Typespace     = ts
     implicit val _im: CSharpImports = im
 
@@ -52,12 +70,9 @@ final class DomainCSIdRenderer(@annotation.unused ctx: DomainCSContext) {
     val csClass              = CSharpClass(i.id, i.id.name, fields)
     val prefixLength         = i.id.name.length + 1
 
-    // Mirrors `CSharpTranslator.renderIdentifier` (lines 309-342) with
-    // `${ext.preModelEmit(ctx, i)}` / `${ext.postModelEmit(ctx, i)}`
-    // resolved to the empty string.
     val decl =
       s"""${im.renderUsings()}
-         |
+         |$preSplice
          |${csClass.renderHeader()} {
          |    private static char[] idSplitter = new char[]{':'};
          |${csClass.render(withWrapper = false, withSlices = false, withRTTI = true).shift(4)}
@@ -87,12 +102,12 @@ final class DomainCSIdRenderer(@annotation.unused ctx: DomainCSContext) {
          |    }
          |}
          |
-         |
+         |$postSplice
          """.stripMargin
 
     IdentifierProduct(
       decl,
-      im.renderImports(List("System", "System.Collections", "System.Collections.Generic")),
+      im.renderImports(List("System", "System.Collections", "System.Collections.Generic") ++ extraImports),
     )
   }
 

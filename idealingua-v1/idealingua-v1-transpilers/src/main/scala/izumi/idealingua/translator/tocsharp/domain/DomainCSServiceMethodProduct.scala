@@ -36,7 +36,7 @@ import izumi.idealingua.translator.tocsharp.types.{CSharpClass, CSharpField, CSh
   * helpers (`CSharpType` constructor, `CSharpField` constructor,
   * `CSharpClass` constructors), same as M2.
   */
-final class DomainCSServiceMethodProduct(@annotation.unused ctx: DomainCSContext, adtRenderer: DomainCSAdtRenderer) {
+final class DomainCSServiceMethodProduct(ctx: DomainCSContext, adtRenderer: DomainCSAdtRenderer) {
 
   // -- Signatures ----------------------------------------------------------
 
@@ -107,14 +107,34 @@ final class DomainCSServiceMethodProduct(@annotation.unused ctx: DomainCSContext
   // -- Models --------------------------------------------------------------
 
   /** Mirror of legacy `renderServiceMethodInModel(i: DTOId, ...)` (lines 625-631).
-    * Extension chain omitted (default extensions have no relevant hooks).
+    *
+    * M5 production-swap: splices `JsonNetExtension.preModelEmit(ctx, name, struct)`
+    * / `postModelEmit(ctx, name, struct)` (legacy `:76-79` + `:99-127`) into
+    * the per-method I/O DTO emission. The default empty-extension call
+    * (no `withExtensions` overload invoked) preserves the M3 byte-parity
+    * contract.
     */
-  def renderServiceMethodInModel(i: DTOId, structure: SimpleStructure)(implicit imports: CSharpImports, ts: Typespace): String = {
+  def renderServiceMethodInModel(i: DTOId, structure: SimpleStructure)(implicit imports: CSharpImports, ts: Typespace): String =
+    renderServiceMethodInModel(i, structure, withExtensions = false)
+
+  def renderServiceMethodInModel(i: DTOId, structure: SimpleStructure, withExtensions: Boolean)(implicit imports: CSharpImports, ts: Typespace): String = {
     val csClass = CSharpClass(i, structure)
 
-    s"""
-       |${csClass.render(withWrapper = true, withSlices = false, withRTTI = true)}
-       |""".stripMargin
+    if (!withExtensions) {
+      s"""
+         |${csClass.render(withWrapper = true, withSlices = false, withRTTI = true)}
+         |""".stripMargin
+    } else {
+      val pre  = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.preStruct(csClass.id.name)
+      val post = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.postStruct(ctx.domain, csClass.id.name, csClass)
+      // Legacy `:628-630` shape:
+      //   ${ext.preModelEmit(ctx, csClass.id.name, csClass)}
+      //   ${csClass.render(...)}
+      //   ${ext.postModelEmit(ctx, csClass.id.name, csClass)}
+      s"""$pre
+         |${csClass.render(withWrapper = true, withSlices = false, withRTTI = true)}
+         |$post""".stripMargin
+    }
   }
 
   /** Mirror of legacy `renderServiceMethodOutModel` for a service-scoped
@@ -122,34 +142,64 @@ final class DomainCSServiceMethodProduct(@annotation.unused ctx: DomainCSContext
   def renderServiceMethodOutModel(serviceId: ServiceId, name: String, out: DefMethod.Output)(
     implicit imports: CSharpImports,
     ts: Typespace,
-  ): String = renderMethodOutModelImpl(DTOId(serviceId, name), name, out)
+  ): String = renderServiceMethodOutModel(serviceId, name, out, withExtensions = false)
+
+  def renderServiceMethodOutModel(serviceId: ServiceId, name: String, out: DefMethod.Output, withExtensions: Boolean)(
+    implicit imports: CSharpImports,
+    ts: Typespace,
+  ): String = renderMethodOutModelImpl(DTOId(serviceId, name), name, out, withExtensions)
 
   /** Mirror of legacy `renderBuzzerMethodOutModel` for a buzzer-scoped
     * synthetic `DTOId(bzId, name)` (lines 609-615). */
   def renderBuzzerMethodOutModel(buzzerId: BuzzerId, name: String, out: DefMethod.Output)(
     implicit imports: CSharpImports,
     ts: Typespace,
-  ): String = renderMethodOutModelImpl(DTOId(buzzerId, name), name, out)
+  ): String = renderBuzzerMethodOutModel(buzzerId, name, out, withExtensions = false)
 
-  private def renderMethodOutModelImpl(dtoId: DTOId, name: String, out: DefMethod.Output)(implicit imports: CSharpImports, ts: Typespace): String = out match {
-    case st: Struct      => renderServiceMethodInModel(dtoId, st.struct)
-    case al: Algebraic   => adtRenderer.renderAdtImpl(name, al.alternatives, renderUsings = false)
+  def renderBuzzerMethodOutModel(buzzerId: BuzzerId, name: String, out: DefMethod.Output, withExtensions: Boolean)(
+    implicit imports: CSharpImports,
+    ts: Typespace,
+  ): String = renderMethodOutModelImpl(DTOId(buzzerId, name), name, out, withExtensions)
+
+  private def renderMethodOutModelImpl(dtoId: DTOId, name: String, out: DefMethod.Output, withExtensions: Boolean)(implicit imports: CSharpImports, ts: Typespace): String = out match {
+    case st: Struct => renderServiceMethodInModel(dtoId, st.struct, withExtensions)
+    case al: Algebraic =>
+      // Legacy `renderAdtImpl` (`:156-174`) splices `ext.preModelEmit(ctx, adt)` /
+      // `ext.postModelEmit(ctx, adt)` for a synthetic `Adt(AdtId(TypePath(...
+      // DomainId.Undefined, Seq.empty), name), members, NodeMeta.empty)`. The
+      // JsonNet converter target uses this synthetic name; for the new
+      // emitter we construct the same synthetic `TypeDef.Adt` and pass it
+      // to `DomainCSJsonNetExtension.preAdt` / `postAdt`.
+      if (!withExtensions) adtRenderer.renderAdtImpl(name, al.alternatives, renderUsings = false)
+      else {
+        val syntheticAdt = izumi.idealingua.typer.ir.TypeDef.Adt(
+          izumi.idealingua.model.common.TypeId.AdtId(
+            izumi.idealingua.model.common.TypePath(izumi.idealingua.model.common.DomainId.Undefined, Seq.empty),
+            name,
+          ),
+          al.alternatives,
+          izumi.idealingua.model.il.ast.typed.NodeMeta.empty,
+        )
+        val pre  = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.preAdt(syntheticAdt)
+        val post = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.postAdt(syntheticAdt, ts, imports)
+        adtRenderer.renderAdtImpl(name, al.alternatives, renderUsings = false, preSplice = pre, postSplice = post)
+      }
     case si: Singular    => s"// ${si.typeId}"
     case _: Void         => ""
-    case at: Alternative => renderAlternativeImpl(dtoId, name, at)
+    case at: Alternative => renderAlternativeImpl(dtoId, name, at, withExtensions)
   }
 
   /** Mirror of legacy `renderAlternativeImpl` (lines 217-246). */
-  private def renderAlternativeImpl(structId: DTOId, name: String, alternative: Alternative)(implicit im: CSharpImports, ts: Typespace): String = {
+  private def renderAlternativeImpl(structId: DTOId, name: String, alternative: Alternative, withExtensions: Boolean)(implicit im: CSharpImports, ts: Typespace): String = {
     val left = alternative.failure match {
       case al: Algebraic => adtRenderer.renderAdtImpl(renderServiceMethodAlternativeOutput(name, alternative, success = false), al.alternatives, renderUsings = false)
-      case st: Struct    => renderServiceMethodInModel(DTOId(structId.path, structId.name + "Failure"), st.struct)
+      case st: Struct    => renderServiceMethodInModel(DTOId(structId.path, structId.name + "Failure"), st.struct, withExtensions)
       case _             => ""
     }
 
     val right = alternative.success match {
       case al: Algebraic => adtRenderer.renderAdtImpl(renderServiceMethodAlternativeOutput(name, alternative, success = true), al.alternatives, renderUsings = false)
-      case st: Struct    => renderServiceMethodInModel(DTOId(structId.path, structId.name + "Success"), st.struct)
+      case st: Struct    => renderServiceMethodInModel(DTOId(structId.path, structId.name + "Success"), st.struct, withExtensions)
       case _             => ""
     }
 

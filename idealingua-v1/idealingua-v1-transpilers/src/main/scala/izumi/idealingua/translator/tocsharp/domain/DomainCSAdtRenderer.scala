@@ -39,25 +39,49 @@ import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
   */
 final class DomainCSAdtRenderer(@annotation.unused ctx: DomainCSContext) {
 
-  def renderAdt(i: NewTypeDef.Adt, ts: Typespace, im: CSharpImports): AdtProduct = {
+  def renderAdt(i: NewTypeDef.Adt, ts: Typespace, im: CSharpImports): AdtProduct =
+    renderAdt(i, ts, im, preSplice = "", postSplice = "", extraImports = List.empty)
+
+  /** M5 production-swap variant: splices `preSplice` into the legacy
+    * `${ext.preModelEmit(ctx, adt)}` slot (legacy `:161`), `postSplice`
+    * into the post slot (legacy `:172`), and merges `extraImports` into
+    * the header import list (legacy `:250`).
+    *
+    * The default no-splice call (used by M3 unit tests) preserves the
+    * exact pre-M5 string shape and imports.
+    */
+  def renderAdt(
+    i: NewTypeDef.Adt,
+    ts: Typespace,
+    im: CSharpImports,
+    preSplice: String,
+    postSplice: String,
+    extraImports: List[String],
+  ): AdtProduct = {
     implicit val _ts: Typespace     = ts
     implicit val _im: CSharpImports = im
 
-    AdtProduct(renderAdtImpl(i.id.name, i.alternatives), im.renderImports(List.empty))
+    AdtProduct(renderAdtImpl(i.id.name, i.alternatives, renderUsings = true, preSplice = preSplice, postSplice = postSplice), im.renderImports(extraImports))
   }
 
   /** Mirror of legacy `CSharpTranslator.renderAdtImpl` (lines 156-174).
     * Public so `DomainCSServiceMethodProduct` can reuse it for nested ADT
-    * outputs in service methods. Extension chain omitted: with an empty
-    * extension list, `ext.preModelEmit` / `ext.postModelEmit` resolve to
-    * `""`, so the surrounding whitespace from the legacy template is
-    * preserved exactly by substituting blank interpolations.
+    * outputs in service methods. `preSplice`/`postSplice` default to
+    * `""` for byte-equality with the M3 unit-test fixture; the M5
+    * production-swap supplies the JsonNet attribute + converter blocks
+    * for top-level ADT type definitions.
     */
-  def renderAdtImpl(adtName: String, members: List[AdtMember], renderUsings: Boolean = true)(implicit im: CSharpImports, ts: Typespace): String = {
+  def renderAdtImpl(
+    adtName: String,
+    members: List[AdtMember],
+    renderUsings: Boolean = true,
+    preSplice: String = "",
+    postSplice: String = "",
+  )(implicit im: CSharpImports, ts: Typespace): String = {
     s"""${im.renderUsings()}
        |${if (renderUsings) members.map(m => renderAdtUsings(m)).mkString("\n") else ""}
        |
-       |
+       |$preSplice
        |public abstract class $adtName {
        |    public interface I${adtName}Visitor {
        |${members.map(m => s"        void Visit(${m.typename} visitor);").mkString("\n")}
@@ -68,7 +92,7 @@ final class DomainCSAdtRenderer(@annotation.unused ctx: DomainCSContext) {
        |
        |${members.map(m => renderAdtMember(adtName, m)).mkString("\n").shift(4)}
        |}
-       |
+       |$postSplice
      """.stripMargin
   }
 

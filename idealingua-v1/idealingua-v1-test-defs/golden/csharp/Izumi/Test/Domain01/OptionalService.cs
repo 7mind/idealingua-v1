@@ -7,8 +7,8 @@ using IRT.Transport.Client;
 using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using System.Linq;
 using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace Izumi.Test.Domain01 {
     public static class OptionalService {

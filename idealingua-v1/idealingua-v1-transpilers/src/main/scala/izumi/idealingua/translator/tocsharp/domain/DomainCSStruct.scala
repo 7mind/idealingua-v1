@@ -59,7 +59,23 @@ object DomainCSStruct {
       byName.values.map { occurrences =>
         val typesEqual = occurrences.map(_.field).toSet.size == 1
         if (typesEqual) occurrences.maxBy(_.defn.distance)
-        else occurrences.minBy(_.defn.distance)
+        else {
+          // Covariant field-type narrowing: legacy C# goldens predate
+          // covariant override propagation into the parent interface's
+          // structure — the legacy typer registered only the parent's
+          // field (`Field: Covariant`) on the iface's flat struct and
+          // dropped the iface-level narrowed override (`Field: CovariantA`).
+          // To keep the generated C# compilable against the parent
+          // interface's property contract (C# does not support covariant
+          // property overrides), pick the deepest (largest-distance =
+          // parent) occurrence as the canonical field-type, and store
+          // the full type-narrowing chain in `defn.variance`. The C#
+          // interface renderer reads `f.defn.variance.nonEmpty` to switch
+          // to the commented-out covariance workaround (legacy `:371-372`).
+          val sorted = occurrences.sortBy(_.defn.distance)
+          val best   = sorted.last
+          best.copy(defn = best.defn.copy(variance = sorted.map(_.field).toList))
+        }
       }.toList
     }
 

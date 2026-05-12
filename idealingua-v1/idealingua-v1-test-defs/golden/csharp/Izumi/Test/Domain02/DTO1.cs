@@ -20,25 +20,25 @@ namespace Izumi.Test.Domain02 {
 
         public int If1Field_overriden { get; set; }
         public int If1Field_inherited { get; set; }
+        public long SameField { get; set; }
+        public long SameEverywhereField { get; set; }
         public Izumi.Test.Domain01.TestValIdentifier FromOtherDomain { get; set; }
         public Izumi.Test.Domain01.TestValIdentifier FromOtherDomainDirect { get; set; }
         public long If3Field { get; set; }
         public long If2Field { get; set; }
-        public long SameField { get; set; }
-        public long SameEverywhereField { get; set; }
 
         public DTO1() {
         }
 
-        public DTO1(int if1Field_overriden, int if1Field_inherited, Izumi.Test.Domain01.TestValIdentifier fromOtherDomain, Izumi.Test.Domain01.TestValIdentifier fromOtherDomainDirect, long if3Field, long if2Field, long sameField, long sameEverywhereField) {
+        public DTO1(int if1Field_overriden, int if1Field_inherited, long sameField, long sameEverywhereField, Izumi.Test.Domain01.TestValIdentifier fromOtherDomain, Izumi.Test.Domain01.TestValIdentifier fromOtherDomainDirect, long if3Field, long if2Field) {
             this.If1Field_overriden = if1Field_overriden;
             this.If1Field_inherited = if1Field_inherited;
+            this.SameField = sameField;
+            this.SameEverywhereField = sameEverywhereField;
             this.FromOtherDomain = fromOtherDomain;
             this.FromOtherDomainDirect = fromOtherDomainDirect;
             this.If3Field = if3Field;
             this.If2Field = if2Field;
-            this.SameField = sameField;
-            this.SameEverywhereField = sameEverywhereField;
         }
 
         public TestInterface2 ToTestInterface2() {
@@ -93,6 +93,10 @@ namespace Izumi.Test.Domain02 {
             writer.WriteValue(v.If1Field_overriden);
             writer.WritePropertyName("if1Field_inherited");
             writer.WriteValue(v.If1Field_inherited);
+            writer.WritePropertyName("sameField");
+            writer.WriteValue(v.SameField);
+            writer.WritePropertyName("sameEverywhereField");
+            writer.WriteValue(v.SameEverywhereField);
             writer.WritePropertyName("fromOtherDomain");
             writer.WriteValue(v.FromOtherDomain.ToString());
             writer.WritePropertyName("fromOtherDomainDirect");
@@ -101,10 +105,6 @@ namespace Izumi.Test.Domain02 {
             writer.WriteValue(v.If3Field);
             writer.WritePropertyName("if2Field");
             writer.WriteValue(v.If2Field);
-            writer.WritePropertyName("sameField");
-            writer.WriteValue(v.SameField);
-            writer.WritePropertyName("sameEverywhereField");
-            writer.WriteValue(v.SameEverywhereField);
             writer.WriteEndObject();
         }
 
@@ -117,12 +117,12 @@ namespace Izumi.Test.Domain02 {
             return new DTO1(
                 json["if1Field_overriden"].Value<int>(), 
                 json["if1Field_inherited"].Value<int>(), 
+                json["sameField"].Value<long>(), 
+                json["sameEverywhereField"].Value<long>(), 
                 Izumi.Test.Domain01.TestValIdentifier.From(json["fromOtherDomain"].Value<string>()), 
                 Izumi.Test.Domain01.TestValIdentifier.From(json["fromOtherDomainDirect"].Value<string>()), 
                 json["if3Field"].Value<long>(), 
-                json["if2Field"].Value<long>(), 
-                json["sameField"].Value<long>(), 
-                json["sameEverywhereField"].Value<long>()
+                json["if2Field"].Value<long>()
             );
         }
     }

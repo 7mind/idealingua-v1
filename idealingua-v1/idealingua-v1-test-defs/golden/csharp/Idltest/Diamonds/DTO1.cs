@@ -19,21 +19,21 @@ namespace Idltest.Diamonds {
 
         public int If1Field_overriden { get; set; }
         public int If1Field_inherited { get; set; }
-        public long If3Field { get; set; }
-        public long If2Field { get; set; }
         public long SameField { get; set; }
         public long SameEverywhereField { get; set; }
+        public long If3Field { get; set; }
+        public long If2Field { get; set; }
 
         public DTO1() {
         }
 
-        public DTO1(int if1Field_overriden, int if1Field_inherited, long if3Field, long if2Field, long sameField, long sameEverywhereField) {
+        public DTO1(int if1Field_overriden, int if1Field_inherited, long sameField, long sameEverywhereField, long if3Field, long if2Field) {
             this.If1Field_overriden = if1Field_overriden;
             this.If1Field_inherited = if1Field_inherited;
-            this.If3Field = if3Field;
-            this.If2Field = if2Field;
             this.SameField = sameField;
             this.SameEverywhereField = sameEverywhereField;
+            this.If3Field = if3Field;
+            this.If2Field = if2Field;
         }
 
     }
@@ -52,14 +52,14 @@ namespace Idltest.Diamonds {
             writer.WriteValue(v.If1Field_overriden);
             writer.WritePropertyName("if1Field_inherited");
             writer.WriteValue(v.If1Field_inherited);
-            writer.WritePropertyName("if3Field");
-            writer.WriteValue(v.If3Field);
-            writer.WritePropertyName("if2Field");
-            writer.WriteValue(v.If2Field);
             writer.WritePropertyName("sameField");
             writer.WriteValue(v.SameField);
             writer.WritePropertyName("sameEverywhereField");
             writer.WriteValue(v.SameEverywhereField);
+            writer.WritePropertyName("if3Field");
+            writer.WriteValue(v.If3Field);
+            writer.WritePropertyName("if2Field");
+            writer.WriteValue(v.If2Field);
             writer.WriteEndObject();
         }
 
@@ -72,10 +72,10 @@ namespace Idltest.Diamonds {
             return new DTO1(
                 json["if1Field_overriden"].Value<int>(), 
                 json["if1Field_inherited"].Value<int>(), 
-                json["if3Field"].Value<long>(), 
-                json["if2Field"].Value<long>(), 
                 json["sameField"].Value<long>(), 
-                json["sameEverywhereField"].Value<long>()
+                json["sameEverywhereField"].Value<long>(), 
+                json["if3Field"].Value<long>(), 
+                json["if2Field"].Value<long>()
             );
         }
     }

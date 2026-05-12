@@ -35,7 +35,36 @@ import izumi.idealingua.typer.ir.{FlatStruct, TypeDef => NewTypeDef}
   */
 final class DomainCSInterfaceRenderer(@annotation.unused ctx: DomainCSContext) {
 
-  def renderInterface(i: NewTypeDef.Interface, ts: Typespace, im: CSharpImports): InterfaceProduct = {
+  def renderInterface(i: NewTypeDef.Interface, ts: Typespace, im: CSharpImports): InterfaceProduct =
+    renderInterface(
+      i, ts, im,
+      ifacePreSplice    = "",
+      ifacePostSplice   = "",
+      companionPreSplice  = "",
+      companionPostSplice = "",
+      extraImports      = List.empty,
+    )
+
+  /** M5 production-swap variant: splices `ifacePreSplice` into the legacy
+    * `${ext.preModelEmit(ctx, i)}` slot of the interface block (legacy
+    * `:369`), `ifacePostSplice` into the post slot (legacy `:374`),
+    * `companionPreSplice` / `companionPostSplice` into the synthetic
+    * impl-DTO splice slots (legacy `:378` / `:382`), and merges
+    * `extraImports` into the header import list (legacy `:388`).
+    *
+    * The default no-splice call (used by M2 unit tests) preserves the
+    * exact pre-M5 string shape and imports.
+    */
+  def renderInterface(
+    i: NewTypeDef.Interface,
+    ts: Typespace,
+    im: CSharpImports,
+    ifacePreSplice: String,
+    ifacePostSplice: String,
+    companionPreSplice: String,
+    companionPostSplice: String,
+    extraImports: List[String],
+  ): InterfaceProduct = {
     implicit val _ts: Typespace     = ts
     implicit val _im: CSharpImports = im
 
@@ -46,10 +75,6 @@ final class DomainCSInterfaceRenderer(@annotation.unused ctx: DomainCSContext) {
     val structure = DomainCSStruct.fromFlat(i.id, flat, i.struct.superclasses, ctx.domain)
     val eid       = DomainCSStruct.implId(i.id)
 
-    // Parents come from the legacy inheritance walk for byte-stable
-    // ordering at M2 — the legacy emission depends on the exact iteration
-    // order of `parentsInherited`. `Domain.parents` has the same
-    // membership but is a `Set`; M5+ may swap once ordering is verified.
     val parentIfaces = ts.inheritance.parentsInherited(i.id).filter(_ != i.id)
     val validFields  = structure.all.filterNot(f => parentIfaces.contains(f.defn.definedBy))
     val ifaceFields =
@@ -62,9 +87,6 @@ final class DomainCSInterfaceRenderer(@annotation.unused ctx: DomainCSContext) {
         ": " +
         i.struct.superclasses.interfaces.map(ifc => ifc.name).mkString(", ") + ", IRTTI"
 
-    // The synthetic DTO is only passed to `ext.preModelEmit`/`postModelEmit`
-    // in the legacy renderer; with an empty extension list we still
-    // construct it for parity (no observable effect on the output).
     val _dto: LegacyTypeDef.DTO = LegacyTypeDef.DTO(
       eid,
       Structure(validFields.map(f => f.field), List.empty, Super(List(i.id), List.empty, List.empty)),
@@ -74,26 +96,26 @@ final class DomainCSInterfaceRenderer(@annotation.unused ctx: DomainCSContext) {
 
     val iface =
       s"""${im.renderUsings()}
-         |
+         |$ifacePreSplice
          |public interface ${i.id.name}$ifaceImplements {
          |${ifaceFields
           .map(f => s"${if (f._1) "// Would have been covariance, but C# doesn't support it:\n// " else ""}${f._2.renderMember(true)}").mkString("\n").shift(4)}
          |}
-         |
+         |$ifacePostSplice
          |       """.stripMargin
 
     val companion =
-      s"""
+      s"""$companionPreSplice
          |${struct.renderHeader()} {
          |${struct.render(withWrapper = false, withSlices = true, withRTTI = true, withCTORs = Some(i.id.name)).shift(4)}
          |}
-         |
+         |$companionPostSplice
          |       """.stripMargin
 
     InterfaceProduct(
       iface,
       companion,
-      im.renderImports(List("IRT", "System", "System.Collections", "System.Collections.Generic", "System.Reflection")),
+      im.renderImports(List("IRT", "System", "System.Collections", "System.Collections.Generic", "System.Reflection") ++ extraImports),
     )
   }
 }

@@ -36,7 +36,25 @@ import izumi.idealingua.typer.ir.{FlatStruct, TypeDef => NewTypeDef}
   */
 final class DomainCSCompositeRenderer(@annotation.unused ctx: DomainCSContext) {
 
-  def renderDto(i: NewTypeDef.Dto, ts: Typespace, im: CSharpImports): CompositeProduct = {
+  def renderDto(i: NewTypeDef.Dto, ts: Typespace, im: CSharpImports): CompositeProduct =
+    renderDto(i, ts, im, preSplice = "", postSplice = "", extraImports = List.empty)
+
+  /** M5 production-swap variant: splices `preSplice` into the legacy
+    * `${ext.preModelEmit(ctx, i)}` slot (legacy `:81`), `postSplice` into
+    * `${ext.postModelEmit(ctx, i)}` (legacy `:85`), and merges
+    * `extraImports` into the header import list (legacy `:88`).
+    *
+    * The default no-splice call (used by M2 unit tests) preserves the
+    * exact pre-M5 string shape and imports.
+    */
+  def renderDto(
+    i: NewTypeDef.Dto,
+    ts: Typespace,
+    im: CSharpImports,
+    preSplice: String,
+    postSplice: String,
+    extraImports: List[String],
+  ): CompositeProduct = {
     implicit val _ts: Typespace     = ts
     implicit val _im: CSharpImports = im
 
@@ -49,13 +67,13 @@ final class DomainCSCompositeRenderer(@annotation.unused ctx: DomainCSContext) {
 
     val dto =
       s"""${im.renderUsings()}
-         |
+         |$preSplice
          |${struct.renderHeader()} {
          |${struct.render(withWrapper = false, withSlices = true, withRTTI = true).shift(4)}
          |}
-         |
+         |$postSplice
          |       """.stripMargin
 
-    CompositeProduct(dto, im.renderImports(List("System", "System.Collections", "System.Collections.Generic")))
+    CompositeProduct(dto, im.renderImports(List("System", "System.Collections", "System.Collections.Generic") ++ extraImports))
   }
 }

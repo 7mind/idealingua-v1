@@ -13,8 +13,6 @@ using IRT.Marshaller;
 namespace Idltest.Inheritance {
     [JsonConverter(typeof(InheritedCovariant_JsonNetConverter))]
     public interface InheritedCovariant: WithCovariance, IRTTI {
-        // Would have been covariance, but C# doesn't support it:
-        // Idltest.Inheritance.CovariantA Field { get; set; }
     }
     public class InheritedCovariant_JsonNetConverter: JsonNetConverter<InheritedCovariant> {
     #if UNITY_5_3_OR_NEWER

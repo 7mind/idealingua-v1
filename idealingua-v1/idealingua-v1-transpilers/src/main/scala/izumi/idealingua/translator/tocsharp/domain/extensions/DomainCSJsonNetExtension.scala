@@ -298,6 +298,23 @@ object DomainCSJsonNetExtension {
      """.stripMargin
   }
 
+  /** Pre-emit attribute for the legacy `(name: String, struct: CSharpClass)`
+    * splice variant (legacy `:76-79`). Used by the service / buzzer
+    * method I/O DTO emission (`renderServiceMethodInModel`).
+    */
+  def preStruct(name: String): String =
+    s"[JsonConverter(typeof(${name}_JsonNetConverter))]"
+
+  /** Post-emit converter for the legacy `(name, struct)` splice variant
+    * (legacy `:99-127`). Used by the service / buzzer method I/O DTO
+    * emission so the per-method `In<Method>` / `Out<Method>` classes
+    * get a `<Name>_JsonNetConverter` companion — this is wire-format
+    * critical: the JSON converter is the only way the C# leg can
+    * round-trip a method I/O struct.
+    */
+  def postStruct(domain: Domain, name: String, struct: CSharpClass)(implicit im: CSharpImports, ts: Typespace): String =
+    renderStructConverter(domain, name, struct)
+
   // ---- imports ----------------------------------------------------------
 
   def importsIdentifier: List[String] = List("Newtonsoft.Json", "IRT.Marshaller")

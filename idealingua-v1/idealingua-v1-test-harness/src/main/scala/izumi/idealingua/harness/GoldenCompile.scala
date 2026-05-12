@@ -36,8 +36,13 @@ private[harness] object GoldenCompile {
 
     for (lang <- languages) {
       val typer = lang match {
-        case IDLLanguage.Scala => scalaTyper
-        case _                 => TyperImpl.Legacy
+        case IDLLanguage.Scala  => scalaTyper
+        // IMPL-7c.2 Phase B M5 (2026-05-12): C# now consumes `Domain` directly
+        // via `DomainCSharpTranslator` (M1-M3 renderers + M4 JsonNetExtension
+        // splice). Flip C# default to NewTyper so `verifyGoldens` /
+        // `regenerateGoldens` exercise the new path.
+        case IDLLanguage.CSharp => TyperImpl.NewTyper
+        case _                  => TyperImpl.Legacy
       }
       val options  = HarnessOptions.optionsFor(lang, typer)
       val layouted = new TypespaceCompilerBaseFacade(options).compile(loaded)

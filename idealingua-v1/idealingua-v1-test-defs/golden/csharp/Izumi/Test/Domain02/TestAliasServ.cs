@@ -8,8 +8,8 @@ using IRT.Transport.Client;
 using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using System.Linq;
 using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace Izumi.Test.Domain02 {
     using _TestIDReturn = Izumi.Test.Domain02.TestIDReturn;

@@ -54,11 +54,30 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
 
   private val methodProduct = new DomainCSServiceMethodProduct(ctx, adtRenderer)
 
+  /** Whether `renderServiceMethodInModel` should splice the JsonNet
+    * `[JsonConverter(...)]` attribute + `<Name>_JsonNetConverter`
+    * converter class around each per-method `In<Method>` /
+    * `Out<Method>` DTO. Set per-call from the production translator;
+    * defaults to `false` so M3 byte-parity unit tests keep their
+    * empty-extension contract.
+    */
+  private var spliceJsonNet: Boolean = false
+
   // -- Service -------------------------------------------------------------
 
-  def renderService(i: NewTypeDef.Service, ts: Typespace, im: CSharpImports): ServiceProduct = {
+  def renderService(i: NewTypeDef.Service, ts: Typespace, im: CSharpImports): ServiceProduct =
+    renderService(i, ts, im, withJsonNet = false)
+
+  /** M5 production-swap variant: when `withJsonNet = true`, splices the
+    * JsonNet `(name, struct)` pre/post into every `In<Method>` /
+    * `Out<Method>` DTO emission and threads the JsonNet imports into
+    * the service product's import list. This restores the legacy
+    * wire-format-critical converter classes for service method I/O.
+    */
+  def renderService(i: NewTypeDef.Service, ts: Typespace, im: CSharpImports, withJsonNet: Boolean): ServiceProduct = {
     implicit val _ts: Typespace     = ts
     implicit val _im: CSharpImports = im
+    spliceJsonNet = withJsonNet
 
     val svc =
       s"""${renderServiceUsings(i)}
@@ -77,9 +96,19 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
          |${renderServiceServerBase(i)}
          """.stripMargin
 
+    val baseImports = List("IRT", "IRT.Marshaller", "IRT.Transport.Client", "System", "System.Collections", "System.Collections.Generic")
+    // Union of DTO + ADT JsonNet imports — service / buzzer method I/O can
+    // be either a Struct (-> `importsDto`) or an Algebraic (-> `importsAdt`).
+    // The union (deduped) matches the legacy `:676-693` import-collection
+    // pass over every method-output type's `ext.imports(ctx, _)` aggregate.
+    val extraImports =
+      if (withJsonNet)
+        (izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.importsDto ++
+         izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.importsAdt).distinct
+      else List.empty
     ServiceProduct(
       svc,
-      im.renderImports(List("IRT", "IRT.Marshaller", "IRT.Transport.Client", "System", "System.Collections", "System.Collections.Generic")),
+      im.renderImports(baseImports ++ extraImports),
     )
   }
 
@@ -91,8 +120,8 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
 
   private def renderServiceMethodModels(i: NewTypeDef.Service, method: DefMethod)(implicit imports: CSharpImports, ts: Typespace): String = method match {
     case m: DefMethod.RPCMethod =>
-      s"""${if (m.signature.input.fields.isEmpty) "" else methodProduct.renderServiceMethodInModel(DTOId(i.id, s"In${m.name.capitalize}"), m.signature.input)}
-         |${methodProduct.renderServiceMethodOutModel(i.id, s"Out${m.name.capitalize}", m.signature.output)}
+      s"""${if (m.signature.input.fields.isEmpty) "" else methodProduct.renderServiceMethodInModel(DTOId(i.id, s"In${m.name.capitalize}"), m.signature.input, spliceJsonNet)}
+         |${methodProduct.renderServiceMethodOutModel(i.id, s"Out${m.name.capitalize}", m.signature.output, spliceJsonNet)}
        """.stripMargin
   }
 
@@ -174,9 +203,13 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
 
   // -- Buzzer --------------------------------------------------------------
 
-  def renderBuzzer(i: NewTypeDef.Buzzer, ts: Typespace, im: CSharpImports): BuzzerProduct = {
+  def renderBuzzer(i: NewTypeDef.Buzzer, ts: Typespace, im: CSharpImports): BuzzerProduct =
+    renderBuzzer(i, ts, im, withJsonNet = false)
+
+  def renderBuzzer(i: NewTypeDef.Buzzer, ts: Typespace, im: CSharpImports, withJsonNet: Boolean): BuzzerProduct = {
     implicit val _ts: Typespace     = ts
     implicit val _im: CSharpImports = im
+    spliceJsonNet = withJsonNet
 
     val svc =
       s"""${renderBuzzerUsings(i)}
@@ -195,9 +228,19 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
          |${renderBuzzerHandlersDummy(i)}
          """.stripMargin
 
+    val baseImports = List("IRT", "IRT.Marshaller", "IRT.Transport.Client", "System", "System.Collections", "System.Collections.Generic")
+    // Union of DTO + ADT JsonNet imports — service / buzzer method I/O can
+    // be either a Struct (-> `importsDto`) or an Algebraic (-> `importsAdt`).
+    // The union (deduped) matches the legacy `:676-693` import-collection
+    // pass over every method-output type's `ext.imports(ctx, _)` aggregate.
+    val extraImports =
+      if (withJsonNet)
+        (izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.importsDto ++
+         izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.importsAdt).distinct
+      else List.empty
     BuzzerProduct(
       svc,
-      im.renderImports(List("IRT", "IRT.Marshaller", "IRT.Transport.Client", "System", "System.Collections", "System.Collections.Generic")),
+      im.renderImports(baseImports ++ extraImports),
     )
   }
 
@@ -209,8 +252,8 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
 
   private def renderBuzzerMethodModels(i: NewTypeDef.Buzzer, method: DefMethod)(implicit imports: CSharpImports, ts: Typespace): String = method match {
     case m: DefMethod.RPCMethod =>
-      s"""${if (m.signature.input.fields.isEmpty) "" else methodProduct.renderServiceMethodInModel(DTOId(i.id, s"In${m.name.capitalize}"), m.signature.input)}
-         |${methodProduct.renderBuzzerMethodOutModel(i.id, s"Out${m.name.capitalize}", m.signature.output)}
+      s"""${if (m.signature.input.fields.isEmpty) "" else methodProduct.renderServiceMethodInModel(DTOId(i.id, s"In${m.name.capitalize}"), m.signature.input, spliceJsonNet)}
+         |${methodProduct.renderBuzzerMethodOutModel(i.id, s"Out${m.name.capitalize}", m.signature.output, spliceJsonNet)}
        """.stripMargin
   }
 

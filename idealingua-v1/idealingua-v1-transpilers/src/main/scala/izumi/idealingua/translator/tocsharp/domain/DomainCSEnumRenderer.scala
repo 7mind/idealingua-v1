@@ -30,7 +30,17 @@ import izumi.idealingua.typer.ir.TypeDef
   */
 final class DomainCSEnumRenderer(@annotation.unused ctx: DomainCSContext) {
 
-  def renderEnumeration(i: TypeDef.Enum): EnumProduct = {
+  def renderEnumeration(i: TypeDef.Enum): EnumProduct =
+    renderEnumeration(i, postSplice = "", header = "")
+
+  /** M5 production-swap variant: takes a `postSplice` (JsonNet converter
+    * block) spliced into the legacy `${ext.postModelEmit(ctx, i)}` slot
+    * (legacy `:292`) and a `header` (import lines) for the product header.
+    *
+    * The default no-splice call (used by M1 unit tests) preserves the
+    * exact pre-M5 string shape (`postSplice = ""`, `header = ""`).
+    */
+  def renderEnumeration(i: TypeDef.Enum, postSplice: String, header: String): EnumProduct = {
     val name = i.id.name
 
     val members =
@@ -75,9 +85,9 @@ final class DomainCSEnumRenderer(@annotation.unused ctx: DomainCSContext) {
          |    }
          |}
          |
-         |
+         |$postSplice
          |""".stripMargin
 
-    EnumProduct(decl, "", "")
+    EnumProduct(decl, header, "")
   }
 }
