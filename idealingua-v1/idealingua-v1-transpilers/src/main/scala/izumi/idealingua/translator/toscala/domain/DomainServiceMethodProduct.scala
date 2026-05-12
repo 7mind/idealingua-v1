@@ -3,6 +3,14 @@ package izumi.idealingua.translator.toscala.domain
 import izumi.idealingua.model.common.TypeId.{AdtId, DTOId}
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.il.ast.typed.DefMethod.RPCMethod
+import izumi.idealingua.translator.toscala.domain.extensions.{
+  DomainAnyvalExtension,
+  DomainCastSimilarExtension,
+  DomainCastUpExtension,
+  DomainCirceDerivationTranslatorExtension,
+}
+import izumi.idealingua.translator.toscala.products.CogenProduct
+import izumi.idealingua.translator.toscala.tools.ScalaMetaTools._
 import izumi.idealingua.translator.toscala.types.{ClassSource, ScalaField, ScalaType}
 import izumi.idealingua.typer.ir.{FlatStruct, TypeDef => NewTypeDef}
 
@@ -234,7 +242,8 @@ final case class DomainServiceMethodProduct(
       // only matches on type, never reads the inner field, at the
       // pre-extension layer.
       val stub = stubDto(typespaceId)
-      ctx.compositeRenderer.defns(composite, ClassSource.CsDTO(stub)).render
+      val base = ctx.compositeRenderer.defns(composite, ClassSource.CsDTO(stub)).asInstanceOf[CogenProduct[Defn.Class]]
+      withCirce(base, typespaceId, flat, unwrap = false)
     }
 
     def defnEncoder: Defn.Def =
@@ -315,7 +324,15 @@ final case class DomainServiceMethodProduct(
         val scalaStruct = DomainScalaStruct.scalaStruct(outId, flat, supers, ctx.conv, ctx.domain)
         val composite   = new DomainCompositeStructure(ctx, scalaStruct)
         val stub = stubDto(outId)
-        ctx.compositeRenderer.defns(composite, ClassSource.CsDTO(stub)).render
+        val base = ctx.compositeRenderer.defns(composite, ClassSource.CsDTO(stub)).asInstanceOf[CogenProduct[Defn.Class]]
+        // Legacy unwrap branch: a Singular method output yields a synthetic
+        // wrapper DTO with a single field — the Circe codec must encode the
+        // inner value directly (`encodeUnwrapped<Name>`).
+        val unwrap = out match {
+          case _: DefMethod.Output.Singular => true
+          case _                            => false
+        }
+        withCirce(base, outId, flat, unwrap)
 
       case DefMethod.Output.Algebraic(_) =>
         val outAdtId: AdtId = AdtId(sp.basePath, typename)
@@ -341,6 +358,52 @@ final case class DomainServiceMethodProduct(
       case o: DefMethod.Output.Singular => ctx.conv.toScala(o.typeId).typeFull
       case _                            => typeFull
     }
+  }
+
+  /** Augment a method Input/Output DTO `CogenProduct` with the full
+    * extension chain that legacy `CompositeRenderer.defns(_, CsMethodInput
+    * | CsMethodOutput)` runs through `ext.extend(...)`:
+    *
+    *   - AnyVal mixin on the case class (single-scalar-field wrappers).
+    *   - `_cast_into_<peer>` (CastSimilar) and `_upcast_<parent>` (CastUp)
+    *     implicit objects appended to the companion.
+    *   - `<Name>Circe` trait sibling + companion-base `extends`.
+    *
+    * The Circe `unwrap` flag corresponds to legacy
+    * `ClassSource.CsMethodOutput` with `DefMethod.Output.Singular(_)` (the
+    * unwrap branch emits `encodeUnwrapped<Name>` codecs).
+    */
+  private def withCirce(
+    base: CogenProduct[Defn.Class],
+    dtoId: DTOId,
+    flat: FlatStruct,
+    unwrap: Boolean,
+  ): List[Defn] = {
+    val anyvalBases       = DomainAnyvalExtension.withAnyvalForMethodStruct(ctx, flat)
+    val withAnyVal        = base.defn.prependBase(anyvalBases)
+
+    val sims              = DomainCastSimilarExtension.mkConvertersForMethodStruct(ctx, dtoId)
+    val ups               = DomainCastUpExtension.generateUpcastsForMethodStruct(ctx, dtoId)
+    val companionWithCasts = base.companionBase.appendDefinitions(sims ++ ups)
+
+    val circe              = DomainCirceDerivationTranslatorExtension.emitForMethodStruct(
+      ctx           = ctx,
+      dtoId         = dtoId,
+      flat          = flat,
+      unwrap        = unwrap,
+      scalaVersions = ctx.options.manifest.sbt.scalaVersions,
+    )
+    val siblingInit        = ctx.conv.toScala(dtoId).sibling(circe.name).init()
+    val companionFinal     = companionWithCasts.prependBase(siblingInit)
+
+    val augmented = CogenProduct[Defn.Class](
+      defn          = withAnyVal,
+      companionBase = companionFinal,
+      tools         = base.tools,
+      more          = base.more :+ circe.defn,
+      preamble      = base.preamble,
+    )
+    augmented.render
   }
 
   private def stubDto(id: DTOId): izumi.idealingua.model.il.ast.typed.TypeDef.DTO =

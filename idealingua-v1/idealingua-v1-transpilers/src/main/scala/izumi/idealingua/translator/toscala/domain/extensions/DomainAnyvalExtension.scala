@@ -42,6 +42,14 @@ object DomainAnyvalExtension {
   def withAnyvalForComposite(ctx: DomainSTContext, dto: NewTypeDef.Dto): List[Init] =
     doModify(ctx, "AnyVal", structCanBeAnyVal(ctx, dto))
 
+  /** AnyVal bases for a service / buzzer method Input or Output ephemeral
+    * DTO. Single-scalar inputs and Singular-output wrappers qualify. */
+  def withAnyvalForMethodStruct(ctx: DomainSTContext, flat: izumi.idealingua.typer.ir.FlatStruct): List[Init] = {
+    val all = flat.fields.map(_.field)
+    val ok  = all.size == 1 && all.forall(f => canBeAnyValField(ctx, f.typeId))
+    doModify(ctx, "AnyVal", ok)
+  }
+
   /** Any bases for a structural interface (trait). */
   def withAnyForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[Init] = {
     val flat = ctx.domain.flattenedStructs.get(i.id)

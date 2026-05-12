@@ -106,13 +106,22 @@ final class DomainCompositeStructure(
       i
   }
 
-  // approximates `TypespaceImpl.types.isInterfaceEphemeral`: in the new IR,
-  // a DTO `dto.<Iface>.Struct` is the impl of an interface, hence ephemeral
-  // in this sense; the new IR records this via `ephemeralOwner` plus the
-  // synthetic name convention. Be conservative — if in doubt, treat as
-  // non-ephemeral so the mirror constructor is emitted (matches legacy).
+  // Matches `TypespaceImpl.types.isInterfaceEphemeral`: legacy treats a DTO
+  // as interface-ephemeral iff it is the synthesized impl of an interface
+  // (the `<I>.Struct` mirror), *not* every synthesized DTO.  Service /
+  // buzzer method input/output ephemerals are NOT interface-ephemerals;
+  // they must keep the `apply(defn: <Name>.Defn): <Name>` mirror
+  // constructor (legacy emits it via `inlinedStructConstructorCode`).
+  // Detect via `EphemeralOrigin.InterfaceMirror` rather than broad
+  // `ephemeralOwner` membership (which also covers method I/O).
   private def isInterfaceEphemeral(d: DTOId): Boolean = {
-    ctx.domain.ephemeralOwner.contains(d) || d.name == "Struct"
+    ctx.domain.members.get(d) match {
+      case Some(izumi.idealingua.typer.ir.Member.Ephemeral(eph)) =>
+        eph.origin.isInstanceOf[izumi.idealingua.typer.ir.EphemeralOrigin.InterfaceMirror]
+      case _ =>
+        // Conservative fallback for the legacy mirror-naming convention.
+        d.name == "Struct"
+    }
   }
 
   // --- ported from ScalaTranslationTools.makeParams / makeConstructor ---

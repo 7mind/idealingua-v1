@@ -39,6 +39,12 @@ object DomainCastUpExtension {
   def generateUpcastsForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[Stat] =
     generateUpcasts(ctx, i.id)
 
+  /** Companion-object stats for `_upcast_*` helpers on a service / buzzer
+    * method Input or Output ephemeral DTO. Mirrors legacy
+    * `CastUpExtension.handleComposite` on `CsMethodInput`/`CsMethodOutput`. */
+  def generateUpcastsForMethodStruct(ctx: DomainSTContext, dtoId: DTOId): List[Stat] =
+    generateUpcasts(ctx, dtoId)
+
   /** Defect #2-Fd (impl-struct `Struct_upcast_*` set): legacy
     * `CompositeRenderer.defns(_, CsInterface)` ran the cast extension on the
     * synthesized impl DTO, emitting `Struct_upcast_Struct` (self) and

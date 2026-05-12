@@ -45,6 +45,13 @@ object DomainCastSimilarExtension {
   def mkConvertersForImplStruct(ctx: DomainSTContext, implId: izumi.idealingua.model.common.TypeId.DTOId): List[Stat] =
     mkConverters(ctx, implId)
 
+  /** Companion-object stats for `cast_into_*` helpers on a service /
+    * buzzer method Input or Output ephemeral DTO. Mirrors legacy
+    * `CastSimilarExtension.handleComposite` running on the
+    * `CompositeRenderer.defns(_, CsMethodInput | CsMethodOutput)` path. */
+  def mkConvertersForMethodStruct(ctx: DomainSTContext, dtoId: izumi.idealingua.model.common.TypeId.DTOId): List[Stat] =
+    mkConverters(ctx, dtoId)
+
   private def mkConverters(ctx: DomainSTContext, thisId: StructureId): List[Stat] = {
     sameSignature(ctx, thisId).map { same =>
       // Apply the full legacy sort key

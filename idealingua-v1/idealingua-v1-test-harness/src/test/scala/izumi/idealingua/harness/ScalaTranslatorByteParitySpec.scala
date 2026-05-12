@@ -90,6 +90,24 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *     emits self-first, so the deepest entry is `occurrences.maxBy(_.distance)`.
     *     `TestInterface3.scala` no longer reorders the trait body's
     *     `def if1Field_overriden` / `def if1Field_inherited` declarations.
+    *   - 2026-05-12 (Ff1: service-method extension chain): 80 → **79**
+    *     (–1 module).  `DomainServiceMethodProduct.inputDefn` /
+    *     `outputDefn` now mirror the full legacy `CompositeRenderer.defns(_,
+    *     CsMethodInput | CsMethodOutput)` extension chain — AnyVal mixin on
+    *     the synthetic case class (single-scalar-field wrappers),
+    *     `_cast_into_*` / `_upcast_*` implicit objects in the companion,
+    *     `<Name>Circe` trait sibling + companion `extends` (incl. legacy
+    *     `encodeUnwrapped<Name>` unwrap branch for `Singular(_)` outputs).
+    *     `DomainCompositeStructure.isInterfaceEphemeral` narrowed to only
+    *     `EphemeralOrigin.InterfaceMirror` so the `apply(defn: <Name>.Defn)`
+    *     mirror constructor stays on method I/O ephemerals (legacy parity
+    *     with `TypespaceImpl.types.isInterfaceEphemeral`).  Only OptionalService
+    *     closes entirely; the other service modules still diverge on
+    *     `cast_into` ordering (HashMap iteration leak — F-legacy-map-order)
+    *     and on cross-domain AnyVal-eligibility (the new IR's
+    *     `flattenedStructs` is per-domain so a `MixiInput`-style field whose
+    *     declared type lives in another domain cannot resolve its
+    *     `isComposite` predicate locally — F-followup).
     *   - 2026-05-12 (Fe2: cast-down sort + parent BFS order + impl-struct
     *     peer `cast_into`): 96 → **86** (–10 modules).  Four coupled fixes:
     *     (5) `DomainCastDownExpandExtension.constructorsForInterface` now
@@ -120,7 +138,7 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *
     * Symmetric on Scala 2.13.18 and 3.8.3.
     */
-  private val KnownDivergenceBaseline: Int = 80
+  private val KnownDivergenceBaseline: Int = 79
 
   private def keyOf(id: ModuleId): String =
     (id.path :+ id.name).mkString("/")

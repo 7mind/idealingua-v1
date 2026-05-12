@@ -92,6 +92,63 @@ trait DomainCirceTranslatorExtensionBase {
       scalaVersions = scalaVersions,
     )
 
+  /** Defns for a service-method Input / Output ephemeral DTO. Mirrors
+    * legacy `CirceTranslatorExtensionBase.withDerivedClass` arm for
+    * `ClassSource.CsMethodInput` / `CsMethodOutput`. The `unwrap` flag
+    * is set when the source method has `DefMethod.Output.Singular(_)` —
+    * the legacy unwrap branch emits `encodeUnwrapped<Name>` /
+    * `decodeUnwrapped<Name>` codecs that pass the single inner field
+    * through transparently (so the wire-format does not include the
+    * synthetic wrapper).
+    */
+  def emitForMethodStruct(
+    ctx: DomainSTContext,
+    dtoId: izumi.idealingua.model.common.TypeId.DTOId,
+    flat: izumi.idealingua.typer.ir.FlatStruct,
+    unwrap: Boolean,
+    scalaVersions: List[String],
+  ): CirceTrait = {
+    if (unwrap && flat.fields.sizeIs == 1) {
+      val stype       = ctx.conv.toScala(dtoId)
+      val name        = stype.fullJavaType.name
+      val tpe         = stype.typeName
+      val singleField = flat.fields.head.field
+      val ftpe        = ctx.conv.toScala(singleField.typeId)
+      val base        = Init(circeRuntimePkg.conv.toScala[IRTTimeInstances].typeAbsolute, Name.Anonymous(), Seq.empty)
+
+      val encoder =
+        if (isObjectEncoder(ctx, singleField.typeId)) {
+          q"""
+             implicit val ${Pat.Var(Term.Name(s"encodeUnwrapped$name"))}: Encoder.AsObject[$tpe] = Encoder.AsObject.instance {
+               v => v.${Term.Name(singleField.name)}.asJsonObject
+             }
+           """
+        } else {
+          q"""
+             implicit val ${Pat.Var(Term.Name(s"encodeUnwrapped$name"))}: Encoder[$tpe] = Encoder.instance {
+               v => v.${Term.Name(singleField.name)}.asJson
+             }
+           """
+        }
+      CirceTrait(
+        s"${name}Circe",
+        q"""trait ${Type.Name(s"${name}Circe")} extends $base {
+              import _root_.io.circe._
+              import _root_.io.circe.syntax._
+
+              $encoder;
+
+              implicit val ${Pat.Var(Term.Name(s"decodeUnwrapped$name"))}: Decoder[$tpe] = Decoder.instance {
+                v => v.as[${ftpe.typeFull}].map(d => ${stype.termName}(d))
+              }
+            }
+        """,
+      )
+    } else {
+      withDerivedStructCore(ctx, dtoId, flat.fields, scalaVersions)
+    }
+  }
+
   /** Defns for an ADT — tagged-union codec. */
   def emitForAdt(ctx: DomainSTContext, adt: NewTypeDef.Adt): CirceTrait = {
     import ctx.conv.*
