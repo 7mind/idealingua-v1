@@ -50,6 +50,7 @@ object StructuralFlattener {
     fields: List[Field],
     removedFields: List[Field],
     supers: List[StructureId],
+    removedConcepts: List[StructureId],
   )
 
   def apply(rd: ResolvedDomain): ResolvedDomain = {
@@ -72,12 +73,22 @@ object StructuralFlattener {
       case dto: TypeDef.Dto =>
         views.update(
           dto.id,
-          StructView(dto.struct.fields, dto.struct.removedFields, dto.struct.superclasses.interfaces ++ dto.struct.superclasses.concepts),
+          StructView(
+            dto.struct.fields,
+            dto.struct.removedFields,
+            dto.struct.superclasses.interfaces ++ dto.struct.superclasses.concepts,
+            dto.struct.superclasses.removedConcepts,
+          ),
         )
       case ifc: TypeDef.Interface =>
         views.update(
           ifc.id,
-          StructView(ifc.struct.fields, ifc.struct.removedFields, ifc.struct.superclasses.interfaces ++ ifc.struct.superclasses.concepts),
+          StructView(
+            ifc.struct.fields,
+            ifc.struct.removedFields,
+            ifc.struct.superclasses.interfaces ++ ifc.struct.superclasses.concepts,
+            ifc.struct.superclasses.removedConcepts,
+          ),
         )
       case _ => ()
     }
@@ -85,7 +96,12 @@ object StructuralFlattener {
       case Member.Ephemeral(eph) =>
         views.update(
           eph.id,
-          StructView(eph.struct.fields, eph.struct.removedFields, eph.struct.superclasses.interfaces ++ eph.struct.superclasses.concepts),
+          StructView(
+            eph.struct.fields,
+            eph.struct.removedFields,
+            eph.struct.superclasses.interfaces ++ eph.struct.superclasses.concepts,
+            eph.struct.superclasses.removedConcepts,
+          ),
         )
       case _ => ()
     }
@@ -212,6 +228,35 @@ object StructuralFlattener {
       }
   }
 
+  /** Transitively collect every field name that a `- Concept` subtraction
+    * removes when applied at a struct level.  Mirrors legacy
+    * `FieldExtractor.extractRemoved` ↔ `extractFields` recursion
+    * (`FieldExtractor.scala:78-91` + `:9-41`): the removal expands to the
+    * concept's own fields plus all fields contributed by its `interfaces`
+    * and `concepts` ancestry.  Cycles short-circuit via `visited`.
+    */
+  private def removedConceptFieldNames(
+    concept: StructureId,
+    views: Map[StructureId, StructView],
+  ): Set[String] = {
+    val acc     = mutable.LinkedHashSet.empty[String]
+    val visited = mutable.LinkedHashSet.empty[StructureId]
+    val queue   = mutable.Queue.empty[StructureId]
+    queue.enqueue(concept)
+    while (queue.nonEmpty) {
+      val cur = queue.dequeue()
+      if (visited.add(cur)) {
+        views.get(cur) match {
+          case Some(v) =>
+            v.fields.foreach(f => acc.add(f.name))
+            v.supers.foreach(queue.enqueue)
+          case None => ()
+        }
+      }
+    }
+    acc.toSet
+  }
+
   private def flatten(
     ownerId: StructureId,
     views: Map[StructureId, StructView],
@@ -234,6 +279,15 @@ object StructuralFlattener {
         views.get(cur) match {
           case Some(v) =>
             v.removedFields.foreach(f => removed.add(f.name))
+            // F-subtraction (PR-02 IMPL-7a.2-Fh): expand each removed concept
+            // at this level to its transitively flattened field names so
+            // `data X { + S; - Y }` strips every field that `Y` would have
+            // contributed through `S` (mirrors legacy
+            // `FieldExtractor.extractRemoved` + `filterFields`,
+            // `FieldExtractor.scala:78-91` + `:61-76`).
+            v.removedConcepts.foreach { c =>
+              removedConceptFieldNames(c, views).foreach(removed.add)
+            }
             v.fields.foreach(f => all += FlatField(f, cur, distance))
             directSupers.getOrElse(cur, Nil).foreach(s => frontier.enqueue(s -> (distance + 1)))
           case None => ()

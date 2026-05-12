@@ -159,8 +159,10 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *
     * Trail of substantive-baseline movements:
     *   - 2026-05-12 (initial wrap-up cycle audit): 35.
+    *   - 2026-05-12 (Fh1: F-subtraction — expand removedConcepts to flattened
+    *     field names in StructuralFlattener): 32.
     */
-  private val SubstantiveBaseline: Int = 35
+  private val SubstantiveBaseline: Int = 32
 
   private def keyOf(id: ModuleId): String =
     (id.path :+ id.name).mkString("/")
