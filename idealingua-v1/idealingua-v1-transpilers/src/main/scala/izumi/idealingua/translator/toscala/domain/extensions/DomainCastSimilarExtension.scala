@@ -47,15 +47,25 @@ object DomainCastSimilarExtension {
 
   private def mkConverters(ctx: DomainSTContext, thisId: StructureId): List[Stat] = {
     sameSignature(ctx, thisId).map { same =>
-      val flat = ctx.domain.flattenedStructs.get(thisId)
-      // Defect #7 (IMPL-7a.2-Fa): dedup covariant duplicates by name; keep
-      // smallest-distance entry. See `DomainScalaStruct.fromFlat` for the
-      // canonical dedup; this is the same rule applied to the cast-into
-      // converter so it cannot emit `Target(name = ..., name = ...)`.
-      val seen: scala.collection.mutable.LinkedHashSet[String] = scala.collection.mutable.LinkedHashSet.empty
-      val fields: List[Field] = flat
-        .map(_.fields.sortBy(_.distance).filter(ff => seen.add(ff.field.name)).map(_.field))
-        .getOrElse(List.empty)
+      // Apply the full legacy sort key
+      // `(distance, definedBy.toString, -definedWithIndex).reverse`
+      // via `DomainScalaStruct.fromFlat` (which folds in defect #7 dedup).
+      // Simple `sortBy(_.distance)` puts the closest field first, which
+      // is the opposite of legacy `struct.all` (parents-first, closest-
+      // last via `.reverse`).
+      val supers = ctx.domain.userTypes.get(thisId) match {
+        case Some(d: izumi.idealingua.typer.ir.TypeDef.Dto)       => d.struct.superclasses
+        case Some(i: izumi.idealingua.typer.ir.TypeDef.Interface) => i.struct.superclasses
+        case _                                                     => izumi.idealingua.model.il.ast.typed.Super.empty
+      }
+      val fields: List[Field] = ctx.domain.flattenedStructs.get(thisId) match {
+        case Some(flat) =>
+          izumi.idealingua.translator.toscala.domain.DomainScalaStruct
+            .fromFlat(thisId, flat, supers, ctx.domain)
+            .all
+            .map(_.field)
+        case None => List.empty
+      }
 
       val code = fields.map { f =>
         q""" ${Term.Name(f.name)} = _value.${Term.Name(f.name)} """

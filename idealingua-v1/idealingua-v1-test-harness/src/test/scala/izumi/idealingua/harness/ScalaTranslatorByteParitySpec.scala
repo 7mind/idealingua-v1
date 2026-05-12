@@ -71,6 +71,14 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *     (4) `DomainCastSimilarExtension.sameSignature` no longer
     *     early-returns on empty signatures, matching legacy emission of
     *     `Struct_cast_into_<other-empty-DTO>` for empty-fielded mixins.
+    *   - 2026-05-12 (Fe3: same-signature cast field sort): 86 → **82**
+    *     (–4 modules).  `DomainCastSimilarExtension.mkConverters` now
+    *     orders the converter body assignments via
+    *     `DomainScalaStruct.fromFlat` (legacy
+    *     `(distance, definedBy, -idx).reverse`).  Plain
+    *     `sortBy(_.distance)` produced own-fields-first
+    *     (`Target(someInt = …, value = …)`) instead of legacy
+    *     parents-first (`Target(value = …, someInt = …)`).
     *   - 2026-05-12 (Fe2: cast-down sort + parent BFS order + impl-struct
     *     peer `cast_into`): 96 → **86** (–10 modules).  Four coupled fixes:
     *     (5) `DomainCastDownExpandExtension.constructorsForInterface` now
@@ -101,7 +109,7 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *
     * Symmetric on Scala 2.13.18 and 3.8.3.
     */
-  private val KnownDivergenceBaseline: Int = 86
+  private val KnownDivergenceBaseline: Int = 82
 
   private def keyOf(id: ModuleId): String =
     (id.path :+ id.name).mkString("/")
