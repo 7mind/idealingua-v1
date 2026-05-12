@@ -1,5 +1,7 @@
 package izumi.idealingua.harness
 
+import izumi.idealingua.translator.TyperImpl
+
 import java.nio.file.{Files, Path}
 
 object GoldenGenerator {
@@ -11,11 +13,15 @@ object GoldenGenerator {
     * run with a different corpus do not persist. Only the per-language subdirs are deleted —
     * goldenRoot itself and any sibling files (e.g. .gitkeep) are preserved.
     *
+    * `scalaTyper` selects the Scala backend's typer (default `TyperImpl.Legacy`).
+    * Pass `TyperImpl.NewTyper` to regenerate as the new-typer output for the
+    * IMPL-9 compile gate (see `GoldenCompile.compileAll` for context).
+    *
     * No logging inside; caller is responsible for progress reporting.
     */
-  def regenerate(corpusRoot: Path, goldenRoot: Path): Unit = {
+  def regenerate(corpusRoot: Path, goldenRoot: Path, scalaTyper: TyperImpl = TyperImpl.Legacy): Unit = {
     val loaded = HarnessCorpus.loadCorpus(corpusRoot)
-    val produced = GoldenCompile.compileAll(loaded, goldenRoot)
+    val produced = GoldenCompile.compileAll(loaded, goldenRoot, scalaTyper)
 
     // Clear per-language subdirectories before writing
     for (lang <- GoldenCompile.languages) {

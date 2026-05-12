@@ -14,7 +14,7 @@ import izumi.idealingua.model.publishing.manifests.{
   YarnOptions,
 }
 import izumi.idealingua.model.publishing.{ProjectVersion}
-import izumi.idealingua.translator.{IDLLanguage, TypespaceCompilerBaseFacade, UntypedCompilerOptions}
+import izumi.idealingua.translator.{IDLLanguage, TyperImpl, TypespaceCompilerBaseFacade, UntypedCompilerOptions}
 
 object HarnessOptions {
 
@@ -52,7 +52,16 @@ object HarnessOptions {
     case IDLLanguage.CSharp     => csharp
   }
 
-  def optionsFor(lang: IDLLanguage): UntypedCompilerOptions = UntypedCompilerOptions(
+  def optionsFor(lang: IDLLanguage): UntypedCompilerOptions = optionsFor(lang, TyperImpl.Legacy)
+
+  /** PR-02 IMPL-7a.2 IMPL-9 compile gate: `regenerateGoldens` / `verifyGoldens`
+    * use this entry point with `TyperImpl.NewTyper` so the on-disk Layer A
+    * Scala goldens (already on `Compile / unmanagedSourceDirectories`) are
+    * the new-typer output. Standard sbt compile then transitively type-checks
+    * every emitted module across the 28-domain corpus, surfacing any type
+    * error in the new-typer Scala backend that bytewise-equality alone
+    * (`ScalaTranslatorByteParitySpec`) cannot detect. */
+  def optionsFor(lang: IDLLanguage, typer: TyperImpl): UntypedCompilerOptions = UntypedCompilerOptions(
     language           = lang,
     extensions         = TypespaceCompilerBaseFacade.descriptor(lang).defaultExtensions,
     target             = None,
@@ -60,5 +69,6 @@ object HarnessOptions {
     withBundledRuntime = false,
     providedRuntime    = None,
     zipOutput          = false,
+    typerImpl          = typer,
   )
 }
