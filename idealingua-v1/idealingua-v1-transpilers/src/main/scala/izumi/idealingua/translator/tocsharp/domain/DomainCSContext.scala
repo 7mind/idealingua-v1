@@ -36,6 +36,9 @@ final class DomainCSContext(
 
   final def extensions = options.extensions
 
-  final val aliasRenderer = new DomainCSAliasRenderer(this)
-  final val enumRenderer  = new DomainCSEnumRenderer(this)
+  final val aliasRenderer       = new DomainCSAliasRenderer(this)
+  final val enumRenderer        = new DomainCSEnumRenderer(this)
+  final val idRenderer          = new DomainCSIdRenderer(this)
+  final val compositeRenderer   = new DomainCSCompositeRenderer(this)
+  final val interfaceRenderer   = new DomainCSInterfaceRenderer(this)
 }
