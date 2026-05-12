@@ -100,6 +100,16 @@ final class ScalaTyperParitySpec extends AnyFunSuite {
     // future refactor reintroduced the IR-shape divergence.
     val rendererDivergences = DomainScalaTranslator.rendererDivergences
 
+    // IMPL-7a.2 Phase B M3 structural-renderer divergences (Id/DTO/Interface)
+    // are informational only: under the relaxed parity bar the structural
+    // renderers need not match legacy bytes. Surface a one-line summary so
+    // the divergence count is visible in CI output.
+    val structuralDivergences = DomainScalaTranslator.rendererStructuralDivergences
+    info(s"M3 structural renderer divergences (informational, not gated): ${structuralDivergences.size}")
+    if (structuralDivergences.nonEmpty) {
+      info(s"  first 5: ${structuralDivergences.take(5).mkString(" | ")}")
+    }
+
     if (typerRejections.nonEmpty || byteDivergences.nonEmpty || rendererDivergences.nonEmpty) {
       val msg = new StringBuilder()
       val _   = msg.append(s"checked $checked domain(s)\n")

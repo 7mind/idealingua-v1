@@ -35,4 +35,14 @@ final class DomainSTContext(
 
   final val aliasRenderer = new DomainAliasRenderer(this)
   final val enumRenderer  = new DomainEnumRenderer(this)
+
+  // PR-02 IMPL-7a.2 Phase B M3: structural renderers (Identifier / DTO /
+  // Interface). The composite + interface renderers cross-reference each
+  // other (interface companion embeds the impl-DTO via `compositeRenderer`;
+  // composite's mirror trait calls `interfaceRenderer.mkTrait`). Order of
+  // val declarations does not matter — both are `final val`s on this trait
+  // and the cross-refs are resolved at method-call time, not at init.
+  final val idRenderer        = new DomainIdRenderer(this)
+  final val compositeRenderer = new DomainCompositeRenderer(this)
+  final val interfaceRenderer = new DomainInterfaceRenderer(this)
 }

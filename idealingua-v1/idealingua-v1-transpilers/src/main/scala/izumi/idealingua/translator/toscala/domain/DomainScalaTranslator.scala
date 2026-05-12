@@ -77,22 +77,69 @@ final class DomainScalaTranslator(
     val typespace = new TypespaceImpl(domainDef)
     val legacy    = new ScalaTranslator(typespace, options)
 
-    // Corpus-wide alias/enum renderer exercise: instantiate the new
-    // `DomainSTContext` and run `DomainAliasRenderer` / `DomainEnumRenderer`
-    // against every applicable `TypeDef` in `domain.userTypes`. Divergences
-    // from the legacy formulas are collected via `DomainScalaTranslator.
-    // recordRendererDivergence` (system property `idealingua.m2.parity.fatal`
-    // can elevate them to thrown `IDLException`s) so the renderers are
-    // exercised on every production translate without breaking the parity
-    // gate. Surfaces typer-pipeline TypeId divergences as signal for M3+.
-    exerciseAliasAndEnumRenderers(domainDef)
+    // Corpus-wide renderer exercise: instantiate the new `DomainSTContext`
+    // and run the alias/enum/identifier/DTO/interface renderers against
+    // every applicable `TypeDef` in `domain.userTypes`. Alias/enum
+    // divergences from the legacy formulas are collected via
+    // `recordRendererDivergence` (gated by `idealingua.m2.parity.fatal`)
+    // and remain the stricter M1/M2 invariant. The new M3 structural
+    // renderers (Id/DTO/Interface) are exercised purely for "compiles +
+    // structurally correct" — any divergence is recorded via
+    // `recordStructuralDivergence` and never fatal, per the relaxed M3
+    // parity bar (wire-format equality is the real contract; source
+    // byte-equality is a development anchor only).
+    exerciseRenderers(domainDef)
 
     legacy.translate()
   }
 
-  private def exerciseAliasAndEnumRenderers(domainDef: DomainDefinition): Unit = {
+  private def exerciseRenderers(domainDef: DomainDefinition): Unit = {
     val ctx        = new DomainSTContext(domain, parsed, options)
     val legacyConv = new ScalaTypeConverter(domain.id)
+
+    // --- M3: structurally exercise Identifier / DTO / Interface renderers.
+    // Errors are caught and recorded as structural divergences (never
+    // fatal) per the relaxed parity bar.
+    domain.userTypes.foreach {
+      case (_, id: NewTypeDef.Identifier) =>
+        try {
+          val product = ctx.idRenderer.renderIdentifier(id)
+          if (product.render.isEmpty) {
+            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"identifier ${id.id.name}", "empty render")
+          }
+          // syntax check: render to .syntax to validate scala.meta tree
+          val _ = scala.meta.dialects.Scala213(product.render.head).syntax
+        } catch {
+          case t: Throwable =>
+            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"identifier ${id.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
+        }
+
+      case (_, dto: NewTypeDef.Dto) =>
+        try {
+          val product = ctx.compositeRenderer.renderDto(dto)
+          if (product.render.isEmpty) {
+            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"dto ${dto.id.name}", "empty render")
+          }
+          val _ = scala.meta.dialects.Scala213(product.render.head).syntax
+        } catch {
+          case t: Throwable =>
+            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"dto ${dto.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
+        }
+
+      case (_, ifc: NewTypeDef.Interface) =>
+        try {
+          val product = ctx.interfaceRenderer.renderInterface(ifc)
+          if (product.render.isEmpty) {
+            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"interface ${ifc.id.name}", "empty render")
+          }
+          val _ = scala.meta.dialects.Scala213(product.render.head).syntax
+        } catch {
+          case t: Throwable =>
+            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"interface ${ifc.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
+        }
+
+      case _ => ()
+    }
 
     // After PR-02 IMPL-2-fix (`ScopeBuilder.normalize` + `NameResolver.own`),
     // the new typer's `TypeDef.id` carries the same `TypePath.domain` as the
@@ -249,6 +296,29 @@ object DomainScalaTranslator {
     */
   def rendererDivergences: Seq[String] = {
     val it = divergenceLog.iterator()
+    val out = scala.collection.mutable.ArrayBuffer.empty[String]
+    while (it.hasNext) {
+      val _ = out += it.next()
+    }
+    out.toSeq
+  }
+
+  // PR-02 IMPL-7a.2 Phase B M3: structural (Id/DTO/Interface) renderer
+  // divergences are NEVER fatal — they are recorded for diagnostic
+  // inspection but the M3 parity bar is "compiles + structurally correct",
+  // not byte-equality to legacy. The real contract is wire-format equality
+  // measured by `runWireFixtures` + `runCrossLangInterop`; source goldens
+  // are a stability anchor for the legacy translator only.
+  private val structuralDivergenceLog = new java.util.concurrent.ConcurrentLinkedQueue[String]()
+
+  def recordStructuralDivergence(domainId: String, label: String, detail: String): Boolean =
+    structuralDivergenceLog.offer(s"$domainId :: $label :: $detail")
+
+  /** Snapshot of all M3 structural renderer divergences (informational,
+    * never gated).
+    */
+  def rendererStructuralDivergences: Seq[String] = {
+    val it = structuralDivergenceLog.iterator()
     val out = scala.collection.mutable.ArrayBuffer.empty[String]
     while (it.hasNext) {
       val _ = out += it.next()
