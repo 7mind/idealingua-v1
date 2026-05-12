@@ -23,15 +23,25 @@ object AdtMembersRule {
 
     domain.userTypes.values.foreach {
       case a: TypeDef.Adt =>
-        val pos = a.meta.pos
-        a.alternatives.foreach { branch =>
-          val isBuiltin = branch.typeId.isInstanceOf[Builtin] ||
-            domain.members.get(branch.typeId).exists {
-              case _: Member.Builtin => true
-              case _                 => false
+        // IMPL-7a.2-Fi1 (F-alt-output-cast-targets-nonexistent): synthesized
+        // alt-output ADTs (`Output.Alternative` branches) reference the
+        // ORIGINAL Builtin / Generic typeId of each Singular branch — legacy
+        // `TypeCollection.toOutDef` does the same, and the legacy translator
+        // never lifts these branches through the validator (they're built
+        // post-hoc inside `ServiceMethodProduct.outputDefn`). Exempt
+        // ephemeral ADTs (those placed by `EphemeralSynthesizer`) from the
+        // `PrimitiveAdtMember` check; user-declared ADTs still get checked.
+        if (!domain.ephemeralOwner.contains(a.id)) {
+          val pos = a.meta.pos
+          a.alternatives.foreach { branch =>
+            val isBuiltin = branch.typeId.isInstanceOf[Builtin] ||
+              domain.members.get(branch.typeId).exists {
+                case _: Member.Builtin => true
+                case _                 => false
+              }
+            if (isBuiltin) {
+              buf += Diagnostic.PrimitiveAdtMember(a.id, branch.typeId, pos)
             }
-          if (isBuiltin) {
-            buf += Diagnostic.PrimitiveAdtMember(a.id, branch.typeId, pos)
           }
         }
 

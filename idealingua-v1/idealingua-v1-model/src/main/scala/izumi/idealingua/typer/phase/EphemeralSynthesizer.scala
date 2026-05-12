@@ -1,6 +1,5 @@
 package izumi.idealingua.typer.phase
 
-import izumi.idealingua.model.common.Builtin
 import izumi.idealingua.model.common.TypeId._
 import izumi.idealingua.model.common.{TypeId, TypePath}
 import izumi.idealingua.model.il.ast.typed.{AdtMember, DefMethod, Field, NodeMeta, Super}
@@ -146,25 +145,28 @@ object EphemeralSynthesizer {
 
     def synthesizeAltBranch(owner: TypeId, ownerPath: TypePath, base: String, suffix: String, out: DefMethod.Output.NonAlternativeOutput): (TypeId, Unit) = out match {
       case s: DefMethod.Output.Singular =>
-        // Auto-wrap primitive/Generic branch types (list, set, map, opt, scalar
-        // primitives) in a synthesized DTO `<base><suffix>` so that the outer
-        // alternative ADT references a user type rather than a Builtin (which
-        // Phase 12 `AdtMembersRule` would reject as `PrimitiveAdtMember`).
-        // Non-Builtin TypeIds (DTO, Interface, Identifier, Enum, Adt) pass
-        // through unchanged — they are valid ADT branch types.
-        // See IMPL-7a.2-F5c (T1 portion).
-        if (s.typeId.isInstanceOf[Builtin]) {
-          val id = DTOId(ownerPath, s"$base$suffix")
-          val struct = Struct(
-            fields        = List(Field(s.typeId, "value", NodeMeta.empty)),
-            removedFields = Nil,
-            superclasses  = Super.empty,
-          )
-          placeEphemeralDto(owner, EphemeralDto(id, EphemeralOrigin.MethodOutput(owner, s"$base$suffix"), struct))
-          (id, ())
-        } else {
-          (s.typeId, ())
-        }
+        // IMPL-7a.2-Fi1 (F-alt-output-cast-targets-nonexistent): legacy
+        // `TypeCollection.toOutDef` returns the original `s.typeId` unchanged
+        // for `Output.Singular(Builtin)` branches — no wrapper DTO is
+        // synthesized. The resulting Adt's `AdtMember.typeId` is the Builtin
+        // directly (`list[SuccessData]`, `set[ErrorData]`, …), and
+        // `AdtRenderer` emits `final case class Success(value: List[SuccessData])
+        // extends <Output>`. Synthesizing a wrapper DTO (the previous
+        // approach) had three problems:
+        //   1. The wrapper DTO leaked into `Domain.flattenedStructs` as a
+        //      single-field `value: <T>` struct, which made the cast-similar
+        //      peer scan emit `<OtherMethodOutput>_cast_into_<Wrapper>` casts
+        //      referencing a top-level type that the renderer never actually
+        //      emits (the renderer treats `Singular` alt-branches as inline
+        //      `case class`es inside the Output companion, not as their own
+        //      DTOs).
+        //   2. It changed the on-wire encoding (two wrap levels vs one).
+        //   3. The synthesized name `<Base><Success|Failure>` collided with
+        //      type id resolution for nested `<Output>.Success / .Failure`.
+        // The follow-up `AdtMembersRule` change exempts ephemeral
+        // (synthesized) ADTs from the `PrimitiveAdtMember` check so this
+        // pass-through is accepted by Phase 12.
+        (s.typeId, ())
       case s: DefMethod.Output.Struct =>
         val id = DTOId(ownerPath, s"$base$suffix")
         val struct = Struct(

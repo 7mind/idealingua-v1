@@ -337,16 +337,44 @@ final case class DomainServiceMethodProduct(
       case DefMethod.Output.Algebraic(_) =>
         val outAdtId: AdtId = AdtId(sp.basePath, typename)
         ctx.domain.userTypes.get(outAdtId) match {
-          case Some(adt: NewTypeDef.Adt) => ctx.adtRenderer.renderAdt(adt, List.empty).render
+          case Some(adt: NewTypeDef.Adt) => withAdtCirce(adt)
           case _                          => List.empty
         }
 
       case DefMethod.Output.Alternative(success, failure) =>
         val topAdt = ctx.domain.userTypes.get(adtId) match {
-          case Some(adt: NewTypeDef.Adt) => ctx.adtRenderer.renderAdt(adt, List.empty).render
+          case Some(adt: NewTypeDef.Adt) => withAdtCirce(adt)
           case _                          => List.empty
         }
         topAdt ++ render_SHIM(positiveId, success) ++ render_SHIM(negativeId, failure)
+    }
+
+    /** IMPL-7a.2-Fi1: service-output ADTs (`Output.Algebraic` and
+      * `Output.Alternative`) live inside the service object rather than at
+      * top level, so the per-domain `DomainScalaTranslator.emitAdt` Circe
+      * wiring does not reach them. Legacy `CirceTranslatorExtensionBase.handleAdt`
+      * runs over every ADT in the typespace (service-output ADTs are placed
+      * in the legacy `Typespace.types`), emitting the tagged-union codec
+      * `<Name>Circe` trait + companion-base `extends`. Replicate that here so
+      * service codecs' `value.asJson` and `packet.as[Output]` resolve at the
+      * call site. */
+    private def withAdtCirce(adt: NewTypeDef.Adt): List[Defn] = {
+      import ctx.conv.*
+      val baseAdt = ctx.adtRenderer.renderAdt(adt, List.empty).asInstanceOf[izumi.idealingua.translator.toscala.products.CogenProduct.AdtProduct]
+      if (adt.alternatives.nonEmpty) {
+        val circe   = DomainCirceDerivationTranslatorExtension.emitForAdt(ctx, adt)
+        val sibling = ctx.conv.toScala(adt.id).sibling(circe.name).init()
+        val product = izumi.idealingua.translator.toscala.products.CogenProduct.AdtProduct(
+          defn          = baseAdt.defn,
+          companionBase = baseAdt.companionBase.prependBase(sibling),
+          elements      = baseAdt.elements,
+          more          = baseAdt.more :+ circe.defn,
+          preamble      = baseAdt.preamble,
+        )
+        product.render
+      } else {
+        baseAdt.render
+      }
     }
 
     private def render_SHIM(typename: String, out: DefMethod.Output): scala.collection.immutable.Seq[Defn] = out match {

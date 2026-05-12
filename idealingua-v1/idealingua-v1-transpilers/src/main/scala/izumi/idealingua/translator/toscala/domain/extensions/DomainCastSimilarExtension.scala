@@ -134,14 +134,29 @@ object DomainCastSimilarExtension {
   /** Sorted-by-name (name, typeId) projection of a flat struct — the
     * `signature` legacy method without the `Field` data shape (we work
     * directly with stable scalars to avoid pulling extra equality contracts).
+    *
+    * IMPL-7a.2-Fi1: `Builtin.toString` returns `s"#$name"` only — generic
+    * containers (`TList(Package)` and `TList(TString)`) collapse to `"#lst"`
+    * which made fields whose types differ ONLY in their type argument
+    * (`list[Package]` vs `list[str]`) compare equal in the legacy-style peer
+    * scan. That produced cast-similar pairs like
+    * `ReturnsListOutput → SimpleMethodWithGenericsOutput` (list[Package] vs
+    * list[str]), whose bodies assign `_value.value: List[Package]` into a
+    * field declared `List[String]` and fail to type-check. `keyFor` renders
+    * generic args recursively so distinct element types stay distinct.
     */
   private def signatureOf(ctx: DomainSTContext, id: StructureId): List[(String, String)] = {
     ctx.domain.flattenedStructs.get(id) match {
       case Some(fs) =>
-        fs.fields.map(ff => (ff.field.name, ff.field.typeId.toString)).sortBy(_._1)
+        fs.fields.map(ff => (ff.field.name, keyFor(ff.field.typeId))).sortBy(_._1)
       case None =>
         List.empty
     }
+  }
+
+  private def keyFor(t: izumi.idealingua.model.common.TypeId): String = t match {
+    case g: izumi.idealingua.model.common.Generic => s"#${g.name}[${g.args.map(keyFor).mkString(",")}]"
+    case _                                         => t.toString
   }
 
 }
