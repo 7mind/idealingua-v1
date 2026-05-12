@@ -153,14 +153,9 @@ Introspector.register(AnotherTestObject.FullClassName, {
         ctor: () => new AnotherTestObject(),
         fields: [
             {
-                name: 'parent_embedded',
-                accessName: 'parent_embedded',
-                type: {intro: IntrospectorTypes.Str}
-            },
-            {
-                name: 'parent',
-                accessName: 'parent',
-                type: {intro: IntrospectorTypes.Str}
+                name: 'own',
+                accessName: 'own',
+                type: {intro: IntrospectorTypes.I08}
             },
             {
                 name: 'embedded',
@@ -168,9 +163,14 @@ Introspector.register(AnotherTestObject.FullClassName, {
                 type: {intro: IntrospectorTypes.Bool}
             },
             {
-                name: 'own',
-                accessName: 'own',
-                type: {intro: IntrospectorTypes.I08}
+                name: 'parent',
+                accessName: 'parent',
+                type: {intro: IntrospectorTypes.Str}
+            },
+            {
+                name: 'parent_embedded',
+                accessName: 'parent_embedded',
+                type: {intro: IntrospectorTypes.Str}
             }
         ]
     } as IIntrospectorDataObject

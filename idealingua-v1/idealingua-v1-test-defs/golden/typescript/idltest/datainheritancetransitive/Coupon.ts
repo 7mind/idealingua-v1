@@ -155,6 +155,11 @@ Introspector.register(Coupon.FullClassName, {
         ctor: () => new Coupon(),
         fields: [
             {
+                name: 'id',
+                accessName: 'id',
+                type: {intro: IntrospectorTypes.Str}
+            },
+            {
                 name: 'validFrom',
                 accessName: 'validFrom',
                 type: {intro: IntrospectorTypes.Opt, value: {intro: IntrospectorTypes.Tsl}} as IIntrospectorGenericType
@@ -167,11 +172,6 @@ Introspector.register(Coupon.FullClassName, {
             {
                 name: 'code',
                 accessName: 'code',
-                type: {intro: IntrospectorTypes.Str}
-            },
-            {
-                name: 'id',
-                accessName: 'id',
                 type: {intro: IntrospectorTypes.Str}
             }
         ]

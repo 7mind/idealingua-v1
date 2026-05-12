@@ -97,14 +97,14 @@ Introspector.register(Test00Data2AnyVal.FullClassName, {
         ctor: () => new Test00Data2AnyVal(),
         fields: [
             {
-                name: 'value',
-                accessName: 'value',
-                type: {intro: IntrospectorTypes.Str}
-            },
-            {
                 name: 'someInt',
                 accessName: 'someInt',
                 type: {intro: IntrospectorTypes.I08}
+            },
+            {
+                name: 'value',
+                accessName: 'value',
+                type: {intro: IntrospectorTypes.Str}
             }
         ]
     } as IIntrospectorDataObject

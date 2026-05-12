@@ -113,8 +113,8 @@ Introspector.register(User2.FullClassName, {
         ctor: () => new User2(),
         fields: [
             {
-                name: 'ssn',
-                accessName: 'ssn',
+                name: 'name',
+                accessName: 'name',
                 type: {intro: IntrospectorTypes.Str}
             },
             {
@@ -123,8 +123,8 @@ Introspector.register(User2.FullClassName, {
                 type: {intro: IntrospectorTypes.Str}
             },
             {
-                name: 'name',
-                accessName: 'name',
+                name: 'ssn',
+                accessName: 'ssn',
                 type: {intro: IntrospectorTypes.Str}
             }
         ]

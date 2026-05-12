@@ -138,9 +138,9 @@ Introspector.register(Name_view.FullClassName, {
         ctor: () => new Name_view(),
         fields: [
             {
-                name: 'bytes',
-                accessName: 'bytes',
-                type: {intro: IntrospectorTypes.I64}
+                name: 'relatives',
+                accessName: 'relatives',
+                type: {intro: IntrospectorTypes.List, value: {intro: IntrospectorTypes.Mixin, full: 'idltest.phase.Name'} as IIntrospectorUserType} as IIntrospectorGenericType
             },
             {
                 name: 'name',
@@ -148,9 +148,9 @@ Introspector.register(Name_view.FullClassName, {
                 type: {intro: IntrospectorTypes.Str}
             },
             {
-                name: 'relatives',
-                accessName: 'relatives',
-                type: {intro: IntrospectorTypes.List, value: {intro: IntrospectorTypes.Mixin, full: 'idltest.phase.Name'} as IIntrospectorUserType} as IIntrospectorGenericType
+                name: 'bytes',
+                accessName: 'bytes',
+                type: {intro: IntrospectorTypes.I64}
             }
         ]
     } as IIntrospectorDataObject

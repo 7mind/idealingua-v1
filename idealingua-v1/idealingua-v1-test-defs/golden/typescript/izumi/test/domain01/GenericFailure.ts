@@ -124,6 +124,11 @@ Introspector.register(GenericFailure.FullClassName, {
         ctor: () => new GenericFailure(),
         fields: [
             {
+                name: 'code',
+                accessName: 'code',
+                type: {intro: IntrospectorTypes.Enum, full: 'izumi.test.domain01.GenericFailureCode'} as IIntrospectorUserType
+            },
+            {
                 name: 'message',
                 accessName: 'message',
                 type: {intro: IntrospectorTypes.Str}
@@ -137,11 +142,6 @@ Introspector.register(GenericFailure.FullClassName, {
                 name: 'reserved',
                 accessName: 'reserved',
                 type: {intro: IntrospectorTypes.Map, key: {intro: IntrospectorTypes.Str}, value: {intro: IntrospectorTypes.Str}} as IIntrospectorMapType
-            },
-            {
-                name: 'code',
-                accessName: 'code',
-                type: {intro: IntrospectorTypes.Enum, full: 'izumi.test.domain01.GenericFailureCode'} as IIntrospectorUserType
             }
         ]
     } as IIntrospectorDataObject

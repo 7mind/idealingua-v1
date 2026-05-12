@@ -121,9 +121,9 @@ Introspector.register(Item.FullClassName, {
         ctor: () => new Item(),
         fields: [
             {
-                name: 'id',
-                accessName: 'id',
-                type: {intro: IntrospectorTypes.Uid}
+                name: 'price',
+                accessName: 'price',
+                type: {intro: IntrospectorTypes.I32}
             },
             {
                 name: 'name',
@@ -131,9 +131,9 @@ Introspector.register(Item.FullClassName, {
                 type: {intro: IntrospectorTypes.Str}
             },
             {
-                name: 'price',
-                accessName: 'price',
-                type: {intro: IntrospectorTypes.I32}
+                name: 'id',
+                accessName: 'id',
+                type: {intro: IntrospectorTypes.Uid}
             }
         ]
     } as IIntrospectorDataObject

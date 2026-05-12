@@ -3,6 +3,10 @@ import {
     PersonalAttributesStruct,
     PersonalAttributesStructSerialized
 } from './PersonalAttributes';
+import {
+    SecurityAttributesStruct,
+    SecurityAttributesStructSerialized
+} from './SecurityAttributes';
 
 // PublicUser2 DTO
 export class PublicUser2  {

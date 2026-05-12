@@ -180,6 +180,21 @@ Introspector.register(MassCoupon.FullClassName, {
         ctor: () => new MassCoupon(),
         fields: [
             {
+                name: 'code',
+                accessName: 'code',
+                type: {intro: IntrospectorTypes.Str}
+            },
+            {
+                name: 'limit',
+                accessName: 'limit',
+                type: {intro: IntrospectorTypes.Opt, value: {intro: IntrospectorTypes.I64}} as IIntrospectorGenericType
+            },
+            {
+                name: 'id',
+                accessName: 'id',
+                type: {intro: IntrospectorTypes.Str}
+            },
+            {
                 name: 'validFrom',
                 accessName: 'validFrom',
                 type: {intro: IntrospectorTypes.Opt, value: {intro: IntrospectorTypes.Tsl}} as IIntrospectorGenericType
@@ -188,21 +203,6 @@ Introspector.register(MassCoupon.FullClassName, {
                 name: 'validTill',
                 accessName: 'validTill',
                 type: {intro: IntrospectorTypes.Opt, value: {intro: IntrospectorTypes.Tsl}} as IIntrospectorGenericType
-            },
-            {
-                name: 'code',
-                accessName: 'code',
-                type: {intro: IntrospectorTypes.Str}
-            },
-            {
-                name: 'id',
-                accessName: 'id',
-                type: {intro: IntrospectorTypes.Str}
-            },
-            {
-                name: 'limit',
-                accessName: 'limit',
-                type: {intro: IntrospectorTypes.Opt, value: {intro: IntrospectorTypes.I64}} as IIntrospectorGenericType
             }
         ]
     } as IIntrospectorDataObject

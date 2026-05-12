@@ -30,12 +30,12 @@ export class DTO1 implements TestInterface2, TestInterface3  {
 
     private _if1Field_overriden: number;
     private _if1Field_inherited: number;
+    private _sameField: number;
+    private _sameEverywhereField: number;
     private _fromOtherDomain: TestValIdentifier;
     private _fromOtherDomainDirect: TestValIdentifier;
     private _if3Field: number;
     private _if2Field: number;
-    private _sameField: number;
-    private _sameEverywhereField: number;
 
     public get if1Field_overriden(): number {
         return this._if1Field_overriden;
@@ -75,6 +75,46 @@ export class DTO1 implements TestInterface2, TestInterface3  {
         }
 
         this._if1Field_inherited = value;
+    }
+
+    public get sameField(): number {
+        return this._sameField;
+    }
+
+    public set sameField(value: number) {
+        if (typeof value === 'undefined' || value === null) {
+            throw new Error('Field sameField is not optional');
+        }
+
+        if (typeof value !== 'number') {
+            throw new Error('Field sameField expects type number, got ' + value);
+        }
+
+        if (value % 1 !== 0) {
+            throw new Error('Field sameField is expected to be an integer, got ' + value);
+        }
+
+        this._sameField = value;
+    }
+
+    public get sameEverywhereField(): number {
+        return this._sameEverywhereField;
+    }
+
+    public set sameEverywhereField(value: number) {
+        if (typeof value === 'undefined' || value === null) {
+            throw new Error('Field sameEverywhereField is not optional');
+        }
+
+        if (typeof value !== 'number') {
+            throw new Error('Field sameEverywhereField expects type number, got ' + value);
+        }
+
+        if (value % 1 !== 0) {
+            throw new Error('Field sameEverywhereField is expected to be an integer, got ' + value);
+        }
+
+        this._sameEverywhereField = value;
     }
 
     public get fromOtherDomain(): TestValIdentifier {
@@ -139,46 +179,6 @@ export class DTO1 implements TestInterface2, TestInterface3  {
         this._if2Field = value;
     }
 
-    public get sameField(): number {
-        return this._sameField;
-    }
-
-    public set sameField(value: number) {
-        if (typeof value === 'undefined' || value === null) {
-            throw new Error('Field sameField is not optional');
-        }
-
-        if (typeof value !== 'number') {
-            throw new Error('Field sameField expects type number, got ' + value);
-        }
-
-        if (value % 1 !== 0) {
-            throw new Error('Field sameField is expected to be an integer, got ' + value);
-        }
-
-        this._sameField = value;
-    }
-
-    public get sameEverywhereField(): number {
-        return this._sameEverywhereField;
-    }
-
-    public set sameEverywhereField(value: number) {
-        if (typeof value === 'undefined' || value === null) {
-            throw new Error('Field sameEverywhereField is not optional');
-        }
-
-        if (typeof value !== 'number') {
-            throw new Error('Field sameEverywhereField expects type number, got ' + value);
-        }
-
-        if (value % 1 !== 0) {
-            throw new Error('Field sameEverywhereField is expected to be an integer, got ' + value);
-        }
-
-        this._sameEverywhereField = value;
-    }
-
     constructor(data: DTO1Serialized = undefined) {
         if (typeof data === 'undefined' || data === null) {
             return;
@@ -186,12 +186,12 @@ export class DTO1 implements TestInterface2, TestInterface3  {
 
         this.if1Field_overriden = data.if1Field_overriden;
         this.if1Field_inherited = data.if1Field_inherited;
+        this.sameField = data.sameField;
+        this.sameEverywhereField = data.sameEverywhereField;
         this.fromOtherDomain = new TestValIdentifier(data.fromOtherDomain);
         this.fromOtherDomainDirect = new TestValIdentifier(data.fromOtherDomainDirect);
         this.if3Field = data.if3Field;
         this.if2Field = data.if2Field;
-        this.sameField = data.sameField;
-        this.sameEverywhereField = data.sameEverywhereField;
     }
 
     public toTestInterface2Serialized(): TestInterface2StructSerialized {
@@ -278,12 +278,12 @@ export class DTO1 implements TestInterface2, TestInterface3  {
         return {
             if1Field_overriden: this.if1Field_overriden,
             if1Field_inherited: this.if1Field_inherited,
+            sameField: this.sameField,
+            sameEverywhereField: this.sameEverywhereField,
             fromOtherDomain: this.fromOtherDomain.serialize(),
             fromOtherDomainDirect: this.fromOtherDomainDirect.serialize(),
             if3Field: this.if3Field,
-            if2Field: this.if2Field,
-            sameField: this.sameField,
-            sameEverywhereField: this.sameEverywhereField
+            if2Field: this.if2Field
         };
     }
 }
@@ -291,12 +291,12 @@ export class DTO1 implements TestInterface2, TestInterface3  {
 export interface DTO1Serialized extends TestInterface2StructSerialized, TestInterface3StructSerialized  {
     if1Field_overriden: number;
     if1Field_inherited: number;
+    sameField: number;
+    sameEverywhereField: number;
     fromOtherDomain: string;
     fromOtherDomainDirect: string;
     if3Field: number;
     if2Field: number;
-    sameField: number;
-    sameEverywhereField: number;
 }
 
 TestInterface2Struct.register(DTO1.FullClassName, DTO1);
@@ -320,9 +320,29 @@ Introspector.register(DTO1.FullClassName, {
         ctor: () => new DTO1(),
         fields: [
             {
+                name: 'if2Field',
+                accessName: 'if2Field',
+                type: {intro: IntrospectorTypes.I64}
+            },
+            {
+                name: 'sameField',
+                accessName: 'sameField',
+                type: {intro: IntrospectorTypes.I64}
+            },
+            {
+                name: 'sameEverywhereField',
+                accessName: 'sameEverywhereField',
+                type: {intro: IntrospectorTypes.I64}
+            },
+            {
                 name: 'if1Field_overriden',
                 accessName: 'if1Field_overriden',
                 type: {intro: IntrospectorTypes.I32}
+            },
+            {
+                name: 'if3Field',
+                accessName: 'if3Field',
+                type: {intro: IntrospectorTypes.I64}
             },
             {
                 name: 'if1Field_inherited',
@@ -338,26 +358,6 @@ Introspector.register(DTO1.FullClassName, {
                 name: 'fromOtherDomainDirect',
                 accessName: 'fromOtherDomainDirect',
                 type: {intro: IntrospectorTypes.Id, full: 'izumi.test.domain01.TestValIdentifier'} as IIntrospectorUserType
-            },
-            {
-                name: 'if3Field',
-                accessName: 'if3Field',
-                type: {intro: IntrospectorTypes.I64}
-            },
-            {
-                name: 'if2Field',
-                accessName: 'if2Field',
-                type: {intro: IntrospectorTypes.I64}
-            },
-            {
-                name: 'sameField',
-                accessName: 'sameField',
-                type: {intro: IntrospectorTypes.I64}
-            },
-            {
-                name: 'sameEverywhereField',
-                accessName: 'sameEverywhereField',
-                type: {intro: IntrospectorTypes.I64}
             }
         ]
     } as IIntrospectorDataObject

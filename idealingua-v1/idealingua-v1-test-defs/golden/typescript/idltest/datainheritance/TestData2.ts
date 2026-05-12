@@ -121,6 +121,11 @@ Introspector.register(TestData2.FullClassName, {
         ctor: () => new TestData2(),
         fields: [
             {
+                name: 'value',
+                accessName: 'value',
+                type: {intro: IntrospectorTypes.I08}
+            },
+            {
                 name: 'str',
                 accessName: 'str',
                 type: {intro: IntrospectorTypes.Str}
@@ -129,11 +134,6 @@ Introspector.register(TestData2.FullClassName, {
                 name: 'i32',
                 accessName: 'i32',
                 type: {intro: IntrospectorTypes.I32}
-            },
-            {
-                name: 'value',
-                accessName: 'value',
-                type: {intro: IntrospectorTypes.I08}
             }
         ]
     } as IIntrospectorDataObject

@@ -278,6 +278,26 @@ Introspector.register(Point.FullClassName, {
         ctor: () => new Point(),
         fields: [
             {
+                name: 'ownfield',
+                accessName: 'ownfield',
+                type: {intro: IntrospectorTypes.Str}
+            },
+            {
+                name: 'name',
+                accessName: 'name',
+                type: {intro: IntrospectorTypes.Str}
+            },
+            {
+                name: 'export',
+                accessName: 'export_',
+                type: {intro: IntrospectorTypes.Bool}
+            },
+            {
+                name: 'id',
+                accessName: 'id',
+                type: {intro: IntrospectorTypes.Str}
+            },
+            {
                 name: 'w',
                 accessName: 'w',
                 type: {intro: IntrospectorTypes.I32}
@@ -288,16 +308,6 @@ Introspector.register(Point.FullClassName, {
                 type: {intro: IntrospectorTypes.I32}
             },
             {
-                name: 'id',
-                accessName: 'id',
-                type: {intro: IntrospectorTypes.Str}
-            },
-            {
-                name: 'name',
-                accessName: 'name',
-                type: {intro: IntrospectorTypes.Str}
-            },
-            {
                 name: 'x',
                 accessName: 'x',
                 type: {intro: IntrospectorTypes.I32}
@@ -306,16 +316,6 @@ Introspector.register(Point.FullClassName, {
                 name: 'y',
                 accessName: 'y',
                 type: {intro: IntrospectorTypes.I32}
-            },
-            {
-                name: 'ownfield',
-                accessName: 'ownfield',
-                type: {intro: IntrospectorTypes.Str}
-            },
-            {
-                name: 'export',
-                accessName: 'export_',
-                type: {intro: IntrospectorTypes.Bool}
             }
         ]
     } as IIntrospectorDataObject
