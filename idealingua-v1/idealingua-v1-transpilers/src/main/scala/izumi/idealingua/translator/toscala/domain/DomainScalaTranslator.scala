@@ -109,6 +109,7 @@ final class DomainScalaTranslator(
           }
           // syntax check: render to .syntax to validate scala.meta tree
           val _ = scala.meta.dialects.Scala213(product.render.head).syntax
+          exerciseExtensionsForIdentifier(ctx, id)
         } catch {
           case t: Throwable =>
             DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"identifier ${id.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
@@ -121,6 +122,7 @@ final class DomainScalaTranslator(
             DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"dto ${dto.id.name}", "empty render")
           }
           val _ = scala.meta.dialects.Scala213(product.render.head).syntax
+          exerciseExtensionsForDto(ctx, dto)
         } catch {
           case t: Throwable =>
             DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"dto ${dto.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
@@ -133,6 +135,7 @@ final class DomainScalaTranslator(
             DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"interface ${ifc.id.name}", "empty render")
           }
           val _ = scala.meta.dialects.Scala213(product.render.head).syntax
+          exerciseExtensionsForInterface(ctx, ifc)
         } catch {
           case t: Throwable =>
             DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"interface ${ifc.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
@@ -149,6 +152,7 @@ final class DomainScalaTranslator(
             DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"adt ${adt.id.name}", "empty render")
           }
           val _ = scala.meta.dialects.Scala213(product.render.head).syntax
+          exerciseExtensionsForAdt(ctx, adt)
         } catch {
           case t: Throwable =>
             DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"adt ${adt.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
@@ -234,9 +238,72 @@ final class DomainScalaTranslator(
           case None =>
           // Same rationale as the alias case above.
         }
+        try {
+          exerciseExtensionsForEnum(ctx, e)
+        } catch {
+          case t: Throwable =>
+            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"enum ${e.id.name} (extensions)", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
+        }
 
       case _ => ()
     }
+  }
+
+  // --- M5: extension exercisers. Each per-type helper invokes the new
+  // domain-side extensions, renders the resulting Defns to .syntax under
+  // Scala 2.13, and records any structural divergence. M5 verifies the
+  // emitted scala.meta trees parse cleanly; production wire-format gating
+  // moves to runWireFixtures after the M6 swap.
+  private def exerciseExtensionsForIdentifier(ctx: DomainSTContext, id: NewTypeDef.Identifier): Unit = {
+    val anyvalInits = extensions.DomainAnyvalExtension.withAnyvalForIdentifier(ctx, id)
+    anyvalInits.foreach { ini => val _ = scala.meta.dialects.Scala213(ini).syntax }
+    val circe = extensions.DomainCirceDerivationTranslatorExtension.emitForIdentifier(ctx, id)
+    val _ = scala.meta.dialects.Scala213(circe.defn).syntax
+  }
+
+  private def exerciseExtensionsForDto(ctx: DomainSTContext, dto: NewTypeDef.Dto): Unit = {
+    val anyvalInits = extensions.DomainAnyvalExtension.withAnyvalForComposite(ctx, dto)
+    anyvalInits.foreach { ini => val _ = scala.meta.dialects.Scala213(ini).syntax }
+    val sims = extensions.DomainCastSimilarExtension.mkConvertersForDto(ctx, dto)
+    sims.foreach { s => val _ = scala.meta.dialects.Scala213(s).syntax }
+    val ups = extensions.DomainCastUpExtension.generateUpcastsForDto(ctx, dto)
+    ups.foreach { s => val _ = scala.meta.dialects.Scala213(s).syntax }
+    val scalaVersions = options.manifest.sbt.scalaVersions
+    val circe = extensions.DomainCirceDerivationTranslatorExtension.emitForDto(ctx, dto, scalaVersions)
+    val _ = scala.meta.dialects.Scala213(circe.defn).syntax
+  }
+
+  private def exerciseExtensionsForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): Unit = {
+    val anyInits = extensions.DomainAnyvalExtension.withAnyForInterface(ctx, i)
+    anyInits.foreach { ini => val _ = scala.meta.dialects.Scala213(ini).syntax }
+    val sims = extensions.DomainCastSimilarExtension.mkConvertersForInterface(ctx, i)
+    sims.foreach { s => val _ = scala.meta.dialects.Scala213(s).syntax }
+    val ups = extensions.DomainCastUpExtension.generateUpcastsForInterface(ctx, i)
+    ups.foreach { s => val _ = scala.meta.dialects.Scala213(s).syntax }
+    val downs = extensions.DomainCastDownExpandExtension.constructorsForInterface(ctx, i)
+    downs.foreach { s => val _ = scala.meta.dialects.Scala213(s).syntax }
+    // The interface Circe codec is a tagged-union dispatcher; only meaningful when
+    // there is at least one implementing DTO. Empty interfaces (no impls) cannot
+    // appear as wire payloads — skip the Circe emit to avoid a scala.meta
+    // "cases should be non-empty" invariant trip.
+    val hasImpls = ctx.domain.implementingDtos.getOrElse(i.id, Set.empty).nonEmpty
+    if (hasImpls) {
+      val circe = extensions.DomainCirceDerivationTranslatorExtension.emitForInterface(ctx, i)
+      val _ = scala.meta.dialects.Scala213(circe.defn).syntax
+    }
+  }
+
+  private def exerciseExtensionsForAdt(ctx: DomainSTContext, adt: NewTypeDef.Adt): Unit = {
+    // Tagged-union codec requires at least one alternative; skip empty ADTs.
+    if (adt.alternatives.nonEmpty) {
+      val circe = extensions.DomainCirceDerivationTranslatorExtension.emitForAdt(ctx, adt)
+      val _ = scala.meta.dialects.Scala213(circe.defn).syntax
+    }
+  }
+
+  private def exerciseExtensionsForEnum(ctx: DomainSTContext, e: NewTypeDef.Enum): Unit = {
+    val circe = extensions.DomainCirceDerivationTranslatorExtension.emitForEnum(ctx, e)
+    val _ = scala.meta.dialects.Scala213(circe.defn).syntax
   }
 
   /** Inline mirror of legacy `EnumRenderer.renderEnumeration` pre-extension
