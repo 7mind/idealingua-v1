@@ -13,7 +13,6 @@ import izumi.idealingua.translator.CompilerOptions
 import izumi.idealingua.translator.IDLLanguage
 import izumi.idealingua.translator.toscala.domain.DomainSTContext
 import izumi.idealingua.translator.toscala.domain.extensions.DomainCastSimilarExtension
-import izumi.idealingua.translator.toscala.extensions.ScalaTranslatorExtension
 import izumi.idealingua.typer.ir.{Domain, Fingerprint, FlatField, FlatStruct, Struct, TypeDef => NewTypeDef}
 import org.scalatest.funsuite.AnyFunSuite
 import scodec.bits.ByteVector
@@ -28,8 +27,7 @@ final class DomainCastSimilarExtensionSpec extends AnyFunSuite {
   private val tp        = TypePath(domainId, Seq.empty)
   private val emptyMeta = NodeMeta.empty
   private val rawMeta   = RawNodeMeta(None, Seq.empty, InputPosition.Undefined)
-  private val emptyExts: Seq[ScalaTranslatorExtension] = Seq.empty
-  private val options   = CompilerOptions[ScalaTranslatorExtension, ScalaBuildManifest](IDLLanguage.Scala, emptyExts, ScalaBuildManifest.example)
+  private val options   = CompilerOptions[ScalaBuildManifest](IDLLanguage.Scala, ScalaBuildManifest.example)
 
   private def metaFor(d: DomainId) =
     DomainMetadata(FSPath(d.toPackage :+ s"${d.id}.domain"), Seq.empty, Seq.empty, emptyMeta)

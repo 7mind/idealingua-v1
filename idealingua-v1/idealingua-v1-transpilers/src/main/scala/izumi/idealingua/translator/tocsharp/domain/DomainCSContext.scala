@@ -12,8 +12,7 @@ import izumi.idealingua.typer.ir.Domain
   * `DomainTSContext` (TS port). Carries the new `Domain` IR, the original
   * parsed AST (for declaration-order recovery in later milestones), and
   * the resolved translator options. Exposes the minimum surface the
-  * alias + enum renderers need (`modules`, `options`, `manifest`,
-  * `extensions`).
+  * alias + enum renderers need (`modules`, `options`, `manifest`).
   *
   * Unlike `DomainTSContext`, no language-level type converter is held
   * here: `CSharpType` requires implicit `Typespace` + `CSharpImports`
@@ -34,8 +33,6 @@ final class DomainCSContext(
 ) {
   final val modules  = new ModuleTools()
   final val manifest = options.manifest
-
-  final def extensions = options.extensions
 
   final val aliasRenderer       = new DomainCSAliasRenderer(this)
   final val enumRenderer        = new DomainCSEnumRenderer(this)

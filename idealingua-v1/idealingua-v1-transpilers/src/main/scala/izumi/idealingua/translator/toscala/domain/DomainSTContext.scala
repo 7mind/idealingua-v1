@@ -12,7 +12,7 @@ import izumi.idealingua.typer.ir.Domain
   * IMPL-7a.2 Phase B M1: carries the new `Domain` IR, the original parsed
   * AST (for declaration order recovery per R1), and the resolved translator
   * options. Exposes the small set of helpers the alias and enum renderers
-  * need (`conv`, `rt`, `modules`, `extensions`) without dragging the
+  * need (`conv`, `rt`, `modules`) without dragging the
   * legacy `Typespace`-shaped `STContext` through the new path.
   *
   * Subsequent milestones (M2-M6) will add `aliasRenderer`/`enumRenderer`
@@ -30,8 +30,6 @@ final class DomainSTContext(
   final val conv                     = new ScalaTypeConverter(domain.id)
   final val rt: IDLRuntimeTypes.type = IDLRuntimeTypes
   final val modules                  = new ModuleTools()
-
-  final def extensions = options.extensions
 
   final val aliasRenderer = new DomainAliasRenderer(this)
   final val enumRenderer  = new DomainEnumRenderer(this)

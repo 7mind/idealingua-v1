@@ -5,7 +5,6 @@ import izumi.idealingua.model.publishing.BuildManifest
 
 trait TranslatorDescriptor[TypedOptions] {
   def language: IDLLanguage
-  def defaultExtensions: Seq[TranslatorExtension]
   def defaultManifest: BuildManifest
   def typedOptions(options: UntypedCompilerOptions): TypedOptions
   def makeDomain(domain: izumi.idealingua.typer.ir.Domain, parsed: DomainMeshResolved, options: UntypedCompilerOptions): Translator

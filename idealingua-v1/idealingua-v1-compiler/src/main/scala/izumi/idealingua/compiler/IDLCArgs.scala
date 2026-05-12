@@ -13,7 +13,6 @@ case class LanguageOpts(
   target: Option[Path],
   manifest: Option[File],
   credentials: Option[File],
-  extensions: List[String],
   overrides: Map[String, String],
 )
 
@@ -55,7 +54,6 @@ object IDLCArgs {
     final val target        = arg("target", "t", "lang target directory", "<path>")
     final val manifest      = arg("manifest", "m", "manifest file", "<path>")
     final val credentials   = arg("credentials", "cr", "credentials file", "<path>")
-    final val extensionSpec = arg("extensions", "e", "extensions spec", "{* | -AnyvalExtension;-CirceDerivationTranslatorExtension}")
     final val noRuntime     = flag("disable-runtime", "nr", "don't include builtin runtime")
     final val noZip         = flag("disable-zip", "nz", "don't zip outputs")
     final val define        = arg("define", "d", "define value", "const.name=value")
@@ -115,7 +113,6 @@ object IDLCArgs {
         val manifest    = parameters.findValue(LP.manifest).asFile
         val credentials = parameters.findValue(LP.credentials).asFile
         val defines     = parseDefs(parameters, LP.define)
-        val extensions  = parameters.findValue(LP.extensionSpec).map(_.value.split(',')).toList.flatten
 
         LanguageOpts(
           id          = role.role,
@@ -123,7 +120,6 @@ object IDLCArgs {
           target      = target,
           manifest    = manifest,
           credentials = credentials,
-          extensions  = extensions,
           overrides   = defines,
           zip         = zip,
         )

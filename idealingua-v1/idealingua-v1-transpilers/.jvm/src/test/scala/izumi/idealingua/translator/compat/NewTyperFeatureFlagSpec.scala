@@ -83,7 +83,6 @@ final class NewTyperFeatureFlagSpec extends AnyWordSpec {
   private def scalaOptions: UntypedCompilerOptions =
     UntypedCompilerOptions(
       language           = IDLLanguage.Scala,
-      extensions         = TypespaceCompilerBaseFacade.descriptor(IDLLanguage.Scala).defaultExtensions,
       target             = None,
       manifest           = pinnedScala,
       withBundledRuntime = false,
@@ -94,7 +93,6 @@ final class NewTyperFeatureFlagSpec extends AnyWordSpec {
   private def tsOptions: UntypedCompilerOptions =
     UntypedCompilerOptions(
       language           = IDLLanguage.Typescript,
-      extensions         = TypespaceCompilerBaseFacade.descriptor(IDLLanguage.Typescript).defaultExtensions,
       target             = None,
       manifest           = TypeScriptBuildManifest.example,
       withBundledRuntime = false,
@@ -105,7 +103,6 @@ final class NewTyperFeatureFlagSpec extends AnyWordSpec {
   private def csOptions: UntypedCompilerOptions =
     UntypedCompilerOptions(
       language           = IDLLanguage.CSharp,
-      extensions         = TypespaceCompilerBaseFacade.descriptor(IDLLanguage.CSharp).defaultExtensions,
       target             = None,
       manifest           = CSharpBuildManifest.example,
       withBundledRuntime = false,

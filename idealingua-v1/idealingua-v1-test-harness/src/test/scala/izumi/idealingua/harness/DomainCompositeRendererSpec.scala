@@ -12,7 +12,6 @@ import izumi.idealingua.model.publishing.manifests.ScalaBuildManifest
 import izumi.idealingua.translator.CompilerOptions
 import izumi.idealingua.translator.IDLLanguage
 import izumi.idealingua.translator.toscala.domain.DomainSTContext
-import izumi.idealingua.translator.toscala.extensions.ScalaTranslatorExtension
 import izumi.idealingua.typer.ir.{Domain, Fingerprint, FlatField, FlatStruct, Struct, TypeDef => NewTypeDef}
 import org.scalatest.funsuite.AnyFunSuite
 import scodec.bits.ByteVector
@@ -27,8 +26,7 @@ final class DomainCompositeRendererSpec extends AnyFunSuite {
   private val emptyMeta  = NodeMeta.empty
   private val rawMeta    = RawNodeMeta(None, Seq.empty, InputPosition.Undefined)
   private val scalaBuild = ScalaBuildManifest.example
-  private val emptyExts: Seq[ScalaTranslatorExtension] = Seq.empty
-  private val options    = CompilerOptions[ScalaTranslatorExtension, ScalaBuildManifest](IDLLanguage.Scala, emptyExts, scalaBuild)
+  private val options    = CompilerOptions[ScalaBuildManifest](IDLLanguage.Scala, scalaBuild)
 
   private def renderSyntax(tree: scala.meta.Tree, isScala3: Boolean): String = {
     import scala.meta.*

@@ -4,7 +4,7 @@ import izumi.idealingua.model.publishing.BuildManifest
 import izumi.idealingua.model.publishing.manifests.CSharpBuildManifest
 import izumi.idealingua.translator.CompilerOptions.CSharpTranslatorOptions
 import izumi.idealingua.translator._
-import izumi.idealingua.translator.tocsharp.domain.{CSharpDefaultExtensions, DomainCSharpTranslator}
+import izumi.idealingua.translator.tocsharp.domain.DomainCSharpTranslator
 import izumi.idealingua.translator.tocsharp.layout.CSharpLayouter
 
 object CSharpTranslatorDescriptor extends TranslatorDescriptor[CSharpTranslatorOptions] {
@@ -14,8 +14,6 @@ object CSharpTranslatorDescriptor extends TranslatorDescriptor[CSharpTranslatorO
   override def typedOptions(options: UntypedCompilerOptions): CSharpTranslatorOptions = CompilerOptions.from(options)
 
   override def language: IDLLanguage = IDLLanguage.CSharp
-
-  override def defaultExtensions: Seq[TranslatorExtension] = CSharpDefaultExtensions.defaultExtensions
 
   override def makeDomain(
     domain: izumi.idealingua.typer.ir.Domain,

@@ -3,12 +3,8 @@ package izumi.idealingua.translator
 import izumi.idealingua.model.output.Module
 import izumi.idealingua.model.publishing.BuildManifest
 import izumi.idealingua.model.publishing.manifests.{CSharpBuildManifest, ScalaBuildManifest, TypeScriptBuildManifest}
-import izumi.idealingua.translator.tocsharp.extensions.CSharpTranslatorExtension
-import izumi.idealingua.translator.toscala.extensions.ScalaTranslatorExtension
-import izumi.idealingua.translator.totypescript.extensions.TypeScriptTranslatorExtension
 
 import java.nio.file.Path
-import scala.reflect.ClassTag
 
 case class ProvidedRuntime(modules: Seq[Module]) {
   def isEmpty: Boolean = modules.isEmpty
@@ -30,10 +26,8 @@ object ProvidedRuntime {
   def empty: ProvidedRuntime = ProvidedRuntime(Seq.empty)
 }
 
-sealed trait AbstractCompilerOptions[E <: TranslatorExtension, M <: BuildManifest] {
+sealed trait AbstractCompilerOptions[M <: BuildManifest] {
   def language: IDLLanguage
-
-  def extensions: Seq[E]
 
   def withBundledRuntime: Boolean
 
@@ -42,43 +36,40 @@ sealed trait AbstractCompilerOptions[E <: TranslatorExtension, M <: BuildManifes
   def providedRuntime: Option[ProvidedRuntime]
 }
 
-final case class CompilerOptions[E <: TranslatorExtension, M <: BuildManifest](
+final case class CompilerOptions[M <: BuildManifest](
   language: IDLLanguage,
-  extensions: Seq[E],
   manifest: M,
   withBundledRuntime: Boolean              = true,
   providedRuntime: Option[ProvidedRuntime] = None,
-) extends AbstractCompilerOptions[E, M]
+) extends AbstractCompilerOptions[M]
 
 object CompilerOptions {
-  type TypescriptTranslatorOptions = CompilerOptions[TypeScriptTranslatorExtension, TypeScriptBuildManifest]
-  type CSharpTranslatorOptions     = CompilerOptions[CSharpTranslatorExtension, CSharpBuildManifest]
-  type ScalaTranslatorOptions      = CompilerOptions[ScalaTranslatorExtension, ScalaBuildManifest]
+  type TypescriptTranslatorOptions = CompilerOptions[TypeScriptBuildManifest]
+  type CSharpTranslatorOptions     = CompilerOptions[CSharpBuildManifest]
+  type ScalaTranslatorOptions      = CompilerOptions[ScalaBuildManifest]
 
-  def from[E <: TranslatorExtension: ClassTag, M <: BuildManifest](options: UntypedCompilerOptions): CompilerOptions[E, M] = {
-    val extensions = options.extensions.collect {
-      case e: E => e
-    }
-
+  // IMPL-12 (2026-05-12): the `E` extension-type parameter retired. The
+  // legacy `<Lang>TranslatorExtension` marker traits and their
+  // `defaultExtensions` seqs were inert post-IMPL-10c (no renderer iterated
+  // `options.extensions`). `from` is now a parameter-less projection that
+  // narrows the `BuildManifest` payload via cast.
+  def from[M <: BuildManifest](options: UntypedCompilerOptions): CompilerOptions[M] = {
     val manifest = options.manifest.asInstanceOf[M]
-
-    CompilerOptions(options.language, extensions, manifest, options.withBundledRuntime, options.providedRuntime)
+    CompilerOptions(options.language, manifest, options.withBundledRuntime, options.providedRuntime)
   }
 }
 
 final case class UntypedCompilerOptions(
   language: IDLLanguage,
-  extensions: Seq[TranslatorExtension],
   target: Option[Path],
   manifest: BuildManifest,
   withBundledRuntime: Boolean              = true,
   providedRuntime: Option[ProvidedRuntime] = None,
   zipOutput: Boolean                       = true,
-) extends AbstractCompilerOptions[TranslatorExtension, BuildManifest] {
+) extends AbstractCompilerOptions[BuildManifest] {
   override def toString: String = {
     val rtRepr  = Option(withBundledRuntime).filter(_ == true).map(_ => "+rtb").getOrElse("-rtb")
     val rtfRepr = providedRuntime.map(rt => s"rtu=${rt.modules.size}").getOrElse("-rtu")
-    val extRepr = extensions.mkString("(", ", ", ")")
-    Seq(language, rtRepr, rtfRepr, extRepr).mkString(" ")
+    Seq(language, rtRepr, rtfRepr).mkString(" ")
   }
 }

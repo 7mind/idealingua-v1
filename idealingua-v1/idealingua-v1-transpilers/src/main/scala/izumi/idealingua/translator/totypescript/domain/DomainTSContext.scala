@@ -29,8 +29,6 @@ final class DomainTSContext(
   final val modules  = new ModuleTools()
   final val manifest = options.manifest
 
-  final def extensions = options.extensions
-
   final val aliasRenderer     = new DomainTSAliasRenderer(this)
   final val enumRenderer      = new DomainTSEnumRenderer(this)
   final val idRenderer        = new DomainTSIdRenderer(this)

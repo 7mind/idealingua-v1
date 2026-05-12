@@ -4,7 +4,7 @@ import izumi.idealingua.model.publishing.BuildManifest
 import izumi.idealingua.model.publishing.manifests.ScalaBuildManifest
 import izumi.idealingua.translator.CompilerOptions.ScalaTranslatorOptions
 import izumi.idealingua.translator._
-import izumi.idealingua.translator.toscala.domain.{DomainScalaTranslator, ScalaDefaultExtensions}
+import izumi.idealingua.translator.toscala.domain.DomainScalaTranslator
 import izumi.idealingua.translator.toscala.layout.ScalaLayouter
 
 object ScalaTranslatorDescriptor extends TranslatorDescriptor[ScalaTranslatorOptions] {
@@ -13,8 +13,6 @@ object ScalaTranslatorDescriptor extends TranslatorDescriptor[ScalaTranslatorOpt
   override def typedOptions(options: UntypedCompilerOptions): ScalaTranslatorOptions = CompilerOptions.from(options)
 
   override def language: IDLLanguage = IDLLanguage.Scala
-
-  override def defaultExtensions: Seq[TranslatorExtension] = ScalaDefaultExtensions.defaultExtensions
 
   override def makeDomain(
     domain: izumi.idealingua.typer.ir.Domain,

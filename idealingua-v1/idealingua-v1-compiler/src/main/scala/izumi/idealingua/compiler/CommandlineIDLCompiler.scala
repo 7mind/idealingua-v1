@@ -179,10 +179,9 @@ object CommandlineIDLCompiler {
 
   private def toOptions(conf: IDLCArgs, env: Map[String, String])(lopt: LanguageOpts): UntypedCompilerOptions = {
     val lang = IDLLanguage.parse(lopt.id)
-    val exts = getExt(lang, lopt.extensions)
 
     val manifest = readManifest(conf, env, lopt, lang)
-    UntypedCompilerOptions(lang, exts, lopt.target, manifest, lopt.withRuntime, zipOutput = lopt.zip)
+    UntypedCompilerOptions(lang, lopt.target, manifest, lopt.withRuntime, zipOutput = lopt.zip)
   }
 
   private def readManifest(conf: IDLCArgs, env: Map[String, String], lopt: LanguageOpts, lang: IDLLanguage): BuildManifest = {
@@ -268,11 +267,6 @@ object CommandlineIDLCompiler {
     }
   }
 
-  private def getExt(lang: IDLLanguage, filter: List[String]): Seq[TranslatorExtension] = {
-    val descriptor = TypespaceCompilerBaseFacade.descriptor(lang)
-    val negative   = filter.filter(_.startsWith("-")).map(_.substring(1)).map(ExtensionId.apply).toSet
-    descriptor.defaultExtensions.filterNot(e => negative.contains(e.id))
-  }
 }
 
 case class VersionOverlay(version: String, release: Boolean, snapshotQualifiers: Map[String, String])

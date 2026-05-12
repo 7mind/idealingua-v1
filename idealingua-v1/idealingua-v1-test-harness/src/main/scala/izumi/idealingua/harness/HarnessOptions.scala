@@ -14,7 +14,7 @@ import izumi.idealingua.model.publishing.manifests.{
   YarnOptions,
 }
 import izumi.idealingua.model.publishing.{ProjectVersion}
-import izumi.idealingua.translator.{IDLLanguage, TypespaceCompilerBaseFacade, UntypedCompilerOptions}
+import izumi.idealingua.translator.{IDLLanguage, UntypedCompilerOptions}
 
 object HarnessOptions {
 
@@ -57,7 +57,6 @@ object HarnessOptions {
     * typer parameter. */
   def optionsFor(lang: IDLLanguage): UntypedCompilerOptions = UntypedCompilerOptions(
     language           = lang,
-    extensions         = TypespaceCompilerBaseFacade.descriptor(lang).defaultExtensions,
     target             = None,
     manifest           = manifestFor(lang),
     withBundledRuntime = false,
