@@ -39,9 +39,9 @@ final class DomainCompositeRenderer(ctx: DomainSTContext) {
     val bases: List[Init] = source match {
       // legacy emits an empty base list for method input/output, plus the
       // CsDTO arm. M3 mirrors that exactly — bases stay empty.
-      case _: ClassSource.CsMethodInput  => List.empty
-      case _: ClassSource.CsMethodOutput => List.empty
-      case _                             => List.empty
+      case ClassSource.CsMethodInput  => List.empty
+      case ClassSource.CsMethodOutput => List.empty
+      case _                          => List.empty
     }
 
     val (mirrorInterface: List[Defn.Trait], moreBases: Interfaces) = if (withMirror) {

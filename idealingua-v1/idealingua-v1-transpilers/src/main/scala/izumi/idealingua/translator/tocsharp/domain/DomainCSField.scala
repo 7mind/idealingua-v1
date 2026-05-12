@@ -2,20 +2,14 @@ package izumi.idealingua.translator.tocsharp.domain
 
 import izumi.idealingua.model.il.ast.typed.Field
 import izumi.idealingua.translator.tocsharp.CSharpImports
-import izumi.idealingua.translator.tocsharp.types.CSharpField
 import izumi.idealingua.typer.ir.Domain
 
-/** Domain-consuming twin of `CSharpField` (PR-02 IMPL-10-prep-Cs1).
+/** Domain-consuming twin of the (now-deleted) legacy `CSharpField` (PR-02
+  * IMPL-10-prep-Cs1; reserved-keyword `safeName` inlined post-IMPL-10c).
   *
-  * Legacy `CSharpField` takes a `tp: CSharpType` directly and an implicit
-  * `Typespace` only through the `apply(field, ...)` factory. Here we hold
-  * a `DomainCSharpType` (Domain-backed) instead.
-  *
-  * Name-safety logic (`safeName`, `safeVarName`) is shared with legacy
-  * `CSharpField` — the reserved-keyword list and the `_` suffix policy for
-  * struct-name clashes is byte-equal, so we delegate to
-  * `CSharpField.safeName` to avoid duplication. This is the only legacy
-  * coupling that remains; it carries no `Typespace` dependency.
+  * Holds a `DomainCSharpType` (Domain-backed) rather than the legacy
+  * `CSharpType` (Typespace-backed). `safeName` / `safeVarName` are inlined
+  * verbatim from the deleted `CSharpField`; their behaviour is unchanged.
   */
 final case class DomainCSField(
   name: String,
@@ -24,7 +18,7 @@ final case class DomainCSField(
   by: Seq[String],
 ) {
   def renderMemberName(capitalize: Boolean = true, uncapitalize: Boolean = false): String = {
-    CSharpField.safeName(name, capitalize, uncapitalize, structName)
+    DomainCSField.safeName(name, capitalize, uncapitalize, structName)
   }
 
   private def renderMemberImpl(forInterface: Boolean, by: String): String = {
@@ -53,6 +47,8 @@ final case class DomainCSField(
 }
 
 object DomainCSField {
+  import izumi.fundamentals.platform.strings.IzString._
+
   def apply(
     field: Field,
     structName: String,
@@ -62,6 +58,102 @@ object DomainCSField {
     domain: Domain,
   ): DomainCSField = new DomainCSField(field.name, DomainCSharpType(field.typeId), structName, by)
 
-  /** Same as `CSharpField.safeVarName`. */
-  def safeVarName(name: String): String = CSharpField.safeName(name, capitalize = false, uncapitalize = false, "")
+  /** Reserved-keyword-safe identifier rendering. Inlined verbatim from the
+    * (now-deleted) legacy `CSharpField.safeName`. */
+  def safeVarName(name: String): String = safeName(name, capitalize = false, uncapitalize = false, "")
+
+  def safeName(name: String, capitalize: Boolean, uncapitalize: Boolean, structName: String): String = {
+    val systemReserved = Seq("Type", "Environment")
+
+    val reserved = Seq(
+      "abstract",
+      "as",
+      "base",
+      "bool",
+      "break",
+      "byte",
+      "case",
+      "catch",
+      "char",
+      "checked",
+      "class",
+      "const",
+      "continue",
+      "decimal",
+      "default",
+      "delegate",
+      "do",
+      "double",
+      "else",
+      "enum",
+      "event",
+      "explicit",
+      "extern",
+      "false",
+      "finally",
+      "fixed",
+      "float",
+      "for",
+      "foreach",
+      "goto",
+      "if",
+      "implicit",
+      "in",
+      "int",
+      "interface",
+      "internal",
+      "is",
+      "lock",
+      "long",
+      "namespace",
+      "new",
+      "null",
+      "object",
+      "operator",
+      "out",
+      "override",
+      "params",
+      "private",
+      "protected",
+      "public",
+      "readonly",
+      "ref",
+      "return",
+      "sbyte",
+      "sealed",
+      "short",
+      "sizeof",
+      "stackalloc",
+      "static",
+      "string",
+      "struct",
+      "switch",
+      "this",
+      "throw",
+      "true",
+      "try",
+      "typeof",
+      "uint",
+      "ulong",
+      "unchecked",
+      "unsafe",
+      "ushort",
+      "using",
+      "using",
+      "static",
+      "virtual",
+      "void",
+      "volatile",
+      "while",
+    )
+
+    val all = systemReserved ++ reserved
+
+    val finalName = if (capitalize) name.capitalize else if (uncapitalize) name.uncapitalize else name
+    if (finalName == structName) {
+      s"@${finalName}_"
+    } else {
+      if (all.contains(finalName)) s"@$finalName" else finalName
+    }
+  }
 }

@@ -1,7 +1,7 @@
 package izumi.idealingua.harness
 
 import izumi.idealingua.model.loader.LoadedDomain
-import izumi.idealingua.translator.{ExtendedModule, IDLLanguage, TyperImpl, TypespaceCompilerBaseFacade}
+import izumi.idealingua.translator.{ExtendedModule, IDLLanguage, TypespaceCompilerBaseFacade}
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
@@ -18,27 +18,17 @@ private[harness] object GoldenCompile {
     * `RuntimeModule` entries are excluded by design (runtime files are not
     * part of the golden corpus).
     *
-    * PR-02 IMPL-10b-fix (2026-05-12): all three languages are now on
-    * `TyperImpl.NewTyper`. The cross-domain mixin defect that pinned
-    * TypeScript on `TyperImpl.Legacy` (latent `D1.toM2Serialized` body
-    * dropping the foreign `f2` field) was closed by surfacing foreign
-    * harvested flat structs through `Domain.crossDomainFlattenedStructs`
-    * and consulting them from `DomainTSStruct.structureOf`. The 17 other
-    * TS divergences (introspector field-order + module-export-order) are
-    * absorbed into regenerated goldens; `verifyGoldens`, `runWireFixtures`,
-    * and `runCrossLangInterop` all stay green on both Scala 2.13.18 and
-    * 3.8.3.
+    * PR-02 IMPL-10c (2026-05-12): the `TyperImpl` enum was deleted and the
+    * legacy translator tree was retired; the new-typer pipeline is the sole
+    * code path. The per-language `typer` lookup that selected `TyperImpl` is
+    * gone — `HarnessOptions.optionsFor(lang)` now produces new-typer options
+    * directly.
     */
   def compileAll(loaded: Seq[LoadedDomain.Success], goldenRoot: Path): Map[Path, Array[Byte]] = {
     val builder = Map.newBuilder[Path, Array[Byte]]
 
     for (lang <- languages) {
-      val typer = lang match {
-        case IDLLanguage.Scala      => TyperImpl.NewTyper
-        case IDLLanguage.CSharp     => TyperImpl.NewTyper
-        case IDLLanguage.Typescript => TyperImpl.NewTyper
-      }
-      val options  = HarnessOptions.optionsFor(lang, typer)
+      val options  = HarnessOptions.optionsFor(lang)
       val layouted = new TypespaceCompilerBaseFacade(options).compile(loaded)
 
       for (emodule <- layouted.emodules) {

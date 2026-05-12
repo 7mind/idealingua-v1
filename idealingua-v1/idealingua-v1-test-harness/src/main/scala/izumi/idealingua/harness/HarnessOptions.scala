@@ -14,7 +14,7 @@ import izumi.idealingua.model.publishing.manifests.{
   YarnOptions,
 }
 import izumi.idealingua.model.publishing.{ProjectVersion}
-import izumi.idealingua.translator.{IDLLanguage, TyperImpl, TypespaceCompilerBaseFacade, UntypedCompilerOptions}
+import izumi.idealingua.translator.{IDLLanguage, TypespaceCompilerBaseFacade, UntypedCompilerOptions}
 
 object HarnessOptions {
 
@@ -52,14 +52,10 @@ object HarnessOptions {
     case IDLLanguage.CSharp     => csharp
   }
 
-  /** Default-typer entrypoint: callers that don't pin a typer get
-    * `TyperImpl.NewTyper` (the canonical default since IMPL-9). The
-    * two-argument overload is retained for `GoldenCompile.compileAll`, which
-    * pins `TyperImpl.Legacy` on the TypeScript backend until the latent
-    * NewTyper-TS golden divergences surfaced by IMPL-10b are reconciled. */
-  def optionsFor(lang: IDLLanguage): UntypedCompilerOptions = optionsFor(lang, TyperImpl.NewTyper)
-
-  def optionsFor(lang: IDLLanguage, typer: TyperImpl): UntypedCompilerOptions = UntypedCompilerOptions(
+  /** Standard harness options. IMPL-10c retired the `TyperImpl` enum (only
+    * the new-typer pipeline remains), so this entrypoint no longer takes a
+    * typer parameter. */
+  def optionsFor(lang: IDLLanguage): UntypedCompilerOptions = UntypedCompilerOptions(
     language           = lang,
     extensions         = TypespaceCompilerBaseFacade.descriptor(lang).defaultExtensions,
     target             = None,
@@ -67,6 +63,5 @@ object HarnessOptions {
     withBundledRuntime = false,
     providedRuntime    = None,
     zipOutput          = false,
-    typerImpl          = typer,
   )
 }
