@@ -1,13 +1,12 @@
 package izumi.idealingua.translator.totypescript.domain
 
 import izumi.idealingua.model.common.TypeId.AliasId
-import izumi.idealingua.model.il.ast.IDLTyper
 import izumi.idealingua.model.il.ast.raw.defns.RawTopLevelDefn
 import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.model.output.{Module, ModuleId}
-import izumi.idealingua.model.problems.IDLException
-import izumi.idealingua.model.typespace.{Typespace, TypespaceImpl}
+import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.CompilerOptions.TypescriptTranslatorOptions
+import izumi.idealingua.translator.compat.DomainTypespaceFacade
 import izumi.idealingua.translator.totypescript.domain.extensions.{DomainTSEnumHelpersExtension, DomainTSIntrospectionExtension}
 import izumi.idealingua.translator.totypescript.products.RenderableCogenProduct
 import izumi.idealingua.translator.{Translated, Translator}
@@ -29,13 +28,14 @@ import izumi.idealingua.typer.ir.{Domain => NewDomain, TypeDef => NewTypeDef}
   * `TypeScriptTypeConverter` helper reused from the legacy tree expects it
   * (for `ts.dealias` chasing inside `deserializeCustomType` /
   * `toCustomType` / `serializeCustom`). We re-derive it once per
-  * `translate()` via `IDLTyper(parsed).perform()` for that purpose only;
-  * the renderers themselves consume only `Domain` for structural fields
-  * and now read imports via the `DomainTSImports` shim (no longer through
-  * `TypeScriptImports.apply(ts, ...)` — see IMPL-7b/7c-post). The
-  * remaining `Typespace` surface on the converter side is the last
-  * blocker for IMPL-10 (legacy-typer deletion) and is tracked as
-  * F-followup.
+  * `translate()` via `DomainTypespaceFacade.apply(domain, parsed)`
+  * (IMPL-10-prep) for that purpose only; the renderers themselves consume
+  * only `Domain` for structural fields and now read imports via the
+  * `DomainTSImports` shim (no longer through `TypeScriptImports.apply(ts,
+  * ...)` — see IMPL-7b/7c-post). The remaining `Typespace` surface on the
+  * converter side is the last blocker for IMPL-10 (legacy-typer deletion)
+  * and is tracked as F-followup. The direct `IDLTyper` call has been
+  * lifted into the compat façade so this file no longer references it.
   *
   * Iteration order: top-level user types are emitted in `parsed.members`
   * declaration order (the same order the legacy `IDLTyper.perform()`
@@ -64,22 +64,15 @@ final class DomainTypeScriptTranslator(
 
   private val ctx = new DomainTSContext(domain, parsed, options)
 
-  // Re-derive a legacy `Typespace` from the parsed AST so the renderers'
-  // import/converter plumbing — still routed through `TypeScriptImports`
-  // and `TypeScriptTypeConverter` — has a stable lookup surface. The new
-  // IR consolidation (F16/F17) is not yet wired through every helper in
-  // `idealingua-v1-model/types/`, so this single derivation per
-  // `translate()` is the minimum-impact swap for M5.
-  private lazy val ts: Typespace = {
-    new IDLTyper(parsed).perform() match {
-      case Right(d) => new TypespaceImpl(d)
-      case Left(diag) =>
-        throw new IDLException(
-          s"DomainTypeScriptTranslator (IMPL-7b Phase B M5) could not re-derive " +
-          s"legacy Typespace from parsed AST for ${domain.id}: $diag"
-        )
-    }
-  }
+  // Re-derive a legacy `Typespace`-shaped value from the parsed AST so
+  // the renderers' import/converter plumbing — still routed through
+  // `TypeScriptImports` and `TypeScriptTypeConverter` — has a stable
+  // lookup surface. The new IR consolidation (F16/F17) is not yet wired
+  // through every helper in `idealingua-v1-model/types/`, so this single
+  // derivation per `translate()` is the minimum-impact swap. The
+  // `IDLTyper` invocation is encapsulated in `DomainTypespaceFacade`
+  // (IMPL-10-prep) so this file no longer imports it directly.
+  private lazy val ts: Typespace = DomainTypespaceFacade(domain, parsed)
 
   override def translate(): Translated = {
     val typesByName: Map[String, NewTypeDef] =

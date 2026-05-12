@@ -1,12 +1,11 @@
 package izumi.idealingua.translator.tocsharp.domain
 
-import izumi.idealingua.model.il.ast.IDLTyper
 import izumi.idealingua.model.il.ast.raw.defns.RawTopLevelDefn
 import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.model.output.Module
-import izumi.idealingua.model.problems.IDLException
-import izumi.idealingua.model.typespace.{Typespace, TypespaceImpl}
+import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.CompilerOptions.CSharpTranslatorOptions
+import izumi.idealingua.translator.compat.DomainTypespaceFacade
 import izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension
 import izumi.idealingua.translator.{Translated, Translator}
 import izumi.idealingua.typer.ir.{Domain => NewDomain, TypeDef => NewTypeDef}
@@ -23,17 +22,19 @@ import izumi.idealingua.typer.ir.{Domain => NewDomain, TypeDef => NewTypeDef}
   * (pre/post model emit) and into the per-product import list. The
   * legacy `CSharpTranslator` is no longer invoked on this path.
   *
-  * `Typespace` is still re-derived once per `translate()` via
-  * `IDLTyper(parsed).perform()` because the renderers' deep helpers
-  * (`CSharpType` predicates, `ts.dealias` in nested calls, the legacy
-  * `TypeScriptTypeConverter`-equivalent) consume it for import / dealias
-  * plumbing that has no new-IR equivalent in scope yet. The
+  * `Typespace` is still re-derived once per `translate()` via the
+  * `DomainTypespaceFacade` (IMPL-10-prep) because the renderers' deep
+  * helpers (`CSharpType` predicates, `ts.dealias` in nested calls, the
+  * legacy `TypeScriptTypeConverter`-equivalent) consume it for import /
+  * dealias plumbing that has no new-IR equivalent in scope yet. The
   * `DomainCSImports` shim landed in IMPL-7b/7c-post (PR-02) — it covers
   * the imports-collection path, but the renderers still take `ts:
   * Typespace` as a per-call parameter so the converter side remains
-  * functional. IMPL-10 deletion of the legacy typer is gated on
-  * eliminating that remaining `ts: Typespace` surface from the
-  * renderers (tracked as F-followup).
+  * functional. The direct `IDLTyper` call previously inlined here has
+  * been lifted into the compat façade so this file no longer references
+  * it. IMPL-10 deletion of the legacy typer is gated on eliminating
+  * that remaining `ts: Typespace` surface from the renderers (tracked
+  * as F-followup).
   *
   * Extension wiring mirrors `CSharpTranslator.defaultExtensions` =
   * `Seq(JsonNetExtension)` (the wire-format-critical authority for the
@@ -60,22 +61,16 @@ final class DomainCSharpTranslator(
 
   private val ctx = new DomainCSContext(domain, parsed, options)
 
-  // Re-derive a legacy `Typespace` from the parsed AST so the renderers'
-  // import/converter plumbing (`CSharpImports.apply(definition, pkg)`,
-  // `CSharpType`) has a stable lookup surface. The new IR (`Domain`)
-  // already carries the structural data the renderers consume; this
-  // single derivation per `translate()` is the minimum-impact swap for
-  // M5 — IMPL-10/11 will replace it with a `DomainCSImports` shim.
-  private lazy val ts: Typespace = {
-    new IDLTyper(parsed).perform() match {
-      case Right(d) => new TypespaceImpl(d)
-      case Left(diag) =>
-        throw new IDLException(
-          s"DomainCSharpTranslator (IMPL-7c Phase B M5) could not re-derive " +
-          s"legacy Typespace from parsed AST for ${domain.id}: $diag"
-        )
-    }
-  }
+  // Re-derive a legacy `Typespace`-shaped value from the parsed AST so
+  // the renderers' import/converter plumbing
+  // (`CSharpImports.apply(definition, pkg)`, `CSharpType`) has a stable
+  // lookup surface. The new IR (`Domain`) already carries the structural
+  // data the renderers consume; this single derivation per `translate()`
+  // is the minimum-impact swap. The `IDLTyper` invocation is encapsulated
+  // in `DomainTypespaceFacade` (IMPL-10-prep) so this file no longer
+  // imports it directly. IMPL-10/11 will replace the façade with a
+  // `Domain`-backed converter family.
+  private lazy val ts: Typespace = DomainTypespaceFacade(domain, parsed)
 
   override def translate(): Translated = {
     val typesByName: Map[String, NewTypeDef] =
