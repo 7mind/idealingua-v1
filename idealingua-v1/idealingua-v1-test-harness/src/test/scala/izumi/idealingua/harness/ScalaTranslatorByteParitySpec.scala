@@ -179,8 +179,17 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *     case-arm pairs BoolNode/IntNode/IfNode/LamNode) collapse to
     *     legacy-HashMap iteration-order residuals — added to
     *     `AcceptedDivergences` (category A).
+    *   - 2026-05-12 (Fi1/Fi2 + compile gate: F-alt-output-cast-targets-nonexistent
+    *     pass-through, F-covariant-field-type-narrowing intersect, generic
+    *     signature key fix, Adt-Circe wiring inside service outputs): 23.
+    *     `GoldenCompile` now drives the Scala backend through `TyperImpl.NewTyper`
+    *     so the on-disk Layer A Scala goldens compile as new-typer output, and
+    *     the harness's standard `Compile/compile` becomes the type-error gate.
+    *     One residual cross-domain mixin defect (D1 / aliases→aliases2 `M2.f2`)
+    *     is the next compile-gate stop — its fix requires plumbing cross-domain
+    *     resolved `FlatStruct` lookups into Phase 6 (StructuralFlattener).
     */
-  private val SubstantiveBaseline: Int = 24
+  private val SubstantiveBaseline: Int = 23
 
   private def keyOf(id: ModuleId): String =
     (id.path :+ id.name).mkString("/")
