@@ -36,6 +36,20 @@ import izumi.idealingua.model.il.ast.typed.DomainMetadata
   *                            owning user type's `TypeId`.
   * @param flattenedStructs    Pre-materialised flat struct for every
   *                            `StructureId` (DTO + Interface).  O(1) lookup.
+  * @param crossDomainFlattenedStructs
+  *                            Pre-materialised flat struct for foreign
+  *                            `StructureId`s that this domain references as
+  *                            cross-domain mixin ancestors. Populated by
+  *                            `StructuralFlattener` via the foreign-mesh
+  *                            harvest path (PR-02 IMPL-7a.2-Fj). Renderers
+  *                            consult this map as a fallback when a foreign
+  *                            interface's own structure is needed (e.g. the
+  *                            TS `to<Iface>Serialized` body for a
+  *                            cross-domain mixin slice).  Kept separate from
+  *                            `flattenedStructs` so iterators that enumerate
+  *                            local structs (e.g. cast-similar peer
+  *                            detection, anyval candidate scan) do not
+  *                            accidentally surface foreign entries.
   * @param parents             Maps each structural `TypeId` to the set of
   *                            `InterfaceId`s it directly or transitively
   *                            extends.
@@ -60,6 +74,7 @@ final case class Domain(
   ephemeralsOf: Map[TypeId, Set[TypeId]],
   ephemeralOwner: Map[TypeId, TypeId],
   flattenedStructs: Map[StructureId, FlatStruct],
+  crossDomainFlattenedStructs: Map[StructureId, FlatStruct] = Map.empty,
   parents: Map[TypeId, Set[InterfaceId]],
   implementingDtos: Map[InterfaceId, Set[DTOId]],
   loops: Set[Cycle[TypeId]],

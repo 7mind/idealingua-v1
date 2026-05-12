@@ -163,9 +163,25 @@ object DomainTSStruct {
     * legacy `Struct` shape from `Domain.flattenedStructs(i.id)` plus the
     * interface's declared superclasses — see `fromFlat` for the per-step
     * rationale.
+    *
+    * Cross-domain fallback (PR-02 IMPL-10b-fix): when `i` lives in another
+    * domain (e.g. the `M2` interface aliased into `idltest.aliases#D1`
+    * via `idltest.aliases2#M2`), the local `flattenedStructs` map has no
+    * entry — the foreign interface's `FlatStruct` is owned by its own
+    * domain's flattener pass. `StructuralFlattener` mirrors the foreign
+    * harvest into `Domain.crossDomainFlattenedStructs`; consult it here so
+    * the emitted `to<Iface>Serialized` body contains the foreign mixin's
+    * fields instead of being empty (the visible defect was `D1.toM2Serialized`
+    * dropping `f2`). Foreign supers are reconstructed empty when the
+    * foreign `Interface` def isn't in the local `userTypes` map — the
+    * superclasses list is only used to compute the `extends ...` clause for
+    * `<Iface>StructSerialized`, which the cross-domain caller never emits
+    * (it only reads `Struct.all`).
     */
   def structureOf(domain: Domain, i: InterfaceId): izumi.idealingua.model.typespace.structures.Struct = {
-    val flat = domain.flattenedStructs.getOrElse(i, FlatStruct(i, List.empty, List.empty, List.empty))
+    val flat = domain.flattenedStructs.get(i)
+      .orElse(domain.crossDomainFlattenedStructs.get(i))
+      .getOrElse(FlatStruct(i, List.empty, List.empty, List.empty))
     val supers = domain.userTypes.get(i) match {
       case Some(iface: NewTypeDef.Interface) => iface.struct.superclasses
       case _ => izumi.idealingua.model.il.ast.typed.Super.empty

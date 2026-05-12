@@ -361,17 +361,32 @@ object StructuralFlattener {
       }
       acc.toSet
     }
+    // Foreign-harvested views also get a flat struct, but in a separate map
+    // so local-only iterators (cast-similar peer scan, anyval candidate
+    // detection) do not accidentally surface foreign entries. The TS
+    // renderer falls back to `Domain.crossDomainFlattenedStructs` when a
+    // foreign interface's own structure is required (e.g. the
+    // `to<Iface>Serialized` slice body for a cross-domain mixin) —
+    // PR-02 IMPL-10b-fix.
+    val foreignFlatBuf = mutable.LinkedHashMap.empty[StructureId, FlatStruct]
+    // Foreign-domain diagnostics are owned by the foreign domain's pipeline
+    // pass (mirrors the foreign-harvest comment above); discard them here to
+    // avoid double-reporting.
+    val foreignDiagSink = mutable.ArrayBuffer.empty[Diagnostic]
     views.keys.foreach { id =>
       if (localStructIds.contains(id)) {
         flatBuf.update(id, flatten(id, viewsMap, rd, directSupers, parentsMap, diagBuf))
+      } else if (id.path.domain != rd.id) {
+        foreignFlatBuf.update(id, flatten(id, viewsMap, rd, directSupers, parentsMap, foreignDiagSink))
       }
     }
 
     rd.copy(
-      parents          = parentsBuf.toMap,
-      implementingDtos = implementingDtos,
-      flattenedStructs = flatBuf.toMap,
-      diagnostics      = rd.diagnostics ++ Diagnostics(diagBuf.toVector),
+      parents                     = parentsBuf.toMap,
+      implementingDtos            = implementingDtos,
+      flattenedStructs            = flatBuf.toMap,
+      crossDomainFlattenedStructs = foreignFlatBuf.toMap,
+      diagnostics                 = rd.diagnostics ++ Diagnostics(diagBuf.toVector),
     )
   }
 

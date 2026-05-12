@@ -73,6 +73,7 @@ final case class ResolvedDomain(
   consts: List[RawConst],
   loops: Set[Cycle[TypeId]] = Set.empty,
   flattenedStructs: Map[StructureId, FlatStruct] = Map.empty,
+  crossDomainFlattenedStructs: Map[StructureId, FlatStruct] = Map.empty,
   parents: Map[TypeId, Set[InterfaceId]] = Map.empty,
   implementingDtos: Map[InterfaceId, Set[DTOId]] = Map.empty,
   ephemeralsOf: Map[TypeId, Set[TypeId]] = Map.empty,

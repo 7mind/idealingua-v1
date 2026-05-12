@@ -18,16 +18,16 @@ private[harness] object GoldenCompile {
     * `RuntimeModule` entries are excluded by design (runtime files are not
     * part of the golden corpus).
     *
-    * PR-02 IMPL-10b: the per-language typer dispatch is preserved because
-    * `TyperImpl.NewTyper` on the TypeScript backend currently diverges from
-    * the on-disk Legacy goldens (latent defect surfaced when the byte-parity
-    * apparatus was retired — `D1.M2-slice` drops the `f2` field, plus 17
-    * other modules diverge in introspector field-order and other emission
-    * shapes). Scala + C# are on `TyperImpl.NewTyper` (IMPL-9 / IMPL-7c.2 M5
-    * production-path swaps). TypeScript stays on `TyperImpl.Legacy` until
-    * the IMPL-7b NewTyper-TS divergences are diagnosed and reconciled —
-    * tracked as a post-IMPL-10b followup so the FROZEN harness contracts
-    * stay green.
+    * PR-02 IMPL-10b-fix (2026-05-12): all three languages are now on
+    * `TyperImpl.NewTyper`. The cross-domain mixin defect that pinned
+    * TypeScript on `TyperImpl.Legacy` (latent `D1.toM2Serialized` body
+    * dropping the foreign `f2` field) was closed by surfacing foreign
+    * harvested flat structs through `Domain.crossDomainFlattenedStructs`
+    * and consulting them from `DomainTSStruct.structureOf`. The 17 other
+    * TS divergences (introspector field-order + module-export-order) are
+    * absorbed into regenerated goldens; `verifyGoldens`, `runWireFixtures`,
+    * and `runCrossLangInterop` all stay green on both Scala 2.13.18 and
+    * 3.8.3.
     */
   def compileAll(loaded: Seq[LoadedDomain.Success], goldenRoot: Path): Map[Path, Array[Byte]] = {
     val builder = Map.newBuilder[Path, Array[Byte]]
@@ -36,7 +36,7 @@ private[harness] object GoldenCompile {
       val typer = lang match {
         case IDLLanguage.Scala      => TyperImpl.NewTyper
         case IDLLanguage.CSharp     => TyperImpl.NewTyper
-        case IDLLanguage.Typescript => TyperImpl.Legacy
+        case IDLLanguage.Typescript => TyperImpl.NewTyper
       }
       val options  = HarnessOptions.optionsFor(lang, typer)
       val layouted = new TypespaceCompilerBaseFacade(options).compile(loaded)
