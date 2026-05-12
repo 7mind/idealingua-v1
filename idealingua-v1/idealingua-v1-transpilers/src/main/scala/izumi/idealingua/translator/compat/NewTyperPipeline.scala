@@ -35,7 +35,7 @@ object NewTyperPipeline {
 
     val family   = IdealinguaFamilyManager(loaded)
     val scoped   = ScopeBuilder(parsed.id, loaded, family)
-    val resolved = NameResolver(scoped)
+    val resolved = NameResolver(scoped, family)
     val dealiased    = AliasDealiaser(resolved)
     val kindChecked  = KindChecker(dealiased)
     val withCycles   = CycleDetector(kindChecked)

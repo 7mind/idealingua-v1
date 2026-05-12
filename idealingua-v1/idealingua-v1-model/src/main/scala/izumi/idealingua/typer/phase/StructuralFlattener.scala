@@ -89,11 +89,17 @@ object StructuralFlattener {
       implBuf.view.mapValues(_.toSet).toMap
 
     // ----- mixin/missing-mixin check -----
+    // Only flag local supertypes; cross-domain supertypes (`sup.path.domain
+    // != rd.id`) are validated by the foreign domain's own typer pass and
+    // their structs are reached through the imports graph at flatten time.
+    // Mirrors the legacy recursive `getDomain(domainId(out.path.toPackage))`
+    // dispatch in `IDLTyper.fixSimpleId` — same-domain entries go through
+    // the local mapping/index, others are delegated to the foreign typer.
     directSupers.foreach {
       case (owner, sups) =>
         sups.foreach {
           sup =>
-            if (!rd.userTypes.contains(sup)) {
+            if (sup.path.domain == rd.id && !rd.userTypes.contains(sup)) {
               diagBuf += Diagnostic.MissingMixin(owner, sup, positionOf(rd, owner))
             }
         }

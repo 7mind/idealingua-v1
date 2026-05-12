@@ -23,31 +23,31 @@ final class ScalaTyperParitySpec extends AnyFunSuite {
 
   /** Fixtures excluded from the parity comparison.
     *
-    * These are IR-phase divergences (Phase 6 StructuralFlattener / Phase 2
-    * NameResolver / Phase 8 ConstValueTyper / Phase 12 Validator) — not
-    * Scala translator-port divergences.
+    * These are IR-phase divergences (Phase 6 StructuralFlattener / Phase 8
+    * ConstValueTyper / Phase 12 Validator) — not Scala translator-port
+    * divergences.
     *
     *   - `{idltest.inheritance}`: covariant field overrides flagged
     *     FieldNameConflict by new StructuralFlattener. Legacy accepts.
     *     F-followup IMPL-7a.2-F2.
     *   - `{idltest.consts}`: top-level const value categories rejected
     *     by new ConstValueTyper (BadConstValue). F-followup IMPL-7a.2-F3.
-    *   - `{izumi.test.clashing}`: cross-domain type references rejected
-    *     by new NameResolver (UnknownTypeRef). F-followup IMPL-7a.2-F4.
-    *   - `{idltest.aliases}`, `{izumi.test.domain02}`, `{idltest.services}`:
-    *     additional IR-phase rejections. See test output diagnostics if
-    *     re-enabled. F-followups IMPL-7a.2-F5a/F5b/F5c.
+    *   - `{idltest.services}`: PrimitiveAdtMember/DuplicateAdtBranch on
+    *     synthesized alternative-output ADTs. F-followup IMPL-7a.2-F5c.
     *
     * Removed 2026-05-12 after CycleDetector container-indirection fix:
     *   - `{idltest.json}` (F1) — recursive `JSONLike` ADT now passes.
     *   - `{idltest.ast}`  (F5d) — recursive AST through `opt[AST]` now passes.
+    *
+    * Removed 2026-05-12 after NameResolver cross-domain-scope fix
+    * (`PR-02 IMPL-2/3-fix`):
+    *   - `{izumi.test.clashing}` (F4)  — sub-domain `#`-qualified refs.
+    *   - `{idltest.aliases}`     (F5a) — cross-domain alias targets.
+    *   - `{izumi.test.domain02}` (F5b) — selective import + identity alias.
     */
   private val excludedDomainIds: Set[String] = Set(
     "{idltest.inheritance}",
     "{idltest.consts}",
-    "{izumi.test.clashing}",
-    "{idltest.aliases}",
-    "{izumi.test.domain02}",
     "{idltest.services}",
   )
 

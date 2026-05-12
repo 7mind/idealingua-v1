@@ -8,7 +8,7 @@ import org.scalatest.funsuite.AnyFunSuite
   * pipeline. Complements `ScalaTyperParitySpec` (which excludes them as
   * F-followups IMPL-7a.2-F2..F5c).
   *
-  * The 6 expected-rejected domains are listed below. The spec is *positive*:
+  * The 3 expected-rejected domains are listed below. The spec is *positive*:
   * it asserts the new typer rejects each one and that the failure message
   * mentions the expected diagnostic kind. Captured messages are appended to
   * the assertion output so per-domain triage stays visible in CI logs.
@@ -17,9 +17,13 @@ import org.scalatest.funsuite.AnyFunSuite
   * `expectsRejection` will fail loudly, signalling that the exclusion list
   * in `ScalaTyperParitySpec` should be trimmed accordingly.
   *
-  * Note: `{idltest.json}` (F1) and `{idltest.ast}` (F5d) were removed from
-  * this list on 2026-05-12 after the CycleDetector container-indirection
-  * fix landed — both now pass the new typer cleanly.
+  * History:
+  *   - `{idltest.json}` (F1) and `{idltest.ast}` (F5d) removed 2026-05-12
+  *     after the CycleDetector container-indirection fix landed.
+  *   - `{izumi.test.clashing}` (F4), `{idltest.aliases}` (F5a),
+  *     `{izumi.test.domain02}` (F5b) removed 2026-05-12 after the
+  *     NameResolver cross-domain-scope + alias-as-mixin dealias fix landed
+  *     (`PR-02 IMPL-2/3-fix`). All three are now accepted by the new typer.
   */
 final class TyperDiagnosticsSpec extends AnyFunSuite {
   private val repoRoot   = HarnessCorpus.repoRootForTests()
@@ -29,13 +33,10 @@ final class TyperDiagnosticsSpec extends AnyFunSuite {
   private val expectations: Seq[(String, String)] = Seq(
     "{idltest.inheritance}"   -> "FieldNameConflict",
     "{idltest.consts}"        -> "BadConstValue",
-    "{izumi.test.clashing}"   -> "UnknownTypeRef",
-    "{idltest.aliases}"       -> "",
-    "{izumi.test.domain02}"   -> "",
     "{idltest.services}"      -> "",
   )
 
-  test("new typer rejects the 6 documented F-followup domains and captures per-domain diagnostics") {
+  test("new typer rejects the 3 documented F-followup domains and captures per-domain diagnostics") {
     val fullCorpus = HarnessCorpus.loadCorpus(corpusRoot)
     val byId       = fullCorpus.map(d => d.typespace.domain.id.toString -> d).toMap
 
@@ -66,7 +67,7 @@ final class TyperDiagnosticsSpec extends AnyFunSuite {
     // Always print the captured diagnostics — info() so they survive in CI.
     info(capturedLines.mkString("\n"))
 
-    // Fail loudly if any of the 8 stopped being rejected — that's a stale exclusion.
+    // Fail loudly if any of the 3 stopped being rejected — that's a stale exclusion.
     if (unexpectedlyAccepted.nonEmpty) {
       fail(s"The following domains are no longer rejected by NewTyperPipeline and should be re-enabled in ScalaTyperParitySpec: ${unexpectedlyAccepted.mkString(", ")}\n\nFull capture:\n${capturedLines.mkString("\n")}")
     }

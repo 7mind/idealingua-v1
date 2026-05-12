@@ -4,7 +4,8 @@ import izumi.idealingua.model.common.TypeId._
 import izumi.idealingua.model.common._
 import izumi.idealingua.model.il.ast.InputPosition
 import izumi.idealingua.model.il.ast.raw.defns._
-import izumi.idealingua.model.il.ast.typed.{AdtMember, DefMethod, DomainMetadata, EnumMember, Field, IdField, NodeMeta, Anno, SimpleStructure, Super, TypedStream, ConstValue}
+import izumi.idealingua.model.il.ast.raw.domains.DomainMeshLoaded
+import izumi.idealingua.model.il.ast.typed.{AdtMember, Anno, ConstValue, DefMethod, DomainMetadata, EnumMember, Field, IdField, NodeMeta, SimpleStructure, Super, TypedStream}
 import izumi.idealingua.typer.ir._
 import izumi.idealingua.typer.phase.ScopeBuilder.ScopedDomain
 
@@ -36,8 +37,16 @@ object NameResolver {
     */
   private val Placeholder: TypeId = Primitive.TString
 
-  def apply(scoped: ScopedDomain): ResolvedDomain = {
-    val ctx = new Ctx(scoped)
+  /** Test-friendly overload: derive a `FamilyIndex` from the scoped domain's
+    * underlying `DomainMeshLoaded`.  Production callers
+    * (`NewTyperPipeline`) pass the family index explicitly so cross-domain
+    * lookups consult the same index that Phase 0 built.
+    */
+  def apply(scoped: ScopedDomain): ResolvedDomain =
+    apply(scoped, IdealinguaFamilyManager(scoped.raw))
+
+  def apply(scoped: ScopedDomain, family: FamilyIndex): ResolvedDomain = {
+    val ctx = new Ctx(scoped, family)
 
     val members = mutable.LinkedHashMap.empty[TypeId, Member]
     val userTypes = mutable.LinkedHashMap.empty[TypeId, TypeDef]
@@ -117,12 +126,32 @@ object NameResolver {
     * caller can pre-seed `members` with `Member.Builtin` entries, and
     * accumulates phase-2 diagnostics.
     */
-  private final class Ctx(scoped: ScopedDomain) {
+  private final class Ctx(scoped: ScopedDomain, family: FamilyIndex) {
     val diagBuf: mutable.ArrayBuffer[Diagnostic] = mutable.ArrayBuffer.empty
     val referencedBuiltins: mutable.LinkedHashSet[Primitive] = mutable.LinkedHashSet.empty
 
     private val localNames = scoped.localNames
     private val importedNames = scoped.importedNames
+
+    /** Lazy cache of per-domain exported simple-name → TypeId maps.  Populated on
+      * first cross-domain reference into a given domain.  Closes F4 / F5a / F5b
+      * (NameResolver did not consult the family index for `domain#Type` refs).
+      */
+    private val familyScopes = mutable.HashMap.empty[DomainId, Map[String, TypeId]]
+
+    private def familyScope(d: DomainId): Map[String, TypeId] =
+      familyScopes.getOrElseUpdate(d, family.domains.get(d).map(collectExportedNames).getOrElse(Map.empty))
+
+    /** Mirrors `ScopeBuilder.collectLocalNames` (private), kept here to avoid a
+      * cross-object dependency and keep the resolver self-contained.  Both
+      * compute simple-name → fully-qualified-TypeId from the raw type list.
+      */
+    private def collectExportedNames(domain: DomainMeshLoaded): Map[String, TypeId] = {
+      domain.types.iterator.collect {
+        case d: RawTypeDef.WithId => d.id.name -> (d.id: TypeId)
+        case d: RawTypeDef.NewType => d.id.name -> (d.id.toAliasId: TypeId)
+      }.toMap
+    }
 
     def fixEnum(d: RawTypeDef.Enumeration): TypeDef.Enum =
       TypeDef.Enum(d.id, d.struct.members.map(m => EnumMember(m.value, fixMeta(m.meta))), fixMeta(d.meta))
@@ -223,11 +252,55 @@ object NameResolver {
         fields        = s.fields.map(fixField),
         removedFields = s.removedFields.map(fixField),
         superclasses  = Super(
-          interfaces      = s.interfaces,
+          interfaces      = s.interfaces.map(resolveInterface),
           concepts        = s.concepts.map(m => resolveStructure(m)),
           removedConcepts = s.removedConcepts.map(m => resolveStructure(m)),
         ),
       )
+    }
+
+    /** Re-target a parser-produced `InterfaceId` (which carries
+      * `DomainId.Undefined` and only the bare name) to a definite id via
+      * `resolveRef`.  If the name resolves to an `AliasId` whose local target
+      * is a `StructureId`, dealias one hop so downstream phases see the
+      * concrete interface/DTO id — mirrors the legacy `fixSimpleId` arm at
+      * `IDLTyper.scala:549-561` that special-cases alias entries in the
+      * type-id index.  Multi-hop alias chains are handled by Phase 3
+      * (`AliasDealiaser`); a single hop is enough for the common case
+      * (`alias A = M ; data D { & A }`).
+      */
+    private def resolveInterface(t: InterfaceId): InterfaceId = {
+      val name = t.name
+      val refPkg: Package =
+        if (t.path.domain == DomainId.Undefined) Seq.empty
+        else t.path.toPackage
+      val resolved = resolveRef(IndefiniteId(refPkg, name), InputPosition.Undefined)
+      resolved match {
+        case i: InterfaceId => i
+        case a: AliasId =>
+          dealiasOneHop(a) match {
+            case i: InterfaceId => i
+            case other =>
+              diagBuf += Diagnostic.BadMixinTarget(scoped.raw.id.toTypeId, other, InputPosition.Undefined)
+              t.copy(path = TypePath(scoped.domainId, Seq.empty))
+          }
+        case other =>
+          diagBuf += Diagnostic.BadMixinTarget(scoped.raw.id.toTypeId, other, InputPosition.Undefined)
+          t.copy(path = TypePath(scoped.domainId, Seq.empty))
+      }
+    }
+
+    /** Resolve a single alias hop using the raw type index.  Returns the
+      * alias's syntactic target as a `TypeId` (the immediate `.target` of the
+      * `RawTypeDef.Alias`).  Used by `resolveInterface` / `resolveStructure`
+      * to handle `& AliasOfMixin` references; multi-hop chasing is the job of
+      * Phase 3.
+      */
+    private def dealiasOneHop(a: AliasId): TypeId = {
+      scoped.index.get(a) match {
+        case Some(d: RawTypeDef.Alias) => resolveRef(d.target, InputPosition.Undefined)
+        case _                          => a
+      }
     }
 
     private def fixSimpleStructure(s: RawSimpleStructure, @scala.annotation.unused pos: InputPosition): SimpleStructure =
@@ -255,6 +328,16 @@ object NameResolver {
       val id = IndefiniteId(m.pkg, m.name)
       resolveRef(id, InputPosition.Undefined) match {
         case s: StructureId => s
+        case a: AliasId =>
+          // Mirror the legacy `fixSimpleId` alias-dealias arm
+          // (`IDLTyper.scala:549-561`): `+ AliasOfMixin` is valid when the
+          // alias targets a structural type.
+          dealiasOneHop(a) match {
+            case s: StructureId => s
+            case other =>
+              diagBuf += Diagnostic.BadMixinTarget(scoped.raw.id.toTypeId, other, InputPosition.Undefined)
+              DTOId(TypePath(scoped.domainId, Seq.empty), s"<bad-mixin:${m.name}>")
+          }
         case other          =>
           diagBuf += Diagnostic.BadMixinTarget(scoped.raw.id.toTypeId, other, InputPosition.Undefined)
           // synthesize a sentinel DTOId so IR stays well-formed
@@ -270,15 +353,27 @@ object NameResolver {
           val _ = referencedBuiltins.add(p)
           p
         } else {
-          // Lookup order mirrors the legacy IDLPostTyper: when the reference is
-          // unqualified or names the current domain, search local names first
-          // and fall back to imports; when fully qualified to a different
-          // package, search imports directly. Unresolved names produce a
-          // diagnostic and a placeholder (non-fatal per C8/L1).
+          // Lookup order mirrors the legacy IDLPostTyper.lookupAnother /
+          // lookupLocal split (IDLTyper.scala:377-407):
+          //   - empty pkg or pkg == this domain ⇒ search local names then imports.
+          //   - pkg names a different domain  ⇒ consult the cross-domain family
+          //     index for that domain's exported types (closes F4/F5a/F5b-part1),
+          //     then fall back to imports / local names so a fully-qualified
+          //     reference still resolves when the family doesn't carry the
+          //     domain (single-domain test fixtures).
+          // Unresolved names produce a diagnostic and a placeholder (non-fatal per C8/L1).
           val isLocalCandidate = ref.pkg.isEmpty || ref.pkg == scoped.domainId.toPackage
           val candidate: Option[TypeId] =
-            if (isLocalCandidate) localNames.get(ref.name).orElse(importedNames.get(ref.name))
-            else importedNames.get(ref.name).orElse(localNames.get(ref.name))
+            if (isLocalCandidate) {
+              localNames.get(ref.name).orElse(importedNames.get(ref.name))
+            } else {
+              // Derive the referenced DomainId from the qualified package
+              // (matches legacy `DomainId(v.init, v.last)`).
+              val otherDomain = DomainId(ref.pkg.init, ref.pkg.last)
+              familyScope(otherDomain).get(ref.name)
+                .orElse(importedNames.get(ref.name))
+                .orElse(localNames.get(ref.name))
+            }
           candidate match {
             case Some(tid) => tid
             case None =>
