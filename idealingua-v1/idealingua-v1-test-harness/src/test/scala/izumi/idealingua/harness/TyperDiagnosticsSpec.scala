@@ -6,9 +6,9 @@ import org.scalatest.funsuite.AnyFunSuite
 /** PR-02 IMPL-2/3/5 diagnostics: captures the per-domain diagnostic kind +
   * originating phase for each corpus domain rejected by the new typer
   * pipeline. Complements `ScalaTyperParitySpec` (which excludes them as
-  * F-followups IMPL-7a.2-F1..F5).
+  * F-followups IMPL-7a.2-F2..F5c).
   *
-  * The 8 expected-rejected domains are listed below. The spec is *positive*:
+  * The 6 expected-rejected domains are listed below. The spec is *positive*:
   * it asserts the new typer rejects each one and that the failure message
   * mentions the expected diagnostic kind. Captured messages are appended to
   * the assertion output so per-domain triage stays visible in CI logs.
@@ -16,6 +16,10 @@ import org.scalatest.funsuite.AnyFunSuite
   * If a domain stops being rejected (i.e. a fix lands) the assertion in
   * `expectsRejection` will fail loudly, signalling that the exclusion list
   * in `ScalaTyperParitySpec` should be trimmed accordingly.
+  *
+  * Note: `{idltest.json}` (F1) and `{idltest.ast}` (F5d) were removed from
+  * this list on 2026-05-12 after the CycleDetector container-indirection
+  * fix landed — both now pass the new typer cleanly.
   */
 final class TyperDiagnosticsSpec extends AnyFunSuite {
   private val repoRoot   = HarnessCorpus.repoRootForTests()
@@ -23,17 +27,15 @@ final class TyperDiagnosticsSpec extends AnyFunSuite {
 
   /** Per-domain expectation: id → expected diagnostic-kind substring. */
   private val expectations: Seq[(String, String)] = Seq(
-    "{idltest.json}"          -> "NonTerminatingCycle",
     "{idltest.inheritance}"   -> "FieldNameConflict",
     "{idltest.consts}"        -> "BadConstValue",
     "{izumi.test.clashing}"   -> "UnknownTypeRef",
     "{idltest.aliases}"       -> "",
     "{izumi.test.domain02}"   -> "",
     "{idltest.services}"      -> "",
-    "{idltest.ast}"           -> "",
   )
 
-  test("new typer rejects the 8 documented F-followup domains and captures per-domain diagnostics") {
+  test("new typer rejects the 6 documented F-followup domains and captures per-domain diagnostics") {
     val fullCorpus = HarnessCorpus.loadCorpus(corpusRoot)
     val byId       = fullCorpus.map(d => d.typespace.domain.id.toString -> d).toMap
 

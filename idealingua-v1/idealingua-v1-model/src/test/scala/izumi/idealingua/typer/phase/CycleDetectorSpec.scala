@@ -53,6 +53,109 @@ final class CycleDetectorSpec extends AnyFunSpec with Matchers {
       rd.loops.exists(c => !c.terminating) shouldBe true
     }
 
+    it("accepts recursive ADT through container element type (opt)") {
+      // adt A = B; data B { f: opt[A] }  — cycle through opt is terminating
+      val adtId  = AdtId(TypePath(domA, Seq.empty), "A")
+      val dtoId  = DTOId(TypePath(domA, Seq.empty), "B")
+      val adtDef = RawTypeDef.Adt(
+        adtId,
+        List(RawAdt.Member.TypeRef(IndefiniteId(Seq.empty, "B"), None, meta)),
+        meta,
+      )
+      val dtoDef = RawTypeDef.DTO(
+        dtoId,
+        RawStructure(
+          Nil,
+          Nil,
+          Nil,
+          List(RawField(
+            izumi.idealingua.model.common.IndefiniteGeneric(Seq.empty, "opt", List(IndefiniteId(Seq.empty, "A"))),
+            Some("f"),
+            meta,
+          )),
+          Nil,
+        ),
+        meta,
+      )
+      val (input, _) = fixture(List(adtDef, dtoDef), Nil, Map.empty)
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(input))))
+      val rd  = CycleDetector(rd0)
+
+      rd.diagnostics.issues.collect { case d: Diagnostic.CyclicUsage => d } shouldBe empty
+      rd.diagnostics.issues.collect { case d: Diagnostic.NonTerminatingCycle => d } shouldBe empty
+      rd.loops.exists(_.terminating) shouldBe true
+    }
+
+    it("accepts recursive ADT through container element type (list)") {
+      // adt A = B; data B { f: list[A] }
+      val adtId  = AdtId(TypePath(domA, Seq.empty), "A")
+      val dtoId  = DTOId(TypePath(domA, Seq.empty), "B")
+      val adtDef = RawTypeDef.Adt(
+        adtId,
+        List(RawAdt.Member.TypeRef(IndefiniteId(Seq.empty, "B"), None, meta)),
+        meta,
+      )
+      val dtoDef = RawTypeDef.DTO(
+        dtoId,
+        RawStructure(
+          Nil,
+          Nil,
+          Nil,
+          List(RawField(
+            izumi.idealingua.model.common.IndefiniteGeneric(Seq.empty, "list", List(IndefiniteId(Seq.empty, "A"))),
+            Some("f"),
+            meta,
+          )),
+          Nil,
+        ),
+        meta,
+      )
+      val (input, _) = fixture(List(adtDef, dtoDef), Nil, Map.empty)
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(input))))
+      val rd  = CycleDetector(rd0)
+
+      rd.diagnostics.issues.collect { case d: Diagnostic.CyclicUsage => d } shouldBe empty
+      rd.diagnostics.issues.collect { case d: Diagnostic.NonTerminatingCycle => d } shouldBe empty
+      rd.loops.exists(_.terminating) shouldBe true
+    }
+
+    it("accepts recursive ADT through container element type (map value)") {
+      // adt A = B; data B { f: map[str, A] }
+      val adtId  = AdtId(TypePath(domA, Seq.empty), "A")
+      val dtoId  = DTOId(TypePath(domA, Seq.empty), "B")
+      val adtDef = RawTypeDef.Adt(
+        adtId,
+        List(RawAdt.Member.TypeRef(IndefiniteId(Seq.empty, "B"), None, meta)),
+        meta,
+      )
+      val dtoDef = RawTypeDef.DTO(
+        dtoId,
+        RawStructure(
+          Nil,
+          Nil,
+          Nil,
+          List(RawField(
+            izumi.idealingua.model.common.IndefiniteGeneric(
+              Seq.empty,
+              "map",
+              List(IndefiniteId(Seq.empty, "str"), IndefiniteId(Seq.empty, "A")),
+            ),
+            Some("f"),
+            meta,
+          )),
+          Nil,
+        ),
+        meta,
+      )
+      val (input, _) = fixture(List(adtDef, dtoDef), Nil, Map.empty)
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(input))))
+      val rd  = CycleDetector(rd0)
+
+      rd.diagnostics.issues.collect { case d: Diagnostic.CyclicUsage => d } shouldBe empty
+      rd.diagnostics.issues.collect { case d: Diagnostic.NonTerminatingCycle => d } shouldBe empty
+      rd.loops.exists(_.terminating) shouldBe true
+    }
+
     it("flags cyclic interface inheritance as CyclicInheritance") {
       // I1 extends I2; I2 extends I1
       val i1Id = InterfaceId(TypePath(domA, Seq.empty), "I1")

@@ -16,8 +16,11 @@ import scala.collection.mutable
   *     OR an inheritance reference (interface `extends`, DTO mixin).  Direct
   *     edges contribute to "non-terminating" cycles.
   *   - **container-broken**: the reference passes through `Generic.TList`,
-  *     `Generic.TSet`, `Generic.TOption`, or `Generic.TMap.valueType`.  A
-  *     cycle whose every back-edge is container-broken is "terminating".
+  *     `Generic.TSet`, `Generic.TOption`, or `Generic.TMap.valueType`, OR
+  *     it is an ADT alternative edge (selecting one alternative of a sum
+  *     is structurally an indirection — recursion is well-founded as long
+  *     as at least one alternative terminates).  A cycle whose every
+  *     back-edge is container-broken is "terminating".
   *
   * Diagnostics:
   *   - `CyclicInheritance` — every edge in the cycle is an inheritance edge.
@@ -111,7 +114,7 @@ object CycleDetector {
       case s: DefMethod.Output.Struct        => addSimpleStructure(owner, s.struct)
       case s: DefMethod.Output.Singular      => addRef(owner, s.typeId, EdgeKind.Direct)
       case _: DefMethod.Output.Void          => ()
-      case a: DefMethod.Output.Algebraic     => a.alternatives.foreach(m => addRef(owner, m.typeId, EdgeKind.Direct))
+      case a: DefMethod.Output.Algebraic     => a.alternatives.foreach(m => addRef(owner, m.typeId, EdgeKind.Container))
       case alt: DefMethod.Output.Alternative =>
         addOutputEdges(owner, alt.success)
         addOutputEdges(owner, alt.failure)
@@ -142,7 +145,11 @@ object CycleDetector {
         }
 
       case adt: TypeDef.Adt =>
-        adt.alternatives.foreach(m => addRef(adt.id, m.typeId, EdgeKind.Direct))
+        // ADT alternative edges are cycle-breaking: selecting a branch of a
+        // sum is an indirection (well-founded if any alternative terminates),
+        // matching the legacy CyclicUsageRule which only reports an ADT cycle
+        // when *every* alternative is itself cyclic.
+        adt.alternatives.foreach(m => addRef(adt.id, m.typeId, EdgeKind.Container))
 
       case _: TypeDef.Enum  => ()
       case _: TypeDef.Alias => ()

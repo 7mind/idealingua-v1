@@ -23,33 +23,32 @@ final class ScalaTyperParitySpec extends AnyFunSuite {
 
   /** Fixtures excluded from the parity comparison.
     *
-    * These are IR-phase divergences (Phase 8 CycleDetector / Phase 9
-    * NameResolver / Phase ConstValueTyper / Phase 12 Validator) — not
+    * These are IR-phase divergences (Phase 6 StructuralFlattener / Phase 2
+    * NameResolver / Phase 8 ConstValueTyper / Phase 12 Validator) — not
     * Scala translator-port divergences.
     *
-    *   - `{idltest.json}`: recursive `JSONLike` ADT rejected by new
-    *     CycleDetector (NonTerminatingCycle / CyclicUsage). Legacy
-    *     accepts. F-followup IMPL-7a.2-F1.
     *   - `{idltest.inheritance}`: covariant field overrides flagged
-    *     FieldNameConflict by new Validator. Legacy accepts. F-followup
-    *     IMPL-7a.2-F2.
+    *     FieldNameConflict by new StructuralFlattener. Legacy accepts.
+    *     F-followup IMPL-7a.2-F2.
     *   - `{idltest.consts}`: top-level const value categories rejected
     *     by new ConstValueTyper (BadConstValue). F-followup IMPL-7a.2-F3.
     *   - `{izumi.test.clashing}`: cross-domain type references rejected
     *     by new NameResolver (UnknownTypeRef). F-followup IMPL-7a.2-F4.
-    *   - `{idltest.aliases}`, `{izumi.test.domain02}`, `{idltest.services}`,
-    *     `{idltest.ast}`: additional IR-phase rejections. See test output
-    *     diagnostics if re-enabled. F-followup IMPL-7a.2-F5.
+    *   - `{idltest.aliases}`, `{izumi.test.domain02}`, `{idltest.services}`:
+    *     additional IR-phase rejections. See test output diagnostics if
+    *     re-enabled. F-followups IMPL-7a.2-F5a/F5b/F5c.
+    *
+    * Removed 2026-05-12 after CycleDetector container-indirection fix:
+    *   - `{idltest.json}` (F1) — recursive `JSONLike` ADT now passes.
+    *   - `{idltest.ast}`  (F5d) — recursive AST through `opt[AST]` now passes.
     */
   private val excludedDomainIds: Set[String] = Set(
-    "{idltest.json}",
     "{idltest.inheritance}",
     "{idltest.consts}",
     "{izumi.test.clashing}",
     "{idltest.aliases}",
     "{izumi.test.domain02}",
     "{idltest.services}",
-    "{idltest.ast}",
   )
 
   /** Per-domain parity assertion. Each non-excluded domain is compiled
