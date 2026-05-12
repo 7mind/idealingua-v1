@@ -52,9 +52,17 @@ object DomainCastDownExpandExtension {
         }
         val sortedDto = izumi.idealingua.translator.toscala.domain.DomainScalaStruct.fromFlat(dtoId, dtoFlat, supers, ctx.domain)
         val dtoFields = sortedDto.all.map(_.field)
-        val ifaceFieldNames: Set[String] = ifaceFlat.map(_.name)
-        val parentFields = dtoFields.filter(f => ifaceFieldNames.contains(f.name))
-        val localFields  = dtoFields.filterNot(f => ifaceFieldNames.contains(f.name))
+        // IMPL-7a.2-Fi2 (F-covariant-field-type-narrowing): match by FULL Field
+        // value (name + typeId), not by name alone. When the implementor
+        // covariantly overrides a parent field with a narrower type, the
+        // child's Field differs from the parent's Field — it must fall into
+        // `localFields` so the `using(...)` factory exposes a parameter typed
+        // with the narrower type (e.g. `field: CovariantA` for an interface
+        // whose abstract member is `field: Covariant`). Legacy
+        // `StructuralQueriesImpl.converters` (lines 197-214) does the same
+        // intersect over the full Field set.
+        val parentFields = dtoFields.filter(f => ifaceFlat.contains(f))
+        val localFields  = dtoFields.filterNot(f => ifaceFlat.contains(f))
 
         val thisType   = ctx.conv.toScala(i.id)
         val targetType = ctx.conv.toScala(dtoId)
