@@ -39,9 +39,14 @@ object NewTyperPipeline {
     val dealiased    = AliasDealiaser(resolved)
     val kindChecked  = KindChecker(dealiased)
     val withCycles   = CycleDetector(kindChecked)
-    val flattened    = StructuralFlattener(withCycles)
-    val withEphem    = EphemeralSynthesizer(flattened)
-    val withConsts   = ConstValueTyper(withEphem)
+    // F8 fix (IMPL-7a.2): EphemeralSynthesizer must run before
+    // StructuralFlattener so that synthesized input/output/mirror DTOs are
+    // visible to the flattener and receive a `FlatStruct` entry. The
+    // flattener now sources structs from both `userTypes` and
+    // `members.collect{ case Ephemeral(...) }` in one pass.
+    val withEphem    = EphemeralSynthesizer(withCycles)
+    val flattened    = StructuralFlattener(withEphem)
+    val withConsts   = ConstValueTyper(flattened)
     val withFinger   = FingerprintCalculator(withConsts)
     val rooted       = RootExtractor(withFinger)
     val domain       = Assembler(rooted)

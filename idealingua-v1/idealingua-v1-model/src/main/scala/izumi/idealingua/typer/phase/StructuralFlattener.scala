@@ -3,6 +3,7 @@ package izumi.idealingua.typer.phase
 import izumi.idealingua.model.common.TypeId._
 import izumi.idealingua.model.common.{Primitive, StructureId, TypeId}
 import izumi.idealingua.model.il.ast.InputPosition
+import izumi.idealingua.model.il.ast.typed.Field
 import izumi.idealingua.typer.ir._
 
 import scala.collection.mutable
@@ -40,20 +41,58 @@ import scala.collection.mutable
   */
 object StructuralFlattener {
 
+  /** Owner-resolved view of a structural type for BFS flattening: its
+    * direct fields, its declared removed fields, and its supertype list.
+    * Used so the BFS walker can treat user DTOs/Interfaces and synthesized
+    * ephemeral DTOs uniformly (F8 fix — IMPL-7a.2).
+    */
+  private final case class StructView(
+    fields: List[Field],
+    removedFields: List[Field],
+    supers: List[StructureId],
+  )
+
   def apply(rd: ResolvedDomain): ResolvedDomain = {
     val diagBuf = mutable.ArrayBuffer.empty[Diagnostic]
     val parentsBuf = mutable.LinkedHashMap.empty[TypeId, Set[InterfaceId]]
     val flatBuf = mutable.LinkedHashMap.empty[StructureId, FlatStruct]
 
-    // ----- Pre-collect direct supertypes -----
-    val directSupers = mutable.LinkedHashMap.empty[StructureId, List[StructureId]]
+    // ----- Collect every flattenable struct (user DTOs/Interfaces +
+    //       synthesized ephemeral DTOs from Phase 7). -----
+    //
+    // F8 fix (IMPL-7a.2): ephemeral input/output DTOs synthesized by
+    // `EphemeralSynthesizer` are kept under `Member.Ephemeral` in
+    // `rd.members` (not in `rd.userTypes`). Prior to this fix the
+    // flattener only consulted `rd.userTypes` and ephemerals had no
+    // `FlatStruct` entry, which made the Scala renderer fall back to
+    // an empty field list (`DomainServiceMethodProduct.scala:200-203`)
+    // and emit every service method with zero parameters.
+    val views = mutable.LinkedHashMap.empty[StructureId, StructView]
     rd.userTypes.values.foreach {
       case dto: TypeDef.Dto =>
-        directSupers.update(dto.id, dto.struct.superclasses.interfaces ++ dto.struct.superclasses.concepts)
+        views.update(
+          dto.id,
+          StructView(dto.struct.fields, dto.struct.removedFields, dto.struct.superclasses.interfaces ++ dto.struct.superclasses.concepts),
+        )
       case ifc: TypeDef.Interface =>
-        directSupers.update(ifc.id, ifc.struct.superclasses.interfaces ++ ifc.struct.superclasses.concepts)
+        views.update(
+          ifc.id,
+          StructView(ifc.struct.fields, ifc.struct.removedFields, ifc.struct.superclasses.interfaces ++ ifc.struct.superclasses.concepts),
+        )
       case _ => ()
     }
+    rd.members.values.foreach {
+      case Member.Ephemeral(eph) =>
+        views.update(
+          eph.id,
+          StructView(eph.struct.fields, eph.struct.removedFields, eph.struct.superclasses.interfaces ++ eph.struct.superclasses.concepts),
+        )
+      case _ => ()
+    }
+
+    // ----- Pre-collect direct supertypes -----
+    val directSupers = mutable.LinkedHashMap.empty[StructureId, List[StructureId]]
+    views.foreach { case (id, v) => directSupers.update(id, v.supers) }
 
     // ----- parents map: transitive InterfaceId closure (cycles short-circuit) -----
     def transitiveParents(start: StructureId): Set[InterfaceId] = {
@@ -76,6 +115,10 @@ object StructuralFlattener {
       acc.toSet
     }
 
+    // `parents`/`implementingDtos` cover only user-declared structural types.
+    // Ephemerals participate in flattening (above) but stay out of these
+    // inverse-index maps so renderer queries that take "user types only" do
+    // not see synthesized mirrors.
     rd.userTypes.values.foreach {
       case dto: TypeDef.Dto =>
         parentsBuf.update(dto.id, transitiveParents(dto.id))
@@ -116,13 +159,13 @@ object StructuralFlattener {
     }
 
     // ----- BFS flatten -----
+    // BFS walks every flattenable struct — both user-declared and
+    // synthesized ephemerals — so renderer lookups against `flattenedStructs`
+    // are total (F8 fix).
     val parentsMap: Map[TypeId, Set[InterfaceId]] = parentsBuf.toMap
-    rd.userTypes.values.foreach {
-      case dto: TypeDef.Dto =>
-        flatBuf.update(dto.id, flatten(dto.id, rd, directSupers, parentsMap, diagBuf))
-      case ifc: TypeDef.Interface =>
-        flatBuf.update(ifc.id, flatten(ifc.id, rd, directSupers, parentsMap, diagBuf))
-      case _ => ()
+    val viewsMap: Map[StructureId, StructView]    = views.toMap
+    views.keys.foreach { id =>
+      flatBuf.update(id, flatten(id, viewsMap, rd, directSupers, parentsMap, diagBuf))
     }
 
     rd.copy(
@@ -160,6 +203,7 @@ object StructuralFlattener {
 
   private def flatten(
     ownerId: StructureId,
+    views: Map[StructureId, StructView],
     rd: ResolvedDomain,
     directSupers: mutable.LinkedHashMap[StructureId, List[StructureId]],
     parentsMap: Map[TypeId, Set[InterfaceId]],
@@ -176,16 +220,12 @@ object StructuralFlattener {
     while (frontier.nonEmpty) {
       val (cur, distance) = frontier.dequeue()
       if (visited.add(cur)) {
-        rd.userTypes.get(cur) match {
-          case Some(dto: TypeDef.Dto) =>
-            dto.struct.removedFields.foreach(f => removed.add(f.name))
-            dto.struct.fields.foreach(f => all += FlatField(f, cur, distance))
+        views.get(cur) match {
+          case Some(v) =>
+            v.removedFields.foreach(f => removed.add(f.name))
+            v.fields.foreach(f => all += FlatField(f, cur, distance))
             directSupers.getOrElse(cur, Nil).foreach(s => frontier.enqueue(s -> (distance + 1)))
-          case Some(ifc: TypeDef.Interface) =>
-            ifc.struct.removedFields.foreach(f => removed.add(f.name))
-            ifc.struct.fields.foreach(f => all += FlatField(f, cur, distance))
-            directSupers.getOrElse(cur, Nil).foreach(s => frontier.enqueue(s -> (distance + 1)))
-          case _ => ()
+          case None => ()
         }
       }
     }
