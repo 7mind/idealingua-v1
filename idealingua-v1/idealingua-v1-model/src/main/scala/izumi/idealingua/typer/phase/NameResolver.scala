@@ -261,8 +261,8 @@ object NameResolver {
 
     private def toStruct(s: RawStructure): Struct = {
       Struct(
-        fields        = s.fields.map(fixField),
-        removedFields = s.removedFields.map(fixField),
+        fields        = s.fields.map(fixField(_, s.fields.size)),
+        removedFields = s.removedFields.map(fixField(_, s.removedFields.size)),
         superclasses  = Super(
           interfaces      = s.interfaces.map(resolveInterface),
           concepts        = s.concepts.map(m => resolveStructure(m)),
@@ -318,12 +318,12 @@ object NameResolver {
     private def fixSimpleStructure(s: RawSimpleStructure, @scala.annotation.unused pos: InputPosition): SimpleStructure =
       SimpleStructure(
         concepts = s.concepts.map(resolveStructure),
-        fields   = s.fields.map(fixField),
+        fields   = s.fields.map(fixField(_, s.fields.size)),
       )
 
-    private def fixField(f: RawField): Field = {
+    private def fixField(f: RawField, fieldsCount: Int): Field = {
       val tid  = resolveRef(f.typeId, f.meta.position)
-      val name = derivedFieldName(f, tid, fieldsCount = 2)
+      val name = derivedFieldName(f, tid, fieldsCount)
       Field(typeId = tid, name = name, meta = fixMeta(f.meta))
     }
 

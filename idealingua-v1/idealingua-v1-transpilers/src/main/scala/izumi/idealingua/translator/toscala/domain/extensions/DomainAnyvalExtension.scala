@@ -5,6 +5,7 @@ import izumi.idealingua.model.common.TypeId.{AdtId, AliasId, EnumId, IdentifierI
 import izumi.idealingua.model.common.{Builtin, Generic, TypeId}
 import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.translator.toscala.domain.DomainSTContext
+import izumi.idealingua.translator.toscala.types.ScalaStruct
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
 import scala.annotation.{nowarn, tailrec}
@@ -51,6 +52,22 @@ object DomainAnyvalExtension {
         scalarOrEmpty && all.forall(f => canBeAnyValField(ctx, f.typeId))
       case None => false
     }
+    doModify(ctx, "Any", canBeAny)
+  }
+
+  /** Any bases for an arbitrary trait built from a `ScalaStruct`.
+    *
+    * Legacy parity: `AnyvalExtension.handleTrait` runs on every trait built
+    * via `InterfaceRenderer.mkTrait`, including the mirror `Defn` trait
+    * synthesised for DTO companions inside `CompositeRenderer.defns`. The
+    * predicate matches the legacy `withAny(Struct)` arm — single-or-empty
+    * scalar carrier whose every field qualifies as an `AnyVal`-eligible
+    * type.
+    */
+  def withAnyForStruct(ctx: DomainSTContext, struct: ScalaStruct): List[Init] = {
+    val all           = struct.all.map(_.field.field)
+    val scalarOrEmpty = all.size <= 1
+    val canBeAny      = scalarOrEmpty && all.forall(f => canBeAnyValField(ctx, f.typeId))
     doModify(ctx, "Any", canBeAny)
   }
 

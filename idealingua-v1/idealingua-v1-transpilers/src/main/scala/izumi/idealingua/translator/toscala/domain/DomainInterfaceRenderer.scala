@@ -1,8 +1,10 @@
 package izumi.idealingua.translator.toscala.domain
 
 import izumi.idealingua.model.il.ast.typed.{Interfaces, TypeDef => LegacyTypeDef}
+import izumi.idealingua.translator.toscala.domain.extensions.DomainAnyvalExtension
 import izumi.idealingua.translator.toscala.products.CogenProduct.TraitProduct
 import izumi.idealingua.translator.toscala.products.{CogenProduct, RenderableCogenProduct}
+import izumi.idealingua.translator.toscala.tools.ScalaMetaTools._
 import izumi.idealingua.translator.toscala.types.{ClassSource, ScalaStruct, ScalaType}
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
@@ -84,6 +86,10 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
           }
        """
 
-    TraitProduct(qqInterface).defn
+    // Legacy parity: AnyvalExtension.handleTrait runs on EVERY trait built
+    // through mkTrait — top-level interfaces *and* the mirror `Defn` trait
+    // synthesised inside DTO companions. Mirror the prepend here so both
+    // call sites pick it up uniformly.
+    TraitProduct(qqInterface).defn.prependBase(DomainAnyvalExtension.withAnyForStruct(ctx, fields))
   }
 }

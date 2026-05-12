@@ -224,8 +224,11 @@ final class DomainScalaTranslator(
     import ctx.conv._
     val base = ctx.interfaceRenderer.renderInterface(ifc).asInstanceOf[CogenProduct[Defn.Trait]]
 
-    val anyBases = DomainAnyvalExtension.withAnyForInterface(ctx, ifc)
-    val withAny  = base.defn.prependBase(anyBases)
+    // `Any` base for AnyVal-eligible interfaces is now applied inside
+    // `DomainInterfaceRenderer.mkTrait` so the mirror `Defn` traits in DTO
+    // companions also get the prepend (legacy parity). Top-level interface
+    // `defn` from `renderInterface` already carries it.
+    val withAny  = base.defn
 
     val sims               = DomainCastSimilarExtension.mkConvertersForInterface(ctx, ifc)
     val ups                = DomainCastUpExtension.generateUpcastsForInterface(ctx, ifc)
