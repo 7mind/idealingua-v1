@@ -45,4 +45,12 @@ final class DomainSTContext(
   final val idRenderer        = new DomainIdRenderer(this)
   final val compositeRenderer = new DomainCompositeRenderer(this)
   final val interfaceRenderer = new DomainInterfaceRenderer(this)
+
+  // PR-02 IMPL-7a.2 Phase B M4: ADT + Service + Buzzer renderers.
+  // `serviceRenderer` handles both `TypeDef.Service` and `TypeDef.Buzzer`
+  // via a `DomainServiceContext` projection (legacy `Buzzer.asService`
+  // equivalent under F16 absorption). The ADT renderer is also reused
+  // by `DomainServiceMethodProduct` for Algebraic/Alternative outputs.
+  final val adtRenderer     = new DomainAdtRenderer(this)
+  final val serviceRenderer = new DomainServiceRenderer(this)
 }

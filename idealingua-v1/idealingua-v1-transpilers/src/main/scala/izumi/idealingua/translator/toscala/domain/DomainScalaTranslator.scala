@@ -138,6 +138,58 @@ final class DomainScalaTranslator(
             DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"interface ${ifc.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
         }
 
+      // --- M4: ADT renderer. Errors recorded as structural divergences
+      // (never fatal). The ADT body is small; the most likely cause of a
+      // failure here is an ephemeral Output ADT whose branch types reference
+      // a not-yet-materialized id — flagged via the exception trace.
+      case (_, adt: NewTypeDef.Adt) =>
+        try {
+          val product = ctx.adtRenderer.renderAdt(adt)
+          if (product.render.isEmpty) {
+            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"adt ${adt.id.name}", "empty render")
+          }
+          val _ = scala.meta.dialects.Scala213(product.render.head).syntax
+        } catch {
+          case t: Throwable =>
+            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"adt ${adt.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
+        }
+
+      // --- M4: Service renderer. Per F16 absorption, services and buzzers
+      // are first-class `TypeDef`s in `domain.userTypes`. The renderer emits
+      // a `CogenServiceProduct` whose `.render` yields 6 top-level Defns —
+      // verify all parse cleanly under Scala 2.13.
+      case (_, svc: NewTypeDef.Service) =>
+        try {
+          val product = ctx.serviceRenderer.renderService(svc)
+          val defs    = product.render
+          if (defs.isEmpty) {
+            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"service ${svc.id.name}", "empty render")
+          }
+          defs.foreach { d =>
+            val _ = scala.meta.dialects.Scala213(d).syntax
+          }
+        } catch {
+          case t: Throwable =>
+            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"service ${svc.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
+        }
+
+      // --- M4: Buzzer renderer. Same renderer body as Service via
+      // `DomainServiceContext.forBuzzer`.
+      case (_, bz: NewTypeDef.Buzzer) =>
+        try {
+          val product = ctx.serviceRenderer.renderBuzzer(bz)
+          val defs    = product.render
+          if (defs.isEmpty) {
+            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"buzzer ${bz.id.name}", "empty render")
+          }
+          defs.foreach { d =>
+            val _ = scala.meta.dialects.Scala213(d).syntax
+          }
+        } catch {
+          case t: Throwable =>
+            DomainScalaTranslator.recordStructuralDivergence(domain.id.toString, s"buzzer ${bz.id.name}", s"threw: ${t.getClass.getSimpleName}: ${t.getMessage}")
+        }
+
       case _ => ()
     }
 
