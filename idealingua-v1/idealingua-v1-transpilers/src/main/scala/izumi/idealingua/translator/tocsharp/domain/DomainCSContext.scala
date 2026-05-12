@@ -41,4 +41,7 @@ final class DomainCSContext(
   final val idRenderer          = new DomainCSIdRenderer(this)
   final val compositeRenderer   = new DomainCSCompositeRenderer(this)
   final val interfaceRenderer   = new DomainCSInterfaceRenderer(this)
+  final val adtRenderer         = new DomainCSAdtRenderer(this)
+  final val serviceMethodProduct = new DomainCSServiceMethodProduct(this, adtRenderer)
+  final val serviceRenderer     = new DomainCSServiceRenderer(this, adtRenderer)
 }
