@@ -75,8 +75,13 @@ object DomainCastSimilarExtension {
     * `tid` and that are not parents of `tid`.
     */
   private def sameSignature(ctx: DomainSTContext, tid: StructureId): List[DTOId] = {
+    // Legacy `StructuralQueriesImpl.sameSignature` does NOT early-return on
+    // empty signatures — an empty-fielded mixin (`mixin Empty {}`,
+    // `mixin Covariant {}`) still produces a non-trivial peer set because
+    // every other empty-fielded DTO in the domain matches. Removing the
+    // early-return aligns with legacy and surfaces `Struct_cast_into_*`
+    // entries for `<EmptyMixin>.Struct → <other empty DTO>` pairs.
     val sig = signatureOf(ctx, tid)
-    if (sig.isEmpty) return List.empty
 
     val parents: Set[StructureId] = ctx.domain.parents.getOrElse(tid, Set.empty).asInstanceOf[Set[StructureId]]
 

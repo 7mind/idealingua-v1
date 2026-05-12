@@ -97,14 +97,22 @@ object DomainCastUpExtension {
 
       val parentFlatNames: Set[String] = ctx.domain.flattenedStructs.get(parentId).map(_.fields.map(_.field.name).toSet).getOrElse(implFieldNames)
       val keep                          = parentFlatNames
-      val seen                          = scala.collection.mutable.LinkedHashSet.empty[String]
-      val constructorCode = implFlat.fields
-        .filter(ff => keep.contains(ff.field.name))
-        .sortBy(ff => (ff.distance, ff.origin.toString))
-        .reverse
-        .filter(ff => seen.add(ff.field.name))
-        .map { ff =>
-          q""" ${Term.Name(ff.field.name)} = _value.${Term.Name(ff.field.name)} """
+      // Use `DomainScalaStruct.fromFlat` to apply the full legacy sort key
+      // `(distance, definedBy.toString, -definedWithIndex)` so within-origin
+      // declaration order survives the post-sort `.reverse`. The prior
+      // two-key sort omitted `-definedWithIndex` and inverted the within-
+      // origin order for self-upcast, producing
+      // `Struct(y = …, x = …)` instead of `Struct(x = …, y = …)`.
+      val supers = ctx.domain.userTypes.get(implId) match {
+        case Some(d: NewTypeDef.Dto)       => d.struct.superclasses
+        case Some(i: NewTypeDef.Interface) => i.struct.superclasses
+        case _                              => izumi.idealingua.model.il.ast.typed.Super.empty
+      }
+      val sortedImplStruct = DomainScalaStruct.fromFlat(implId, implFlat, supers, ctx.domain)
+      val constructorCode = sortedImplStruct.all
+        .filter(f => keep.contains(f.field.name))
+        .map { f =>
+          q""" ${Term.Name(f.field.name)} = _value.${Term.Name(f.field.name)} """
         }
 
       val thisType       = ctx.conv.toScala(implId)

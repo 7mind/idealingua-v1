@@ -55,6 +55,22 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *     `Struct_cast_into_<peer>` set, parent-listing ordering, clone-newtype
     *     shape) so the byte-count metric moves only when EVERY divergence in
     *     a module is closed.
+    *   - 2026-05-12 (Fe1: interface-mirror `downcast_extend` + extension
+    *     ordering + impl-struct self-upcast field-order + empty-signature
+    *     peer matching): 110 → **96** (–14 modules).  Three coupled fixes:
+    *     (1) `StructuralFlattener` now registers `EphemeralOrigin.InterfaceMirror`
+    *     entries in `parents`/`implementingDtos` so `DomainCastDownExpandExtension`
+    *     emits `<I>_downcast_extend_<I>Struct` mirroring legacy `compatibleDtos`.
+    *     (2) `DomainScalaTranslator.emitInterface` companion-stat order
+    *     switched to `sims ++ downs ++ ups` matching legacy
+    *     `defaultExtensions` (CastSimilar, CastDownExpand, CastUp).
+    *     (3) `DomainCastUpExtension.generateUpcastsForImplStruct` now sorts
+    *     fields via `DomainScalaStruct.fromFlat` (full legacy sort key with
+    *     `-definedWithIndex` tiebreaker), so the `Struct_upcast_Struct`
+    *     self-cast body uses declaration order.
+    *     (4) `DomainCastSimilarExtension.sameSignature` no longer
+    *     early-returns on empty signatures, matching legacy emission of
+    *     `Struct_cast_into_<other-empty-DTO>` for empty-fielded mixins.
     *
     * Remaining catalog entries (each becomes a future F-followup):
     * `cast_into` vs `downcast_extend_TStruct` naming/IRTCast-vs-IRTExtend on
@@ -65,7 +81,7 @@ final class ScalaTranslatorByteParitySpec extends AnyFunSuite {
     *
     * Symmetric on Scala 2.13.18 and 3.8.3.
     */
-  private val KnownDivergenceBaseline: Int = 110
+  private val KnownDivergenceBaseline: Int = 96
 
   private def keyOf(id: ModuleId): String =
     (id.path :+ id.name).mkString("/")

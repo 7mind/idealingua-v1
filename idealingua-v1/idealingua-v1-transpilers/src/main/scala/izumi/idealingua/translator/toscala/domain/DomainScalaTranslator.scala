@@ -233,7 +233,11 @@ final class DomainScalaTranslator(
     val sims               = DomainCastSimilarExtension.mkConvertersForInterface(ctx, ifc)
     val ups                = DomainCastUpExtension.generateUpcastsForInterface(ctx, ifc)
     val downs              = DomainCastDownExpandExtension.constructorsForInterface(ctx, ifc)
-    val companionWithCasts = base.companionBase.appendDefinitions(sims ++ ups ++ downs)
+    // Legacy `ScalaTranslator.defaultExtensions` order:
+    //   CastSimilarExtension, CastDownExpandExtension, CastUpExtension.
+    // The append order here must match so the emitted companion-stat
+    // sequence is byte-identical between typers.
+    val companionWithCasts = base.companionBase.appendDefinitions(sims ++ downs ++ ups)
 
     // Every user-declared interface receives Circe boilerplate (matches
     // legacy `CirceTranslatorExtensionBase.handleInterface` which runs

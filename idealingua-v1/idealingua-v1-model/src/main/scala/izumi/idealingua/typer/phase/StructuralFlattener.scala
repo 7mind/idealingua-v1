@@ -115,15 +115,26 @@ object StructuralFlattener {
       acc.toSet
     }
 
-    // `parents`/`implementingDtos` cover only user-declared structural types.
-    // Ephemerals participate in flattening (above) but stay out of these
-    // inverse-index maps so renderer queries that take "user types only" do
-    // not see synthesized mirrors.
+    // `parents`/`implementingDtos` cover user-declared structural types
+    // plus synthesized interface mirror DTOs (`DTOId(I, "Struct")`).
+    // Including the mirror DTOs is required so the
+    // `DomainCastDownExpandExtension` ↔ `Typespace.compatibleDtos` parity is
+    // preserved: legacy `compatibleDtos(I)` returns the mirror DTO because
+    // it `extends I`, which lets legacy emit
+    // `I_downcast_extend_<Mirror>` in `I`'s companion. The new IR must do
+    // the same. Other ephemerals (method-input/output DTOs, DTO→Interface
+    // `Defn` mirrors) stay out of `implementingDtos` since they have no
+    // interface parents to surface.
     rd.userTypes.values.foreach {
       case dto: TypeDef.Dto =>
         parentsBuf.update(dto.id, transitiveParents(dto.id))
       case ifc: TypeDef.Interface =>
         parentsBuf.update(ifc.id, transitiveParents(ifc.id))
+      case _ => ()
+    }
+    rd.members.values.foreach {
+      case Member.Ephemeral(eph) if eph.origin.isInstanceOf[EphemeralOrigin.InterfaceMirror] =>
+        parentsBuf.update(eph.id, transitiveParents(eph.id))
       case _ => ()
     }
 
