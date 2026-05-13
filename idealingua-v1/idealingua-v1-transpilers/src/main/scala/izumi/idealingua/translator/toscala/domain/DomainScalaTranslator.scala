@@ -85,7 +85,11 @@ final class DomainScalaTranslator(
     // matches by simple name to the normalized TypeDef in domain.userTypes
     // (the new typer's TypeId carries the owning DomainId post-F7; the raw
     // parsed id carries DomainId.Undefined).
-    val aliasEntries = scala.collection.mutable.ArrayBuffer.empty[(ModuleId, Seq[Defn])]
+    // F-TextTree M4: alias entries carry `Seq[String]` — the alias renderer
+    // emits rendered Scala source via `TextTree[ScalaRefHandle]` and no
+    // longer round-trips through `scala.meta`. The downstream join below
+    // concatenates these strings into the `package object` body directly.
+    val aliasEntries = scala.collection.mutable.ArrayBuffer.empty[(ModuleId, Seq[String])]
     val typeModules  = scala.collection.mutable.ArrayBuffer.empty[Module]
 
     parsed.members.foreach {
@@ -117,7 +121,7 @@ final class DomainScalaTranslator(
         val code =
           s"""
              |package object $pkgName {
-             |${content.map(_.toString()).mkString("\n\n")}
+             |${content.mkString("\n\n")}
              |}
            """.stripMargin
         Module(id.copy(name = "package-object.scala"), ctx.modules.withPackage(id.path.init, code))
@@ -128,13 +132,13 @@ final class DomainScalaTranslator(
 
   private def emitTypeDef(
     td: NewTypeDef,
-    aliasEntries: scala.collection.mutable.ArrayBuffer[(ModuleId, Seq[Defn])],
+    aliasEntries: scala.collection.mutable.ArrayBuffer[(ModuleId, Seq[String])],
     typeModules: scala.collection.mutable.ArrayBuffer[Module],
   ): Unit = td match {
     case a: NewTypeDef.Alias =>
-      val defns = ctx.aliasRenderer.renderAlias(a)
-      val mid   = aliasModuleId(a.id)
-      aliasEntries += ((mid, defns))
+      val rendered = ctx.aliasRenderer.renderAlias(a)
+      val mid      = aliasModuleId(a.id)
+      aliasEntries += ((mid, rendered))
 
     case e: NewTypeDef.Enum =>
       typeModules ++= emitEnum(e)
