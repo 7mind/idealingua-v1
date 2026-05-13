@@ -48,4 +48,30 @@ object ScalaRefHandle {
     * `ScalaTypeConverter.toScala`.
     */
   final case class TypeFull(typeId: TypeId) extends ScalaRefHandle
+
+  /** Root-qualified type reference — equivalent of `ScalaType.typeAbsolute`,
+    * carrying the `_root_.<…>` prefix the legacy renderer used for ADT
+    * branch targets (`final case class A(value: <target.typeAbsolute>)`).
+    *
+    * F-TextTree M5: introduced for the ADT branch shape.
+    */
+  final case class TypeAbsolute(typeId: TypeId) extends ScalaRefHandle
+
+  /** Nested type reference produced via `ScalaTypeOps.within(name).typeFull`
+    * — the qualified path of a synthetic name (e.g. an ADT branch case
+    * class) inside its enclosing companion. Used by ADT branch converters
+    * for the `from<Branch>` parameter type (`mt.typeFull`).
+    *
+    * F-TextTree M5: introduced for the ADT branch shape.
+    */
+  final case class TypeFullWithin(parentId: TypeId, name: String) extends ScalaRefHandle
+
+  /** Term-position counterpart of `TypeFullWithin` — qualified term path
+    * of a nested name (e.g. `<Adt>.<Branch>` for an ADT branch's term
+    * reference). Used by ADT branch converters for the `into<Branch>`
+    * constructor call site.
+    *
+    * F-TextTree M5: introduced for the ADT branch shape.
+    */
+  final case class TermFullWithin(parentId: TypeId, name: String) extends ScalaRefHandle
 }

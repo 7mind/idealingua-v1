@@ -1,69 +1,87 @@
 package izumi.idealingua.translator.toscala.domain
 
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.translator.toscala.products.CogenProduct.EnumProduct
 import izumi.idealingua.typer.ir.TypeDef
 
-import scala.meta.*
-
-/** Renders a new-IR `TypeDef.Enum` as the same `EnumProduct` (pre-extension)
-  * the legacy `EnumRenderer.renderEnumeration` produces before the
-  * extension chain runs.
+/** Renders a new-IR `TypeDef.Enum` as an `EnumProduct` (pre-extension).
   *
-  * IMPL-7a.2 Phase B M1 scope: enum body structure only. The legacy
-  * `EnumRenderer` invokes `ctx.ext.extend(i, EnumProduct(...), _.handleEnum)`
-  * after constructing the pre-extension product; that extension chain
-  * (`CirceDerivationTranslatorExtension.handleEnum` is the only handler
-  * that touches enums in the default extension set) requires a legacy
-  * `STContext` and a legacy `Enumeration` as input, neither of which the
-  * Domain-consuming path holds. M2 will reintegrate the extension chain
-  * by adapting new IR back to legacy IR at the extension boundary.
+  * F-TextTree M5: ported off `scala.meta` quasiquotes onto
+  * `TextTree[ScalaRefHandle]` composition + `.mapRender(resolver.resolve)`
+  * at the renderer boundary. The renderer interior carries zero
+  * `scala.meta.Tree` material; type references travel as
+  * `ScalaRefHandle.{TypeName, TypeFull}` value nodes.
   *
-  * For M1, byte parity is asserted in `DomainEnumRendererSpec` with
-  * `extensions = Seq.empty` so the legacy and new paths produce the same
-  * pre-extension output.
+  * **Carrier strategy**: the legacy `EnumProduct` carries `Defn.Trait`,
+  * `Defn.Object`, and `List[(Term.Name, Defn)]`. M5 keeps the carrier
+  * intact (the carrier-migration cycle is deferred — extensions still
+  * push `Defn` material into `companion.prependBase` and
+  * `more :+ circe.defn`). The renderer composes textual output via
+  * `TextTree`, lowers it to `String`, then re-parses the string back to
+  * the expected `Defn` shape via `DomainScalaParseBack`.
   *
-  * `TypeDef.Enum` carries `id: EnumId`, `members: List[EnumMember]`,
-  * `meta: NodeMeta` — and `EnumMember` is the legacy `EnumMember` type
-  * (see `idealingua-v1-model/.../typed/TypeDef.scala:12`), so the body
-  * construction is field-for-field identical to legacy.
+  * **Byte parity**: byte-equal goldens are preserved. Two parse-roundtrip
+  * pitfalls drove the renderer's text shape:
+  *   1. `q"trait F extends X {}".syntax` drops the empty braces; the
+  *      parser preserves source-level `{}`. The renderer therefore
+  *      emits `sealed trait $name extends $base` (no trailing braces).
+  *   2. The companion body has stats — parser keeps the braces, which
+  *      matches the legacy printer.
+  * `verifyGoldens` is byte-equal across the corpus.
   */
 final class DomainEnumRenderer(ctx: DomainSTContext) {
 
   import ctx._
-  import conv._
+
+  private val resolver    = new DomainScalaTextResolver(conv)
+  private val enumElInit  = rt.enumEl.typeFull.toString
+  private val idlEnumInit = rt.idlEnum.typeFull.toString
 
   def renderEnumeration(i: TypeDef.Enum): EnumProduct = {
-    val t = conv.toScala(i.id)
+    val typeName: TextTree[ScalaRefHandle] = TextTree.value(ScalaRefHandle.TypeName(i.id))
+    val typeFull: TextTree[ScalaRefHandle] = TextTree.value(ScalaRefHandle.TypeFull(i.id))
 
-    val members = i.members.map {
-      m =>
-        val mt = t.within(m.value)
-        val element =
-          q"""case object ${mt.termName} extends ${t.init()} {
-              override def toString: String = ${Lit.String(m.value)}
-            }"""
-
-        mt.termName -> element
+    // Each member contributes a case object placed into the companion. The
+    // legacy renderer pairs the member's `Term.Name` with its `Defn` for
+    // downstream `companion.appendDefinitions(elements.map(_._2))`. The
+    // term-name is a plain `Term.Name(value)` literal (no qualified path).
+    val members: List[(scala.meta.Term.Name, scala.meta.Defn)] = i.members.map { m =>
+      val termText = m.value
+      val element: TextTree[ScalaRefHandle] =
+        q"""case object $termText extends $typeFull {
+           |  override def toString: String = "${m.value}"
+           |}""".stripMargin
+      val parsed = DomainScalaParseBack.parseDefn(element.mapRender(resolver.resolve))
+      scala.meta.Term.Name(termText) -> parsed
     }
 
-    val parseMembers = members.map {
-      case (termName, _) =>
-        val termString = termName.value
-        p"""case ${Lit.String(termString)} => $termName"""
-    }
+    val memberRefs: Seq[TextTree[ScalaRefHandle]] =
+      i.members.map(m => TextTree.text[ScalaRefHandle](m.value))
 
-    val qqEnum = q""" sealed trait ${t.typeName} extends ${rt.enumEl.init()} {} """
-    val qqEnumCompanion =
-      q"""object ${t.termName} extends ${rt.idlEnum.init()} {
-            type Element = ${t.typeFull}
+    val parseArms: Seq[TextTree[ScalaRefHandle]] =
+      i.members.map(m => q"""case "${m.value}" => ${m.value}""")
 
-            override def all: Seq[${t.typeFull}] = Seq(..${members.map(_._1)})
+    // Empty body — legacy `q"…{}"` then `dialect.syntax` printer drops the
+    // empty braces; the parse-back path preserves source-level `{}`, so we
+    // omit them here for byte-equal output against the goldens.
+    val traitTree: TextTree[ScalaRefHandle] =
+      q"""sealed trait $typeName extends $enumElInit"""
 
-            override def parse(value: String): ${t.typeName} = value match {
-              ..case $parseMembers
-            }
-           }"""
+    val companionTree: TextTree[ScalaRefHandle] =
+      q"""object $typeName extends $idlEnumInit {
+         |  type Element = $typeFull
+         |
+         |  override def all: Seq[$typeFull] = Seq(${memberRefs.join(", ")})
+         |
+         |  override def parse(value: String): $typeName = value match {
+         |    ${parseArms.joinN().shift(4).trim}
+         |  }
+         |}""".stripMargin
 
-    EnumProduct(qqEnum, qqEnumCompanion, members)
+    val traitDefn     = DomainScalaParseBack.parseTrait(traitTree.mapRender(resolver.resolve))
+    val companionDefn = DomainScalaParseBack.parseObject(companionTree.mapRender(resolver.resolve))
+
+    EnumProduct(traitDefn, companionDefn, members)
   }
 }

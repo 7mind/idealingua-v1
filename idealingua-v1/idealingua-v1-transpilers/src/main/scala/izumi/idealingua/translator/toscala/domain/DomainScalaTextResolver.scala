@@ -29,13 +29,17 @@ import izumi.idealingua.translator.toscala.types.ScalaTypeConverter
   * on `ScalaTypeConverter.toImport` per-renderer.
   */
 final class DomainScalaTextResolver(conv: ScalaTypeConverter) {
+  import conv._
 
   /** Render an in-tree type reference to its native Scala identifier.
     * Used as the argument to `TextTree[ScalaRefHandle].mapRender(_)`.
     */
   def resolve(ref: ScalaRefHandle): String = ref match {
-    case ScalaRefHandle.TypeName(id) => conv.toScala(id).typeName.toString
-    case ScalaRefHandle.TypeFull(id) => conv.toScala(id).typeFull.toString
+    case ScalaRefHandle.TypeName(id)             => conv.toScala(id).typeName.toString
+    case ScalaRefHandle.TypeFull(id)             => conv.toScala(id).typeFull.toString
+    case ScalaRefHandle.TypeAbsolute(id)         => conv.toScala(id).typeAbsolute.toString
+    case ScalaRefHandle.TypeFullWithin(pid, nm)  => conv.toScala(pid).within(nm).typeFull.toString
+    case ScalaRefHandle.TermFullWithin(pid, nm)  => conv.toScala(pid).within(nm).termFull.toString
   }
 
   /** Project a collected reference set into the type-id set. The harvest
@@ -44,7 +48,10 @@ final class DomainScalaTextResolver(conv: ScalaTypeConverter) {
     */
   def harvestTypeIds(refs: Iterable[ScalaRefHandle]): List[TypeId] =
     refs.collect {
-      case ScalaRefHandle.TypeName(id) => id
-      case ScalaRefHandle.TypeFull(id) => id
+      case ScalaRefHandle.TypeName(id)            => id
+      case ScalaRefHandle.TypeFull(id)            => id
+      case ScalaRefHandle.TypeAbsolute(id)        => id
+      case ScalaRefHandle.TypeFullWithin(pid, _)  => pid
+      case ScalaRefHandle.TermFullWithin(pid, _)  => pid
     }.toList.distinct
 }
