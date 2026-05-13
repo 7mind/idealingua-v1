@@ -8,25 +8,38 @@ import scala.sys.process.*
 /** Resolves an `--old` / `--new` compiler reference to a launcher + runtime
  *  artifacts.
  *
- *  M2 supports:
+ *  Supports:
  *    - `self`         — current working tree (in-place sbt stage; publishLocal
- *                       runtime to the user's ivy2Local).
+ *                       runtime to the user's ivy2Local when Scala is the
+ *                       target language).
  *    - `git:<ref>`    — `git worktree add <ref>` into a per-sha cache dir,
- *                       sbt stage, publishLocal runtime to a per-sha m2 dir.
- *                       Subsequent invocations on the same ref skip everything
- *                       except the version lookup.
- *
- *  M3+ scope: `path:<launcher>` (pre-built launcher, skip build).
+ *                       sbt stage, publishM2 runtime (Scala only) to a per-sha
+ *                       m2 dir. Subsequent invocations on the same ref skip
+ *                       everything except the version lookup.
+ *    - `path:<p>`     — pre-built idlc. `<p>` is either a launcher binary
+ *                       (e.g. `…/target/universal/stage/bin/idealingua-v1-compiler`)
+ *                       or a directory containing one (a stage root, or its
+ *                       `bin/` subdir). Runtime version comes from a sibling
+ *                       `version.txt` next to the launcher; otherwise from the
+ *                       `--runtime-version` flag. No publishM2 for path: refs;
+ *                       Scala consumers must point at an external resolver.
  *
  *  Per-sha cache layout (under `target/regression-harness/cache/idlc/<sha>/`):
  *
- *      launcher                  -- copy of the staged idlc binary
- *      runtimeVersion.txt        -- version that was publishLocal-ed
- *      m2/                       -- local maven repo (`-Dmaven.repo.local`)
+ *      stage/                    -- copy of the staged sbt-native-packager tree
+ *      stage/bin/idealingua-v1-compiler -- launcher
+ *      runtimeVersion.txt        -- version that was publishM2-ed
+ *      m2/                       -- local maven repo (Scala only)
  *      .ivy2/                    -- sbt-internal ivy cache (per plan R2)
  *      .coursier/                -- sbt-internal coursier cache (per plan R2)
  *      .sbt/                     -- sbt-internal global base
  *      worktree/                 -- ephemeral; removed unless --keep-worktrees
+ *
+ *  publishM2 short-circuit (Item A): for non-Scala adapters (TypeScript, C#)
+ *  the per-sha m2 dir is unused (TS inlines runtime via `withRuntime=true`;
+ *  C# uses NuGet for Newtonsoft.Json with no idl-runtime feed). The resolver
+ *  accepts a `targetLang` argument and skips publishM2 entirely when the
+ *  caller is not Scala, materially speeding up TS/C# resolutions.
  */
 final class IdlcResolver(
   repoRoot:      Path,
@@ -55,31 +68,52 @@ final class IdlcResolver(
   private def publishTargets(action: String): Seq[String] =
     RuntimeModules.map(m => s"${m}JVM/$action")
 
-  def resolve(ref: String): IdlcResolution = ref match {
-    case "self"                     => resolveSelf()
-    case s if s.startsWith("git:")  => resolveGit(s.stripPrefix("git:"))
-    case s if s.startsWith("path:") => throw new NotImplementedError("--old/--new path:* is M3+ scope")
-    case other                      => throw new IllegalArgumentException(
-      s"unknown idlc ref: '$other'. Supported: 'self', 'git:<sha|tag|branch>'.")
+  /** Resolve a reference. `targetLang` is the language adapter the caller will
+   *  ultimately drive; only `"scala"` triggers Scala-runtime publish steps.
+   *  `runtimeVersionOverride` is honored only for `path:` refs.
+   */
+  def resolve(
+    ref:                   String,
+    targetLang:            String         = "scala",
+    runtimeVersionOverride: Option[String] = None,
+  ): IdlcResolution = {
+    val needsScalaRuntime = targetLang == "scala"
+    ref match {
+      case "self"                     => resolveSelf(needsScalaRuntime)
+      case s if s.startsWith("git:")  => resolveGit(s.stripPrefix("git:"), needsScalaRuntime)
+      case s if s.startsWith("path:") => resolvePath(s.stripPrefix("path:"), runtimeVersionOverride, needsScalaRuntime)
+      case other                      => throw new IllegalArgumentException(
+        s"unknown idlc ref: '$other'. Supported: 'self', 'git:<sha|tag|branch>', 'path:<launcher-or-stage-dir>'.")
+    }
   }
 
   // -------------------- self --------------------
 
-  private def resolveSelf(): IdlcResolution = {
+  private def resolveSelf(needsScalaRuntime: Boolean): IdlcResolution = {
     val launcher = repoRoot.resolve(LauncherRel)
     if (!Files.isExecutable(launcher)) {
       Harness.say("staging idealingua-v1-compiler (self)…")
       val rc = Process(Seq("sbt", "-batch", "idealingua-v1-compiler/stage"), repoRoot.toFile).!
-      if (rc != 0) throw new RuntimeException(s"sbt stage exit=$rc")
+      if (rc != 0) throw new RuntimeException(s"sbt stage failed (exit=$rc). Expected: a staged launcher at $launcher. Observed: sbt exited non-zero. Next: re-run `sbt idealingua-v1-compiler/stage` interactively to see the failure.")
       if (!Files.isExecutable(launcher)) {
-        throw new RuntimeException(s"stage succeeded but launcher missing: $launcher")
+        throw new RuntimeException(s"sbt stage succeeded but launcher missing. Expected: $launcher to exist and be executable. Observed: file missing. Next: inspect `target/universal/stage/` under idealingua-v1-compiler.")
       }
     } else {
       Harness.say(s"reusing self launcher at $launcher")
     }
 
-    val version = readVersion(repoRoot)
+    val version   = readVersion(repoRoot)
     val ivy2Local = Path.of(sys.props.getOrElse("user.home", "")).resolve(".ivy2/local")
+
+    if (!needsScalaRuntime) {
+      Harness.say(s"skipping Scala-runtime publishLocal (self, target lang is not scala; version=$version)")
+      return IdlcResolution(
+        launcher        = launcher,
+        runtimeRepoPath = ivy2Local,
+        runtimeRepoUri  = "ivy2Local",
+        runtimeVersion  = version,
+      )
+    }
 
     if (!hasRuntimeArtifacts(ivy2Local, version, ivy2 = true)) {
       Harness.say(s"publishLocal runtime modules (self, ++ 2.13.18, version=$version)…")
@@ -87,7 +121,7 @@ final class IdlcResolver(
         Seq("sbt", "-batch", "++ 2.13.18") ++ publishTargets("publishLocal"),
         repoRoot.toFile,
       ).!
-      if (rc != 0) throw new RuntimeException(s"self publishLocal exit=$rc")
+      if (rc != 0) throw new RuntimeException(s"self publishLocal failed (exit=$rc). Expected: $RuntimeModules under $ivy2Local for version=$version. Observed: sbt exited non-zero. Next: re-run `sbt ++ 2.13.18 ${publishTargets("publishLocal").mkString(" ")}` interactively.")
     } else {
       Harness.say(s"reusing ivy2Local runtime artifacts (version=$version)")
     }
@@ -102,7 +136,7 @@ final class IdlcResolver(
 
   // -------------------- git --------------------
 
-  private def resolveGit(ref: String): IdlcResolution = {
+  private def resolveGit(ref: String, needsScalaRuntime: Boolean): IdlcResolution = {
     val sha     = resolveSha(ref)
     val shortSha = sha.take(12)
     val perSha   = cacheRoot.resolve(shortSha)
@@ -114,20 +148,25 @@ final class IdlcResolver(
     val versionFile    = perSha.resolve("runtimeVersion.txt")
 
     val cachedVersion = readFileOpt(versionFile).getOrElse("")
-    if (Files.isExecutable(cachedLauncher) && hasRuntimeArtifacts(m2Dir, cachedVersion, ivy2 = false)) {
-      Harness.say(s"cache hit: $shortSha → $cachedLauncher (runtime $cachedVersion)")
+    val runtimeOk =
+      if (needsScalaRuntime) hasRuntimeArtifacts(m2Dir, cachedVersion, ivy2 = false)
+      else                   cachedVersion.nonEmpty
+    if (Files.isExecutable(cachedLauncher) && runtimeOk) {
+      val repoUri = if (needsScalaRuntime) m2Dir.toUri.toString else "ivy2Local"
+      Harness.say(s"cache hit: $shortSha → $cachedLauncher (runtime $cachedVersion, scala-runtime=$needsScalaRuntime)")
       IdlcResolution(
         launcher        = cachedLauncher,
-        runtimeRepoPath = m2Dir,
-        runtimeRepoUri  = m2Dir.toUri.toString,
+        runtimeRepoPath = if (needsScalaRuntime) m2Dir else Path.of(sys.props.getOrElse("user.home", "")).resolve(".ivy2/local"),
+        runtimeRepoUri  = repoUri,
         runtimeVersion  = cachedVersion,
       )
-    } else buildGit(ref, sha, shortSha, perSha, cachedStage, cachedLauncher, m2Dir, versionFile)
+    } else buildGit(ref, sha, shortSha, perSha, cachedStage, cachedLauncher, m2Dir, versionFile, needsScalaRuntime)
   }
 
   private def buildGit(
     ref: String, sha: String, shortSha: String, perSha: Path,
     cachedStage: Path, cachedLauncher: Path, m2Dir: Path, versionFile: Path,
+    needsScalaRuntime: Boolean,
   ): IdlcResolution = {
     Harness.say(s"cache miss: building idlc + runtime for git ref '$ref' (sha=$shortSha)")
     val worktree = perSha.resolve("worktree")
@@ -155,21 +194,36 @@ final class IdlcResolver(
     //   published below match the `_2.13` coordinates referenced by the
     //   scala-cli template. The generated Scala sources rely on circe-derivation
     //   (Scala-2-only); see M1 finding #4 in tasks.md.
-    Harness.say("worktree: sbt stage + 2.13 publishM2 (this may take a few minutes)…")
+    // - publishM2 is conditional (Item A short-circuit): TS uses
+    //   `withRuntime=true` to inline the runtime; C# uses Newtonsoft.Json from
+    //   NuGet. Only Scala consumes the per-sha m2 dir.
+    val sbtTargets =
+      if (needsScalaRuntime) Seq("idealingua-v1-compiler/stage", "++ 2.13.18") ++ publishTargets("publishM2")
+      else                   Seq("idealingua-v1-compiler/stage")
+    val phase = if (needsScalaRuntime) "stage + 2.13 publishM2" else "stage (no publishM2 — non-Scala target)"
+    Harness.say(s"worktree: sbt $phase (this may take a few minutes)…")
     val rc = Process(
-      Seq("sbt", "-batch") ++ sbtSysProps ++
-        Seq("idealingua-v1-compiler/stage", "++ 2.13.18") ++
-        publishTargets("publishM2"),
+      Seq("sbt", "-batch") ++ sbtSysProps ++ sbtTargets,
       worktree.toFile,
     ).!
     if (rc != 0) {
-      throw new RuntimeException(s"git[$shortSha] sbt stage+publishM2 exit=$rc — worktree retained at $worktree for diagnosis")
+      throw new RuntimeException(
+        s"sbt build failed at git[$shortSha] (exit=$rc). " +
+        s"Expected: $phase to succeed and produce a launcher at $LauncherRel. " +
+        s"Observed: sbt exited non-zero; worktree retained at $worktree for diagnosis. " +
+        s"Next: cd to that worktree and re-run `sbt ${sbtTargets.mkString(" ")}` interactively."
+      )
     }
 
     val producedStage    = worktree.resolve(StageRel)
     val producedLauncher = worktree.resolve(LauncherRel)
     if (!Files.isExecutable(producedLauncher)) {
-      throw new RuntimeException(s"git[$shortSha] stage finished but launcher missing: $producedLauncher")
+      throw new RuntimeException(
+        s"sbt stage succeeded at git[$shortSha] but launcher is missing. " +
+        s"Expected: $producedLauncher executable. " +
+        s"Observed: file absent or non-executable. " +
+        s"Next: inspect $producedStage; this typically indicates a JavaAppPackaging configuration drift."
+      )
     }
 
     // Copy the full sbt-native-packager stage tree (bin/ + lib/). The launcher
@@ -183,24 +237,123 @@ final class IdlcResolver(
     val version = readVersion(worktree)
     Files.write(versionFile, version.getBytes(StandardCharsets.UTF_8))
 
-    if (!hasRuntimeArtifacts(m2Dir, version, ivy2 = false)) {
+    if (needsScalaRuntime && !hasRuntimeArtifacts(m2Dir, version, ivy2 = false)) {
       throw new RuntimeException(
-        s"git[$shortSha] publishM2 did not produce expected artifacts under $m2Dir " +
-        s"(version=$version, modules=${RuntimeModules.mkString(",")})"
+        s"publishM2 succeeded but expected artifacts are missing for git[$shortSha]. " +
+        s"Expected: ${RuntimeModules.map(m => s"${m}_2.13/$version").mkString(", ")} under $m2Dir. " +
+        s"Observed: artifacts absent. " +
+        s"Next: run with `--keep-worktrees` and inspect $m2Dir + the sbt log."
       )
     }
 
     if (!keepWorktree) {
-      Harness.say(s"removing worktree $worktree (launcher cached; runtime in $m2Dir)")
+      val m2note = if (needsScalaRuntime) s"runtime in $m2Dir" else "no scala runtime materialized (non-Scala target)"
+      Harness.say(s"removing worktree $worktree (launcher cached; $m2note)")
       removeWorktree(worktree)
     } else {
       Harness.say(s"keeping worktree $worktree (--keep-worktrees)")
     }
 
+    val repoUri = if (needsScalaRuntime) m2Dir.toUri.toString else "ivy2Local"
+    val repoPath = if (needsScalaRuntime) m2Dir else Path.of(sys.props.getOrElse("user.home", "")).resolve(".ivy2/local")
     IdlcResolution(
       launcher        = cachedLauncher,
-      runtimeRepoPath = m2Dir,
-      runtimeRepoUri  = m2Dir.toUri.toString,
+      runtimeRepoPath = repoPath,
+      runtimeRepoUri  = repoUri,
+      runtimeVersion  = version,
+    )
+  }
+
+  // -------------------- path -------------------
+
+  /** Resolve a pre-built launcher path. The path may point to:
+   *    - the launcher binary directly (`…/stage/bin/idealingua-v1-compiler`);
+   *    - the stage root (`…/stage/`) — we look for `bin/idealingua-v1-compiler`;
+   *    - any directory containing `bin/idealingua-v1-compiler`.
+   *
+   *  Runtime version resolution order:
+   *    1. `--runtime-version` flag (`runtimeVersionOverride`);
+   *    2. sibling `version.txt` (per plan §D2) next to the launcher OR at the
+   *       stage root;
+   *    3. error (exit 2 from caller).
+   *
+   *  `path:` refs do NOT publish runtime artifacts. For Scala consumers the
+   *  template `{{RUNTIME_REPOSITORY}}` resolves to `ivy2Local` so a previously
+   *  populated user ivy cache is used; if absent, the scala-cli build will
+   *  fail to resolve and the adapter reports a clear error. TS/C# adapters
+   *  are unaffected (they inline / use NuGet).
+   */
+  private def resolvePath(
+    rawPath:               String,
+    runtimeVersionOverride: Option[String],
+    needsScalaRuntime:     Boolean,
+  ): IdlcResolution = {
+    val p = Path.of(rawPath).toAbsolutePath.normalize
+    if (!Files.exists(p)) {
+      throw new IllegalArgumentException(
+        s"path: ref points to a non-existent file/directory. " +
+        s"Expected: $p to exist (launcher binary or stage directory). " +
+        s"Observed: absent. " +
+        s"Next: pass an absolute path to a staged idlc launcher, e.g. " +
+        s"--old path:target/regression-harness/cache/idlc/<sha>/stage/bin/idealingua-v1-compiler."
+      )
+    }
+
+    val launcher: Path =
+      if (Files.isRegularFile(p) && Files.isExecutable(p)) p
+      else if (Files.isDirectory(p)) {
+        val candidates = Seq(
+          p.resolve("bin/idealingua-v1-compiler"),
+          p.resolve("idealingua-v1-compiler"),
+        )
+        candidates.find(c => Files.isRegularFile(c) && Files.isExecutable(c)).getOrElse {
+          throw new IllegalArgumentException(
+            s"path: ref directory does not contain a recognizable launcher. " +
+            s"Expected: $p/bin/idealingua-v1-compiler OR $p/idealingua-v1-compiler. " +
+            s"Observed: neither path is an executable file. " +
+            s"Next: confirm `sbt idealingua-v1-compiler/stage` produced a stage tree under this path."
+          )
+        }
+      }
+      else {
+        throw new IllegalArgumentException(
+          s"path: ref is neither an executable file nor a directory: $p. " +
+          s"Next: ensure the launcher has the executable bit set (`chmod +x`)."
+        )
+      }
+
+    // Discover sibling version.txt: try next to the launcher, then up two levels
+    // (stage root: stage/bin/.. == stage/), then up three (under target/universal/).
+    val versionTxt: Option[Path] = Seq(
+      launcher.getParent.resolve("version.txt"),
+      launcher.getParent.getParent.resolve("version.txt"),
+      launcher.getParent.getParent.getParent.resolve("version.txt"),
+    ).find(Files.isRegularFile(_))
+
+    val version: String = runtimeVersionOverride
+      .orElse(versionTxt.map(t => new String(Files.readAllBytes(t), StandardCharsets.UTF_8).trim))
+      .getOrElse {
+        throw new IllegalArgumentException(
+          s"path: ref lacks a runtime version. " +
+          s"Expected: --runtime-version <ver> OR a `version.txt` file next to the launcher (or at the stage root). " +
+          s"Observed: neither was provided. " +
+          s"Probed: ${Seq(launcher.getParent.resolve("version.txt"), launcher.getParent.getParent.resolve("version.txt")).mkString(", ")}. " +
+          s"Next: pass --runtime-version 1.4.20-SNAPSHOT (or whichever version the runtime artifacts were published under)."
+        )
+      }
+
+    // path: refs do not publish runtime artifacts (no sbt available to run).
+    // Scala consumers must have the matching runtime already in `~/.ivy2/local`
+    // (e.g. populated by an earlier `self`/`git:` run, or by a prior
+    // `sbt publishLocal` against the same source tree). The scala-cli template
+    // exposes `ivy2Local` as one of its resolvers, so the build will pick the
+    // artifacts up from there.
+    val ivy2Local = Path.of(sys.props.getOrElse("user.home", "")).resolve(".ivy2/local")
+    Harness.say(s"path: launcher=$launcher version=$version (scala-runtime=$needsScalaRuntime, repo=ivy2Local)")
+    IdlcResolution(
+      launcher        = launcher,
+      runtimeRepoPath = ivy2Local,
+      runtimeRepoUri  = "ivy2Local",
       runtimeVersion  = version,
     )
   }

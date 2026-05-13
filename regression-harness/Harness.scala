@@ -48,6 +48,8 @@ object Harness {
     keepWorktrees:     Boolean,
     format:            String,
     failOnDivergence:  Boolean,
+    runtimeVersion:    Option[String],
+    dryRun:            Boolean,
   )
 
   def main(rawArgs: Array[String]): Unit = {
@@ -64,14 +66,16 @@ object Harness {
   private def usage: String =
     """Usage:
       |  idl-regress --project <path>
-      |              --old <ref>   ('self' or 'git:<sha|tag|branch>')
-      |              --new <ref>   ('self' or 'git:<sha|tag|branch>')
+      |              --old <ref>   ('self' | 'git:<sha|tag|branch>' | 'path:<launcher-or-stage-dir>')
+      |              --new <ref>   (same forms)
       |              --lang scala|typescript|csharp
       |              [--out <dir>]
       |              [--regen-sample-app]
       |              [--keep-worktrees]            (retain per-sha worktrees after build)
+      |              [--runtime-version <ver>]     (required with path: when no version.txt is present)
       |              [--format human|json|both]    (default: human)
       |              [--fail-on-divergence]        (default: on)
+      |              [--dry-run]                   (print plan, do not execute)
       |""".stripMargin
 
   private def parseArgs(raw: Array[String]): Either[String, Args] = {
@@ -85,6 +89,8 @@ object Harness {
     var keep                   = false
     var format                 = "human"
     var failOnDiv              = true
+    var runtimeVersion: Option[String] = None
+    var dryRun                 = false
 
     while (it.hasNext) {
       it.next() match {
@@ -98,6 +104,8 @@ object Harness {
         case "--format"            => format  = requireNext(it, "--format")
         case "--fail-on-divergence"=> failOnDiv = true
         case "--no-fail-on-divergence" => failOnDiv = false
+        case "--runtime-version"   => runtimeVersion = Some(requireNext(it, "--runtime-version"))
+        case "--dry-run"           => dryRun = true
         case "-h" | "--help"       => return Left("")
         case other                 => return Left(s"unknown argument: $other")
       }
@@ -111,7 +119,7 @@ object Harness {
       _  <- Either.cond(SupportedLangs.contains(l), (), s"unsupported language: $l (supported: ${SupportedLangs.toSeq.sorted.mkString(",")})")
       _  <- Either.cond(Files.isDirectory(p), (), s"--project not a directory: $p")
       _  <- Either.cond(Set("human","json","both").contains(format), (), s"--format must be human|json|both")
-    } yield Args(p, o, n, l, out, regen, keep, format, failOnDiv)
+    } yield Args(p, o, n, l, out, regen, keep, format, failOnDiv, runtimeVersion, dryRun)
   }
 
   private def requireNext(it: BufferedIterator[String], flag: String): String = {
@@ -134,11 +142,23 @@ object Harness {
 
     val resolver = new IdlcResolver(repoRoot, scratchRoot, keepWorktree = args.keepWorktrees)
 
+    if (args.dryRun) {
+      say("--dry-run: printing plan only, no commands executed")
+      say(s"  resolve old=${args.oldRef} (lang=${args.lang}, runtime-version=${args.runtimeVersion.getOrElse("auto")})")
+      say(s"  resolve new=${args.newRef} (lang=${args.lang}, runtime-version=${args.runtimeVersion.getOrElse("auto")})")
+      say(s"  idlc :${args.lang} --define=layout=PLAIN --disable-zip × 2 (old/new)")
+      say(s"  sample-app cache lookup: ${args.project}/.idl-regression/sample_app.<ext>")
+      say(s"  adapter materialize + build + run × 2 (old/new) → scratch under $scratchRoot")
+      say(s"  canonicalize → wire-{old,new}.ndjson")
+      say(s"  diff → reports under $outDir (format=${args.format})")
+      scala.util.boundary.break(ExitOk)
+    }
+
     val resOld =
-      try resolver.resolve(args.oldRef)
+      try resolver.resolve(args.oldRef, args.lang, args.runtimeVersion)
       catch { case e: Throwable => say(s"FATAL: idlc resolve(old=${args.oldRef}): ${e.getMessage}"); scala.util.boundary.break(ExitBuildFailure) }
     val resNew =
-      try resolver.resolve(args.newRef)
+      try resolver.resolve(args.newRef, args.lang, args.runtimeVersion)
       catch { case e: Throwable => say(s"FATAL: idlc resolve(new=${args.newRef}): ${e.getMessage}"); scala.util.boundary.break(ExitBuildFailure) }
 
     say(s"idlc old: ${resOld.launcher} (runtime ${resOld.runtimeVersion} from ${resOld.runtimeRepoUri})")
@@ -156,7 +176,11 @@ object Harness {
       Files.createDirectories(dst)
       val rc = runIdlc(res.launcher, args.project, dst, args.lang)
       if (rc != 0) {
-        say(s"FATAL: idlc[$label] exit $rc — see $scratchRoot/idlc-$label.log")
+        say(s"FATAL: idlc[$label] failed.")
+        say(s"  Expected: ${res.launcher} :${args.lang} ... to exit 0 and emit code under $dst.")
+        say(s"  Observed: exit=$rc.")
+        say(s"  Next: re-run the launcher manually with the same arguments to capture stderr; " +
+            s"common causes are non-PLAIN layout requirements or missing --define keys.")
         scala.util.boundary.break(ExitBuildFailure)
       }
       say(s"generated[$label] -> $dst")
@@ -188,7 +212,11 @@ object Harness {
       val raw  = scratchRoot.resolve(s"raw-$label.txt")
       adapter.buildAndRun(side, genDir, sampleApp, res, raw) match {
         case Left(err)  =>
-          say(s"FATAL: adapter[$label]: $err")
+          say(s"FATAL: adapter[$label] failed.")
+          say(s"  Expected: ${args.lang} sample-app build + run to exit 0 with NDJSON on stdout.")
+          say(s"  Observed: $err")
+          say(s"  Next: inspect ${raw}.stderr (if present) and the workdir at $side; " +
+              s"verify the sample-app at $sampleApp produces lines matching ^<wireId>\\t<scenario>\\t<json>$$.")
           scala.util.boundary.break(ExitBuildFailure)
         case Right(())  =>
           rawOut(label) = raw
@@ -200,7 +228,10 @@ object Harness {
       val out = scratchRoot.resolve(s"wire-$label.ndjson")
       Canonicalize.canonicalize(raw, out) match {
         case Left(err) =>
-          say(s"FATAL: canonicalize[$label]: $err")
+          say(s"FATAL: canonicalize[$label] failed.")
+          say(s"  Expected: every non-blank line in $raw to match `<wireId>\\t<scenario>\\t<json>` with parseable JSON.")
+          say(s"  Observed: $err")
+          say(s"  Next: open $raw, locate the offending line, and fix the sample app's emit format.")
           scala.util.boundary.break(ExitBuildFailure)
         case Right(_)  => canon(label) = out
       }

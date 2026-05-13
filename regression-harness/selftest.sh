@@ -11,8 +11,19 @@
 #   sanity-cs         — HEAD vs HEAD against dtofields-only (C#). Zero divergences expected.
 #   impl9-vs-head-cs  — git:ea697f5 vs HEAD against dtofields-only (C#).
 #                       Compared to selftest-expectations/impl9-vs-head.csharp.json.
+#   matrix            — run all six cells above (3 langs × {sanity, impl9-vs-head})
+#                       sequentially. Prints a one-line PASS/FAIL summary per cell
+#                       and an overall summary table at the end. Exit 0 iff all
+#                       six cells passed.
+#   impl9-vs-head-scala       — alias for impl9-vs-head (matrix-aligned name)
+#   impl9-vs-head-typescript  — alias for impl9-vs-head-ts
+#   impl9-vs-head-csharp      — alias for impl9-vs-head-cs
+#   sanity-scala              — alias for sanity
+#   sanity-typescript         — alias for sanity-ts
+#   sanity-csharp             — alias for sanity-cs
 #
-# All extra args after the mode are forwarded to idl-regress.
+# All extra args after the mode are forwarded to idl-regress (matrix mode
+# does NOT forward args to the cell invocations).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -29,6 +40,44 @@ mode="${1:-sanity}"
 shift || true
 
 case "$mode" in
+  matrix)
+    cells=(
+      "sanity-scala"
+      "impl9-vs-head-scala"
+      "sanity-typescript"
+      "impl9-vs-head-typescript"
+      "sanity-csharp"
+      "impl9-vs-head-csharp"
+    )
+    declare -a results=()
+    overall=0
+    for cell in "${cells[@]}"; do
+      echo "==============================="
+      echo "matrix cell: $cell"
+      echo "==============================="
+      if "$0" "$cell"; then
+        results+=("PASS  $cell")
+      else
+        rc=$?
+        results+=("FAIL($rc)  $cell")
+        overall=1
+      fi
+    done
+    echo
+    echo "=========================================================="
+    echo "matrix summary (3 langs × {sanity, impl9-vs-head} = 6 cells)"
+    echo "=========================================================="
+    for r in "${results[@]}"; do
+      echo "  $r"
+    done
+    exit "$overall"
+    ;;
+  sanity-scala) exec "$0" sanity "$@" ;;
+  sanity-typescript) exec "$0" sanity-ts "$@" ;;
+  sanity-csharp) exec "$0" sanity-cs "$@" ;;
+  impl9-vs-head-scala) exec "$0" impl9-vs-head "$@" ;;
+  impl9-vs-head-typescript) exec "$0" impl9-vs-head-ts "$@" ;;
+  impl9-vs-head-csharp) exec "$0" impl9-vs-head-cs "$@" ;;
   sanity)
     if [[ ! -d "$MAIN_TESTS/source" ]]; then
       echo "selftest: missing corpus at $MAIN_TESTS/source" >&2
@@ -108,7 +157,10 @@ case "$mode" in
       "$@"
     ;;
   *)
-    echo "selftest: unknown mode '$mode' (expected: sanity | impl9-vs-head | sanity-ts | impl9-vs-head-ts | sanity-cs | impl9-vs-head-cs)" >&2
+    echo "selftest: unknown mode '$mode'" >&2
+    echo "  cells: sanity | impl9-vs-head | sanity-ts | impl9-vs-head-ts | sanity-cs | impl9-vs-head-cs" >&2
+    echo "  aliases: sanity-{scala,typescript,csharp} | impl9-vs-head-{scala,typescript,csharp}" >&2
+    echo "  matrix: matrix  (runs all six cells, summarizes)" >&2
     exit 126
     ;;
 esac
