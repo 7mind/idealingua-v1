@@ -17,7 +17,7 @@ Describe 'Scala transpiler'
   Parameters:dynamic
     while read line; do
       %data "$line"
-    done <<< "$(find ./idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs -maxdepth 1 -mindepth 1  -type d)"
+    done <<< "$(find ./idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs -maxdepth 2 -mindepth 2 -type d -name source -printf '%h\n' | sort -u)"
   End
 
   It "builds Scala SBT project in $1"
