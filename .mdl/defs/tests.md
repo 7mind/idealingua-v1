@@ -53,23 +53,6 @@ shellspec --format documentation --jobs "${NUMCPU}" -o junit --reportdir ./targe
 ret success:bool=true
 ```
 
-# action: test-pb
-
-Protobuf transpiler integration tests.
-
-```bash
-dep action.gen
-
-source ./.mdl/lib/env.sh
-prepare_build_env "${args.scala-version}"
-ensure_numcpu
-
-mkdir -p ./target/spec-reports/pb
-shellspec --format documentation --jobs "${NUMCPU}" -o junit --reportdir ./target/spec-reports/pb ./.mdl/spec/pb_spec.sh
-
-ret success:bool=true
-```
-
 # action: test
 
 Run the full integration test suite.
@@ -78,7 +61,6 @@ Run the full integration test suite.
 dep action.test-scala
 dep action.test-ts
 dep action.test-cs
-dep action.test-pb
 
 ret success:bool=true
 ```
