@@ -7,6 +7,7 @@
 //> using file Canonicalize.scala
 //> using file Diff.scala
 //> using file adapters/ScalaAdapter.scala
+//> using file adapters/TypescriptAdapter.scala
 
 package regression_harness
 
@@ -34,7 +35,7 @@ object Harness {
   private val ExitNeedSample   = 3
   private val ExitUsage        = 126
 
-  private val SupportedLangs = Set("scala")
+  private val SupportedLangs = Set("scala", "typescript")
 
   case class Args(
     project:           Path,
@@ -64,7 +65,7 @@ object Harness {
       |  idl-regress --project <path>
       |              --old <ref>   ('self' or 'git:<sha|tag|branch>')
       |              --new <ref>   ('self' or 'git:<sha|tag|branch>')
-      |              --lang scala  (M2: only 'scala')
+      |              --lang scala|typescript
       |              [--out <dir>]
       |              [--regen-sample-app]
       |              [--keep-worktrees]            (retain per-sha worktrees after build)
@@ -106,7 +107,7 @@ object Harness {
       o  <- oldRef.toRight("--old is required")
       n  <- newRef.toRight("--new is required")
       l  <- lang.toRight("--lang is required")
-      _  <- Either.cond(SupportedLangs.contains(l), (), s"unsupported language for M1: $l (only: ${SupportedLangs.mkString(",")})")
+      _  <- Either.cond(SupportedLangs.contains(l), (), s"unsupported language: $l (supported: ${SupportedLangs.toSeq.sorted.mkString(",")})")
       _  <- Either.cond(Files.isDirectory(p), (), s"--project not a directory: $p")
       _  <- Either.cond(Set("human","json","both").contains(format), (), s"--format must be human|json|both")
     } yield Args(p, o, n, l, out, regen, keep, format, failOnDiv)
@@ -173,8 +174,9 @@ object Harness {
     say(s"sample-app: $sampleApp")
 
     val adapter: LangAdapter = args.lang match {
-      case "scala" => new adapters.ScalaAdapter(repoRoot)
-      case other   => throw new IllegalStateException(s"no adapter: $other")
+      case "scala"      => new adapters.ScalaAdapter(repoRoot)
+      case "typescript" => new adapters.TypescriptAdapter(repoRoot)
+      case other        => throw new IllegalStateException(s"no adapter: $other")
     }
 
     val rawOut = mutable.LinkedHashMap.empty[String, Path]
@@ -216,8 +218,9 @@ object Harness {
 
   private def runIdlc(launcher: Path, project: Path, target: Path, lang: String): Int = {
     val role = lang match {
-      case "scala" => ":scala"
-      case other   => throw new IllegalStateException(s"M1 unsupported lang: $other")
+      case "scala"      => ":scala"
+      case "typescript" => ":typescript"
+      case other        => throw new IllegalStateException(s"unsupported lang for idlc dispatch: $other")
     }
     val source  = project.resolve("source")
     val overlay = project.resolve("overlay")

@@ -28,9 +28,18 @@ final class SampleAppGen(
   repoRoot:    Path,
 ) {
 
+  // Per-language source extension. The prompt language id (`scala`, `typescript`)
+  // and the on-disk file extension diverge for TypeScript (`.ts`) — keep both
+  // explicit so future adapters can map cleanly (e.g. `csharp` → `.cs`).
+  private val srcExt = lang match {
+    case "scala"      => "scala"
+    case "typescript" => "ts"
+    case other        => other
+  }
+
   private val cacheDir   = project.resolve(".idl-regression")
-  private val cacheFile  = cacheDir.resolve(s"sample_app.$lang")
-  private val metaFile   = cacheDir.resolve(s"sample_app.$lang.meta")
+  private val cacheFile  = cacheDir.resolve(s"sample_app.$srcExt")
+  private val metaFile   = cacheDir.resolve(s"sample_app.$srcExt.meta")
 
   /** Either(needSample) — caller exits 3. Right(path) — usable sample. */
   def resolve(genTree: Path, regen: Boolean): Either[Unit, Path] = {

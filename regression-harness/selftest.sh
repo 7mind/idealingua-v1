@@ -2,10 +2,12 @@
 # Self-tests for idl-regress.
 #
 # Modes:
-#   sanity        — HEAD vs HEAD against main-tests (M1). Zero divergences expected.
-#   impl9-vs-head — git:ea697f5 (IMPL-9 default-flip) vs HEAD against main-tests.
-#                   Compared to selftest-expectations/impl9-vs-head.scala.json
-#                   (initially empty per plan §9.2; any divergence is a real signal).
+#   sanity            — HEAD vs HEAD against main-tests (Scala). Zero divergences expected.
+#   impl9-vs-head     — git:ea697f5 (IMPL-9 default-flip) vs HEAD against dtofields-only.
+#                       Compared to selftest-expectations/impl9-vs-head.scala.json.
+#   sanity-ts         — HEAD vs HEAD against dtofields-only (TypeScript). Zero divergences expected.
+#   impl9-vs-head-ts  — git:ea697f5 vs HEAD against dtofields-only (TypeScript).
+#                       Compared to selftest-expectations/impl9-vs-head.typescript.json.
 #
 # All extra args after the mode are forwarded to idl-regress.
 set -euo pipefail
@@ -50,8 +52,34 @@ case "$mode" in
       --lang scala \
       "$@"
     ;;
+  sanity-ts)
+    if [[ ! -d "$DTOFIELDS_ONLY/source" ]]; then
+      echo "selftest: missing corpus at $DTOFIELDS_ONLY/source" >&2
+      exit 2
+    fi
+    cd "$REPO_ROOT"
+    exec "$HARNESS_DIR/idl-regress" \
+      --project "$DTOFIELDS_ONLY" \
+      --old self \
+      --new self \
+      --lang typescript \
+      "$@"
+    ;;
+  impl9-vs-head-ts)
+    if [[ ! -d "$DTOFIELDS_ONLY/source" ]]; then
+      echo "selftest: missing corpus at $DTOFIELDS_ONLY/source" >&2
+      exit 2
+    fi
+    cd "$REPO_ROOT"
+    exec "$HARNESS_DIR/idl-regress" \
+      --project "$DTOFIELDS_ONLY" \
+      --old "git:ea697f5" \
+      --new self \
+      --lang typescript \
+      "$@"
+    ;;
   *)
-    echo "selftest: unknown mode '$mode' (expected: sanity | impl9-vs-head)" >&2
+    echo "selftest: unknown mode '$mode' (expected: sanity | impl9-vs-head | sanity-ts | impl9-vs-head-ts)" >&2
     exit 126
     ;;
 esac
