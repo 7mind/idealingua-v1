@@ -10,7 +10,7 @@ import izumi.idealingua.translator.toscala.types.runtime
 import izumi.idealingua.typer.ir.{Member, TypeDef => NewTypeDef}
 
 import scala.annotation.tailrec
-import scala.meta.*
+import scala.meta.{Term, Type}
 
 /** PR-02 IMPL-7a.2 Phase B M5: WIRE-FORMAT-CRITICAL new-IR port of
   * `CirceTranslatorExtensionBase`.
@@ -45,17 +45,23 @@ import scala.meta.*
   *   - Adt / Interface: tagged-union codec — encodes as
   *     `{ "<wireId>": <inner> }` and decodes by dispatching on the first key.
   *     Implementor case order is deterministic (sorted).
+  *
+  * F-TextTree M8d: ported off `scala.meta` quasiquotes — every `q"trait …"`
+  * body is now composed as a plain Scala source string. Field / identifier
+  * names route through `DomainScalaParseBack.renderS30(Term.Name(_))` for
+  * Scala-3 reserved-word escape; type references render via
+  * `ctx.conv.toScala(...).typeFull.toString`. The produced strings are still
+  * consumed by `CogenProductSplice.parseSiblings` / `parseInit` at carrier
+  * render time (parse-back boundary unchanged).
+  *
+  * Wire-format parity is preserved by construction: the strings parse back to
+  * the same `Defn.Trait` AST as the legacy quasiquotes; scalameta's printer
+  * then renormalises the AST to the canonical bytes that downstream goldens
+  * expect. The `runWireFixtures` and `runCrossLangInterop` gates are the
+  * authoritative oracles.
   */
 trait DomainCirceTranslatorExtensionBase {
 
-  /** F-TextTree M8a: Circe trait carrier.
-    *
-    * Holds the trait's bare name (used to build the companion's
-    * `extends <Name>` init at the call site), the rendered trait source
-    * text (consumed as a `siblings` slot entry), and the rendered init
-    * text for the trait (consumed as a `companionCirceBases` slot entry).
-    * The Defn-level constructor is retained internally below; the
-    * `apply` factory renders both fragments via `renderS30`. */
   /** F-TextTree M8a: Circe trait carrier.
     *
     * `defnText` is the rendered trait source for the `siblings` slot.
@@ -64,18 +70,31 @@ trait DomainCirceTranslatorExtensionBase {
     * `name` is exposed for trace/debug callers. */
   protected case class CirceTrait(name: String, defnText: String, initText: String)
 
-  private def mkCirceTrait(ctx: DomainSTContext, name: String, defn: Defn.Trait, ownerId: izumi.idealingua.model.common.TypeId): CirceTrait = {
+  /** F-TextTree M8d: accepts rendered trait source directly (no scala.meta
+    * round-trip on the trait body). The init for the
+    * `companionCirceBases` slot still flows through `ScalaTypeConverter`
+    * (`ctx.conv.toScala(ownerId).sibling(name).init()`) — when `ownerId`
+    * is the synthesized impl-DTO `DTOId(owner, "Struct")` the resulting
+    * sibling-init type qualifies as `Owner.StructCirce` (not just
+    * `StructCirce`), which is what the legacy `q"…"` quasiquote emitted
+    * and what downstream goldens encode. We render the init to source
+    * text once here so the `CirceTrait.initText` payload remains String. */
+  private def mkCirceTrait(ctx: DomainSTContext, name: String, defnText: String, ownerId: izumi.idealingua.model.common.TypeId): CirceTrait = {
     import ctx.conv.*
-    val init = ctx.conv.toScala(ownerId).sibling(name).init()
-    CirceTrait(name, DomainScalaParseBack.renderS30(defn), DomainScalaParseBack.renderS30(init))
+    val init     = ctx.conv.toScala(ownerId).sibling(name).init()
+    val initText = DomainScalaParseBack.renderS30(init)
+    CirceTrait(name, defnText, initText)
   }
 
   /** Scala-version-specific deriver imports — Scala 3 uses
     * `io.circe.generic.semiauto`, Scala 2.13 uses `io.circe.derivation`.
-    */
-  protected def classDeriverImports(scalaVersions: List[String]): List[Import]
+    *
+    * F-TextTree M8d: returns rendered import source text directly. */
+  protected def classDeriverImports(scalaVersions: List[String]): List[String]
 
   private val circeRuntimePkg = runtime.Pkg.of[IRTTimeInstances]
+  private val irtTimeInstancesBase: String =
+    circeRuntimePkg.conv.toScala[IRTTimeInstances].typeAbsolute.toString
 
   /** Defns to splice into the Identifier companion + as siblings. */
   def emitForIdentifier(ctx: DomainSTContext, id: NewTypeDef.Identifier): CirceTrait =
@@ -131,41 +150,35 @@ trait DomainCirceTranslatorExtensionBase {
     if (unwrap && flat.fields.sizeIs == 1) {
       val stype       = ctx.conv.toScala(dtoId)
       val name        = stype.fullJavaType.name
-      val tpe         = stype.typeName
+      val tpe         = stype.typeName.toString
       val singleField = flat.fields.head.field
-      val ftpe        = ctx.conv.toScala(singleField.typeId)
-      val base        = Init(circeRuntimePkg.conv.toScala[IRTTimeInstances].typeAbsolute, Name.Anonymous(), Seq.empty)
+      val ftpe        = ctx.conv.toScala(singleField.typeId).typeFull.toString
+      // Legacy emitted bare `termName(d)` (not `termFull` — that would
+      // qualify with the parent companion, breaking the goldens for
+      // service-method-output ephemerals like `TestService.HelloOutput`).
+      val termRef     = stype.termName.toString
+      val fieldNm     = DomainScalaParseBack.renderS30(Term.Name(singleField.name))
 
+      val encName = valName(s"encodeUnwrapped$name")
+      val decName = valName(s"decodeUnwrapped$name")
+      val traitNm = typeName(s"${name}Circe")
+      // Indent each emitter helper at 2-space (trait body) for parse-back stability.
       val encoder =
         if (isObjectEncoder(ctx, singleField.typeId)) {
-          q"""
-             implicit val ${Pat.Var(Term.Name(s"encodeUnwrapped$name"))}: Encoder.AsObject[$tpe] = Encoder.AsObject.instance {
-               v => v.${Term.Name(singleField.name)}.asJsonObject
-             }
-           """
+          s"""  implicit val $encName: Encoder.AsObject[$tpe] = Encoder.AsObject.instance { v => v.$fieldNm.asJsonObject }"""
         } else {
-          q"""
-             implicit val ${Pat.Var(Term.Name(s"encodeUnwrapped$name"))}: Encoder[$tpe] = Encoder.instance {
-               v => v.${Term.Name(singleField.name)}.asJson
-             }
-           """
+          s"""  implicit val $encName: Encoder[$tpe] = Encoder.instance { v => v.$fieldNm.asJson }"""
         }
-      mkCirceTrait(
-        ctx,
-        s"${name}Circe",
-        q"""trait ${Type.Name(s"${name}Circe")} extends $base {
-              import _root_.io.circe._
-              import _root_.io.circe.syntax._
 
-              $encoder;
+      val traitSrc =
+        s"""trait $traitNm extends $irtTimeInstancesBase {
+           |  import _root_.io.circe.*
+           |  import _root_.io.circe.syntax.*
+           |$encoder
+           |  implicit val $decName: Decoder[$tpe] = Decoder.instance { v => v.as[$ftpe].map(d => $termRef(d)) }
+           |}""".stripMargin
 
-              implicit val ${Pat.Var(Term.Name(s"decodeUnwrapped$name"))}: Decoder[$tpe] = Decoder.instance {
-                v => v.as[${ftpe.typeFull}].map(d => ${stype.termName}(d))
-              }
-            }
-        """,
-        dtoId,
-      )
+      mkCirceTrait(ctx, s"${name}Circe", traitSrc, dtoId)
     } else {
       withDerivedStructCore(ctx, dtoId, flat.fields, scalaVersions)
     }
@@ -176,57 +189,63 @@ trait DomainCirceTranslatorExtensionBase {
     import ctx.conv.*
     val id  = adt.id
     val t   = toScala(id)
-    val tpe = t.typeFull
+    val tpe = t.typeFull.toString
 
     // Deterministic order: alternatives carry source order on `TypeDef.Adt.alternatives`
     // already (List, not Set — see Domain.scala "Field-ordering invariant").
     val implementors = adt.alternatives
 
-    val enc = implementors.map { c =>
-      p"""case v: ${t.within(c.typename).typeFull} => Map(${Lit.String(c.wireId)} -> v.value).asJsonObject"""
+    // Encoder case-arm format mirrors the scalameta Scala30 printer output
+    // for `q"...Encoder.AsObject.instance { case v: T => Map(...).asJsonObject }"`:
+    // each case keyword at 4-space indent, body indented by another 2 spaces
+    // on the next line.
+    val encArms = implementors.map { c =>
+      val altTypeFull = t.within(c.typename).typeFull.toString
+      val wire        = quoteString(c.wireId)
+      s"""    case v: $altTypeFull =>
+         |      Map($wire -> v.value).asJsonObject""".stripMargin
     }
 
-    val dec = implementors.map { c =>
-      p"""case ${Lit.String(c.wireId)} => value.as[${toScala(c.typeId).typeAbsolute}].map(${t.within(c.typename).termFull}.apply)"""
+    val decArms = implementors.map { c =>
+      val altTypeAbs  = toScala(c.typeId).typeAbsolute.toString
+      val altTermFull = t.within(c.typename).termFull.toString
+      val wire        = quoteString(c.wireId)
+      s"""      case $wire =>
+         |        value.as[$altTypeAbs].map($altTermFull.apply)""".stripMargin
     }
 
+    val altList  = implementors.map(c => quoteString(c.wireId)).mkString(", ")
+    val cnameLit = quoteString(id.wireId)
     val missingDefinitionCase =
-      p"""case _ =>
-           val cname = ${Lit.String(id.wireId)}
-           val alts = List(..${implementors.map(c => Lit.String(c.wireId))}).mkString(",")
-           Left(DecodingFailure(s"Can't decode type $$fname as $$cname, expected one of [$$alts]", value.history))
-      """
+      s"""      case _ =>
+         |        val cname = $cnameLit
+         |        val alts = List($altList).mkString(",")
+         |        Left(DecodingFailure(s"Can't decode type $$fname as $$cname, expected one of [$$alts]", value.history))""".stripMargin
 
-    val decCases = dec :+ missingDefinitionCase
+    val allEncArms = encArms.mkString("\n")
+    val allDecArms = (decArms :+ missingDefinitionCase).mkString("\n")
 
-    mkCirceTrait(
-      ctx,
-      s"${id.name}Circe",
-      q"""trait ${Type.Name(s"${id.name}Circe")} {
-             import _root_.io.circe.syntax._
-             import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
+    val encName = valName(s"encode${id.name}")
+    val decName = valName(s"decode${id.name}")
+    val traitNm = typeName(s"${id.name}Circe")
+    val traitSrc =
+      s"""trait $traitNm {
+         |  import _root_.io.circe.syntax.*
+         |  import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
+         |  implicit val $encName: Encoder.AsObject[$tpe] = Encoder.AsObject.instance {
+         |$allEncArms
+         |  }
+         |  implicit val $decName: Decoder[$tpe] = Decoder.instance(c => {
+         |    val maybeContent = c.keys.flatMap(_.headOption).toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \\"type_name\\": { ...fields } }", c.history))
+         |    for (fname <- maybeContent; value = c.downField(fname); result <- fname match {
+         |$allDecArms
+         |    }) yield {
+         |      result
+         |    }
+         |  })
+         |}""".stripMargin
 
-             implicit val ${Pat.Var(Term.Name(s"encode${id.name}"))}: Encoder.AsObject[$tpe] = Encoder.AsObject.instance {
-                 ..case $enc
-             }
-
-             implicit val ${Pat.Var(Term.Name(s"decode${id.name}"))}: Decoder[$tpe] = Decoder.instance(c => {
-                 val maybeContent = c.keys.flatMap(_.headOption)
-                      .toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \"type_name\": { ...fields } }", c.history))
-
-                 for {
-                   fname <- maybeContent
-                   value = c.downField(fname)
-                   result <- fname match { ..case $decCases }
-                 } yield {
-                   result
-                 }
-               }
-             )
-          }
-      """,
-      id,
-    )
+    mkCirceTrait(ctx, s"${id.name}Circe", traitSrc, id)
   }
 
   /** Defns for an Interface — tagged-union codec keyed by implementing DTOs.
@@ -254,8 +273,8 @@ trait DomainCirceTranslatorExtensionBase {
     */
   def emitForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): CirceTrait = {
     import ctx.conv.*
-    val t            = toScala(i.id)
-    val tpe          = t.typeFull
+    val t   = toScala(i.id)
+    val tpe = t.typeFull.toString
 
     val interfaceInheritedDtos: Set[DTOId] = {
       // Walk every user DTO and check whether `i.id` is reachable via the
@@ -305,70 +324,75 @@ trait DomainCirceTranslatorExtensionBase {
 
     val implementors = (interfaceInheritedDtos ++ descendantMirrors ++ mirrorImplementor).toList.sortBy(_.toString)
 
-    val enc = implementors.map { c =>
-      p"""case v: ${toScala(c).typeFull} => Map(${Lit.String(c.wireId)} -> v).asJsonObject"""
+    val encArms = implementors.map { c =>
+      val implTypeFull = toScala(c).typeFull.toString
+      val wire         = quoteString(c.wireId)
+      s"""    case v: $implTypeFull =>
+         |      Map($wire -> v).asJsonObject""".stripMargin
     }
 
-    val dec = implementors.map { c =>
-      p"""case ${Lit.String(c.wireId)} => value.as[${toScala(c).typeFull}]"""
+    val decArms = implementors.map { c =>
+      val implTypeFull = toScala(c).typeFull.toString
+      val wire         = quoteString(c.wireId)
+      s"""      case $wire =>
+         |        value.as[$implTypeFull]""".stripMargin
     }
 
+    val altList  = implementors.map(c => quoteString(c.wireId)).mkString(", ")
+    val cnameLit = quoteString(i.id.wireId)
     val missingDefinitionCase =
-      p"""case _ =>
-           val cname = ${Lit.String(i.id.wireId)}
-           val alts = List(..${implementors.map(c => Lit.String(c.wireId))}).mkString(",")
-           Left(DecodingFailure(s"Can't decode type $$fname as $$cname, expected one of [$$alts]", value.history))
-      """
+      s"""      case _ =>
+         |        val cname = $cnameLit
+         |        val alts = List($altList).mkString(",")
+         |        Left(DecodingFailure(s"Can't decode type $$fname as $$cname, expected one of [$$alts]", value.history))""".stripMargin
 
-    val decCases = dec :+ missingDefinitionCase
+    val allEncArms = encArms.mkString("\n")
+    val allDecArms = (decArms :+ missingDefinitionCase).mkString("\n")
 
-    mkCirceTrait(
-      ctx,
-      s"${i.id.name}Circe",
-      q"""trait ${Type.Name(s"${i.id.name}Circe")} {
-             import _root_.io.circe.syntax._
-             import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
+    val encName = valName(s"encode${i.id.name}")
+    val decName = valName(s"decode${i.id.name}")
+    val traitNm = typeName(s"${i.id.name}Circe")
+    val traitSrc =
+      s"""trait $traitNm {
+         |  import _root_.io.circe.syntax.*
+         |  import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
+         |  implicit val $encName: Encoder.AsObject[$tpe] = Encoder.AsObject.instance {
+         |$allEncArms
+         |  }
+         |  implicit val $decName: Decoder[$tpe] = Decoder.instance(c => {
+         |    val maybeContent = c.keys.flatMap(_.headOption).toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \\"type_name\\": { ...fields } }", c.history))
+         |    for (fname <- maybeContent; value = c.downField(fname); result <- fname match {
+         |$allDecArms
+         |    }) yield result
+         |  })
+         |}""".stripMargin
 
-             implicit val ${Pat.Var(Term.Name(s"encode${i.id.name}"))}: Encoder.AsObject[$tpe] = Encoder.AsObject.instance {
-               ..case $enc
-             }
-
-             implicit val ${Pat.Var(Term.Name(s"decode${i.id.name}"))}: Decoder[$tpe] = Decoder.instance(c => {
-                 val maybeContent = c.keys.flatMap(_.headOption)
-                      .toRight(DecodingFailure("No type name found in JSON, expected JSON of form { \"type_name\": { ...fields } }", c.history))
-
-                 for {
-                   fname <- maybeContent
-                   value = c.downField(fname)
-                   result <- fname match { ..case $decCases }
-                 } yield result
-               }
-             )
-          }
-      """,
-      i.id,
-    )
+    mkCirceTrait(ctx, s"${i.id.name}Circe", traitSrc, i.id)
   }
 
   protected def withParseable(ctx: DomainSTContext, id: TypeId): CirceTrait = {
-    val t   = ctx.conv.toScala(id)
-    val tpe = t.typeFull
-    mkCirceTrait(
-      ctx,
-      s"${id.name}Circe",
-      q"""trait ${Type.Name(s"${id.name}Circe")} {
-            import _root_.io.circe.{Encoder, Decoder, KeyEncoder, KeyDecoder}
-            import scala.util._
-            implicit val ${Pat.Var(Term.Name(s"encode${id.name}"))}: Encoder[$tpe] = Encoder.encodeString.contramap(_.toString)
-            implicit val ${Pat.Var(Term.Name(s"decode${id.name}"))}: Decoder[$tpe] = Decoder.decodeString.emapTry(v => Try(${t.termFull}.parse(v)))
-            implicit val ${Pat.Var(Term.Name(s"encodeKey${id.name}"))}: KeyEncoder[$tpe] = KeyEncoder.encodeKeyString.contramap(_.toString)
-            implicit val ${Pat.Var(Term.Name(s"decodeKey${id.name}"))}: KeyDecoder[$tpe] = new KeyDecoder[$tpe] {
-              final def apply(key: String): Option[$tpe] = Try(${t.termFull}.parse(key)).toOption
-            }
-          }
-      """,
-      id,
-    )
+    val t       = ctx.conv.toScala(id)
+    val tpe     = t.typeFull.toString
+    val termAbs = t.termFull.toString
+    val nm      = id.name
+    val traitNm     = typeName(s"${nm}Circe")
+    val encName     = valName(s"encode$nm")
+    val decName     = valName(s"decode$nm")
+    val encKeyName  = valName(s"encodeKey$nm")
+    val decKeyName  = valName(s"decodeKey$nm")
+    // KeyDecoder body matches the legacy quasiquote scalameta-Scala30
+    // printer output, which collapses `new KeyDecoder[$tpe] { final def
+    // apply(...): Option[$tpe] = ... }` onto a single line.
+    val traitSrc =
+      s"""trait $traitNm {
+         |  import _root_.io.circe.{Encoder, Decoder, KeyEncoder, KeyDecoder}
+         |  import scala.util.*
+         |  implicit val $encName: Encoder[$tpe] = Encoder.encodeString.contramap(_.toString)
+         |  implicit val $decName: Decoder[$tpe] = Decoder.decodeString.emapTry(v => Try($termAbs.parse(v)))
+         |  implicit val $encKeyName: KeyEncoder[$tpe] = KeyEncoder.encodeKeyString.contramap(_.toString)
+         |  implicit val $decKeyName: KeyDecoder[$tpe] = new KeyDecoder[$tpe] { final def apply(key: String): Option[$tpe] = Try($termAbs.parse(key)).toOption }
+         |}""".stripMargin
+    mkCirceTrait(ctx, s"${nm}Circe", traitSrc, id)
   }
 
   protected def withDerivedClass(ctx: DomainSTContext, dto: NewTypeDef.Dto, scalaVersions: List[String]): CirceTrait = {
@@ -388,9 +412,7 @@ trait DomainCirceTranslatorExtensionBase {
   ): CirceTrait = {
     val stype = ctx.conv.toScala(id)
     val name  = stype.fullJavaType.name
-    val tpe   = stype.typeName
-
-    val base = Init(circeRuntimePkg.conv.toScala[IRTTimeInstances].typeAbsolute, Name.Anonymous(), Seq.empty)
+    val tpe   = stype.typeName.toString
 
     // Scala 3 AnyVal fallback (mirrors legacy fix): if the struct is exactly
     // one scalar field qualifying for AnyVal AND we're targeting Scala 3,
@@ -410,35 +432,32 @@ trait DomainCirceTranslatorExtensionBase {
       dedupedFields.size == 1 && dedupedFields.forall(ff => isAnyValField(ctx, ff.field.typeId))
     }
 
+    val traitNm = typeName(s"${name}Circe")
+    val encName = valName(s"encode$name")
+    val decName = valName(s"decode$name")
     if (anyvalCase && isScala3) {
       val singleField = dedupedFields.head.field
-      val ftpe = ctx.conv.toScala(singleField.typeId).typeFull
-      mkCirceTrait(
-        ctx,
-        s"${name}Circe",
-        q"""trait ${Type.Name(s"${name}Circe")} extends $base {
-              import _root_.io.circe.{Encoder, Decoder}
-
-              implicit val ${Pat.Var(Term.Name(s"encode$name"))}: Encoder.AsObject[$tpe] = Encoder.forProduct1[$tpe, $ftpe](${Lit.String(singleField.name)})((v: $tpe) => v.${Term.Name(singleField.name)})
-              implicit val ${Pat.Var(Term.Name(s"decode$name"))}: Decoder[$tpe] = Decoder.forProduct1[$tpe, $ftpe](${Lit.String(singleField.name)})((d: $ftpe) => new ${stype.typeName}(d))
-            }
-        """,
-        id,
-      )
+      val ftpe        = ctx.conv.toScala(singleField.typeId).typeFull.toString
+      val fieldLit    = quoteString(singleField.name)
+      val fieldNm     = DomainScalaParseBack.renderS30(Term.Name(singleField.name))
+      val ctorType    = stype.typeName.toString
+      val traitSrc =
+        s"""trait $traitNm extends $irtTimeInstancesBase {
+           |  import _root_.io.circe.{Encoder, Decoder}
+           |  implicit val $encName: Encoder.AsObject[$tpe] = Encoder.forProduct1[$tpe, $ftpe]($fieldLit)((v: $tpe) => v.$fieldNm)
+           |  implicit val $decName: Decoder[$tpe] = Decoder.forProduct1[$tpe, $ftpe]($fieldLit)((d: $ftpe) => new $ctorType(d))
+           |}""".stripMargin
+      mkCirceTrait(ctx, s"${name}Circe", traitSrc, id)
     } else {
-      mkCirceTrait(
-        ctx,
-        s"${name}Circe",
-        q"""trait ${Type.Name(s"${name}Circe")} extends $base {
-            ..${classDeriverImports(scalaVersions)}
-            import _root_.io.circe.{Encoder, Decoder}
-
-            implicit val ${Pat.Var(Term.Name(s"encode$name"))}: Encoder.AsObject[$tpe] = deriveEncoder[$tpe]
-            implicit val ${Pat.Var(Term.Name(s"decode$name"))}: Decoder[$tpe] = deriveDecoder[$tpe]
-          }
-      """,
-        id,
-      )
+      val deriverImports = classDeriverImports(scalaVersions).mkString("\n  ")
+      val traitSrc =
+        s"""trait $traitNm extends $irtTimeInstancesBase {
+           |  $deriverImports
+           |  import _root_.io.circe.{Encoder, Decoder}
+           |  implicit val $encName: Encoder.AsObject[$tpe] = deriveEncoder[$tpe]
+           |  implicit val $decName: Decoder[$tpe] = deriveDecoder[$tpe]
+           |}""".stripMargin
+      mkCirceTrait(ctx, s"${name}Circe", traitSrc, id)
     }
   }
 
@@ -519,6 +538,50 @@ trait DomainCirceTranslatorExtensionBase {
       case _          => true
     }
   }
+
+  /** Render a val-/def-name identifier with Scala 2.13- and 3-correct
+    * disambiguation for trailing-underscore names. The legacy quasiquote
+    * (`q"implicit val ${Pat.Var(Term.Name("encodeName_stored_"))}: ..."`)
+    * printed a space before the colon (`"... encodeName_stored_ :"`) to
+    * prevent the parser from lexing `_:` as a typed-wildcard pattern.
+    * Replicate that disambiguation by appending a space when the
+    * identifier ends in `_`.
+    *
+    * Verified at `MetaProbeTest`: `Pat.Var(Term.Name("encodeName_stored_"))`
+    * inside a `q"implicit val …: T = ???"` quasiquote prints as
+    * `"implicit val encodeName_stored_ : T = ???"` on both Scala 2.13 and
+    * Scala 3 dialects. */
+  private def valName(s: String): String = {
+    val rendered = DomainScalaParseBack.renderS30(Term.Name(s))
+    if (rendered.endsWith("_")) s"$rendered " else rendered
+  }
+
+  /** Render a type-name identifier with backtick escaping for reserved
+    * words. Drives the `trait $TypeName` and the type-name slot inside
+    * `Encoder.AsObject[$TypeName]`. */
+  private def typeName(s: String): String =
+    DomainScalaParseBack.renderS30(Type.Name(s))
+
+  /** Render a Scala `Lit.String` source-form for `s` — wraps in double
+    * quotes and escapes embedded `"` and `\\`. F-TextTree M8d: replaces
+    * `Lit.String(s)` callsites; the legacy quasiquote emitted these
+    * literals via scalameta's printer which escapes only the same two
+    * characters. */
+  private def quoteString(s: String): String = {
+    val sb = new StringBuilder(s.length + 2)
+    sb.append('"')
+    var i = 0
+    while (i < s.length) {
+      s.charAt(i) match {
+        case '\\' => sb.append("\\\\")
+        case '"'  => sb.append("\\\"")
+        case c    => sb.append(c)
+      }
+      i += 1
+    }
+    sb.append('"')
+    sb.toString
+  }
 }
 
 /** Concrete derivation-import-wiring subclass — mirrors legacy
@@ -526,11 +589,11 @@ trait DomainCirceTranslatorExtensionBase {
   * `io.circe.derivation`; Scala 3 uses `io.circe.generic.semiauto`.
   */
 object DomainCirceDerivationTranslatorExtension extends DomainCirceTranslatorExtensionBase {
-  override protected def classDeriverImports(scalaVersions: List[String]): List[Import] = {
+  override protected def classDeriverImports(scalaVersions: List[String]): List[String] = {
     if (scalaVersions.exists(_.startsWith("3"))) List(scala3Import)
     else List(scala2Import)
   }
 
-  private lazy val scala2Import = q""" import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder} """
-  private lazy val scala3Import = q""" import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder} """
+  private val scala2Import = "import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}"
+  private val scala3Import = "import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}"
 }
