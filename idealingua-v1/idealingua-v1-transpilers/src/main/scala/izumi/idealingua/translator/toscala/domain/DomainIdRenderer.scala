@@ -1,5 +1,7 @@
 package izumi.idealingua.translator.toscala.domain
 
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.common.PrimitiveId
 import izumi.idealingua.model.common.TypeId.{EnumId, IdentifierId}
 import izumi.idealingua.model.il.ast.typed.{Field, IdField}
@@ -8,31 +10,56 @@ import izumi.idealingua.translator.toscala.products.{CogenProduct, RenderableCog
 import izumi.idealingua.translator.toscala.types.ScalaField
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
-import scala.meta._
+import scala.meta.Term
 
 /** Renders a new-IR `TypeDef.Identifier` as the same scala.meta `Defn`s the
   * legacy `IdRenderer.renderIdentifier` produces (modulo the extension
   * chain).
   *
-  * IMPL-7a.2 Phase B M3 (relaxed parity): produces structurally correct
-  * Scala — final case class with the identifier's fields, companion with a
-  * `parse(String)` method, tools-class for the extension chain. Field
-  * sorting matches the legacy renderer (`sortBy(_.field.field.name)` for
-  * parsers; declaration order for `toString`).
+  * F-TextTree M6: ported off `scala.meta` quasiquotes onto
+  * `TextTree[ScalaRefHandle]` composition + `.mapRender(resolver.resolve)`
+  * at the renderer boundary. Type references travel as
+  * `ScalaRefHandle.{TypeName, TypeFull, TermFull}` value nodes. Field
+  * parameters are spliced as pre-rendered `Term.Param.syntax` strings —
+  * `ScalaField.toParams` produces `scala.meta.Term.Param` trees whose
+  * `.syntax` is `name: Type`, exactly the shape the legacy
+  * `q"final case class … (..$decls)"` splice rendered.
   *
-  * Inputs come directly off `TypeDef.Identifier.fields: List[IdField]` —
-  * identifiers have no inheritance, so no flat-struct lookup is needed.
+  * **Carrier strategy** (same as M5): the `CogenProduct[Defn.Class]`
+  * carrier is preserved — extensions (Circe sibling + base, AnyVal,
+  * Cast*) continue to mutate it via `prependBase` / `appendDefinitions`.
+  * The renderer composes textual output via `TextTree`, lowers to
+  * `String`, then re-parses to `Defn.Class` / `Defn.Object` via
+  * `DomainScalaParseBack` at the boundary.
   *
-  * The legacy renderer reads `typespace.structure.structure(i).toScala`,
-  * which for `Identifier` produces a `PlainScalaStruct` over the identifier's
-  * fields (each `IdField` is widened to a `Field`). We do the same widening
-  * inline.
+  * **Byte parity**: every emitted `Defn` carries body stats so the empty-
+  * brace pitfall (M5) does not apply to the identifier case class or
+  * companion. The `tools` implicit class for an Identifier has no parent
+  * and no body — `CogenProduct.filterEmptyClasses` drops it via
+  * `templ.body.stats.isEmpty && templ.inits.isEmpty`, so braces on the
+  * tools shape are irrelevant to the rendered output. Still, we omit
+  * `{}` from the tools text for consistency with the M5 pattern.
+  *
+  * Field sorting matches the legacy renderer: `sortBy(_.field.field.name)`
+  * for BOTH `parse(...)` arm AND `toString` `Seq(...)` builder. The case-
+  * class constructor parameters retain declaration order. Inputs come
+  * directly off `TypeDef.Identifier.fields: List[IdField]` — identifiers
+  * have no inheritance, so no flat-struct lookup is needed.
   */
 final class DomainIdRenderer(ctx: DomainSTContext) {
-  import izumi.idealingua.translator.toscala.types.ScalaField._
-  import ctx.conv._
+
+  private val resolver = new DomainScalaTextResolver(ctx.conv)
+
+  // Pre-computed bare-text references that the legacy `q"…"` path emitted
+  // verbatim via `${ctx.rt.X.termBase}.syntax` / `init().syntax`. These do
+  // not depend on per-call typeId, so we precompute once per renderer.
+  private val tIDLIdentifierTerm = DomainScalaParseBack.renderS30(ctx.rt.tIDLIdentifier.termBase)
+  private val generatedInit      = DomainScalaParseBack.renderS30(ctx.rt.generated.init())
+  private val tIDLIdentifierInit = DomainScalaParseBack.renderS30(ctx.rt.tIDLIdentifier.init())
 
   def renderIdentifier(i: NewTypeDef.Identifier): RenderableCogenProduct = {
+    import izumi.idealingua.translator.toscala.types.ScalaField._
+
     val typeName = i.id.name
 
     val scalaFields: List[ScalaField] = i.fields.map { idf =>
@@ -52,73 +79,101 @@ final class DomainIdRenderer(ctx: DomainSTContext) {
       )
     }
 
-    val decls = scalaFields.toParams
-
-    val interp = Term.Interpolate(
-      Term.Name("s"),
-      List(Lit.String(typeName + "#"), Lit.String("")),
-      List(Term.Name("suffix")),
-    )
-
-    val t     = ctx.conv.toScala(i.id)
-    val tools = t.within(s"${i.id.name}Extensions")
-
-    val qqTools = q"""implicit class ${tools.typeName}(_value: ${t.typeFull}) { }"""
+    // Splice as pre-rendered `Term.Param.syntax` (each `Term.Param` is a
+    // `scala.meta` tree built by `ScalaField.toParams`; `.syntax` yields
+    // the same `name: Type` shape the legacy `q"… (..$decls)"` produced).
+    val declsText = scalaFields.toParams.map(DomainScalaParseBack.renderS30(_)).mkString(", ")
 
     val sortedFields = scalaFields.sortBy(_.field.field.name)
 
-    val parsers = sortedFields.zipWithIndex.map {
+    // Each parser is the body of a single named-arg in the companion's
+    // `parse(...)` constructor call. We compose each as a `TextTree` and
+    // join later with ", " into the call site.
+    val parsers: List[TextTree[ScalaRefHandle]] = sortedFields.zipWithIndex.map {
       case (field, idx) =>
+        val nameText = field.name.value
+        val idxLit   = idx.toString
         field.field.field.typeId match {
           case t: EnumId =>
-            q"${field.name} = ${ctx.conv.toScala(t).termFull}.parse(parts(${Lit.Int(idx)}))"
+            val termFull: TextTree[ScalaRefHandle] = TextTree.value(ScalaRefHandle.TermFull(t))
+            q"$nameText = $termFull.parse(parts($idxLit))"
           case t: IdentifierId =>
-            q"${field.name} = ${ctx.conv.toScala(t).termFull}.parse(parts(${Lit.Int(idx)}))"
+            val termFull: TextTree[ScalaRefHandle] = TextTree.value(ScalaRefHandle.TermFull(t))
+            q"$nameText = $termFull.parse(parts($idxLit))"
           case _: PrimitiveId =>
-            q"${field.name} = parsePart[${field.fieldType}](parts(${Lit.Int(idx)}), classOf[${field.fieldType}])"
+            // `field.fieldType` is a `scala.meta.Type`; the legacy renderer
+            // spliced it twice (type argument + classOf operand). Pre-render
+            // via `.syntax` (yields minimised form like `String`,
+            // `java.util.UUID`).
+            val fieldTypeText = DomainScalaParseBack.renderS30(field.fieldType)
+            q"$nameText = parsePart[$fieldTypeText](parts($idxLit), classOf[$fieldTypeText])"
           case o =>
             throw new IDLException(s"Impossible case/id field: $o")
         }
     }
 
-    val parts = sortedFields.map(fi => q"this.${fi.name}")
+    // `parts` (toString builder) reads `this.<name>` for each field. The
+    // legacy renderer iterates `sortedFields` — alpha-sorted by field name,
+    // same as the parser arm. The doc-comment above referencing
+    // "declaration order" was incorrect; the golden output confirms
+    // sort-order (`Seq(this.company, this.value)` for `value, company`
+    // declaration order).
+    val partsBuilders: List[TextTree[ScalaRefHandle]] =
+      sortedFields.map(fi => q"this.${fi.name.value}")
 
-    val superClasses = List(ctx.rt.generated.init(), ctx.rt.tIDLIdentifier.init())
+    // ---- Tools implicit class -------------------------------------------
+    // Legacy: `q"""implicit class ${tools.typeName}(_value: ${t.typeFull}) {}"""`.
+    // `tools.typeName` is a simple identifier (`${typeName}Extensions`), splice
+    // as literal. `t.typeFull` is the qualified shape of the identifier type;
+    // emit via `ScalaRefHandle.TypeFull`. Empty body — drop braces (the parse
+    // path keeps them, the `q"".syntax` legacy path dropped them; in either
+    // case the empty-class filter removes this Defn before rendering).
+    val typeFullTree: TextTree[ScalaRefHandle] = TextTree.value(ScalaRefHandle.TypeFull(i.id))
+    val typeNameTree: TextTree[ScalaRefHandle] = TextTree.value(ScalaRefHandle.TypeName(i.id))
 
-    val errorInterp = Term.Interpolate(
-      Term.Name("s"),
-      List(Lit.String("Serialized form of "), Lit.String(s" should start with $typeName#")),
-      List(Term.Name("name")),
-    )
+    val toolsName = s"${typeName}Extensions"
+    val toolsTree: TextTree[ScalaRefHandle] =
+      q"""implicit class $toolsName(_value: $typeFullTree)"""
 
-    val qqCompanion =
-      q"""object ${t.termName} {
-            def parse(s: String): ${t.typeName} = {
-              import ${ctx.rt.tIDLIdentifier.termBase}._
-              if (!s.startsWith(${Lit.String(typeName.toString + "#")})) {
-                val name = ${Lit.String(i.id.toString)}
-                throw new IllegalArgumentException($errorInterp)
-              }
-              val withoutPrefix = s.substring(s.indexOf("#") + 1)
-              val parts = withoutPrefix.split(':').map(part => unescape(part))
-              ${t.termName}(..$parsers)
-            }
-      }"""
+    // ---- Identifier final case class ------------------------------------
+    val toStringInterp = "s\"" + typeName + "#$suffix\""
+    val partsSeq       = partsBuilders.join(", ").mapRender(resolver.resolve)
 
-    val qqIdentifier =
-      q"""final case class ${t.typeName} (..$decls) extends ..$superClasses {
-            override def toString: String = {
-              import ${ctx.rt.tIDLIdentifier.termBase}._
-              val suffix = Seq(..$parts).map(part => escape(part.toString)).mkString(":")
-              $interp
-            }
-         }"""
+    val identifierTree: TextTree[ScalaRefHandle] =
+      q"""final case class $typeNameTree($declsText) extends $generatedInit with $tIDLIdentifierInit {
+         |  override def toString: String = {
+         |    import $tIDLIdentifierTerm.*
+         |    val suffix = Seq($partsSeq).map(part => escape(part.toString)).mkString(":")
+         |    $toStringInterp
+         |  }
+         |}""".stripMargin
 
-    // No extension hook in M3 — the legacy `ctx.ext.extend(...)` chain
-    // requires a legacy `STContext`; M2/M3 deliberately keep the new
-    // renderer at the pre-extension layer. Production swap (M6) will
-    // reintegrate via a legacy-IR adapter at the extension boundary.
-    CogenProduct(qqIdentifier, qqCompanion, qqTools, List.empty)
+    // ---- Companion with `parse(String): T` ------------------------------
+    val errorInterpStr  = "s\"Serialized form of $name should start with " + typeName + "#\""
+    val parsersJoined   = parsers.join(", ").mapRender(resolver.resolve)
+    val startsWithLit   = "\"" + typeName + "#\""
+    val errorNameLit    = "\"" + i.id.toString + "\""
+    val termNameBare    = typeName // bare term-name for declaration `object X` and call-site `X(...)`
+
+    val companionTree: TextTree[ScalaRefHandle] =
+      q"""object $termNameBare {
+         |  def parse(s: String): $typeNameTree = {
+         |    import $tIDLIdentifierTerm.*
+         |    if (!s.startsWith($startsWithLit)) {
+         |      val name = $errorNameLit
+         |      throw new IllegalArgumentException($errorInterpStr)
+         |    }
+         |    val withoutPrefix = s.substring(s.indexOf("#") + 1)
+         |    val parts = withoutPrefix.split(':').map(part => unescape(part))
+         |    $termNameBare($parsersJoined)
+         |  }
+         |}""".stripMargin
+
+    val identifierDefn = DomainScalaParseBack.parseClass(identifierTree.mapRender(resolver.resolve))
+    val companionDefn  = DomainScalaParseBack.parseObject(companionTree.mapRender(resolver.resolve))
+    val toolsDefn      = DomainScalaParseBack.parseClass(toolsTree.mapRender(resolver.resolve))
+
+    CogenProduct(identifierDefn, companionDefn, toolsDefn, List.empty)
   }
 
   private def idfieldToField(idf: IdField): Field = Field(idf.typeId, idf.name, idf.meta)

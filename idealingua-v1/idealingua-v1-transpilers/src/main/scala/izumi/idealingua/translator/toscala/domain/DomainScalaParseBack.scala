@@ -53,4 +53,22 @@ private[domain] object DomainScalaParseBack {
 
   /** Parse any `Defn` (e.g. the enum element case object). */
   def parseDefn(src: String): Defn = parseStat(src).asInstanceOf[Defn]
+
+  /** Render a scala.meta tree to source under the Scala 3 dialect.
+    *
+    * F-TextTree M6: the structural renderers splice scaffolding fragments
+    * (`Term.Param`, `Decl.Def`, `Init`, `Defn.Def`, etc.) into the rendered
+    * `TextTree` as pre-rendered text. The plain `.syntax` extension uses
+    * the default scalameta dialect (Scala 2.13), which does NOT escape
+    * Scala 3 keywords used as identifiers (e.g. `export`, `enum`, `given`).
+    * Such identifiers reach the parse-back stage as bare names, where the
+    * Scala 3 parser correctly rejects them.
+    *
+    * `renderS30(tree)` forces the Scala 3 dialect for printing, so
+    * `Term.Name("export").syntax` yields `` `export` `` — keyword-safe at
+    * parse-back. The rendered Scala source still re-prints under Scala 3
+    * (`ModuleTools.toSource` selects the dialect from the target scala
+    * version), so the escape carries through to the final output.
+    */
+  def renderS30[T <: scala.meta.Tree](tree: T): String = dialect(tree).syntax
 }

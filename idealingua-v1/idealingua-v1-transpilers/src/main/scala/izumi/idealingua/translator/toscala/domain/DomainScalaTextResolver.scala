@@ -40,6 +40,7 @@ final class DomainScalaTextResolver(conv: ScalaTypeConverter) {
     case ScalaRefHandle.TypeAbsolute(id)         => conv.toScala(id).typeAbsolute.toString
     case ScalaRefHandle.TypeFullWithin(pid, nm)  => conv.toScala(pid).within(nm).typeFull.toString
     case ScalaRefHandle.TermFullWithin(pid, nm)  => conv.toScala(pid).within(nm).termFull.toString
+    case ScalaRefHandle.TermFull(id)             => conv.toScala(id).termFull.toString
   }
 
   /** Project a collected reference set into the type-id set. The harvest
@@ -53,5 +54,6 @@ final class DomainScalaTextResolver(conv: ScalaTypeConverter) {
       case ScalaRefHandle.TypeAbsolute(id)        => id
       case ScalaRefHandle.TypeFullWithin(pid, _)  => pid
       case ScalaRefHandle.TermFullWithin(pid, _)  => pid
+      case ScalaRefHandle.TermFull(id)            => id
     }.toList.distinct
 }

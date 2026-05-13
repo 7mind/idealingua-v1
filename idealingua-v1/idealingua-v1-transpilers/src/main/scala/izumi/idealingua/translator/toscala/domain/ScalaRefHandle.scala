@@ -74,4 +74,15 @@ object ScalaRefHandle {
     * F-TextTree M5: introduced for the ADT branch shape.
     */
   final case class TermFullWithin(parentId: TypeId, name: String) extends ScalaRefHandle
+
+  /** Term-position fully-qualified reference — mirrors `ScalaType.termFull`,
+    * the term-side counterpart of `TypeFull`. Resolver emits the qualified
+    * `Term.Select` chain used at call sites that name a term (e.g.
+    * `EnumType.parse(parts(0))` in the Identifier renderer's parser arm, or
+    * `<Composite>(...)` constructor call in the Composite/Interface
+    * renderer's factory).
+    *
+    * F-TextTree M6: introduced for the structural-renderer family.
+    */
+  final case class TermFull(typeId: TypeId) extends ScalaRefHandle
 }
