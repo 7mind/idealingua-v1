@@ -5,7 +5,7 @@ import izumi.idealingua.model.common.TypeId.{DTOId, InterfaceId}
 import izumi.idealingua.translator.toscala.domain.{DomainScalaStruct, DomainSTContext, DomainScalaParseBack}
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
-import scala.meta.*
+import scala.meta.Term
 
 /** PR-02 IMPL-7a.2 Phase B M5: new-IR port of `CastUpExtension`.
   *
@@ -30,20 +30,24 @@ import scala.meta.*
   *
   * Determinism: the result is sorted by `_.toString` (self placed FIRST to
   * match legacy emit order) so emitted converter order is stable across runs.
+  *
+  * F-TextTree M8c: ported off `scala.meta` quasiquotes — bodies composed as
+  * plain Scala source strings. Output strings are consumed via
+  * `companionCasts` String slot (parse-back at carrier render time).
   */
 object DomainCastUpExtension {
 
   def generateUpcastsForDto(ctx: DomainSTContext, dto: NewTypeDef.Dto): List[String] =
-    generateUpcasts(ctx, dto.id).map(DomainScalaParseBack.renderS30(_))
+    generateUpcasts(ctx, dto.id)
 
   def generateUpcastsForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[String] =
-    generateUpcasts(ctx, i.id).map(DomainScalaParseBack.renderS30(_))
+    generateUpcasts(ctx, i.id)
 
   /** Companion-object stats for `_upcast_*` helpers on a service / buzzer
     * method Input or Output ephemeral DTO. Mirrors legacy
     * `CastUpExtension.handleComposite` on `CsMethodInput`/`CsMethodOutput`. */
   def generateUpcastsForMethodStruct(ctx: DomainSTContext, dtoId: DTOId): List[String] =
-    generateUpcasts(ctx, dtoId).map(DomainScalaParseBack.renderS30(_))
+    generateUpcasts(ctx, dtoId)
 
   /** Defect #2-Fd (impl-struct `Struct_upcast_*` set): legacy
     * `CompositeRenderer.defns(_, CsInterface)` ran the cast extension on the
@@ -61,14 +65,7 @@ object DomainCastUpExtension {
     ifaceId: InterfaceId,
     implId: DTOId,
     implFlat: izumi.idealingua.typer.ir.FlatStruct,
-  ): List[String] = generateUpcastsForImplStructInternal(ctx, ifaceId, implId, implFlat).map(DomainScalaParseBack.renderS30(_))
-
-  private def generateUpcastsForImplStructInternal(
-    ctx: DomainSTContext,
-    ifaceId: InterfaceId,
-    implId: DTOId,
-    implFlat: izumi.idealingua.typer.ir.FlatStruct,
-  ): List[Stat] = {
+  ): List[String] = {
     // implFlat == iface's flat (constructed in DomainScalaStruct.implFlatStruct).
     val implFieldNames: Set[String] = implFlat.fields.map(_.field.name).toSet
 
@@ -127,30 +124,32 @@ object DomainCastUpExtension {
         case _                              => izumi.idealingua.model.il.ast.typed.Super.empty
       }
       val sortedImplStruct = DomainScalaStruct.fromFlat(implId, implFlat, supers, ctx.domain)
-      val constructorCode = sortedImplStruct.all
+      val ctorFields = sortedImplStruct.all
         .filter(f => keep.contains(f.field.name))
         .map { f =>
-          q""" ${Term.Name(f.field.name)} = _value.${Term.Name(f.field.name)} """
+          val nm = DomainScalaParseBack.renderS30(Term.Name(f.field.name))
+          s"$nm = _value.$nm"
         }
 
-      val thisType       = ctx.conv.toScala(implId)
-      val parentType     = ctx.conv.toScala(parentId)
-      val parentImplType = ctx.conv.toScala(parentImplId)
+      val thisScala       = ctx.conv.toScala(implId)
+      val parentScala     = ctx.conv.toScala(parentId)
+      val parentImplScala = ctx.conv.toScala(parentImplId)
 
-      val name = Term.Name(s"${thisType.termName.value}_upcast_${parentType.termName.value}")
+      val name = s"${thisScala.termName.value}_upcast_${parentScala.termName.value}"
 
-      q"""
-         implicit object $name extends ${ctx.rt.Cast.parameterize(List(thisType.typeFull, parentType.typeFull)).init()} {
-           override def convert(_value: ${thisType.typeFull}): ${parentType.typeFull} = {
-             assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-             ${parentImplType.termFull}(..$constructorCode)
-           }
-         }
-       """
+      val castBase = ctx.rt.Cast.parameterize(List(thisScala.typeFull, parentScala.typeFull)).typeFull.toString
+      val ctorArgs = ctorFields.mkString(", ")
+
+      s"""implicit object $name extends $castBase {
+         |  override def convert(_value: ${thisScala.typeFull}): ${parentScala.typeFull} = {
+         |    assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+         |    ${parentImplScala.termFull}($ctorArgs)
+         |  }
+         |}""".stripMargin
     }
   }
 
-  private def generateUpcasts(ctx: DomainSTContext, thisId: StructureId): List[Stat] = {
+  private def generateUpcasts(ctx: DomainSTContext, thisId: StructureId): List[String] = {
     structuralParents(ctx, thisId).map { parentId =>
       val parentImplId: StructureId = parentId match {
         case i: InterfaceId => DomainScalaStruct.implId(i)
@@ -179,7 +178,7 @@ object DomainCastUpExtension {
       // the emit order equals the case-class declaration order (which is
       // already sorted via the legacy key for case-class params).
       val parentFlatFields = ctx.domain.flattenedStructs.get(parentId)
-      val constructorCode = parentFlatFields match {
+      val ctorFields: List[String] = parentFlatFields match {
         case Some(pfs) =>
           val parentSuper = ctx.domain.userTypes.get(parentId) match {
             case Some(d: NewTypeDef.Dto)       => d.struct.superclasses
@@ -188,8 +187,9 @@ object DomainCastUpExtension {
           }
           val parentStruct = DomainScalaStruct.fromFlat(parentId, pfs, parentSuper, ctx.domain)
           parentStruct.all.map { f =>
-            q""" ${Term.Name(f.field.name)} = _value.${Term.Name(f.field.name)} """
-          }
+          val nm = DomainScalaParseBack.renderS30(Term.Name(f.field.name))
+          s"$nm = _value.$nm"
+        }
         case None =>
           // No flat for the parent (interface impl id case) — fall back to
           // the child's flat fields filtered by the parent's name set.
@@ -197,24 +197,26 @@ object DomainCastUpExtension {
             .map(_.fields.filter(ff => parentFlat.exists(_.name == ff.field.name)))
             .getOrElse(List.empty)
             .map { ff =>
-              q""" ${Term.Name(ff.field.name)} = _value.${Term.Name(ff.field.name)} """
+              val nm = DomainScalaParseBack.renderS30(Term.Name(ff.field.name))
+              s"$nm = _value.$nm"
             }
       }
 
-      val thisType       = ctx.conv.toScala(thisId)
-      val parentType     = ctx.conv.toScala(parentId)
-      val parentImplType = ctx.conv.toScala(parentImplId)
+      val thisScala       = ctx.conv.toScala(thisId)
+      val parentScala     = ctx.conv.toScala(parentId)
+      val parentImplScala = ctx.conv.toScala(parentImplId)
 
-      val name = Term.Name(s"${thisType.termName.value}_upcast_${parentType.termName.value}")
+      val name = s"${thisScala.termName.value}_upcast_${parentScala.termName.value}"
 
-      q"""
-         implicit object $name extends ${ctx.rt.Cast.parameterize(List(thisType.typeFull, parentType.typeFull)).init()} {
-           override def convert(_value: ${thisType.typeFull}): ${parentType.typeFull} = {
-             assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-             ${parentImplType.termFull}(..$constructorCode)
-           }
-         }
-       """
+      val castBase = ctx.rt.Cast.parameterize(List(thisScala.typeFull, parentScala.typeFull)).typeFull.toString
+      val ctorArgs = ctorFields.mkString(", ")
+
+      s"""implicit object $name extends $castBase {
+         |  override def convert(_value: ${thisScala.typeFull}): ${parentScala.typeFull} = {
+         |    assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+         |    ${parentImplScala.termFull}($ctorArgs)
+         |  }
+         |}""".stripMargin
     }
   }
 

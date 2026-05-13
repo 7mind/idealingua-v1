@@ -4,7 +4,7 @@ import izumi.idealingua.model.common.{Builtin, SigParam, SigParamSource}
 import izumi.idealingua.translator.toscala.domain.{DomainSTContext, DomainScalaParseBack}
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
-import scala.meta.*
+import scala.meta.Term
 
 /** PR-02 IMPL-7a.2 Phase B M5: new-IR port of `CastDownExpandExtension`.
   *
@@ -27,13 +27,15 @@ import scala.meta.*
   * fields become positional `using(...)` parameters; inherited fields are
   * pulled off `_value`. This matches legacy's `parentInstanceFields` /
   * `localFields` split for the non-mixin case.
+  *
+  * F-TextTree M8c: ported off `scala.meta` quasiquotes — bodies composed as
+  * plain Scala source strings. The previous `q"implicit object …"`
+  * quasiquote → `renderS30(_)` round-trip is gone; the produced strings are
+  * still consumed via `companionCasts` (parse-back at carrier render time).
   */
 object DomainCastDownExpandExtension {
 
-  def constructorsForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[String] =
-    constructorsForInterfaceInternal(ctx, i).map(DomainScalaParseBack.renderS30(_))
-
-  private def constructorsForInterfaceInternal(ctx: DomainSTContext, i: NewTypeDef.Interface): List[Stat] = {
+  def constructorsForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[String] = {
     val ifaceFlat = ctx.domain.flattenedStructs.get(i.id).map(_.fields.map(_.field).toSet).getOrElse(Set.empty)
     val implementors = ctx.domain.implementingDtos.getOrElse(i.id, Set.empty).toList.sortBy(_.toString)
 
@@ -67,8 +69,8 @@ object DomainCastDownExpandExtension {
         val parentFields = dtoFields.filter(f => ifaceFlat.contains(f))
         val localFields  = dtoFields.filterNot(f => ifaceFlat.contains(f))
 
-        val thisType   = ctx.conv.toScala(i.id)
-        val targetType = ctx.conv.toScala(dtoId)
+        val thisScala   = ctx.conv.toScala(i.id)
+        val targetScala = ctx.conv.toScala(dtoId)
 
         // Build sig params: locals only as using(...) params; parents pulled off _value.
         val localSigs = localFields.map { f =>
@@ -78,52 +80,71 @@ object DomainCastDownExpandExtension {
           SigParam(f.name, SigParamSource(i.id, "_value"), Some(f.name))
         }
 
-        // Convert local sigs into Term.Params; convert parent sigs into Term.Assign.
-        val usingParams: List[Term.Param] = localSigs.map { sp =>
-          val pType = ctx.conv.toScala(sp.source.sourceType).typeFull
-          Term.Param(List.empty, Term.Name(sp.source.sourceName), Some(pType), None)
+        // Convert local sigs into Scala param decls (`name: Type`).
+        val usingParams: List[String] = localSigs.map { sp =>
+          val pType = ctx.conv.toScala(sp.source.sourceType).typeFull.toString
+          val pNm   = DomainScalaParseBack.renderS30(Term.Name(sp.source.sourceName))
+          s"$pNm: $pType"
         }
 
-        val assignments: List[Term.Assign] = (parentSigs ++ localSigs).map(toAssignment)
+        val assignments: List[String] = (parentSigs ++ localSigs).map(toAssignment)
 
-        val assertions: List[Term] = localSigs.flatMap { sp =>
+        // Generate per-local-non-builtin null-check terms, then combine via &&
+        // exactly as the legacy `Term.ApplyInfix(... && ...)` chain did.
+        val assertions: List[String] = localSigs.flatMap { sp =>
           if (!sp.source.sourceType.isInstanceOf[Builtin]) {
-            List(q"${Term.Name(sp.source.sourceName)}.asInstanceOf[_root_.scala.AnyRef] ne null")
+            val nm = DomainScalaParseBack.renderS30(Term.Name(sp.source.sourceName))
+            List(s"$nm.asInstanceOf[_root_.scala.AnyRef] ne null")
           } else List.empty
         }
-        val assertBlock: List[Term] = if (assertions.isEmpty) List.empty
-        else {
-          val combined = assertions.tail.foldLeft(assertions.head: Term) { case (acc, a) => q"$acc && $a" }
-          List(q"assert($combined)")
+        // Legacy `Term.ApplyInfix(... && ...)` over `Term.ApplyInfix(... ne ...)`
+        // surfaces precedence-disambiguating parens around each `ne null`
+        // operand at print time. Replicate by wrapping each operand in parens
+        // before the `&&`-join (skipping the parens-only case where there is
+        // exactly one assertion has no `&&`, so the parens are unnecessary —
+        // but scala.meta keeps the operand parens regardless of arity for
+        // single-assertion `assert(...)`. Test: scala/izumi/test/domain02/TestInterface2.scala
+        // → `assert((a) && (b))`).
+        val assertLine: String = assertions match {
+          case Nil           => ""
+          case single :: Nil => s"\n      assert($single)"
+          case xs            => s"\n      assert(${xs.map(a => s"($a)").mkString(" && ")})"
         }
 
-        val name = Term.Name(s"${thisType.termName.value}_downcast_extend_${dtoId.uniqueDomainName}")
+        val name = s"${thisScala.termName.value}_downcast_extend_${dtoId.uniqueDomainName}"
 
-        q"""
-           implicit object $name extends ${ctx.rt.Extend.parameterize(List(thisType.typeFull, targetType.typeFull)).init()} {
-             class Call(private val _value: ${thisType.typeFull}) extends AnyVal {
-                def using(..$usingParams): ${targetType.typeFull} = {
-                  assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-                  ..$assertBlock
-                  ${targetType.termFull}(..$assignments)
-                }
-             }
+        val extendBase  = ctx.rt.Extend.parameterize(List(thisScala.typeFull, targetScala.typeFull)).typeFull.toString
+        val usingParamsStr = usingParams.mkString(", ")
+        val assignmentsStr = assignments.mkString(", ")
+        val thisTypeFull   = thisScala.typeFull.toString
+        val targetTypeFull = targetScala.typeFull.toString
+        val targetTermFull = targetScala.termFull.toString
 
-             override type INSTANTIATOR = Call
-
-             override def next(_value: ${thisType.typeFull}): Call = new Call(_value)
-           }
-         """
+        s"""implicit object $name extends $extendBase {
+           |  class Call(private val _value: $thisTypeFull) extends AnyVal {
+           |    def using($usingParamsStr): $targetTypeFull = {
+           |      assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)$assertLine
+           |      $targetTermFull($assignmentsStr)
+           |    }
+           |  }
+           |
+           |  override type INSTANTIATOR = Call
+           |
+           |  override def next(_value: $thisTypeFull): Call = new Call(_value)
+           |}""".stripMargin
       }
     }
   }
 
-  private def toAssignment(f: SigParam): Term.Assign = {
+  private def toAssignment(f: SigParam): String = {
+    val tgt = DomainScalaParseBack.renderS30(Term.Name(f.targetFieldName))
+    val src = DomainScalaParseBack.renderS30(Term.Name(f.source.sourceName))
     f.sourceFieldName match {
       case Some(srcFieldName) =>
-        q""" ${Term.Name(f.targetFieldName)} = ${Term.Name(f.source.sourceName)}.${Term.Name(srcFieldName)} """
+        val sFn = DomainScalaParseBack.renderS30(Term.Name(srcFieldName))
+        s"$tgt = $src.$sFn"
       case None =>
-        q""" ${Term.Name(f.targetFieldName)} = ${Term.Name(f.source.sourceName)} """
+        s"$tgt = $src"
     }
   }
 

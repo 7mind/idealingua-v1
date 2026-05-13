@@ -6,7 +6,7 @@ import izumi.idealingua.model.il.ast.typed.Field
 import izumi.idealingua.translator.toscala.domain.{DomainSTContext, DomainScalaParseBack}
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
-import scala.meta.*
+import scala.meta.Term
 
 /** PR-02 IMPL-7a.2 Phase B M5: new-IR port of `CastSimilarExtension`.
   *
@@ -27,34 +27,39 @@ import scala.meta.*
   * Determinism: the result list is sorted by `targetId.toString` so the
   * emitted `implicit object` order is stable across runs. Without this sort
   * the iteration order of `Domain.flattenedStructs` (a `Map`) is unspecified.
+  *
+  * F-TextTree M8c: ported off `scala.meta` quasiquotes — the cast helpers
+  * are now composed as plain Scala source strings. The previous
+  * `q"implicit object …"` quasiquote → `renderS30(_)` round-trip is gone;
+  * the produced strings are still consumed by `CogenProductSplice.applyCompanionStats`
+  * which `parseStat`s them at carrier render time (parse-back boundary
+  * unchanged).
   */
 object DomainCastSimilarExtension {
 
-  /** Companion-object stats for `cast_into_*` helpers on a DTO.
-    *
-    * F-TextTree M8a: returns rendered Scala source text. */
+  /** Companion-object stats for `cast_into_*` helpers on a DTO. */
   def mkConvertersForDto(ctx: DomainSTContext, dto: NewTypeDef.Dto): List[String] =
-    mkConverters(ctx, dto.id).map(DomainScalaParseBack.renderS30(_))
+    mkConverters(ctx, dto.id)
 
   /** Companion-object stats for `cast_into_*` helpers on an Interface. */
   def mkConvertersForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[String] =
-    mkConverters(ctx, i.id).map(DomainScalaParseBack.renderS30(_))
+    mkConverters(ctx, i.id)
 
   /** Companion-object stats for `cast_into_*` helpers on the synthesized
     * impl-struct DTO of an interface (`<I>.Struct`). Mirrors legacy
     * `CastSimilarExtension.handleComposite` running on the impl emitted
     * by `CompositeRenderer.defns(_, CsInterface)`. */
   def mkConvertersForImplStruct(ctx: DomainSTContext, implId: izumi.idealingua.model.common.TypeId.DTOId): List[String] =
-    mkConverters(ctx, implId).map(DomainScalaParseBack.renderS30(_))
+    mkConverters(ctx, implId)
 
   /** Companion-object stats for `cast_into_*` helpers on a service /
     * buzzer method Input or Output ephemeral DTO. Mirrors legacy
     * `CastSimilarExtension.handleComposite` running on the
     * `CompositeRenderer.defns(_, CsMethodInput | CsMethodOutput)` path. */
   def mkConvertersForMethodStruct(ctx: DomainSTContext, dtoId: izumi.idealingua.model.common.TypeId.DTOId): List[String] =
-    mkConverters(ctx, dtoId).map(DomainScalaParseBack.renderS30(_))
+    mkConverters(ctx, dtoId)
 
-  private def mkConverters(ctx: DomainSTContext, thisId: StructureId): List[Stat] = {
+  private def mkConverters(ctx: DomainSTContext, thisId: StructureId): List[String] = {
     sameSignature(ctx, thisId).map { same =>
       // Apply the full legacy sort key
       // `(distance, definedBy.toString, -definedWithIndex).reverse`
@@ -76,23 +81,27 @@ object DomainCastSimilarExtension {
         case None => List.empty
       }
 
-      val code = fields.map { f =>
-        q""" ${Term.Name(f.name)} = _value.${Term.Name(f.name)} """
-      }
+      val thisScala   = ctx.conv.toScala(thisId)
+      val targetScala = ctx.conv.toScala(same)
+      val thisTypeFull   = thisScala.typeFull.toString
+      val targetTypeFull = targetScala.typeFull.toString
+      val targetTermFull = targetScala.termFull.toString
 
-      val thisType   = ctx.conv.toScala(thisId)
-      val targetType = ctx.conv.toScala(same)
+      val name = s"${thisScala.termName.value}_cast_into_${same.uniqueDomainName}"
 
-      val name = Term.Name(s"${thisType.termName.value}_cast_into_${same.uniqueDomainName}")
+      val castBase = ctx.rt.Cast.parameterize(List(thisScala.typeFull, targetScala.typeFull)).typeFull.toString
 
-      q"""
-         implicit object $name extends ${ctx.rt.Cast.parameterize(List(thisType.typeFull, targetType.typeFull)).init()} {
-           override def convert(_value: ${thisType.typeFull}): ${targetType.typeFull} = {
-              assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
-              ${targetType.termFull}(..$code)
-           }
-         }
-       """
+      val ctorArgs = fields.map { f =>
+        val nm = DomainScalaParseBack.renderS30(Term.Name(f.name))
+        s"$nm = _value.$nm"
+      }.mkString(", ")
+
+      s"""implicit object $name extends $castBase {
+         |  override def convert(_value: $thisTypeFull): $targetTypeFull = {
+         |    assert(_value.asInstanceOf[_root_.scala.AnyRef] ne null)
+         |    $targetTermFull($ctorArgs)
+         |  }
+         |}""".stripMargin
     }
   }
 
