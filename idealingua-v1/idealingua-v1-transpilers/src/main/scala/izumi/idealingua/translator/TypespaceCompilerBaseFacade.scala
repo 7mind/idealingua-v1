@@ -1,7 +1,6 @@
 package izumi.idealingua.translator
 
 import izumi.idealingua.model.loader.LoadedDomain
-import izumi.idealingua.translator.compat.NewTyperPipeline
 import izumi.idealingua.translator.tocsharp.CSharpTranslatorDescriptor
 import izumi.idealingua.translator.toscala.ScalaTranslatorDescriptor
 import izumi.idealingua.translator.totypescript.TypescriptTranslatorDescriptor
@@ -11,12 +10,11 @@ class TypespaceCompilerBaseFacade(options: UntypedCompilerOptions) {
     val descriptor = TypespaceCompilerBaseFacade.descriptor(options.language)
     val compiled = toCompile.map {
       loaded =>
-        // IMPL-10c (2026-05-12): legacy translator tree retired. The new-typer
-        // pipeline is the only path; the `TyperImpl` enum + `--typer` flag are
-        // gone. `Typespace`/`IDLTyper`/`TypespaceImpl` deletion follows in
-        // IMPL-10d.
-        val newDomain = NewTyperPipeline.run(loaded.parsed)
-        descriptor.makeDomain(newDomain, loaded.parsed, options).translate()
+        // PR-02 IMPL-13: the new-typer pipeline is run once per domain at
+        // load time inside `ModelResolver`; its result is materialised on
+        // `LoadedDomain.Success.domain`.  Translators read it directly — no
+        // lazy re-run, no IDLException throw-bridge.
+        descriptor.makeDomain(loaded.domain, loaded.parsed, options).translate()
     }
 
     val hook = descriptor.makeHook(options)

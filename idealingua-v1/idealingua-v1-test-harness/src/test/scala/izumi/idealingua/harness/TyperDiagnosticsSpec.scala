@@ -1,7 +1,11 @@
 package izumi.idealingua.harness
 
-import izumi.idealingua.translator.compat.NewTyperPipeline
+import izumi.idealingua.il.loader.{LocalModelLoaderContext, ModelResolver}
+import izumi.idealingua.model.loader.LoadedDomain
+import izumi.idealingua.typer.NewTyperPipeline
 import org.scalatest.funsuite.AnyFunSuite
+
+import java.io.File
 
 /** PR-02 IMPL-2/3/5 diagnostics: regression guard that the new typer
   * pipeline accepts every domain in the corpus.
@@ -13,6 +17,13 @@ import org.scalatest.funsuite.AnyFunSuite
   * on all 28 corpus domains. Any future regression where a previously
   * accepted domain is rejected will fail this spec and surface the captured
   * diagnostic in CI logs.
+  *
+  * PR-02 IMPL-13: the new-typer pipeline now returns
+  * `Either[Diagnostics, Domain]` and runs at load time.  This spec loads
+  * the corpus *without* `throwIfFailed`, then iterates each domain — either
+  * directly via `LoadedDomain.Success` (typed) or via `LoadedDomain.VerificationFailed`
+  * (rejected) — so it can capture and report every regression in one pass
+  * rather than failing fast on the first one.
   *
   * History (all resolved):
   *   - `{idltest.json}` (F1) and `{idltest.ast}` (F5d) — CycleDetector
@@ -42,45 +53,62 @@ final class TyperDiagnosticsSpec extends AnyFunSuite {
   private val expectations: Seq[(String, String)] = Seq.empty
 
   test("new typer accepts every domain in the corpus (regression guard)") {
-    val fullCorpus = HarnessCorpus.loadCorpus(corpusRoot)
+    // Bypass `HarnessCorpus.loadCorpus`'s `throwIfFailed()` so we can iterate
+    // every domain (success + failure) in one pass and aggregate regression
+    // reports.
+    val context  = new LocalModelLoaderContext(Seq(corpusRoot), Seq.empty[File])
+    val resolver = new ModelResolver()
+    val loaded   = context.loader.load()
+    val models   = resolver.resolve(loaded)
 
     val capturedLines        = scala.collection.mutable.Buffer.empty[String]
     val unexpectedlyRejected = scala.collection.mutable.Buffer.empty[String]
     val unexpectedlyAccepted = scala.collection.mutable.Buffer.empty[String]
-    val byId                 = fullCorpus.map(d => d.parsed.id.toString -> d).toMap
+
+    val all     = models.all
+    val byIdAny = all.collect {
+      case s: LoadedDomain.Success            => s.parsed.id.toString -> Right[LoadedDomain.VerificationFailed, LoadedDomain.Success](s)
+      case f: LoadedDomain.VerificationFailed => f.domain.toString -> Left[LoadedDomain.VerificationFailed, LoadedDomain.Success](f)
+    }.toMap
 
     // Pass 1 — every corpus domain must be accepted by the new typer.
-    for (domain <- fullCorpus) {
-      val id = domain.parsed.id.toString
-      try {
-        val _ = NewTyperPipeline.run(domain.parsed)
-      } catch {
-        case t: Throwable =>
+    for ((id, either) <- byIdAny) {
+      either match {
+        case Right(_) => ()
+        case Left(f) =>
           unexpectedlyRejected += id
           capturedLines += s"$id (UNEXPECTED REJECTION):"
-          for (line <- t.getMessage.linesIterator) capturedLines += s"  $line"
+          for (diag <- f.diagnostics.issues) capturedLines += s"  ${diag.toString}"
       }
     }
 
     // Pass 2 — any residual entries in `expectations` are checked positively
     // (rejection with the documented diagnostic substring). Empty by design.
     for ((id, expectedKind) <- expectations) {
-      byId.get(id) match {
+      byIdAny.get(id) match {
         case None =>
           capturedLines += s"$id: NOT LOADED (corpus drift?)"
-        case Some(domain) =>
-          try {
-            val _ = NewTyperPipeline.run(domain.parsed)
-            unexpectedlyAccepted += id
-            capturedLines += s"$id: NEW TYPER ACCEPTED (exclusion may be stale)"
-          } catch {
-            case t: Throwable =>
-              val msg = t.getMessage
+        case Some(Right(domain)) =>
+          // Re-run the pipeline directly on `parsed` to surface the (absent)
+          // diagnostic text — `domain.domain` already proves acceptance.
+          NewTyperPipeline.run(domain.parsed) match {
+            case Right(_) =>
+              unexpectedlyAccepted += id
+              capturedLines += s"$id: NEW TYPER ACCEPTED (exclusion may be stale)"
+            case Left(diags) =>
               capturedLines += s"$id:"
-              for (line <- msg.linesIterator) capturedLines += s"  $line"
+              for (diag <- diags.issues) capturedLines += s"  ${diag.toString}"
+              val msg = diags.issues.map(_.toString).mkString("\n")
               if (expectedKind.nonEmpty && !msg.contains(expectedKind)) {
                 capturedLines += s"  !! expected diagnostic kind '$expectedKind' not found in message"
               }
+          }
+        case Some(Left(f)) =>
+          capturedLines += s"$id:"
+          for (diag <- f.diagnostics.issues) capturedLines += s"  ${diag.toString}"
+          val msg = f.diagnostics.issues.map(_.toString).mkString("\n")
+          if (expectedKind.nonEmpty && !msg.contains(expectedKind)) {
+            capturedLines += s"  !! expected diagnostic kind '$expectedKind' not found in message"
           }
       }
     }

@@ -4,16 +4,20 @@ import izumi.idealingua.il.loader.verification.DuplicateDomainsRule
 import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.model.loader._
 import izumi.idealingua.model.problems.IDLDiagnostics
+import izumi.idealingua.typer.NewTyperPipeline
 
-/** Loader-side wrapper that resolves cross-domain references and collects
-  * post-resolution diagnostics.
+/** Loader-side wrapper that resolves cross-domain references, runs the new
+  * phase-based typer, and collects post-resolution diagnostics.
   *
   * PR-02 IMPL-10d collapsed the legacy two-phase typing/verification pipeline
-  * (`IDLTyper` + `TypespaceVerifier`): both are gone. Typing now runs at
-  * translate-time via `NewTyperPipeline.run`, which accumulates its own
-  * structured diagnostics. The resolver's residual job is to produce a
-  * `LoadedDomain.Success(path, parsed, warnings = Vector.empty)` from each
-  * successfully resolved mesh and to run global checks (duplicate domain ids).
+  * (`IDLTyper` + `TypespaceVerifier`): both are gone.
+  *
+  * PR-02 IMPL-13: typing moves from translate-time to load-time.  Each
+  * successfully-resolved mesh is fed to `NewTyperPipeline.run`; on `Left(diags)`
+  * the loader emits `LoadedDomain.VerificationFailed`, on `Right(domain)`
+  * `LoadedDomain.Success(path, parsed, domain, warnings = Vector.empty)`.
+  * Translators read `loaded.domain` directly — the pipeline is no longer
+  * re-invoked per translator.
   */
 class ModelResolver() {
 
@@ -35,6 +39,15 @@ class ModelResolver() {
   }
 
   private def makeLoaded(f: Either[LoadedDomain.Failure, DomainMeshResolved]): LoadedDomain = {
-    f.fold(identity, parsed => LoadedDomain.Success(parsed.origin, parsed, warnings = Vector.empty))
+    f.fold(identity, runNewTyper)
+  }
+
+  private def runNewTyper(parsed: DomainMeshResolved): LoadedDomain = {
+    NewTyperPipeline.run(parsed) match {
+      case Right(domain) =>
+        LoadedDomain.Success(parsed.origin, parsed, domain, warnings = Vector.empty)
+      case Left(diagnostics) =>
+        LoadedDomain.VerificationFailed(parsed.origin, parsed.id, diagnostics, warnings = Vector.empty)
+    }
   }
 }
