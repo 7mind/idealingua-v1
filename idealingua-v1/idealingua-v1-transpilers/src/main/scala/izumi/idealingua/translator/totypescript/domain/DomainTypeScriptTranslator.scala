@@ -135,11 +135,26 @@ final class DomainTypeScriptTranslator(
     * Aliases are excluded from the re-export list (legacy
     * `typespace.domain.types.filterNot(_.id.isInstanceOf[AliasId])`).
     * Services + buzzers are included.
+    *
+    * Note: a `clone X into Y` declaration with empty modifiers materializes
+    * as an `AliasId` (see `ScopeBuilder.newtypeRegisteredId`,
+    * `IDLTyper.scala:171-172`). Such declarations arrive here as
+    * `TLDNewtype` but resolve to a `NewTypeDef.Alias` in `domain.userTypes`,
+    * and the alias renderer emits a comment-only file with no exports. They
+    * must be excluded from `index.ts` for the same reason `TLDBaseType`-
+    * backed aliases are: re-exporting them via `export * from './Y'` yields
+    * a TS2306 "file is not a module" error.
     */
   private def buildIndexModule(): Module = {
+    val typesByName: Map[String, NewTypeDef] =
+      domain.userTypes.iterator.map { case (id, td) => id.name -> td }.toMap
+
+    def isAliasName(name: String): Boolean =
+      typesByName.get(name).exists(_.isInstanceOf[NewTypeDef.Alias])
+
     val typeExports = parsed.members.collect {
-      case RawTopLevelDefn.TLDBaseType(raw) if !raw.id.isInstanceOf[AliasId] => raw.id.name
-      case RawTopLevelDefn.TLDNewtype(raw)                                   => raw.id.name
+      case RawTopLevelDefn.TLDBaseType(raw) if !raw.id.isInstanceOf[AliasId] && !isAliasName(raw.id.name) => raw.id.name
+      case RawTopLevelDefn.TLDNewtype(raw) if !isAliasName(raw.id.name)                                  => raw.id.name
     }
     val serviceExports = parsed.members.collect { case RawTopLevelDefn.TLDService(raw) => raw.id.name }
     val buzzerExports  = parsed.members.collect { case RawTopLevelDefn.TLDBuzzer(raw)  => raw.id.name }
