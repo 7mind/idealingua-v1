@@ -4,7 +4,8 @@ import izumi.idealingua.model.il.ast.raw.defns.RawTopLevelDefn
 import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.model.output.Module
 import izumi.idealingua.translator.CompilerOptions.CSharpTranslatorOptions
-import izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension
+import izumi.idealingua.translator.tocsharp.CSharpImports
+import izumi.idealingua.translator.tocsharp.domain.extensions.{DomainCSJsonNetExtension, DomainCSNUnitExtension}
 import izumi.idealingua.translator.{Translated, Translator}
 import izumi.idealingua.typer.ir.{Domain => NewDomain, TypeDef => NewTypeDef}
 
@@ -71,15 +72,22 @@ final class DomainCSharpTranslator(
 
   // -- enum ---------------------------------------------------------------
   private def emitEnum(e: NewTypeDef.Enum): Seq[Module] = {
+    implicit val _domain: NewDomain = domain
     val im     = DomainCSImports.forTypeDef(e, e.id.path.toPackage, domain)
     val post   = DomainCSJsonNetExtension.postEnum(e)
     val header = im.renderImports(List("System") ++ DomainCSJsonNetExtension.importsEnum)
     val product = ctx.enumRenderer.renderEnumeration(e, postSplice = post, header = header)
-    ctx.modules.toSource(e.id.path.domain, ctx.modules.toModuleId(e.id), product)
+    val main = ctx.modules.toSource(e.id.path.domain, ctx.modules.toModuleId(e.id), product)
+    val tests = if (options.manifest.enableNUnit) {
+      implicit val _im: CSharpImports = im
+      DomainCSNUnitExtension.postEnum(e)
+    } else Seq.empty
+    main ++ tests
   }
 
   // -- identifier ---------------------------------------------------------
   private def emitIdentifier(i: NewTypeDef.Identifier): Seq[Module] = {
+    implicit val _domain: NewDomain = domain
     val im   = DomainCSImports.forTypeDef(i, i.id.path.toPackage, domain)
     val pre  = DomainCSJsonNetExtension.preIdentifier(i)
     val post = DomainCSJsonNetExtension.postIdentifier(i)
@@ -89,11 +97,17 @@ final class DomainCSharpTranslator(
       postSplice   = post,
       extraImports = DomainCSJsonNetExtension.importsIdentifier,
     )
-    ctx.modules.toSource(i.id.path.domain, ctx.modules.toModuleId(i.id), product)
+    val main = ctx.modules.toSource(i.id.path.domain, ctx.modules.toModuleId(i.id), product)
+    val tests = if (options.manifest.enableNUnit) {
+      implicit val _im: CSharpImports = im
+      DomainCSNUnitExtension.postIdentifier(i)
+    } else Seq.empty
+    main ++ tests
   }
 
   // -- DTO ----------------------------------------------------------------
   private def emitDto(d: NewTypeDef.Dto): Seq[Module] = {
+    implicit val _domain: NewDomain = domain
     val im   = DomainCSImports.forTypeDef(d, d.id.path.toPackage, domain)
     val pre  = DomainCSJsonNetExtension.preDto(domain, d)
     val post = DomainCSJsonNetExtension.postDto(domain, d, im)
@@ -103,7 +117,12 @@ final class DomainCSharpTranslator(
       postSplice   = post,
       extraImports = DomainCSJsonNetExtension.importsDto,
     )
-    ctx.modules.toSource(d.id.path.domain, ctx.modules.toModuleId(d.id), product)
+    val main = ctx.modules.toSource(d.id.path.domain, ctx.modules.toModuleId(d.id), product)
+    val tests = if (options.manifest.enableNUnit) {
+      implicit val _im: CSharpImports = im
+      DomainCSNUnitExtension.postDto(d)
+    } else Seq.empty
+    main ++ tests
   }
 
   // -- interface ----------------------------------------------------------
@@ -136,7 +155,12 @@ final class DomainCSharpTranslator(
       postSplice   = post,
       extraImports = DomainCSJsonNetExtension.importsAdt,
     )
-    ctx.modules.toSource(a.id.path.domain, ctx.modules.toModuleId(a.id), product)
+    val main = ctx.modules.toSource(a.id.path.domain, ctx.modules.toModuleId(a.id), product)
+    val tests = if (options.manifest.enableNUnit) {
+      implicit val _im: CSharpImports = im
+      DomainCSNUnitExtension.postAdt(a)
+    } else Seq.empty
+    main ++ tests
   }
 
   // -- Service / Buzzer ---------------------------------------------------

@@ -283,16 +283,30 @@ final case class DomainCSharpType(
         }
       case _ =>
         id match {
-          case e: EnumId => {
-            val enu = lookupEnum(e)
-            s"${e.path.toPackage.map(p => p.capitalize).mkString(".") + "." + e.name}.${enu.members.map(_.value).apply(rnd.nextInt(enu.members.length))}"
-          }
-          case i: InterfaceId  => if (depth <= 0) "null" else randomInterface(i, depth)
-          case i: IdentifierId => randomIdentifier(i, depth)
-          case a: AdtId        => if (depth <= 0) "null" else randomAdt(a, depth)
-          case i: DTOId        => if (depth <= 0) "null" else randomDto(i, depth)
-          case al: AliasId     => getRandomValue(dealias(al), depth)
-          case _               => throw new IDLException(s"Impossible getRandomValue type: ${id.name}")
+          case e: EnumId =>
+            // Cross-domain enum: `userTypes` is single-domain-scoped, so an
+            // enum referenced from another domain is not resolvable here. Fall
+            // back to `null` (the random-value emitter is only exercised by
+            // `DomainCSNUnitExtension`, where it produces a compilable scaffold).
+            domain.userTypes.get(e) match {
+              case Some(_: NewTypeDef.Enum) =>
+                val enu = lookupEnum(e)
+                s"${e.path.toPackage.map(p => p.capitalize).mkString(".") + "." + e.name}.${enu.members.map(_.value).apply(rnd.nextInt(enu.members.length))}"
+              case _ => "null"
+            }
+          case i: InterfaceId =>
+            if (depth <= 0 || !domain.userTypes.get(i).exists(_.isInstanceOf[NewTypeDef.Interface])) "null"
+            else randomInterface(i, depth)
+          case i: IdentifierId =>
+            if (!domain.userTypes.get(i).exists(_.isInstanceOf[NewTypeDef.Identifier])) "null"
+            else randomIdentifier(i, depth)
+          case a: AdtId =>
+            if (depth <= 0 || !domain.userTypes.get(a).exists(_.isInstanceOf[NewTypeDef.Adt])) "null"
+            else randomAdt(a, depth)
+          case i: DTOId =>
+            if (depth <= 0) "null" else randomDto(i, depth)
+          case al: AliasId => getRandomValue(dealias(al), depth)
+          case _           => throw new IDLException(s"Impossible getRandomValue type: ${id.name}")
         }
     }
   }
@@ -314,16 +328,18 @@ final case class DomainCSharpType(
   }
 
   private def randomInterface(i: InterfaceId, depth: Int): String = {
-    val inst        = lookupInterface(i)
-    val flat        = domain.flattenedStructs.getOrElse(
+    val inst      = lookupInterface(i)
+    val flat      = domain.flattenedStructs.getOrElse(
       i,
       izumi.idealingua.typer.ir.FlatStruct(i, List.empty, List.empty, List.empty),
     )
-    val structure   = DomainCSStruct.fromFlat(i, flat, inst.struct.superclasses, domain)
-    val eid         = DomainCSStruct.implId(i)
-    val parentIfaces: Set[TypeId] = inst.struct.superclasses.interfaces.toSet[TypeId]
-    val validFields = structure.all.filterNot(f => parentIfaces.contains(f.defn.definedBy))
-    val struct      = DomainCSClass.fromFields(eid, i.name + eid.name, validFields.map(_.field), List.empty)
+    val structure = DomainCSStruct.fromFlat(i, flat, inst.struct.superclasses, domain)
+    val eid       = DomainCSStruct.implId(i)
+    // The impl-DTO's constructor (`<Iface>Struct(...)`) takes every field of
+    // the flattened struct — including those contributed by `&`-interface
+    // parents. Mirror that by using `structure.all` verbatim, not a parent-
+    // filtered subset.
+    val struct = DomainCSClass.fromFields(eid, i.name + eid.name, structure.all.map(_.field), List.empty)
     randomDtoFromClass(struct, i.name + eid.name, i, depth)
   }
 
