@@ -4,13 +4,13 @@ import izumi.idealingua.model.JavaType
 import izumi.idealingua.model.common.TypeId.{AdtId, AliasId, EnumId, IdentifierId, InterfaceId, DTOId}
 import izumi.idealingua.model.common.{Builtin, Generic, TypeId}
 import izumi.idealingua.model.problems.IDLException
-import izumi.idealingua.translator.toscala.domain.{DomainSTContext, DomainScalaParseBack}
+import izumi.idealingua.translator.toscala.domain.DomainSTContext
 import izumi.idealingua.translator.toscala.types.ScalaStruct
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.HashSet
-import scala.meta.*
+import scala.meta.Init
 
 /** PR-02 IMPL-7a.2 Phase B M5: new-IR port of `AnyvalExtension`.
   *
@@ -40,20 +40,21 @@ object DomainAnyvalExtension {
 
   /** AnyVal bases for a DTO or interface-impl composite.
     *
-    * F-TextTree M8a: returns rendered Scala source text instead of `Init`.
-    * Caller (DomainScalaTranslator) pushes these into the
+    * F-TextTree M8b: returns rendered Scala source text directly via
+    * string composition (no `scala.meta` round-trip). The String slot
+    * consumer (DomainScalaTranslator) pushes these into the
     * `defnAnyvalBases` slot on `CogenProduct`. */
   def withAnyvalForComposite(ctx: DomainSTContext, dto: NewTypeDef.Dto): List[String] =
-    doModify(ctx, "AnyVal", structCanBeAnyVal(ctx, dto))
+    doModify("AnyVal", structCanBeAnyVal(ctx, dto))
 
   /** AnyVal bases for a service / buzzer method Input or Output ephemeral
     * DTO. Single-scalar inputs and Singular-output wrappers qualify.
     *
-    * F-TextTree M8a: returns rendered Scala source text. */
+    * F-TextTree M8b: returns rendered Scala source text. */
   def withAnyvalForMethodStruct(ctx: DomainSTContext, flat: izumi.idealingua.typer.ir.FlatStruct): List[String] = {
     val all = dedupByName(flat.fields).map(_.field)
     val ok  = all.size == 1 && all.forall(f => canBeAnyValField(ctx, f.typeId))
-    doModify(ctx, "AnyVal", ok)
+    doModify("AnyVal", ok)
   }
 
   /** Any bases for a structural interface (trait). Returns `Init` because
@@ -93,9 +94,15 @@ object DomainAnyvalExtension {
 
   /** AnyVal bases for an Identifier.
     *
-    * F-TextTree M8a: returns rendered Scala source text. */
+    * F-TextTree M8b: returns rendered Scala source text. After the
+    * `scala.meta`-round-trip went away, `ctx` is no longer consulted —
+    * the predicate is purely `id.fields.size == 1`. Parameter kept to
+    * preserve the call-site signature (parity with the other
+    * `withAnyvalFor*` arms which still need `ctx` for `flattenedStructs`
+    * / `aliases` lookups). */
+  @nowarn("msg=parameter ctx")
   def withAnyvalForIdentifier(ctx: DomainSTContext, id: NewTypeDef.Identifier): List[String] =
-    doModify(ctx, "AnyVal", id.fields.size == 1)
+    doModify("AnyVal", id.fields.size == 1)
 
   /** Public predicate reused by Circe (Scala 3 forProduct1 path). */
   def structCanBeAnyVal(ctx: DomainSTContext, dto: NewTypeDef.Dto): Boolean = {
@@ -116,11 +123,20 @@ object DomainAnyvalExtension {
   ): List[izumi.idealingua.typer.ir.FlatField] =
     fields.groupBy(_.field.name).values.map(_.head).toList
 
-  private def doModify(ctx: DomainSTContext, base: String, modify: Boolean): List[String] = {
-    if (modify) List(DomainScalaParseBack.renderS30(ctx.conv.toScala(JavaType(Seq.empty, base)).init()))
+  /** F-TextTree M8b: direct string composition for the String-slot
+    * arms. `ctx.conv.toScala(JavaType(Seq.empty, base)).init()` produces
+    * `Init(Type.Name(base), Name.Anonymous(), Nil)`, which `renderS30`
+    * prints as the bare base name (`"AnyVal"`); skip the round-trip and
+    * emit the name verbatim. */
+  private def doModify(base: String, modify: Boolean): List[String] = {
+    if (modify) List(base)
     else List.empty
   }
 
+  /** Renderer-internal `Init` arm. `withAnyForStruct` / `withAnyForInterface`
+    * feed `InterfaceRenderer.mkTrait.prependBase`, which still consumes
+    * `scala.meta.Init`. `ctx.conv.toScala(...).init()` constructs the
+    * Init directly — no parse-back required. */
   private def doModifyInit(ctx: DomainSTContext, base: String, modify: Boolean): List[Init] = {
     if (modify) List(ctx.conv.toScala(JavaType(Seq.empty, base)).init())
     else List.empty
