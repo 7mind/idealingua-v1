@@ -6,23 +6,23 @@ two versions of `idlc`, generates from both, runs an LLM-authored sample app
 under each, and diffs canonical NDJSON streams. Identical output proves
 language backends are wire-stable across the two compiler versions.
 
-M4 status: Scala + TypeScript adapters, `--old`/`--new` accept `self` or
+M5 status: Scala + TypeScript + C# adapters, `--old`/`--new` accept `self` or
 `git:<sha|tag|branch>`. Per-sha cache for staged launchers + locally-published
-runtime artifacts (Scala only — TS inlines the runtime via `withRuntime=true`).
-Automatic LLM invocation is still deferred (M5+).
+runtime artifacts (Scala only — TS and C# inline the runtime via
+`withRuntime=true`). Automatic LLM invocation is still deferred (M6+).
 
 ## Status
 
-| Component            | M1 | M2  | M4  | M5+ (planned)                           |
-|----------------------|----|-----|-----|-----------------------------------------|
-| Scala adapter        | ok | ok  | ok  | —                                       |
-| Typescript adapter   | —  | —   | ok  | full main-tests-corpus coverage         |
-| C# adapter           | —  | —   | —   | dotnet script template (M5)             |
-| `self` ref           | ok | ok  | ok  | —                                       |
-| `git:<sha>` ref      | —  | ok  | ok  | —                                       |
-| `path:<launcher>`    | —  | —   | —   | pre-built launcher, skip build entirely |
-| `--regen-sample-app` | partial — exits 3 with prompt | same | same | optional LLM CLI invocation |
-| Self-test corpus     | manual hand-roll | manual hand-roll | manual hand-roll (TS) | full LLM-generated coverage |
+| Component            | M1 | M2  | M4  | M5  | M6+ (planned)                           |
+|----------------------|----|-----|-----|-----|-----------------------------------------|
+| Scala adapter        | ok | ok  | ok  | ok  | —                                       |
+| Typescript adapter   | —  | —   | ok  | ok  | full main-tests-corpus coverage         |
+| C# adapter           | —  | —   | —   | ok  | full main-tests-corpus coverage         |
+| `self` ref           | ok | ok  | ok  | ok  | —                                       |
+| `git:<sha>` ref      | —  | ok  | ok  | ok  | —                                       |
+| `path:<launcher>`    | —  | —   | —   | —   | pre-built launcher, skip build entirely |
+| `--regen-sample-app` | partial — exits 3 with prompt | same | same | same | optional LLM CLI invocation |
+| Self-test corpus     | manual hand-roll | manual hand-roll | manual hand-roll (TS) | manual hand-roll (C#) | full LLM-generated coverage |
 
 ## Workflow
 
@@ -118,6 +118,9 @@ bulk; the next invocation will rebuild.
   The `nix-shell` ships `nodejs_24` + `typescript` (which provides `tsc`, NOT
   `tsx`); the Node 24 strip-types fallback is therefore the default in this
   repo. Install `bun` or `npm i -g tsx` if you want faster startup.
+- `dotnet` (≥ 8.0) on PATH for `--lang csharp`. The `nix-shell` provides
+  `dotnet-sdk` 9.0; the adapter pins `<TargetFramework>net9.0</TargetFramework>`
+  and `Newtonsoft.Json` 13.0.3 in `templates/csharp/Driver.csproj`.
 - A clean working tree if you intend to `git worktree add` from the same repo;
   the harness will refuse to add a worktree at an already-occupied path.
 
@@ -132,27 +135,29 @@ bulk; the next invocation will rebuild.
 | `LangAdapter.scala`                           | per-language build/run interface         |
 | `adapters/ScalaAdapter.scala`                 | scala-cli driven Scala impl              |
 | `adapters/TypescriptAdapter.scala`            | bun/tsx/node-strip-types TS impl         |
+| `adapters/CsharpAdapter.scala`                | dotnet-driven C# impl                    |
 | `Canonicalize.scala`                          | NDJSON parser + canonical re-emit        |
 | `Diff.scala`                                  | line-by-line diff + report               |
 | `templates/scala/project.scala.template`      | scala-cli using-directives template      |
 | `templates/typescript/package.json`           | TS package template (deps for IRT)       |
 | `templates/typescript/tsconfig.json`          | TS compiler config template              |
+| `templates/csharp/Driver.csproj`              | dotnet project template (Newtonsoft.Json + IRT) |
 | `prompts/sample-app-scala.md`                 | LLM prompt template (Scala)              |
 | `prompts/sample-app-typescript.md`            | LLM prompt template (TypeScript)         |
+| `prompts/sample-app-csharp.md`                | LLM prompt template (C#)                 |
 | `idl-regress`                                 | bash wrapper around `scala-cli run`      |
-| `selftest.sh`                                 | `sanity[-ts]` + `impl9-vs-head[-ts]` self-tests |
+| `selftest.sh`                                 | `sanity[-ts/-cs]` + `impl9-vs-head[-ts/-cs]` self-tests |
 | `selftest-expectations/impl9-vs-head.scala.json` | committed baseline divergence set (Scala)    |
 | `selftest-expectations/impl9-vs-head.typescript.json` | committed baseline divergence set (TS) |
+| `selftest-expectations/impl9-vs-head.csharp.json`     | committed baseline divergence set (C#) |
 
-## Roadmap → M5
+## Roadmap → M6
 
 1. `path:<launcher>` form in `IdlcResolver`.
-2. Add `CsharpAdapter` (mirror `ScalaAdapter` / `TypescriptAdapter` structure).
-3. Lift `--regen-sample-app` into an optional auto-invocation of a configured
+2. Lift `--regen-sample-app` into an optional auto-invocation of a configured
    LLM CLI — gated by `--llm-cli claude|codex|…`. The default stays manual.
-4. Read circe + runtime versions from a manifest emitted by sbt rather than
+3. Read circe + runtime versions from a manifest emitted by sbt rather than
    hard-coding `CirceVersion` in `ScalaAdapter`.
-5. Full main-tests-corpus sample app (auto-generated, not hand-rolled).
-6. Skip the Scala-runtime `publishM2` step when only the TS adapter is
-   requested (the M2 per-sha m2 cache is unused by the TS adapter — see the
-   M4 task entry for context).
+4. Full main-tests-corpus sample app (auto-generated, not hand-rolled).
+5. Skip the Scala-runtime `publishM2` step when only the TS or C# adapter is
+   requested (the M2 per-sha m2 cache is unused by non-Scala adapters).

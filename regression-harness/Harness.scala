@@ -8,6 +8,7 @@
 //> using file Diff.scala
 //> using file adapters/ScalaAdapter.scala
 //> using file adapters/TypescriptAdapter.scala
+//> using file adapters/CsharpAdapter.scala
 
 package regression_harness
 
@@ -35,7 +36,7 @@ object Harness {
   private val ExitNeedSample   = 3
   private val ExitUsage        = 126
 
-  private val SupportedLangs = Set("scala", "typescript")
+  private val SupportedLangs = Set("scala", "typescript", "csharp")
 
   case class Args(
     project:           Path,
@@ -65,7 +66,7 @@ object Harness {
       |  idl-regress --project <path>
       |              --old <ref>   ('self' or 'git:<sha|tag|branch>')
       |              --new <ref>   ('self' or 'git:<sha|tag|branch>')
-      |              --lang scala|typescript
+      |              --lang scala|typescript|csharp
       |              [--out <dir>]
       |              [--regen-sample-app]
       |              [--keep-worktrees]            (retain per-sha worktrees after build)
@@ -176,6 +177,7 @@ object Harness {
     val adapter: LangAdapter = args.lang match {
       case "scala"      => new adapters.ScalaAdapter(repoRoot)
       case "typescript" => new adapters.TypescriptAdapter(repoRoot)
+      case "csharp"     => new adapters.CsharpAdapter(repoRoot)
       case other        => throw new IllegalStateException(s"no adapter: $other")
     }
 
@@ -220,6 +222,7 @@ object Harness {
     val role = lang match {
       case "scala"      => ":scala"
       case "typescript" => ":typescript"
+      case "csharp"     => ":csharp"
       case other        => throw new IllegalStateException(s"unsupported lang for idlc dispatch: $other")
     }
     val source  = project.resolve("source")

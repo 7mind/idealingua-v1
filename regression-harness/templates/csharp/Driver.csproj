@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- idl-regress per-side C# driver. idealingua-v1 runtime version: {{RUNTIME_VERSION}} -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <RootNamespace>IdlRegress.CSharpDriver</RootNamespace>
+    <AssemblyName>Driver</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0108;CS0114;CS0612;CS0618;CS8632;CS0162;CS0219;CS0414;NU1701</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- IRT runtime: Marshaller + Logger trees + the small set of root files we need. -->
+    <Compile Include="csharp/IRT/Marshaller/**/*.cs" />
+    <Compile Include="csharp/IRT/Logger/**/*.cs" />
+    <Compile Include="csharp/IRT/Dispatcher.cs" />
+    <Compile Include="csharp/IRT/DispatcherException.cs" />
+    <Compile Include="csharp/IRT/Either.cs" />
+    <Compile Include="csharp/IRT/ILogger.cs" />
+    <Compile Include="csharp/IRT/IServiceDispatcher.cs" />
+    <Compile Include="csharp/IRT/RTTI.cs" />
+    <Compile Include="csharp/IRT/Void.cs" />
+    <!-- Domain types: everything under csharp/ except IRT/ (Transport pulls
+         WebSocketSharp; UrlEscaper depends on System.Web which is not auto-
+         referenced in net9.0 — none of it is needed for sample-app emit). -->
+    <Compile Include="csharp/**/*.cs" Exclude="csharp/IRT/**/*.cs" />
+    <Compile Include="sample_app.cs" />
+  </ItemGroup>
+</Project>

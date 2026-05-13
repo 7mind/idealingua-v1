@@ -34,6 +34,7 @@ final class SampleAppGen(
   private val srcExt = lang match {
     case "scala"      => "scala"
     case "typescript" => "ts"
+    case "csharp"     => "cs"
     case other        => other
   }
 
