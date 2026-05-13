@@ -29,10 +29,11 @@ final class ScalaAdapter(repoRoot: Path) extends LangAdapter {
   private val Timeout = 5.minutes
 
   override def buildAndRun(
-    workDir:   Path,
-    genDir:    Path,
-    sampleApp: Path,
-    rawOut:    Path,
+    workDir:    Path,
+    genDir:     Path,
+    sampleApp:  Path,
+    resolution: IdlcResolution,
+    rawOut:     Path,
   ): Either[String, Unit] = {
     if (whichScalaCli().isEmpty) {
       return Left(
@@ -48,8 +49,9 @@ final class ScalaAdapter(repoRoot: Path) extends LangAdapter {
       return Left(s"missing template: $template")
     }
     val rendered = new String(Files.readAllBytes(template), StandardCharsets.UTF_8)
-      .replace("{{RUNTIME_VERSION}}", readRuntimeVersion())
-      .replace("{{CIRCE_VERSION}}",   CirceVersion)
+      .replace("{{RUNTIME_VERSION}}",    resolution.runtimeVersion)
+      .replace("{{RUNTIME_REPOSITORY}}", resolution.runtimeRepoUri)
+      .replace("{{CIRCE_VERSION}}",      CirceVersion)
     Files.write(workDir.resolve("project.scala"), rendered.getBytes(StandardCharsets.UTF_8))
 
     // 2. generated sources — copy tree, filtering to *.scala only (idlc emits a
@@ -114,18 +116,10 @@ final class ScalaAdapter(repoRoot: Path) extends LangAdapter {
     }
   }
 
-  private def readRuntimeVersion(): String = {
-    val versionSbt = repoRoot.resolve("version.sbt")
-    if (!Files.isRegularFile(versionSbt)) return "1.4.20-SNAPSHOT"
-    val text = new String(Files.readAllBytes(versionSbt), StandardCharsets.UTF_8)
-    val rx   = """"([^"]+)"""".r
-    rx.findFirstMatchIn(text).map(_.group(1)).getOrElse("1.4.20-SNAPSHOT")
-  }
-
   /** Circe version: derived from the central izumi `fundamentals-json-circe`
    *  dep that the runtime-rpc-scala module pulls in (see `build.sbt` line ~346).
-   *  For M1 we hard-code the version known to be in the coursier cache; M2
-   *  should read it from a generated version manifest emitted by sbt.
+   *  For M2 we hard-code the version known to be in the coursier cache; a future
+   *  milestone should read it from a generated version manifest emitted by sbt.
    */
   private val CirceVersion = "0.14.14"
 }

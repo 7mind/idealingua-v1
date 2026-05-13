@@ -10,6 +10,11 @@ import java.nio.file.Path
  *      - the generated sources from `genDir`,
  *      - the sample app dropped at `sampleApp`,
  *    then build and execute, capturing stdout into `rawOut`.
+ *
+ *  `resolution` carries the per-side compiler/runtime triplet (launcher path,
+ *  local runtime repository, runtime version) so the adapter can inject the
+ *  matching `using repository` / `using dep` directives. The launcher itself
+ *  has already been used to populate `genDir` by the caller.
  */
 trait LangAdapter {
 
@@ -18,9 +23,10 @@ trait LangAdapter {
    *  if any partial output is available; otherwise leave it empty.
    */
   def buildAndRun(
-    workDir:   Path,
-    genDir:    Path,
-    sampleApp: Path,
-    rawOut:    Path,
+    workDir:    Path,
+    genDir:     Path,
+    sampleApp:  Path,
+    resolution: IdlcResolution,
+    rawOut:     Path,
   ): Either[String, Unit]
 }

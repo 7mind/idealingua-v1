@@ -1,21 +1,57 @@
 #!/usr/bin/env bash
-# M1 sanity self-test: HEAD vs HEAD against the main-tests corpus.
-# Expected outcome: zero divergences (or — on first run — exit code 3
-# asking the operator to drop a sample_app.scala at the cache path).
+# Self-tests for idl-regress.
+#
+# Modes:
+#   sanity        — HEAD vs HEAD against main-tests (M1). Zero divergences expected.
+#   impl9-vs-head — git:ea697f5 (IMPL-9 default-flip) vs HEAD against main-tests.
+#                   Compared to selftest-expectations/impl9-vs-head.scala.json
+#                   (initially empty per plan §9.2; any divergence is a real signal).
+#
+# All extra args after the mode are forwarded to idl-regress.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CORPUS="$REPO_ROOT/idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs/main-tests"
+HARNESS_DIR="$REPO_ROOT/regression-harness"
+MAIN_TESTS="$REPO_ROOT/idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs/main-tests"
+# Minimal in-tree corpus used by impl9-vs-head: just `idltest.dtofields.IntPair`
+# + `WHPair`. Picked to compile cleanly under BOTH the IMPL-9 idlc and HEAD;
+# the full `main-tests/` tree at HEAD contains `blobtest.domain` which trips
+# IMPL-9's Scala backend (no TBLOB -> Array[Byte] mapping pre-F5-fix). See the
+# M2 commit body for the cross-version audit finding.
+DTOFIELDS_ONLY="$HARNESS_DIR/selftest-corpus/dtofields-only"
 
-if [[ ! -d "$CORPUS/source" ]]; then
-  echo "selftest: missing corpus at $CORPUS/source" >&2
-  exit 2
-fi
+mode="${1:-sanity}"
+shift || true
 
-cd "$REPO_ROOT"
-exec "$REPO_ROOT/regression-harness/idl-regress" \
-  --project "$CORPUS" \
-  --old self \
-  --new self \
-  --lang scala \
-  "$@"
+case "$mode" in
+  sanity)
+    if [[ ! -d "$MAIN_TESTS/source" ]]; then
+      echo "selftest: missing corpus at $MAIN_TESTS/source" >&2
+      exit 2
+    fi
+    cd "$REPO_ROOT"
+    exec "$HARNESS_DIR/idl-regress" \
+      --project "$MAIN_TESTS" \
+      --old self \
+      --new self \
+      --lang scala \
+      "$@"
+    ;;
+  impl9-vs-head)
+    if [[ ! -d "$DTOFIELDS_ONLY/source" ]]; then
+      echo "selftest: missing corpus at $DTOFIELDS_ONLY/source" >&2
+      exit 2
+    fi
+    cd "$REPO_ROOT"
+    exec "$HARNESS_DIR/idl-regress" \
+      --project "$DTOFIELDS_ONLY" \
+      --old "git:ea697f5" \
+      --new self \
+      --lang scala \
+      "$@"
+    ;;
+  *)
+    echo "selftest: unknown mode '$mode' (expected: sanity | impl9-vs-head)" >&2
+    exit 126
+    ;;
+esac

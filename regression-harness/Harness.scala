@@ -1,5 +1,6 @@
 //> using scala 3.8.3
 //> using jvm 21
+//> using file IdlcResolution.scala
 //> using file IdlcResolver.scala
 //> using file SampleAppGen.scala
 //> using file LangAdapter.scala
@@ -61,14 +62,14 @@ object Harness {
   private def usage: String =
     """Usage:
       |  idl-regress --project <path>
-      |              --old <ref>   (M1: only 'self')
-      |              --new <ref>   (M1: only 'self')
-      |              --lang scala  (M1: only 'scala')
+      |              --old <ref>   ('self' or 'git:<sha|tag|branch>')
+      |              --new <ref>   ('self' or 'git:<sha|tag|branch>')
+      |              --lang scala  (M2: only 'scala')
       |              [--out <dir>]
       |              [--regen-sample-app]
-      |              [--keep-worktrees]
-      |              [--format human|json|both]   (default: human)
-      |              [--fail-on-divergence]       (default: on)
+      |              [--keep-worktrees]            (retain per-sha worktrees after build)
+      |              [--format human|json|both]    (default: human)
+      |              [--fail-on-divergence]        (default: on)
       |""".stripMargin
 
   private def parseArgs(raw: Array[String]): Either[String, Args] = {
@@ -129,29 +130,29 @@ object Harness {
     say(s"scratch: $scratchRoot")
     say(s"out:     $outDir")
 
-    val resolver = new IdlcResolver(repoRoot, scratchRoot)
+    val resolver = new IdlcResolver(repoRoot, scratchRoot, keepWorktree = args.keepWorktrees)
 
-    val launcherOld =
+    val resOld =
       try resolver.resolve(args.oldRef)
       catch { case e: Throwable => say(s"FATAL: idlc resolve(old=${args.oldRef}): ${e.getMessage}"); scala.util.boundary.break(ExitBuildFailure) }
-    val launcherNew =
+    val resNew =
       try resolver.resolve(args.newRef)
       catch { case e: Throwable => say(s"FATAL: idlc resolve(new=${args.newRef}): ${e.getMessage}"); scala.util.boundary.break(ExitBuildFailure) }
 
-    say(s"idlc old: $launcherOld")
-    say(s"idlc new: $launcherNew")
+    say(s"idlc old: ${resOld.launcher} (runtime ${resOld.runtimeVersion} from ${resOld.runtimeRepoUri})")
+    say(s"idlc new: ${resNew.launcher} (runtime ${resNew.runtimeVersion} from ${resNew.runtimeRepoUri})")
 
     val idlSha = hashIdlTree(args.project)
     say(s"idl sha256: ${idlSha.take(16)}...")
 
     val sides = Seq(
-      ("old", launcherOld, scratchRoot.resolve("gen-old")),
-      ("new", launcherNew, scratchRoot.resolve("gen-new")),
+      ("old", resOld, scratchRoot.resolve("gen-old")),
+      ("new", resNew, scratchRoot.resolve("gen-new")),
     )
 
-    sides.foreach { case (label, launcher, dst) =>
+    sides.foreach { case (label, res, dst) =>
       Files.createDirectories(dst)
-      val rc = runIdlc(launcher, args.project, dst, args.lang)
+      val rc = runIdlc(res.launcher, args.project, dst, args.lang)
       if (rc != 0) {
         say(s"FATAL: idlc[$label] exit $rc — see $scratchRoot/idlc-$label.log")
         scala.util.boundary.break(ExitBuildFailure)
@@ -177,11 +178,11 @@ object Harness {
     }
 
     val rawOut = mutable.LinkedHashMap.empty[String, Path]
-    for ((label, _, genDir) <- sides) {
+    for ((label, res, genDir) <- sides) {
       val side = scratchRoot.resolve(s"app-$label")
       Files.createDirectories(side)
       val raw  = scratchRoot.resolve(s"raw-$label.txt")
-      adapter.buildAndRun(side, genDir, sampleApp, raw) match {
+      adapter.buildAndRun(side, genDir, sampleApp, res, raw) match {
         case Left(err)  =>
           say(s"FATAL: adapter[$label]: $err")
           scala.util.boundary.break(ExitBuildFailure)
