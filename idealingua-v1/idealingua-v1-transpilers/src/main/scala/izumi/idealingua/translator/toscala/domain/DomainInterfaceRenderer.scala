@@ -9,36 +9,28 @@ import izumi.idealingua.translator.toscala.domain.extensions.{
   DomainCastUpExtension,
   DomainCirceDerivationTranslatorExtension,
 }
-import izumi.idealingua.translator.toscala.products.CogenProduct.TraitProduct
 import izumi.idealingua.translator.toscala.products.{CogenProduct, RenderableCogenProduct}
-import izumi.idealingua.translator.toscala.tools.ScalaMetaTools._
+import izumi.idealingua.translator.toscala.tools.ScalaTextHelpers
 import izumi.idealingua.translator.toscala.types.{ClassSource, ScalaStruct, ScalaType}
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
-import scala.meta.{Defn, Init}
-
-/** Renders a new-IR `TypeDef.Interface` as the same scala.meta `Defn`s the
+/** Renders a new-IR `TypeDef.Interface` as the same Defns the
   * legacy `InterfaceRenderer.renderInterface` produces (modulo the
   * extension chain).
   *
-  * F-TextTree M6: ported off `scala.meta` quasiquotes onto
+  * F-TextTree M6..M8f: ported off legacy quasiquotes onto
   * `TextTree[ScalaRefHandle]` composition + `.mapRender(resolver.resolve)`
   * at the renderer boundary. Type references travel as
   * `ScalaRefHandle.{TypeName, TypeFull, TermFull}` value nodes.
-  * Constructor parameters (`struct.decls: List[Term.Param]`),
-  * constructor-call name lists (`struct.names: List[Term.Name]`), and the
-  * extension-augmented impl `Defn` set are spliced as pre-rendered
-  * `.syntax` text — the scaffolding (`DomainCompositeStructure`) and
-  * extensions (`Circe`, `AnyVal`, `Cast*`) still emit `scala.meta`
-  * fragments at M6 (extension migration is M8 scope).
+  * Constructor parameters, constructor-call name lists, and the
+  * extension-augmented impl Defn set are spliced as pre-rendered text.
   *
-  * **Carrier strategy** (same as M5): `CogenProduct[Defn.Trait]` carrier
-  * preserved; `mkTrait` continues to return `Defn.Trait` so external
-  * call sites (`DomainCompositeRenderer.defns` mirror-interface
-  * synthesis, `AnyvalExtension.handleTrait` via
-  * `TraitProduct(qqInterface).defn.prependBase`) consume it unchanged.
-  * The renderer composes textual output via `TextTree`, lowers to
-  * `String`, then re-parses via `DomainScalaParseBack`.
+  * **Carrier strategy**: M8f flips `CogenProduct` to be constructed from
+  * source-text via `CogenProduct.fromTraitTexts` — the carrier owns the
+  * String → Defn boundary. `mkTrait` returns a rendered Scala-source
+  * string; external call sites (`DomainCompositeRenderer.defns` mirror
+  * interface synthesis) splice it as text into the surrounding companion
+  * body.
   *
   * **Byte parity**: empty-body pitfall (M5) applies — the legacy
   * `q"trait X extends Y {}".syntax` printer drops empty `{}` but the
@@ -63,7 +55,7 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
     val fields = DomainScalaStruct.scalaStruct(i.id, flat, i.struct.superclasses, ctx.conv, ctx.domain)
     val t      = ctx.conv.toScala(i.id)
 
-    val qqInterface: Defn.Trait = mkTrait(i.struct.superclasses.interfaces, t, fields)
+    val qqInterfaceText: String = mkTrait(i.struct.superclasses.interfaces, t, fields)
 
     val implId       = DomainScalaStruct.implId(i.id)
     val implFlat     = DomainScalaStruct.implFlatStruct(implId, flat)
@@ -103,47 +95,41 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
     val structUpcasts = DomainCastUpExtension.generateUpcastsForImplStruct(ctx, i.id, implId, implFlat)
 
     // F-TextTree M8a: AnyVal-eligibility for the impl DTO surfaces as a
-    // String slot entry. Pre-render the `AnyVal` init via `renderS30` so
-    // the carrier parses it back through the same boundary as every
-    // other slot entry.
+    // String slot entry. The init is the bare base name (`"AnyVal"`)
+    // matching the legacy printer's `Init(Type.Name("AnyVal"),
+    // Name.Anonymous(), Nil).syntax` output.
     val implAnyvalBases: List[String] = {
       val all = implFields.all.map(_.field.field)
       val canBeAnyVal = all.size == 1 && all.forall(f => structFieldQualifiesForAnyVal(f.typeId))
-      if (canBeAnyVal) List(DomainScalaParseBack.renderS30(ctx.conv.toScala(izumi.idealingua.model.JavaType(Seq.empty, "AnyVal")).init()))
+      if (canBeAnyVal) List("AnyVal")
       else List.empty
     }
 
-    // F-TextTree M8a: the impl-struct extension chain now feeds the
+    // F-TextTree M8a: the impl-struct extension chain feeds the
     // `CogenProduct` slot machinery. Carrier render order is
     // `[case class, more, siblings, companion]` — pushing the
     // StructCirce trait into `siblings` reproduces the legacy emit order
     // `[case class Struct, trait StructCirce, object Struct extends StructCirce]`.
-    val implAugmentedDefns: List[Defn] = implRaw match {
-      case cp: CogenProduct[_] =>
-        val typedCp = cp.asInstanceOf[CogenProduct[Defn.Class]]
-        val newProduct = CogenProduct[Defn.Class](
-          defn                = typedCp.defn,
-          companionBase       = typedCp.companionBase,
-          tools               = typedCp.tools,
-          more                = typedCp.more,
-          preamble            = typedCp.preamble,
+    val implAugmentedDefns: List[String] = implRaw match {
+      case cp: CogenProduct[?] =>
+        val typedCp = cp.asInstanceOf[CogenProduct.CompositeProduct]
+        val newProduct: CogenProduct.CompositeProduct = typedCp.copy(
           defnAnyvalBases     = implAnyvalBases,
           companionCirceBases = List(structCirce.initText),
           companionCasts      = structSims ++ structUpcasts,
           siblings            = List(structCirce.defnText),
         )
-        newProduct.render
+        newProduct.render.map(ScalaTextHelpers.renderTree(_))
       case other =>
-        DomainScalaParseBack.parseStat(structCirce.defnText).asInstanceOf[Defn] :: other.render
+        structCirce.defnText :: other.render.map(ScalaTextHelpers.renderTree(_))
     }
 
     // Companion: `def apply(..decls) = TermName(..names)` factory + impl
     // Defns. Splice decls / names / impl Defns as pre-rendered text.
-    // F-TextTree M8e: `implStructure.decls` / `.names` are now `List[String]`.
     val applyDeclsText = implStructure.decls.mkString(", ")
     val applyNamesText = implStructure.names.mkString(", ")
     val implTermNameBare = ctx.conv.toScala(implId).termName.value
-    val implAugmentedText = implAugmentedDefns.map(DomainScalaParseBack.renderS30(_)).mkString("\n")
+    val implAugmentedText = implAugmentedDefns.mkString("\n")
 
     // The companion's term-name is the interface's bare term name — emit as
     // the bare identifier (declaration site).
@@ -159,14 +145,15 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
     // `IRTConversions[T]` (single base) with no body — drop `{}` for parity.
     val toolsName    = s"${i.id.name}Extensions"
     val tFullTree: TextTree[ScalaRefHandle] = TextTree.value(ScalaRefHandle.TypeFull(i.id))
-    val toolsBaseText = DomainScalaParseBack.renderS30(ctx.rt.Conversions.parameterize(List(t.typeFull)).init())
+    val toolsBaseText = ScalaTextHelpers.renderTree(ctx.rt.Conversions.parameterize(List(t.typeFull)).init())
     val toolsTree: TextTree[ScalaRefHandle] =
       q"""implicit class $toolsName(override protected val _value: $tFullTree) extends $toolsBaseText"""
 
-    val companionDefn = DomainScalaParseBack.parseObject(companionTree.mapRender(resolver.resolve))
-    val toolsDefn     = DomainScalaParseBack.parseClass(toolsTree.mapRender(resolver.resolve))
-
-    CogenProduct(qqInterface, companionDefn, toolsDefn, List.empty)
+    CogenProduct.fromTraitTexts(
+      defnTraitText     = qqInterfaceText,
+      companionBaseText = companionTree.mapRender(resolver.resolve),
+      toolsText         = toolsTree.mapRender(resolver.resolve),
+    )
   }
 
   /** AnyVal-field check mirroring `DomainAnyvalExtension.canBeAnyValField`,
@@ -193,46 +180,60 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
     case _ => false
   }
 
-  /** Build the trait `Defn.Trait` for an interface — exposed so the
+  /** Build the trait source string for an interface — exposed so the
     * composite renderer's mirror-interface synthesis can call it.
     *
-    * F-TextTree M6: interior composed as `TextTree[ScalaRefHandle]`,
-    * lowered to text and parsed back via `DomainScalaParseBack.parseTrait`.
-    * The return type stays `Defn.Trait` because callers
-    * (`AnyvalExtension.handleTrait` via
-    * `TraitProduct(...).defn.prependBase(...)` and downstream extension
-    * call sites) consume the trait as a `Defn`.
+    * F-TextTree M8f: returns rendered Scala source text. The legacy
+    * `Defn.Trait` return type is gone — callers
+    * (`DomainCompositeRenderer.defns` mirror synthesis,
+    * `AnyvalExtension.handleTrait` removed) splice the text directly.
+    * The Any base (AnyVal-eligible structs) is pre-spliced into the
+    * header text here, so the boundary stays text.
     */
-  def mkTrait(supers: Interfaces, t: ScalaType, fields: ScalaStruct): Defn.Trait = {
-    // F-TextTree M8e: `f.nameSafe` + `f.fieldType` are pre-rendered strings.
-    // Legacy `Decl.Def(List.empty, Term.Name(n), List.empty, Type)`.syntax
-    // emits `def n: T`; compose directly.
-    val declsText = fields.all.map { f =>
-      s"def ${f.nameSafe}: ${f.fieldType}"
-    }.mkString("; ")
+  def mkTrait(supers: Interfaces, t: ScalaType, fields: ScalaStruct): String = {
+    // Field decls (legacy `Decl.Def(List.empty, Term.Name(n), List.empty, Type)`.syntax
+    // emits `def n: T`; compose directly). The parse-back-then-print
+    // pipeline preserves source layout when the input is already
+    // canonical (no AST-node construction strips positional info), so we
+    // emit the canonical Scala 3 trait body layout up front to avoid a
+    // byte-parity drift. The canonical layout is single-line for
+    // single-stat bodies and multi-line for multi-stat bodies.
+    val declsList = fields.all.map(f => s"def ${f.nameSafe}: ${f.fieldType}")
+    val singleLine = declsList.size == 1
 
     // Trait bases = `IDLGeneratedType` first, then each declared parent
-    // interface's qualified shape. Splice via `.syntax`.
-    val ifDecls: List[Init] = (ctx.rt.generated +: supers.map(ctx.conv.toScala)).map(_.init())
-    val ifDeclsText = ifDecls.map(DomainScalaParseBack.renderS30(_)).mkString(" with ")
+    // interface's qualified shape.
+    val ifDeclsText = (ctx.rt.generated +: supers.map(ctx.conv.toScala))
+      .map(s => ScalaTextHelpers.renderTree(s.init()))
+      .mkString(" with ")
 
     // The trait's bare declaration name. We use `t.typeName.value` directly
     // (a plain identifier; same as `ScalaRefHandle.TypeName(...)` would
-    // resolve to). The resolver is not consulted here because `t` is
-    // already a fully constructed `ScalaType` whose bare name is known.
+    // resolve to).
     val typeNameBare = t.typeName.value
 
-    val traitTree: TextTree[ScalaRefHandle] =
-      if (declsText.isEmpty)
-        q"""trait $typeNameBare extends $ifDeclsText"""
-      else
-        q"""trait $typeNameBare extends $ifDeclsText { $declsText }"""
+    // F-TextTree M8f: legacy parity — `AnyvalExtension.handleTrait` ran on
+    // EVERY trait built through `mkTrait` (top-level interface + the mirror
+    // synthesised inside DTO companions). Splice the Any base into the
+    // header text here so the renderer stays text-only.
+    val anyBasesText = DomainAnyvalExtension.withAnyForStruct(ctx, fields)
+    val allBasesText = (anyBasesText :+ ifDeclsText).filter(_.nonEmpty).mkString(" with ")
 
-    val parsed = DomainScalaParseBack.parseTrait(traitTree.mapRender(resolver.resolve))
+    val traitTree: TextTree[ScalaRefHandle] = declsList match {
+      case Nil =>
+        q"""trait $typeNameBare extends $allBasesText"""
+      case _ if singleLine =>
+        // Canonical Scala 3 printer collapses a single-stat trait body
+        // onto one line: `trait X extends Bs { def a: A }`.
+        val onlyDecl = declsList.head
+        q"""trait $typeNameBare extends $allBasesText { $onlyDecl }"""
+      case _ =>
+        val body = declsList.map(d => s"  $d").mkString("\n")
+        q"""trait $typeNameBare extends $allBasesText {
+           |$body
+           |}""".stripMargin
+    }
 
-    // Legacy parity: AnyvalExtension.handleTrait runs on EVERY trait built
-    // through mkTrait — top-level interfaces *and* the mirror `Defn` trait
-    // synthesised inside DTO companions.
-    TraitProduct(parsed).defn.prependBase(DomainAnyvalExtension.withAnyForStruct(ctx, fields))
+    traitTree.mapRender(resolver.resolve)
   }
 }

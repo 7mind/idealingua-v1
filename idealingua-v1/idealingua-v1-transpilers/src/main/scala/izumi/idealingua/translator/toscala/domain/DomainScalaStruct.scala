@@ -3,6 +3,7 @@ package izumi.idealingua.translator.toscala.domain
 import izumi.idealingua.model.common.TypeId.InterfaceId
 import izumi.idealingua.model.common.{ExtendedField, FieldDef, StructureId, TypeId}
 import izumi.idealingua.model.il.ast.typed.{Field, Super}
+import izumi.idealingua.translator.toscala.tools.ScalaTextHelpers
 import izumi.idealingua.translator.toscala.types.{ScalaField, ScalaStruct, ScalaTypeConverter}
 import izumi.idealingua.typer.ir.{Domain, FlatStruct, Member, Struct, TypeDef => NewTypeDef}
 
@@ -173,13 +174,13 @@ object DomainScalaStruct {
   ): ScalaStruct = {
     val legacyStruct = fromFlat(id, flat, supers, domain)
 
-    // F-TextTree M8e: `ScalaField` is String-native. Scala 3 keyword escape
-    // for field identifier names (`package` → `` `package` ``) is applied
-    // via `DomainScalaParseBack.renderS30(Term.Name(_))`, the same pattern
-    // M8c uses inside cast extensions for reserved field names.
+    // F-TextTree M8e..M8f: `ScalaField` is String-native. Scala 3 keyword
+    // escape for field identifier names (`package` → `` `package` ``) is
+    // applied via `ScalaTextHelpers.escapeIdent(_)`, the same pattern M8c
+    // uses inside cast extensions for reserved field names.
     def toScalaField(field: ExtendedField): ScalaField = {
       val name     = field.field.name
-      val nameSafe = DomainScalaParseBack.renderS30(scala.meta.Term.Name(name))
+      val nameSafe = ScalaTextHelpers.escapeIdent(name)
       val tpe      = conv.toScala(field.field.typeId).typeFull.toString
       ScalaField(name, nameSafe, tpe, field)
     }

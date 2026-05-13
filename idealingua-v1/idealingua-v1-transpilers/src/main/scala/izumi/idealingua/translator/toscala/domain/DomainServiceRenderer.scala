@@ -7,34 +7,37 @@ import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.il.ast.typed.DefMethod.RPCMethod
 import izumi.idealingua.translator.toscala.products.CogenProduct.CogenServiceProduct
 import izumi.idealingua.translator.toscala.products.RenderableCogenProduct
+import izumi.idealingua.translator.toscala.tools.ScalaTextHelpers
 import izumi.idealingua.translator.toscala.types.runtime
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
 /** Renders a new-IR `TypeDef.Service` (or `TypeDef.Buzzer` via the
-  * service-shaped projection) as the same scala.meta `Defn`s the legacy
+  * service-shaped projection) as the same Defns the legacy
   * `ServiceRenderer.renderService` produces (modulo the extension chain).
   *
-  * F-TextTree M7: ported off `scala.meta` quasiquotes onto
+  * F-TextTree M7..M8f: ported off legacy quasiquotes onto
   * `TextTree[ScalaRefHandle]` composition + `.mapRender(resolver.resolve)`
   * at the renderer boundary. Each of the 7 top-level outputs (server +
   * client traits, server + client wrapped class/companion pairs, methods
   * + codecs companion objects) is assembled as a `TextTree`, lowered to
-  * `String` via `.mapRender(resolver.resolve)`, then re-parsed to the
-  * expected `Defn` shape via `DomainScalaParseBack`.
+  * `String`. The carrier (`CogenServiceProduct.fromTexts`) owns the
+  * String → Defn boundary; the methods-object skeleton is parsed and
+  * then the per-method defStruct text fragments are appended via
+  * `Defn.appendDefinitions` so the printer indent matches the legacy
+  * shape exactly.
   *
   * Per-method splice points (server / client decls, wrapped server / client
   * bodies, method-signature objects, codec objects, method registrations,
   * codec registrations) are composed in `DomainServiceMethodProduct`, which
   * exposes each as a `TextTree[ScalaRefHandle]`. Splice ordering matches
-  * the legacy renderer (`decls.map(_.defnServer)`, etc.) byte-for-byte.
+  * the legacy renderer byte-for-byte.
   *
   * IMPL-7a.2 Phase B M4 (relaxed parity): emits server / client traits,
   * wrapped client / server classes, methods + codecs objects — same shape
   * the legacy renderer produces and the IRT runtime expects. Per-method
   * codegen is delegated to `DomainServiceMethodProduct`, which resolves
   * pre-synthesized input / output struct ids in `domain.flattenedStructs`
-  * and the Output ADTs in `domain.userTypes` (placed by Phase 7
-  * `EphemeralSynthesizer`).
+  * and the Output ADTs in `domain.userTypes`.
   *
   * Buzzer dispatch: per F16 absorption (services + buzzers share the same
   * widened ID hierarchy), `renderBuzzer` reuses this renderer body via
@@ -58,17 +61,17 @@ final class DomainServiceRenderer(ctx: DomainSTContext) {
     val ctxP  = c.Ctx.p
     val ft    = c.F.t
     // Pre-rendered scaffolding fragments — the legacy `${...}` interpolations
-    // bottom out in scala.meta tree text; we splice the `.syntax` form.
-    // F-TextTree M8e: `c.F.t` is a `String` ("Or"); wrap in `Type.Name` for
-    // the `parameterize(List[Type])` call sites that still consume
-    // `scala.meta.Type`.
-    val fTypeName = scala.meta.Type.Name(ft)
-    val irtDispatcherText = ctx.rt.IRTDispatcher.parameterize(List(fTypeName)).typeFull.toString
+    // bottom out in scala-source text; we splice the rendered form.
+    // F-TextTree M8e..M8f: `c.F.t` is a `String` ("Or"); use the existing
+    // `parameterize(List[Type])` API by constructing a single-element type
+    // alias holder. Since we only need the rendered text, build the
+    // parameterized init once via the ScalaType helper.
+    val irtDispatcherText = ctx.rt.IRTDispatcher.parameterize(ft).typeFull.toString
     val irtServiceIdName   = ctx.rt.IRTServiceId.typeName.toString
     val irtServiceIdTerm   = ctx.rt.IRTServiceId.termName.toString
     val irtMethodIdName    = ctx.rt.IRTMethodId.typeName.toString
     val irtWrappedClientInit = ctx.rt.IRTWrappedClient.typeFull.toString
-    val svcClientInitFt    = c.svcClientTpe.parameterize(List(fTypeName)).typeFull.toString
+    val svcClientInitFt    = c.svcClientTpe.parameterize(ft).typeFull.toString
     val methodImportText   = c.methodImport
 
     val svcServer        = c.svcServerTpe.typeName.toString
@@ -93,18 +96,12 @@ final class DomainServiceRenderer(ctx: DomainSTContext) {
       decls.map(_.defnMethodRegistration).join(", ")
 
     // The per-method I/O DTOs + their Circe / AnyVal / Cast augmentation
-    // come back as pre-built `Defn` lists from `DomainServiceMethodProduct.defStructs`.
-    // Splicing them into the methods-object as pre-rendered text via
-    // `renderS30(_)` triggers a scalameta Scala 3 printer quirk: when the
-    // parsed object body mixes a short `final case class … extends …` (no
-    // body) with a following trait, the printer emits the trait at column
-    // 0 rather than at the object's body indent. The robust path is to
-    // build the methods object skeleton WITHOUT defStructs, parse-back to
-    // a `Defn.Object`, then append the pre-built defStructs via
-    // `appendDefinitions`. This skips the text round-trip for the
-    // already-Defn material and preserves the legacy printer behaviour
-    // exactly. */
-    val defStructs: List[scala.meta.Defn] = decls.flatMap(_.defStructs)
+    // come back as pre-rendered Scala-source text from
+    // `DomainServiceMethodProduct.defStructsText`. The methods-object skeleton
+    // is parsed by `CogenServiceProduct.fromTexts`, then the defStruct
+    // strings are appended via `Defn.appendDefinitions` so the printer
+    // indent matches the legacy shape exactly. */
+    val defStructTexts: List[String] = decls.flatMap(_.defStructsText).toList
 
     val serverTree: TextTree[ScalaRefHandle] =
       q"""trait $svcServer[$ft[+_, +_], $ctxP] {
@@ -160,27 +157,31 @@ final class DomainServiceRenderer(ctx: DomainSTContext) {
          |  ${codecDecls.joinN().shift(2).trim}
          |}""".stripMargin
 
-    val serverDefn          = DomainScalaParseBack.parseTrait(serverTree.mapRender(resolver.resolve))
-    val clientDefn          = DomainScalaParseBack.parseTrait(clientTree.mapRender(resolver.resolve))
-    val clientWrappedDefn   = DomainScalaParseBack.parseClass(clientWrappedTree.mapRender(resolver.resolve))
-    val clientWrappedCompanionDefn = DomainScalaParseBack.parseObject(clientWrappedCompanionTree.mapRender(resolver.resolve))
-    val serverWrappedDefn   = DomainScalaParseBack.parseClass(serverWrappedTree.mapRender(resolver.resolve))
-    val serverWrappedCompanionDefn = DomainScalaParseBack.parseObject(serverWrappedCompanionTree.mapRender(resolver.resolve))
-    val methodsObjDefn      = {
-      val skeleton = DomainScalaParseBack.parseObject(methodsObjTree.mapRender(resolver.resolve))
-      import izumi.idealingua.translator.toscala.tools.ScalaMetaTools._
-      skeleton.appendDefinitions(defStructs: _*)
-    }
-    val codecsObjDefn       = DomainScalaParseBack.parseObject(codecsObjTree.mapRender(resolver.resolve))
+    val clientWrappedPair = CogenServiceProduct.Pair.fromTexts(
+      defnClassText = clientWrappedTree.mapRender(resolver.resolve),
+      companionText = clientWrappedCompanionTree.mapRender(resolver.resolve),
+    )
+    val serverWrappedPair = CogenServiceProduct.Pair.fromTexts(
+      defnClassText = serverWrappedTree.mapRender(resolver.resolve),
+      companionText = serverWrappedCompanionTree.mapRender(resolver.resolve),
+    )
 
-    CogenServiceProduct(
-      serverDefn,
-      clientDefn,
-      CogenServiceProduct.Pair(serverWrappedDefn, serverWrappedCompanionDefn),
-      CogenServiceProduct.Pair(clientWrappedDefn, clientWrappedCompanionDefn),
-      methodsObjDefn,
-      codecsObjDefn,
-      List(
+    // Note: M8f removed the `fTypeName = Type.Name(ft)` indirection
+    // by routing `ft: String` through the existing
+    // `ScalaType.parameterize(names: String*)` varargs arm. Both
+    // `IRTDispatcher.parameterize(ft).typeFull` and
+    // `svcClientTpe.parameterize(ft).typeFull` use that arm.
+    val _ = ScalaTextHelpers
+
+    CogenServiceProduct.fromTexts(
+      serverText            = serverTree.mapRender(resolver.resolve),
+      clientText            = clientTree.mapRender(resolver.resolve),
+      serverWrapped         = serverWrappedPair,
+      clientWrapped         = clientWrappedPair,
+      methodsSkeletonText   = methodsObjTree.mapRender(resolver.resolve),
+      methodsDefStructTexts = defStructTexts,
+      codecsText            = codecsObjTree.mapRender(resolver.resolve),
+      imports               = List(
         runtime.Import.from(runtime.Pkg.language, "higherKinds"),
         runtime.Import.from(runtime.Pkg.of[IO2[Nothing]], "IO2", Some("IRTIO2")),
         runtime.Import[Json](Some("IRTJson")),

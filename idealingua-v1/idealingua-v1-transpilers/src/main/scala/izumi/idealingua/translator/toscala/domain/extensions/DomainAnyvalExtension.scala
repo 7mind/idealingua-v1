@@ -1,6 +1,5 @@
 package izumi.idealingua.translator.toscala.domain.extensions
 
-import izumi.idealingua.model.JavaType
 import izumi.idealingua.model.common.TypeId.{AdtId, AliasId, EnumId, IdentifierId, InterfaceId, DTOId}
 import izumi.idealingua.model.common.{Builtin, Generic, TypeId}
 import izumi.idealingua.model.problems.IDLException
@@ -10,7 +9,6 @@ import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.HashSet
-import scala.meta.Init
 
 /** PR-02 IMPL-7a.2 Phase B M5: new-IR port of `AnyvalExtension`.
   *
@@ -40,10 +38,9 @@ object DomainAnyvalExtension {
 
   /** AnyVal bases for a DTO or interface-impl composite.
     *
-    * F-TextTree M8b: returns rendered Scala source text directly via
-    * string composition (no `scala.meta` round-trip). The String slot
-    * consumer (DomainScalaTranslator) pushes these into the
-    * `defnAnyvalBases` slot on `CogenProduct`. */
+    * F-TextTree M8b..M8f: returns rendered Scala source text directly via
+    * string composition. The String slot consumer (DomainScalaTranslator)
+    * pushes these into the `defnAnyvalBases` slot on `CogenProduct`. */
   def withAnyvalForComposite(ctx: DomainSTContext, dto: NewTypeDef.Dto): List[String] =
     doModify("AnyVal", structCanBeAnyVal(ctx, dto))
 
@@ -57,10 +54,10 @@ object DomainAnyvalExtension {
     doModify("AnyVal", ok)
   }
 
-  /** Any bases for a structural interface (trait). Returns `Init` because
-    * the (sole) renderer-internal caller splices the result directly into
-    * a `Defn.Trait` via `prependBase`. */
-  def withAnyForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[Init] = {
+  /** Any bases for a structural interface (trait). F-TextTree M8f: returns
+    * rendered Scala source text — the `InterfaceRenderer.mkTrait` consumer
+    * splices it into the trait header as text. */
+  def withAnyForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[String] = {
     val flat = ctx.domain.flattenedStructs.get(i.id)
     val canBeAny = flat match {
       case Some(fs) =>
@@ -69,34 +66,35 @@ object DomainAnyvalExtension {
         scalarOrEmpty && all.forall(f => canBeAnyValField(ctx, f.typeId))
       case None => false
     }
-    doModifyInit(ctx, "Any", canBeAny)
+    doModify("Any", canBeAny)
   }
 
   /** Any bases for an arbitrary trait built from a `ScalaStruct`.
     *
     * Legacy parity: `AnyvalExtension.handleTrait` runs on every trait built
-    * via `InterfaceRenderer.mkTrait`, including the mirror `Defn` trait
+    * via `InterfaceRenderer.mkTrait`, including the mirror trait
     * synthesised for DTO companions inside `CompositeRenderer.defns`. The
     * predicate matches the legacy `withAny(Struct)` arm — single-or-empty
     * scalar carrier whose every field qualifies as an `AnyVal`-eligible
     * type.
     *
-    * Returns `Init` because `InterfaceRenderer.mkTrait` splices the result
-    * directly into a `Defn.Trait` via `prependBase`. The DTO carrier path
+    * F-TextTree M8f: returns rendered Scala source text — the caller
+    * splices it into the trait header as text. The DTO carrier path
     * uses `withAnyvalForComposite` (String slot) instead.
     */
-  def withAnyForStruct(ctx: DomainSTContext, struct: ScalaStruct): List[Init] = {
+  def withAnyForStruct(ctx: DomainSTContext, struct: ScalaStruct): List[String] = {
+    val _             = ctx
     val all           = struct.all.map(_.field.field)
     val scalarOrEmpty = all.size <= 1
     val canBeAny      = scalarOrEmpty && all.forall(f => canBeAnyValField(ctx, f.typeId))
-    doModifyInit(ctx, "Any", canBeAny)
+    doModify("Any", canBeAny)
   }
 
   /** AnyVal bases for an Identifier.
     *
-    * F-TextTree M8b: returns rendered Scala source text. After the
-    * `scala.meta`-round-trip went away, `ctx` is no longer consulted —
-    * the predicate is purely `id.fields.size == 1`. Parameter kept to
+    * F-TextTree M8b..M8f: returns rendered Scala source text. After the
+    * Init round-trip went away, `ctx` is no longer consulted — the
+    * predicate is purely `id.fields.size == 1`. Parameter kept to
     * preserve the call-site signature (parity with the other
     * `withAnyvalFor*` arms which still need `ctx` for `flattenedStructs`
     * / `aliases` lookups). */
@@ -123,22 +121,12 @@ object DomainAnyvalExtension {
   ): List[izumi.idealingua.typer.ir.FlatField] =
     fields.groupBy(_.field.name).values.map(_.head).toList
 
-  /** F-TextTree M8b: direct string composition for the String-slot
-    * arms. `ctx.conv.toScala(JavaType(Seq.empty, base)).init()` produces
-    * `Init(Type.Name(base), Name.Anonymous(), Nil)`, which `renderS30`
-    * prints as the bare base name (`"AnyVal"`); skip the round-trip and
-    * emit the name verbatim. */
+  /** F-TextTree M8b..M8f: direct string composition for every base-slot arm
+    * (DTO/Identifier/Interface AnyVal + trait Any). The bare base name
+    * (`"AnyVal"`, `"Any"`) is the exact text the legacy printer emitted
+    * when given `Init(Type.Name(base), Name.Anonymous(), Nil)`. */
   private def doModify(base: String, modify: Boolean): List[String] = {
     if (modify) List(base)
-    else List.empty
-  }
-
-  /** Renderer-internal `Init` arm. `withAnyForStruct` / `withAnyForInterface`
-    * feed `InterfaceRenderer.mkTrait.prependBase`, which still consumes
-    * `scala.meta.Init`. `ctx.conv.toScala(...).init()` constructs the
-    * Init directly — no parse-back required. */
-  private def doModifyInit(ctx: DomainSTContext, base: String, modify: Boolean): List[Init] = {
-    if (modify) List(ctx.conv.toScala(JavaType(Seq.empty, base)).init())
     else List.empty
   }
 

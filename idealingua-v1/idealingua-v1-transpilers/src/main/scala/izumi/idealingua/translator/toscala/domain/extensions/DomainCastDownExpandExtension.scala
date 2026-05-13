@@ -1,10 +1,9 @@
 package izumi.idealingua.translator.toscala.domain.extensions
 
 import izumi.idealingua.model.common.{Builtin, SigParam, SigParamSource}
-import izumi.idealingua.translator.toscala.domain.{DomainSTContext, DomainScalaParseBack}
+import izumi.idealingua.translator.toscala.domain.DomainSTContext
+import izumi.idealingua.translator.toscala.tools.ScalaTextHelpers
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
-
-import scala.meta.Term
 
 /** PR-02 IMPL-7a.2 Phase B M5: new-IR port of `CastDownExpandExtension`.
   *
@@ -28,10 +27,9 @@ import scala.meta.Term
   * pulled off `_value`. This matches legacy's `parentInstanceFields` /
   * `localFields` split for the non-mixin case.
   *
-  * F-TextTree M8c: ported off `scala.meta` quasiquotes — bodies composed as
-  * plain Scala source strings. The previous `q"implicit object …"`
-  * quasiquote → `renderS30(_)` round-trip is gone; the produced strings are
-  * still consumed via `companionCasts` (parse-back at carrier render time).
+  * F-TextTree M8c..M8f: ported off legacy quasiquotes — bodies composed
+  * as plain Scala source strings. The produced strings are consumed via
+  * `companionCasts` (parse-back at carrier render time).
   */
 object DomainCastDownExpandExtension {
 
@@ -83,28 +81,28 @@ object DomainCastDownExpandExtension {
         // Convert local sigs into Scala param decls (`name: Type`).
         val usingParams: List[String] = localSigs.map { sp =>
           val pType = ctx.conv.toScala(sp.source.sourceType).typeFull.toString
-          val pNm   = DomainScalaParseBack.renderS30(Term.Name(sp.source.sourceName))
+          val pNm   = ScalaTextHelpers.escapeIdent(sp.source.sourceName)
           s"$pNm: $pType"
         }
 
         val assignments: List[String] = (parentSigs ++ localSigs).map(toAssignment)
 
         // Generate per-local-non-builtin null-check terms, then combine via &&
-        // exactly as the legacy `Term.ApplyInfix(... && ...)` chain did.
+        // exactly as the legacy `&&`-infix-applied chain did.
         val assertions: List[String] = localSigs.flatMap { sp =>
           if (!sp.source.sourceType.isInstanceOf[Builtin]) {
-            val nm = DomainScalaParseBack.renderS30(Term.Name(sp.source.sourceName))
+            val nm = ScalaTextHelpers.escapeIdent(sp.source.sourceName)
             List(s"$nm.asInstanceOf[_root_.scala.AnyRef] ne null")
           } else List.empty
         }
-        // Legacy `Term.ApplyInfix(... && ...)` over `Term.ApplyInfix(... ne ...)`
+        // Legacy infix `&&` over infix `ne` chain
         // surfaces precedence-disambiguating parens around each `ne null`
         // operand at print time. Replicate by wrapping each operand in parens
         // before the `&&`-join (skipping the parens-only case where there is
         // exactly one assertion has no `&&`, so the parens are unnecessary —
-        // but scala.meta keeps the operand parens regardless of arity for
-        // single-assertion `assert(...)`. Test: scala/izumi/test/domain02/TestInterface2.scala
-        // → `assert((a) && (b))`).
+        // but the legacy printer keeps the operand parens regardless of
+        // arity for single-assertion `assert(...)`. Test:
+        // scala/izumi/test/domain02/TestInterface2.scala → `assert((a) && (b))`).
         val assertLine: String = assertions match {
           case Nil           => ""
           case single :: Nil => s"\n      assert($single)"
@@ -137,11 +135,11 @@ object DomainCastDownExpandExtension {
   }
 
   private def toAssignment(f: SigParam): String = {
-    val tgt = DomainScalaParseBack.renderS30(Term.Name(f.targetFieldName))
-    val src = DomainScalaParseBack.renderS30(Term.Name(f.source.sourceName))
+    val tgt = ScalaTextHelpers.escapeIdent(f.targetFieldName)
+    val src = ScalaTextHelpers.escapeIdent(f.source.sourceName)
     f.sourceFieldName match {
       case Some(srcFieldName) =>
-        val sFn = DomainScalaParseBack.renderS30(Term.Name(srcFieldName))
+        val sFn = ScalaTextHelpers.escapeIdent(srcFieldName)
         s"$tgt = $src.$sFn"
       case None =>
         s"$tgt = $src"

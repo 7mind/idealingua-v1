@@ -7,19 +7,10 @@ import izumi.idealingua.typer.ir.TypeDef
 
 /** Renders a new-IR `TypeDef.Enum` as an `EnumProduct` (pre-extension).
   *
-  * F-TextTree M5: ported off `scala.meta` quasiquotes onto
+  * F-TextTree M5..M8f: ported off legacy quasiquotes onto
   * `TextTree[ScalaRefHandle]` composition + `.mapRender(resolver.resolve)`
-  * at the renderer boundary. The renderer interior carries zero
-  * `scala.meta.Tree` material; type references travel as
-  * `ScalaRefHandle.{TypeName, TypeFull}` value nodes.
-  *
-  * **Carrier strategy**: the legacy `EnumProduct` carries `Defn.Trait`,
-  * `Defn.Object`, and `List[(Term.Name, Defn)]`. M5 keeps the carrier
-  * intact (the carrier-migration cycle is deferred — extensions still
-  * push `Defn` material into `companion.prependBase` and
-  * `more :+ circe.defn`). The renderer composes textual output via
-  * `TextTree`, lowers it to `String`, then re-parses the string back to
-  * the expected `Defn` shape via `DomainScalaParseBack`.
+  * at the renderer boundary; M8f retires the explicit parse-back call
+  * site (the carrier owns the String → Defn boundary now).
   *
   * **Byte parity**: byte-equal goldens are preserved. Two parse-roundtrip
   * pitfalls drove the renderer's text shape:
@@ -43,17 +34,15 @@ final class DomainEnumRenderer(ctx: DomainSTContext) {
     val typeFull: TextTree[ScalaRefHandle] = TextTree.value(ScalaRefHandle.TypeFull(i.id))
 
     // Each member contributes a case object placed into the companion. The
-    // legacy renderer pairs the member's `Term.Name` with its `Defn` for
-    // downstream `companion.appendDefinitions(elements.map(_._2))`. The
-    // term-name is a plain `Term.Name(value)` literal (no qualified path).
-    val members: List[(scala.meta.Term.Name, scala.meta.Defn)] = i.members.map { m =>
+    // carrier (`EnumProduct.fromTexts`) parses each member text back to a
+    // `Defn` and keeps the bare term name alongside for downstream consumers.
+    val members: List[(String, String)] = i.members.map { m =>
       val termText = m.value
       val element: TextTree[ScalaRefHandle] =
         q"""case object $termText extends $typeFull {
            |  override def toString: String = "${m.value}"
            |}""".stripMargin
-      val parsed = DomainScalaParseBack.parseDefn(element.mapRender(resolver.resolve))
-      scala.meta.Term.Name(termText) -> parsed
+      termText -> element.mapRender(resolver.resolve)
     }
 
     val memberRefs: Seq[TextTree[ScalaRefHandle]] =
@@ -79,9 +68,10 @@ final class DomainEnumRenderer(ctx: DomainSTContext) {
          |  }
          |}""".stripMargin
 
-    val traitDefn     = DomainScalaParseBack.parseTrait(traitTree.mapRender(resolver.resolve))
-    val companionDefn = DomainScalaParseBack.parseObject(companionTree.mapRender(resolver.resolve))
-
-    EnumProduct(traitDefn, companionDefn, members)
+    EnumProduct.fromTexts(
+      defnTraitText     = traitTree.mapRender(resolver.resolve),
+      companionBaseText = companionTree.mapRender(resolver.resolve),
+      elements          = members,
+    )
   }
 }

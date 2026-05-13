@@ -4,40 +4,34 @@ import izumi.fundamentals.platform.strings.TextTree
 import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.il.ast.typed.Interfaces
 import izumi.idealingua.translator.toscala.products.{CogenProduct, RenderableCogenProduct}
+import izumi.idealingua.translator.toscala.tools.ScalaTextHelpers
 import izumi.idealingua.translator.toscala.types.ClassSource
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
 
 /** Renders a new-IR `TypeDef.Dto` (or interface impl synthesis) as the same
-  * scala.meta `Defn`s the legacy `CompositeRenderer.defns` produces (modulo
+  * Defns the legacy `CompositeRenderer.defns` produces (modulo
   * the extension chain).
   *
-  * F-TextTree M6: ported off `scala.meta` quasiquotes onto
+  * F-TextTree M6..M8f: ported off legacy quasiquotes onto
   * `TextTree[ScalaRefHandle]` composition + `.mapRender(resolver.resolve)`
   * at the renderer boundary. Type references travel as
   * `ScalaRefHandle.{TypeName, TypeFull}` value nodes. The supporting
   * scaffolding (`DomainScalaStruct.scalaStruct` → `ScalaStruct.all`,
-  * `DomainCompositeStructure.{decls, constructors}`) still produces
-  * `scala.meta` fragments (`Term.Param` / `Defn.Def`); we splice them as
-  * pre-rendered `.syntax` strings rather than thread `TextTree` through
-  * the scaffolding (out of M6 scope; the scaffolding's downstream
-  * consumers — extensions — still operate on `Defn`).
+  * `DomainCompositeStructure.{decls, constructors}`) produces Strings
+  * already; we splice them verbatim.
   *
-  * **Carrier strategy** (same as M5): `CogenProduct[Defn.Class]` carrier
-  * preserved; extensions (Circe sibling + base, AnyVal `prependBase`,
-  * Cast* `appendDefinitions`) continue to mutate it. The renderer
-  * composes textual output via `TextTree`, lowers to `String`, then
-  * re-parses to `Defn.Class` / `Defn.Object` via `DomainScalaParseBack`
-  * at the boundary.
+  * **Carrier strategy**: M8f hands rendered Scala-source text to
+  * `CogenProduct.fromTexts`; the carrier owns the String → Defn
+  * boundary.
   *
   * **Byte parity**: the empty-body pitfall (M5) applies — the legacy
   * `q"final case class … extends … {}".syntax` printer drops empty `{}`
   * but the parser keeps source-level braces. The case class and the
   * tools implicit class both have no body in this renderer; emit them
-  * without trailing `{}` so the parsed `Defn.{Class}` re-prints
-  * byte-equal to the legacy output. The companion object has body stats
-  * (constructors + optional mirror trait) so its braces are preserved
-  * by both paths.
+  * without trailing `{}` so the parsed Defn re-prints byte-equal to
+  * the legacy output. The companion object has body stats (constructors
+  * + optional mirror trait) so its braces are preserved by both paths.
   *
   * IMPL-7a.2 Phase B parity: produces structurally correct Scala — final
   * case class with all fields, companion object with constructors, tools
@@ -64,25 +58,26 @@ final class DomainCompositeRenderer(ctx: DomainSTContext) {
     // Legacy emits an empty base list for method input/output, plus the
     // CsDTO arm. Bases always stay empty here — `ifDecls` carries the only
     // declared parents.
-    val bases: List[scala.meta.Init] = source match {
-      case ClassSource.CsMethodInput  => List.empty
-      case ClassSource.CsMethodOutput => List.empty
-      case _                          => List.empty
+    val basesText: String = source match {
+      case ClassSource.CsMethodInput  => ""
+      case ClassSource.CsMethodOutput => ""
+      case _                          => ""
     }
+    val _ = basesText // reserved for future arm-specific bases
 
-    val (mirrorInterface: List[scala.meta.Defn.Trait], moreBases: Interfaces) = if (withMirror) {
+    val (mirrorInterfaceText: List[String], moreBases: Interfaces) = if (withMirror) {
       // Synthesize the mirror trait `<Dto>Defn` matching legacy
       // `typespace.tools.defnId(dto)`.
       struct.fields.id match {
         case dto: izumi.idealingua.model.common.TypeId.DTOId =>
           val implIfaceId = izumi.idealingua.model.common.TypeId.InterfaceId(dto, "Defn")
-          val mirrorTrait =
+          val mirrorTraitText =
             ctx.interfaceRenderer.mkTrait(
               List.empty,
               ctx.conv.toScala(implIfaceId),
               struct.fields,
             )
-          (List(mirrorTrait), List(implIfaceId))
+          (List(mirrorTraitText), List(implIfaceId))
         case _ =>
           (List.empty, List.empty)
       }
@@ -94,14 +89,12 @@ final class DomainCompositeRenderer(ctx: DomainSTContext) {
       ctx.conv.toScala(iface).init()
     }
 
-    val superClasses: List[scala.meta.Init] = bases ++ ifDecls
-
-    // Pre-render the superClasses init list to text. `Init.syntax` produces
-    // the qualified shape the legacy renderer emitted (e.g.
-    // `TestDto.Defn`, `_root_.scala.AnyVal`, etc.).
+    // Pre-render the superClasses init list to text. The renderer of
+    // `Init` produces the qualified shape the legacy renderer emitted
+    // (e.g. `TestDto.Defn`, `_root_.scala.AnyVal`, etc.).
     val superClassesText: String =
-      if (superClasses.isEmpty) ""
-      else superClasses.map(DomainScalaParseBack.renderS30(_)).mkString(" extends ", " with ", "")
+      if (ifDecls.isEmpty) ""
+      else ifDecls.map(ScalaTextHelpers.renderTree(_)).mkString(" extends ", " with ", "")
 
     val toolsName = s"${struct.fields.id.name.capitalize}Extensions"
 
@@ -119,16 +112,14 @@ final class DomainCompositeRenderer(ctx: DomainSTContext) {
     // Legacy: `extends ..$toolBases { }` (single Init, IRTConversions[T]).
     // Drop the empty `{}` for byte-parity.
     val toolsBase = ctx.rt.Conversions.parameterize(List(struct.t.typeFull)).init()
-    val toolsBaseText = DomainScalaParseBack.renderS30(toolsBase)
+    val toolsBaseText = ScalaTextHelpers.renderTree(toolsBase)
     val toolsTree: TextTree[ScalaRefHandle] =
       q"""implicit class $toolsName(override protected val _value: $tFullTree) extends $toolsBaseText"""
 
     // ---- Companion object -----------------------------------------------
-    // Splice mirror trait + constructors as pre-rendered text.
-    // F-TextTree M8e: `struct.constructors` is now `List[String]`; the
-    // mirror trait is still a `scala.meta.Defn.Trait` (built by
-    // `interfaceRenderer.mkTrait`) and needs `renderS30` until M8f.
-    val mirrorText      = mirrorInterface.map(DomainScalaParseBack.renderS30(_)).mkString("\n")
+    // Splice mirror trait + constructors as pre-rendered text. M8f: mirror
+    // trait is already a String.
+    val mirrorText      = mirrorInterfaceText.mkString("\n")
     val constructorsText = struct.constructors.mkString("\n")
     val bodyText        = (Seq(mirrorText, constructorsText).filter(_.nonEmpty)).mkString("\n")
 
@@ -141,11 +132,11 @@ final class DomainCompositeRenderer(ctx: DomainSTContext) {
          |  ${bodyText}
          |}""".stripMargin
 
-    val compositeDefn = DomainScalaParseBack.parseClass(compositeTree.mapRender(resolver.resolve))
-    val companionDefn = DomainScalaParseBack.parseObject(companionTree.mapRender(resolver.resolve))
-    val toolsDefn     = DomainScalaParseBack.parseClass(toolsTree.mapRender(resolver.resolve))
-
-    CogenProduct(compositeDefn, companionDefn, toolsDefn, List.empty)
+    CogenProduct.fromTexts(
+      defnText          = compositeTree.mapRender(resolver.resolve),
+      companionBaseText = companionTree.mapRender(resolver.resolve),
+      toolsText         = toolsTree.mapRender(resolver.resolve),
+    )
   }
 
   /** Render a top-level user-declared DTO directly (convenience). */

@@ -12,35 +12,29 @@ import izumi.idealingua.translator.toscala.domain.extensions.{
   DomainCirceDerivationTranslatorExtension,
 }
 import izumi.idealingua.translator.toscala.products.CogenProduct
+import izumi.idealingua.translator.toscala.tools.ScalaTextHelpers
 import izumi.idealingua.translator.toscala.types.{ClassSource, ScalaField, ScalaType}
 import izumi.idealingua.typer.ir.{FlatStruct, TypeDef => NewTypeDef}
 
-import scala.meta.Defn
-
 /** Per-method rendering helper for the Domain-IR Service / Buzzer renderer.
   *
-  * F-TextTree M7: ported off `scala.meta` quasiquotes onto
+  * F-TextTree M7..M8f: ported off legacy quasiquotes onto
   * `TextTree[ScalaRefHandle]` composition + `.mapRender(resolver.resolve)`
   * at the renderer boundary. Type references travel as
   * `ScalaRefHandle.{TypeFull, TermFull}` value nodes; helpers expose
   * `TextTree[ScalaRefHandle]` for splice points so the parent
-  * `DomainServiceRenderer` can assemble the 7 top-level Defns as text and
-  * parse them back via `DomainScalaParseBack` at a single boundary.
+  * `DomainServiceRenderer` can assemble the 7 top-level Defns as text.
   *
-  * Supporting `scala.meta` scaffolding (`DomainCompositeStructure`'s
-  * `Term.Param` / `Defn.Def` fragments, `DomainScalaStruct.scalaStruct`'s
-  * field shapes, and the extension family's `Defn` emissions) is spliced
-  * as pre-rendered text via `DomainScalaParseBack.renderS30(_)` — the same
-  * pattern M6 established for the structural renderers (`Composite`,
-  * `Interface`, `Id`). Migrating the scaffolding/extensions off `scala.meta`
-  * is M8 scope.
+  * Supporting scaffolding (`DomainCompositeStructure`'s field/param
+  * fragments, `DomainScalaStruct.scalaStruct`'s field shapes, and the
+  * extension family's emissions) is String-native after M8e/M8f — no
+  * round-trip through the legacy printer required.
   *
-  * **Carrier strategy** (same as M5/M6): `defStructs: List[Defn]` is the
-  * only `Defn`-returning method retained — it composes the Circe sibling
-  * + AnyVal + Cast* augmented method I/O `CogenProduct[Defn.Class]`
-  * surface via `withCirce(...)`, exactly as legacy did. The list is
-  * spliced into the parent methods-object as pre-rendered text by the
-  * renderer.
+  * **Carrier strategy** (M8f): `defStructsText: List[String]` composes
+  * the Circe sibling + AnyVal + Cast* augmented method I/O
+  * `CogenProduct.CompositeProduct` surface via `withCirceText(...)`,
+  * matching legacy structurally. The list is spliced into the parent
+  * methods-object as pre-rendered text by the renderer.
   *
   * **Byte parity**: every emitted text fragment is parse-roundtrip-safe
   * (no empty `{}` pitfalls beyond what M5/M6 already characterised).
@@ -176,7 +170,7 @@ final case class DomainServiceMethodProduct(
          |}", v, None))""".stripMargin
     }
 
-    // Body shape mirrors the golden's printer output verbatim — scalameta's
+    // Body shape mirrors the golden's printer output verbatim — the legacy
     // Scala 3 printer is idempotent on its own output, so feeding the
     // canonical layout into parse-back round-trips to byte-equal text.
     // Reproducing the *legacy quasiquote source* layout doesn't work
@@ -249,10 +243,13 @@ final case class DomainServiceMethodProduct(
     q"def $name(${Input.signatureText}): ${Output.outputType}"
 
   /** Per-method `defStructs` — emitted into the methods-object body alongside
-    * the per-method signature objects. Returns Defn list (a List of Defn
-    * to be spliced as rendered text by the parent renderer).
+    * the per-method signature objects. F-TextTree M8f: returns rendered
+    * Scala-source text fragments; the parent renderer (service) parses
+    * them back through `Defn.appendDefinitions` inside
+    * `CogenServiceProduct.fromTexts`.
     */
-  def defStructs: List[Defn] = Input.inputDefn ++ Output.outputDefn
+  def defStructsText: List[String] =
+    Input.inputDefnText ++ Output.outputDefnText
 
   // -------- Internal accessors -----------------------------------------
 
@@ -310,7 +307,7 @@ final case class DomainServiceMethodProduct(
     def sigDirectCallText: String =
       fields.map(_.nameSafe).mkString(", ")
 
-    def inputDefn: List[Defn] = {
+    def inputDefnText: List[String] = {
       val flat = ctx.domain.flattenedStructs.getOrElse(
         typespaceId,
         FlatStruct(typespaceId, List.empty, List.empty, List.empty),
@@ -323,8 +320,8 @@ final case class DomainServiceMethodProduct(
       val scalaStruct = DomainScalaStruct.scalaStruct(typespaceId, flat, supers, ctx.conv, ctx.domain)
       val composite   = new DomainCompositeStructure(ctx, scalaStruct)
       val stub = stubDto(typespaceId)
-      val base = ctx.compositeRenderer.defns(composite, ClassSource.CsDTO(stub)).asInstanceOf[CogenProduct[Defn.Class]]
-      withCirce(base, typespaceId, flat, unwrap = false)
+      val base = ctx.compositeRenderer.defns(composite, ClassSource.CsDTO(stub)).asInstanceOf[CogenProduct.CompositeProduct]
+      withCirceText(base, typespaceId, flat, unwrap = false)
     }
 
     def defnEncoder: TextTree[ScalaRefHandle] =
@@ -398,7 +395,7 @@ final case class DomainServiceMethodProduct(
         adtId
     }
 
-    def outputDefn: List[Defn] = renderOutput(typename, method.signature.output)
+    def outputDefnText: List[String] = renderOutput(typename, method.signature.output)
 
     def defnEncoder: TextTree[ScalaRefHandle] =
       q"""def encodeResponse: PartialFunction[IRTResBody, IRTJson] = {
@@ -412,7 +409,7 @@ final case class DomainServiceMethodProduct(
          |    decoded[Or, IRTResBody](packet.as[Output].map(v => IRTResBody(v)))
          |}""".stripMargin
 
-    private def renderOutput(typename: String, out: DefMethod.Output): List[Defn] = out match {
+    private def renderOutput(typename: String, out: DefMethod.Output): List[String] = out match {
       case DefMethod.Output.Struct(_) | DefMethod.Output.Void() | DefMethod.Output.Singular(_) =>
         val outId: DTOId = DTOId(sp.basePath, typename)
         val flat = ctx.domain.flattenedStructs.getOrElse(
@@ -423,7 +420,7 @@ final case class DomainServiceMethodProduct(
         val scalaStruct = DomainScalaStruct.scalaStruct(outId, flat, supers, ctx.conv, ctx.domain)
         val composite   = new DomainCompositeStructure(ctx, scalaStruct)
         val stub = stubDto(outId)
-        val base = ctx.compositeRenderer.defns(composite, ClassSource.CsDTO(stub)).asInstanceOf[CogenProduct[Defn.Class]]
+        val base = ctx.compositeRenderer.defns(composite, ClassSource.CsDTO(stub)).asInstanceOf[CogenProduct.CompositeProduct]
         // Legacy unwrap branch: a Singular method output yields a synthetic
         // wrapper DTO with a single field — the Circe codec must encode the
         // inner value directly (`encodeUnwrapped<Name>`).
@@ -431,18 +428,18 @@ final case class DomainServiceMethodProduct(
           case _: DefMethod.Output.Singular => true
           case _                            => false
         }
-        withCirce(base, outId, flat, unwrap)
+        withCirceText(base, outId, flat, unwrap)
 
       case DefMethod.Output.Algebraic(_) =>
         val outAdtId: AdtId = AdtId(sp.basePath, typename)
         ctx.domain.userTypes.get(outAdtId) match {
-          case Some(adt: NewTypeDef.Adt) => withAdtCirce(adt)
+          case Some(adt: NewTypeDef.Adt) => withAdtCirceText(adt)
           case _                          => List.empty
         }
 
       case DefMethod.Output.Alternative(success, failure) =>
         val topAdt = ctx.domain.userTypes.get(adtId) match {
-          case Some(adt: NewTypeDef.Adt) => withAdtCirce(adt)
+          case Some(adt: NewTypeDef.Adt) => withAdtCirceText(adt)
           case _                          => List.empty
         }
         topAdt ++ renderShim(positiveId, success) ++ renderShim(negativeId, failure)
@@ -457,26 +454,21 @@ final case class DomainServiceMethodProduct(
       * `<Name>Circe` trait + companion-base `extends`. Replicate that here so
       * service codecs' `value.asJson` and `packet.as[Output]` resolve at the
       * call site. */
-    private def withAdtCirce(adt: NewTypeDef.Adt): List[Defn] = {
-      val baseAdt = ctx.adtRenderer.renderAdt(adt, List.empty).asInstanceOf[izumi.idealingua.translator.toscala.products.CogenProduct.AdtProduct]
-      if (adt.alternatives.nonEmpty) {
+    private def withAdtCirceText(adt: NewTypeDef.Adt): List[String] = {
+      val baseAdt = ctx.adtRenderer.renderAdt(adt).asInstanceOf[CogenProduct.AdtProduct]
+      val rendered = if (adt.alternatives.nonEmpty) {
         val circe = DomainCirceDerivationTranslatorExtension.emitForAdt(ctx, adt)
-        val product = izumi.idealingua.translator.toscala.products.CogenProduct.AdtProduct(
-          defn                = baseAdt.defn,
-          companionBase       = baseAdt.companionBase,
-          elements            = baseAdt.elements,
-          more                = baseAdt.more,
-          preamble            = baseAdt.preamble,
+        baseAdt.copy(
           companionCirceBases = List(circe.initText),
           siblings            = List(circe.defnText),
-        )
-        product.render
+        ).render
       } else {
         baseAdt.render
       }
+      rendered.map(ScalaTextHelpers.renderTree(_))
     }
 
-    private def renderShim(typename: String, out: DefMethod.Output): List[Defn] = out match {
+    private def renderShim(typename: String, out: DefMethod.Output): List[String] = out match {
       case _: DefMethod.Output.Singular => List.empty
       case o                            => renderOutput(typename, o)
     }
@@ -495,12 +487,12 @@ final case class DomainServiceMethodProduct(
     * `ClassSource.CsMethodOutput` with `DefMethod.Output.Singular(_)` (the
     * unwrap branch emits `encodeUnwrapped<Name>` codecs).
     */
-  private def withCirce(
-    base: CogenProduct[Defn.Class],
+  private def withCirceText(
+    base: CogenProduct.CompositeProduct,
     dtoId: DTOId,
     flat: FlatStruct,
     unwrap: Boolean,
-  ): List[Defn] = {
+  ): List[String] = {
     val anyvalBases = DomainAnyvalExtension.withAnyvalForMethodStruct(ctx, flat)
     val sims        = DomainCastSimilarExtension.mkConvertersForMethodStruct(ctx, dtoId)
     val ups         = DomainCastUpExtension.generateUpcastsForMethodStruct(ctx, dtoId)
@@ -512,18 +504,13 @@ final case class DomainServiceMethodProduct(
       scalaVersions = ctx.options.manifest.sbt.scalaVersions,
     )
 
-    val augmented = CogenProduct[Defn.Class](
-      defn                = base.defn,
-      companionBase       = base.companionBase,
-      tools               = base.tools,
-      more                = base.more,
-      preamble            = base.preamble,
+    val augmented: CogenProduct.CompositeProduct = base.copy(
       defnAnyvalBases     = anyvalBases,
       companionCirceBases = List(circe.initText),
       companionCasts      = sims ++ ups,
       siblings            = List(circe.defnText),
     )
-    augmented.render
+    augmented.render.map(ScalaTextHelpers.renderTree(_))
   }
 
   private def stubDto(id: DTOId): izumi.idealingua.model.il.ast.typed.TypeDef.DTO =

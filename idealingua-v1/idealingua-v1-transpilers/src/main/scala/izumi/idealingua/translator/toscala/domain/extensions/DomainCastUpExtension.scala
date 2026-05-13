@@ -2,10 +2,9 @@ package izumi.idealingua.translator.toscala.domain.extensions
 
 import izumi.idealingua.model.common.StructureId
 import izumi.idealingua.model.common.TypeId.{DTOId, InterfaceId}
-import izumi.idealingua.translator.toscala.domain.{DomainScalaStruct, DomainSTContext, DomainScalaParseBack}
+import izumi.idealingua.translator.toscala.domain.{DomainScalaStruct, DomainSTContext}
+import izumi.idealingua.translator.toscala.tools.ScalaTextHelpers
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
-
-import scala.meta.Term
 
 /** PR-02 IMPL-7a.2 Phase B M5: new-IR port of `CastUpExtension`.
   *
@@ -31,8 +30,8 @@ import scala.meta.Term
   * Determinism: the result is sorted by `_.toString` (self placed FIRST to
   * match legacy emit order) so emitted converter order is stable across runs.
   *
-  * F-TextTree M8c: ported off `scala.meta` quasiquotes — bodies composed as
-  * plain Scala source strings. Output strings are consumed via
+  * F-TextTree M8c..M8f: ported off legacy quasiquotes — bodies composed
+  * as plain Scala source strings. Output strings are consumed via
   * `companionCasts` String slot (parse-back at carrier render time).
   */
 object DomainCastUpExtension {
@@ -127,7 +126,7 @@ object DomainCastUpExtension {
       val ctorFields = sortedImplStruct.all
         .filter(f => keep.contains(f.field.name))
         .map { f =>
-          val nm = DomainScalaParseBack.renderS30(Term.Name(f.field.name))
+          val nm = ScalaTextHelpers.escapeIdent(f.field.name)
           s"$nm = _value.$nm"
         }
 
@@ -187,7 +186,7 @@ object DomainCastUpExtension {
           }
           val parentStruct = DomainScalaStruct.fromFlat(parentId, pfs, parentSuper, ctx.domain)
           parentStruct.all.map { f =>
-          val nm = DomainScalaParseBack.renderS30(Term.Name(f.field.name))
+          val nm = ScalaTextHelpers.escapeIdent(f.field.name)
           s"$nm = _value.$nm"
         }
         case None =>
@@ -197,7 +196,7 @@ object DomainCastUpExtension {
             .map(_.fields.filter(ff => parentFlat.exists(_.name == ff.field.name)))
             .getOrElse(List.empty)
             .map { ff =>
-              val nm = DomainScalaParseBack.renderS30(Term.Name(ff.field.name))
+              val nm = ScalaTextHelpers.escapeIdent(ff.field.name)
               s"$nm = _value.$nm"
             }
       }

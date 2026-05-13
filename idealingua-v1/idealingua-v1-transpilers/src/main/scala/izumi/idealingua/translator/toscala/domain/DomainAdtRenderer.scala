@@ -2,26 +2,16 @@ package izumi.idealingua.translator.toscala.domain
 
 import izumi.fundamentals.platform.strings.TextTree
 import izumi.fundamentals.platform.strings.TextTree.*
-import izumi.idealingua.translator.toscala.products.CogenProduct.{AdtElementProduct, AdtProduct}
+import izumi.idealingua.translator.toscala.products.CogenProduct.{AdtElementClassProduct, AdtElementProduct, AdtProduct}
 import izumi.idealingua.translator.toscala.products.RenderableCogenProduct
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
 /** Renders a new-IR `TypeDef.Adt` as an `AdtProduct` (pre-extension).
   *
-  * F-TextTree M5: ported off `scala.meta` quasiquotes onto
+  * F-TextTree M5..M8f: ported off legacy quasiquotes onto
   * `TextTree[ScalaRefHandle]` composition + `.mapRender(resolver.resolve)`
-  * at the renderer boundary. The renderer interior carries zero
-  * `scala.meta.Tree` material; type references travel as
-  * `ScalaRefHandle.{TypeFull, TypeAbsolute, TypeFullWithin, TermFullWithin}`
-  * value nodes.
-  *
-  * **Carrier strategy** (same as `DomainEnumRenderer`): the legacy
-  * `AdtProduct` / `AdtElementProduct` carriers hold `Defn` material; M5
-  * keeps the carrier intact so extensions (Circe sibling + base, AnyVal,
-  * Cast*) continue to push `Defn` into the product unchanged. The
-  * renderer composes textual output via `TextTree`, lowers to `String`,
-  * then re-parses to `Defn.Trait` / `Defn.Object` / `Defn.Class` /
-  * `Defn.Def` via `DomainScalaParseBack` at the boundary.
+  * at the renderer boundary; M8f retires the explicit parse-back call
+  * site (the carrier owns the String → Defn boundary now).
   *
   * **Byte parity**: the legacy printer drops empty `{}` from the trait
   * declaration; the parser preserves source-level `{}`. The renderer
@@ -49,12 +39,12 @@ final class DomainAdtRenderer(ctx: DomainSTContext) {
   // `typeFull` form of `scala.Product`. Pre-compute the same here.
   private val productRef = ctx.conv.toScala(classOf[Product]).typeFull.toString
 
-  def renderAdt(i: NewTypeDef.Adt, bases: List[scala.meta.Init] = List.empty): RenderableCogenProduct = {
+  def renderAdt(i: NewTypeDef.Adt): RenderableCogenProduct = {
     val adtId                              = i.id
     val typeName: TextTree[ScalaRefHandle] = TextTree.value(ScalaRefHandle.TypeName(adtId))
     val typeFull: TextTree[ScalaRefHandle] = TextTree.value(ScalaRefHandle.TypeFull(adtId))
 
-    val members: List[AdtElementProduct[scala.meta.Defn.Class]] = i.alternatives.map { m =>
+    val members: List[AdtElementClassProduct] = i.alternatives.map { m =>
       val memberName    = m.typename
       val targetAbsolute: TextTree[ScalaRefHandle] =
         TextTree.value(ScalaRefHandle.TypeAbsolute(m.typeId))
@@ -75,25 +65,22 @@ final class DomainAdtRenderer(ctx: DomainSTContext) {
       val fromConverter: TextTree[ScalaRefHandle] =
         q"""implicit def ${"from" + memberName}(value: $branchFull): $targetAbsolute = value.value"""
 
-      val elementDefn   = DomainScalaParseBack.parseClass(branchElement.mapRender(resolver.resolve))
-      val companionDefn = DomainScalaParseBack.parseObject(branchCompanion.mapRender(resolver.resolve))
-      val convs         = List(
-        DomainScalaParseBack.parseDef(intoConverter.mapRender(resolver.resolve)),
-        DomainScalaParseBack.parseDef(fromConverter.mapRender(resolver.resolve)),
+      AdtElementProduct.fromTexts(
+        name           = memberName,
+        defnText       = branchElement.mapRender(resolver.resolve),
+        companionText  = branchCompanion.mapRender(resolver.resolve),
+        convertersText = List(
+          intoConverter.mapRender(resolver.resolve),
+          fromConverter.mapRender(resolver.resolve),
+        ),
       )
-
-      AdtElementProduct(memberName, elementDefn, companionDefn, convs)
     }
-
-    val basesText: Seq[String] = bases.map(_.toString)
-    val basesInline =
-      if (basesText.isEmpty) "" else basesText.mkString(" with ", " with ", "")
 
     // Empty body — legacy `q"…{}"` then `dialect.syntax` printer drops the
     // empty braces; the parse-back path preserves source-level `{}`, so we
     // omit them here for byte-equal output against the goldens.
     val traitTree: TextTree[ScalaRefHandle] =
-      q"""sealed trait $typeName extends $adtElInit$basesInline with $productRef"""
+      q"""sealed trait $typeName extends $adtElInit with $productRef"""
 
     val companionTree: TextTree[ScalaRefHandle] =
       q"""object $typeName extends $adtInit {
@@ -103,9 +90,10 @@ final class DomainAdtRenderer(ctx: DomainSTContext) {
          |
          |}""".stripMargin
 
-    val traitDefn     = DomainScalaParseBack.parseTrait(traitTree.mapRender(resolver.resolve))
-    val companionDefn = DomainScalaParseBack.parseObject(companionTree.mapRender(resolver.resolve))
-
-    AdtProduct(traitDefn, companionDefn, members)
+    AdtProduct.fromTexts(
+      defnTraitText     = traitTree.mapRender(resolver.resolve),
+      companionBaseText = companionTree.mapRender(resolver.resolve),
+      elements          = members,
+    )
   }
 }

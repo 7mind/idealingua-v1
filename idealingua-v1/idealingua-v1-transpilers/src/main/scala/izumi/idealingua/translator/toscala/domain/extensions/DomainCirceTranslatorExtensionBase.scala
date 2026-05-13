@@ -5,12 +5,12 @@ import izumi.idealingua.model.common.TypeId.DTOId
 import izumi.idealingua.model.common.{Builtin, TypeId}
 import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.runtime.circe.IRTTimeInstances
-import izumi.idealingua.translator.toscala.domain.{DomainSTContext, DomainScalaParseBack}
+import izumi.idealingua.translator.toscala.domain.DomainSTContext
+import izumi.idealingua.translator.toscala.tools.ScalaTextHelpers
 import izumi.idealingua.translator.toscala.types.runtime
 import izumi.idealingua.typer.ir.{Member, TypeDef => NewTypeDef}
 
 import scala.annotation.tailrec
-import scala.meta.{Term, Type}
 
 /** PR-02 IMPL-7a.2 Phase B M5: WIRE-FORMAT-CRITICAL new-IR port of
   * `CirceTranslatorExtensionBase`.
@@ -46,19 +46,19 @@ import scala.meta.{Term, Type}
   *     `{ "<wireId>": <inner> }` and decodes by dispatching on the first key.
   *     Implementor case order is deterministic (sorted).
   *
-  * F-TextTree M8d: ported off `scala.meta` quasiquotes — every `q"trait …"`
+  * F-TextTree M8d..M8f: ported off legacy quasiquotes — every `trait …`
   * body is now composed as a plain Scala source string. Field / identifier
-  * names route through `DomainScalaParseBack.renderS30(Term.Name(_))` for
+  * names route through `ScalaTextHelpers.escapeIdent(_)` for
   * Scala-3 reserved-word escape; type references render via
-  * `ctx.conv.toScala(...).typeFull.toString`. The produced strings are still
+  * `ctx.conv.toScala(...).typeFull.toString`. The produced strings are
   * consumed by `CogenProductSplice.parseSiblings` / `parseInit` at carrier
   * render time (parse-back boundary unchanged).
   *
   * Wire-format parity is preserved by construction: the strings parse back to
-  * the same `Defn.Trait` AST as the legacy quasiquotes; scalameta's printer
-  * then renormalises the AST to the canonical bytes that downstream goldens
-  * expect. The `runWireFixtures` and `runCrossLangInterop` gates are the
-  * authoritative oracles.
+  * the same trait AST as the legacy quasiquotes; the printer then renormalises
+  * the AST to the canonical bytes that downstream goldens expect. The
+  * `runWireFixtures` and `runCrossLangInterop` gates are the authoritative
+  * oracles.
   */
 trait DomainCirceTranslatorExtensionBase {
 
@@ -70,7 +70,7 @@ trait DomainCirceTranslatorExtensionBase {
     * `name` is exposed for trace/debug callers. */
   protected case class CirceTrait(name: String, defnText: String, initText: String)
 
-  /** F-TextTree M8d: accepts rendered trait source directly (no scala.meta
+  /** F-TextTree M8d..M8f: accepts rendered trait source directly (no
     * round-trip on the trait body). The init for the
     * `companionCirceBases` slot still flows through `ScalaTypeConverter`
     * (`ctx.conv.toScala(ownerId).sibling(name).init()`) — when `ownerId`
@@ -82,7 +82,7 @@ trait DomainCirceTranslatorExtensionBase {
   private def mkCirceTrait(ctx: DomainSTContext, name: String, defnText: String, ownerId: izumi.idealingua.model.common.TypeId): CirceTrait = {
     import ctx.conv.*
     val init     = ctx.conv.toScala(ownerId).sibling(name).init()
-    val initText = DomainScalaParseBack.renderS30(init)
+    val initText = ScalaTextHelpers.renderTree(init)
     CirceTrait(name, defnText, initText)
   }
 
@@ -157,7 +157,7 @@ trait DomainCirceTranslatorExtensionBase {
       // qualify with the parent companion, breaking the goldens for
       // service-method-output ephemerals like `TestService.HelloOutput`).
       val termRef     = stype.termName.toString
-      val fieldNm     = DomainScalaParseBack.renderS30(Term.Name(singleField.name))
+      val fieldNm     = ScalaTextHelpers.escapeIdent(singleField.name)
 
       val encName = valName(s"encodeUnwrapped$name")
       val decName = valName(s"decodeUnwrapped$name")
@@ -195,8 +195,8 @@ trait DomainCirceTranslatorExtensionBase {
     // already (List, not Set — see Domain.scala "Field-ordering invariant").
     val implementors = adt.alternatives
 
-    // Encoder case-arm format mirrors the scalameta Scala30 printer output
-    // for `q"...Encoder.AsObject.instance { case v: T => Map(...).asJsonObject }"`:
+    // Encoder case-arm format mirrors the Scala 3 printer output
+    // for `Encoder.AsObject.instance { case v: T => Map(...).asJsonObject }`:
     // each case keyword at 4-space indent, body indented by another 2 spaces
     // on the next line.
     val encArms = implementors.map { c =>
@@ -380,8 +380,8 @@ trait DomainCirceTranslatorExtensionBase {
     val decName     = valName(s"decode$nm")
     val encKeyName  = valName(s"encodeKey$nm")
     val decKeyName  = valName(s"decodeKey$nm")
-    // KeyDecoder body matches the legacy quasiquote scalameta-Scala30
-    // printer output, which collapses `new KeyDecoder[$tpe] { final def
+    // KeyDecoder body matches the legacy quasiquote Scala 3 printer
+    // output, which collapses `new KeyDecoder[$tpe] { final def
     // apply(...): Option[$tpe] = ... }` onto a single line.
     val traitSrc =
       s"""trait $traitNm {
@@ -439,7 +439,7 @@ trait DomainCirceTranslatorExtensionBase {
       val singleField = dedupedFields.head.field
       val ftpe        = ctx.conv.toScala(singleField.typeId).typeFull.toString
       val fieldLit    = quoteString(singleField.name)
-      val fieldNm     = DomainScalaParseBack.renderS30(Term.Name(singleField.name))
+      val fieldNm     = ScalaTextHelpers.escapeIdent(singleField.name)
       val ctorType    = stype.typeName.toString
       val traitSrc =
         s"""trait $traitNm extends $irtTimeInstancesBase {
@@ -541,18 +541,17 @@ trait DomainCirceTranslatorExtensionBase {
 
   /** Render a val-/def-name identifier with Scala 2.13- and 3-correct
     * disambiguation for trailing-underscore names. The legacy quasiquote
-    * (`q"implicit val ${Pat.Var(Term.Name("encodeName_stored_"))}: ..."`)
     * printed a space before the colon (`"... encodeName_stored_ :"`) to
     * prevent the parser from lexing `_:` as a typed-wildcard pattern.
     * Replicate that disambiguation by appending a space when the
     * identifier ends in `_`.
     *
-    * Verified at `MetaProbeTest`: `Pat.Var(Term.Name("encodeName_stored_"))`
-    * inside a `q"implicit val …: T = ???"` quasiquote prints as
+    * Verified at `MetaProbeTest`: a pattern-var named `encodeName_stored_`
+    * inside an `implicit val …: T = ???` quasiquote prints as
     * `"implicit val encodeName_stored_ : T = ???"` on both Scala 2.13 and
     * Scala 3 dialects. */
   private def valName(s: String): String = {
-    val rendered = DomainScalaParseBack.renderS30(Term.Name(s))
+    val rendered = ScalaTextHelpers.escapeIdent(s)
     if (rendered.endsWith("_")) s"$rendered " else rendered
   }
 
@@ -560,13 +559,13 @@ trait DomainCirceTranslatorExtensionBase {
     * words. Drives the `trait $TypeName` and the type-name slot inside
     * `Encoder.AsObject[$TypeName]`. */
   private def typeName(s: String): String =
-    DomainScalaParseBack.renderS30(Type.Name(s))
+    ScalaTextHelpers.escapeTypeIdent(s)
 
-  /** Render a Scala `Lit.String` source-form for `s` — wraps in double
-    * quotes and escapes embedded `"` and `\\`. F-TextTree M8d: replaces
-    * `Lit.String(s)` callsites; the legacy quasiquote emitted these
-    * literals via scalameta's printer which escapes only the same two
-    * characters. */
+  /** Render a Scala string-literal source-form for `s` — wraps in double
+    * quotes and escapes embedded `"` and `\\`. F-TextTree M8d..M8f:
+    * replaces `Lit.String(s)` callsites; the legacy quasiquote emitted
+    * these literals via the legacy printer which escapes only the same
+    * two characters. */
   private def quoteString(s: String): String = {
     val sb = new StringBuilder(s.length + 2)
     sb.append('"')

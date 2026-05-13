@@ -3,10 +3,9 @@ package izumi.idealingua.translator.toscala.domain.extensions
 import izumi.idealingua.model.common.StructureId
 import izumi.idealingua.model.common.TypeId.DTOId
 import izumi.idealingua.model.il.ast.typed.Field
-import izumi.idealingua.translator.toscala.domain.{DomainSTContext, DomainScalaParseBack}
+import izumi.idealingua.translator.toscala.domain.DomainSTContext
+import izumi.idealingua.translator.toscala.tools.ScalaTextHelpers
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
-
-import scala.meta.Term
 
 /** PR-02 IMPL-7a.2 Phase B M5: new-IR port of `CastSimilarExtension`.
   *
@@ -28,12 +27,10 @@ import scala.meta.Term
   * emitted `implicit object` order is stable across runs. Without this sort
   * the iteration order of `Domain.flattenedStructs` (a `Map`) is unspecified.
   *
-  * F-TextTree M8c: ported off `scala.meta` quasiquotes — the cast helpers
-  * are now composed as plain Scala source strings. The previous
-  * `q"implicit object …"` quasiquote → `renderS30(_)` round-trip is gone;
-  * the produced strings are still consumed by `CogenProductSplice.applyCompanionStats`
-  * which `parseStat`s them at carrier render time (parse-back boundary
-  * unchanged).
+  * F-TextTree M8c..M8f: ported off legacy quasiquotes — the cast helpers
+  * are now composed as plain Scala source strings. The produced strings
+  * are consumed by `CogenProductSplice.applyCompanionStats` which parses
+  * them at carrier render time (parse-back boundary unchanged).
   */
 object DomainCastSimilarExtension {
 
@@ -92,7 +89,7 @@ object DomainCastSimilarExtension {
       val castBase = ctx.rt.Cast.parameterize(List(thisScala.typeFull, targetScala.typeFull)).typeFull.toString
 
       val ctorArgs = fields.map { f =>
-        val nm = DomainScalaParseBack.renderS30(Term.Name(f.name))
+        val nm = ScalaTextHelpers.escapeIdent(f.name)
         s"$nm = _value.$nm"
       }.mkString(", ")
 

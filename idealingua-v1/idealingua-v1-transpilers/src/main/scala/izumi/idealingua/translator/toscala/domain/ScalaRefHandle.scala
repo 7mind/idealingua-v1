@@ -22,14 +22,13 @@ import izumi.idealingua.model.common.TypeId
   * reference with type arguments (the RHS of an alias, every other
   * reference into the type graph). The two cases mirror the
   * `ScalaType.typeName` / `ScalaType.typeFull` split that the legacy
-  * scala.meta-based renderers used. Resolver dispatch on the witness
-  * preserves this dual shape without depending on scala.meta at the
-  * envelope layer.
+  * tree-library-based renderers used. Resolver dispatch on the witness
+  * preserves this dual shape without depending on any tree library at
+  * the envelope layer.
   *
   * The ADT is sealed and extensible so future cycles can add cases
-  * (e.g. `TermFull` for term-position references when the structural /
-  * service renderers migrate off scala.meta, or `ImportPath` for an
-  * import-collection pass) without breaking resolver dispatch.
+  * (e.g. `ImportPath` for an import-collection pass) without breaking
+  * resolver dispatch.
   */
 sealed trait ScalaRefHandle
 

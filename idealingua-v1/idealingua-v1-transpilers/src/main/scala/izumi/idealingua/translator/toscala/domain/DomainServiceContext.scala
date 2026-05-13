@@ -19,13 +19,14 @@ import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
   * structural shape (id + method list), so the renderer body is identical;
   * only the `TypeId` constructor differs.
   *
-  * F-TextTree M8e: scaffolder ported off `scala.meta`. The renderer-facing
-  * splice slots (`IO2.n`, `F.{t, p}`, `Ctx.{t, p}`, `methodImport`) now carry
-  * pre-rendered Scala 3 source text. Callers splice the strings verbatim
-  * (no `renderS30` boundary call). The legacy `q"_F"` / `t"Or"` /
-  * `tparam"Or[?, ?]"` / `Import(...)` shapes rendered to the same literal
-  * tokens under `dialect(Scala30).syntax`; emitting those tokens directly
-  * removes the round-trip without behavioural change.
+  * F-TextTree M8e..M8f: scaffolder ported off legacy quasiquotes. The
+  * renderer-facing splice slots (`IO2.n`, `F.{t, p}`, `Ctx.{t, p}`,
+  * `methodImport`) carry pre-rendered Scala 3 source text. Callers
+  * splice the strings verbatim (no parse-back boundary call). The
+  * legacy `q"_F"` / `t"Or"` / `tparam"Or[?, ?]"` / `Import(...)` shapes
+  * rendered to the same literal tokens under the Scala 3 printer;
+  * emitting those tokens directly removes the round-trip without
+  * behavioural change.
   */
 final case class DomainServiceContext(
   ctx: DomainSTContext,
