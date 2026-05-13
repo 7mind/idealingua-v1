@@ -3,7 +3,7 @@
 **Date:** 2026-05-12
 **Branch:** wip/necromancy
 **Author:** planning subagent
-**Status:** draft — for user review
+**Status:** locked — user-decision items resolved 2026-05-14
 
 ## 1. Goal & non-goals
 
@@ -37,7 +37,24 @@ Add a new compiler emission target that produces, from a `Domain` IR, both:
 | D12 | New CLI role `:schema` with normal `LP` parser | Mirrors `:scala`/`:typescript`/`:csharp`. |
 | D13 | New `IDLLanguage.JsonSchema` case object | Reuses dispatch through `descriptorsMap`. |
 
-USER-DECISION items: D3 envelope choice, D9 unwrap-vs-wrap, D10 buzzer exposure, D11 streams policy.
+USER-DECISION items: all resolved 2026-05-14. See §8 (locked answers below).
+
+### Additional locks from §8 resolution
+
+| # | Decision | Source |
+|---|----------|--------|
+| D14 | OpenAPI 3.1 + MCP `tools.json` (both envelopes; OpenAPI confirmed feasible — JSON Schema 2020-12 alignment, advisory `x-idealingua-*` extensions for non-expressible invariants) | Q1 locked |
+| D15 | MCP spec version: 2025-06-18 | Q2 locked |
+| D16 | Buzzers exposed as MCP tools with `outputSchema: {type:"null"}` + `x-idealingua-kind: "buzzer"` | Q3 locked |
+| D17 | Streams skipped silently (deprecated per C5/Q1) | Q4 locked |
+| D18 | TUInt64 hybrid `oneOf: [integer ≤2^53-1, string]` | Q5 locked |
+| D19 | TBLOB base64 unified across all emitters (post-F5); no divergence annotation | Q6 locked |
+| D20 | `TOption[T]` field → `{"oneOf": [<T>, {"type": "null"}]}` + exclude from `required` | Q7 locked |
+| D21 | Cross-domain Identifier references → inline-expand + `x-idealingua-imported-from` annotation; no cross-file `$ref` URLs | Q8 locked |
+| D22 | MCP tool name = `<pkg>.<Service>.<method>` | Q9 locked |
+| D23 | `meta.doc` passthrough verbatim via Circe escapes | Q10 locked |
+| D24 | OpenAPI `info.version` = domain `meta.version` if present, else compiler version, else `0.0.0` | Q11 locked |
+| D25 | No MCP `readOnlyHint`/`destructiveHint`/`idempotentHint` annotations at M4 | Q12 locked |
 
 ## 3. JSON Schema mapping table
 
@@ -59,7 +76,7 @@ All fragments target JSON Schema 2020-12 (`"$schema": "https://json-schema.org/d
 | `TUInt64` | `{"oneOf": [{"type": "integer", "minimum": 0, "maximum": 9007199254740991}, {"type": "string", "pattern": "^[0-9]{1,20}$"}]}` (Q4 hybrid) | §9, Q4 |
 | `TFloat` / `TDouble` | `{"type": "number"}` (no NaN/Inf — see Float-zero/NaN divergence) | §9 |
 | `TUUID` | `{"type": "string", "format": "uuid"}` | §9 TUUID |
-| `TBLOB` | `{"type": "string", "contentEncoding": "base64"}` + `x-idealingua-divergence: "TBLOB-F5"` | §9 + F5 |
+| `TBLOB` | `{"type": "string", "contentEncoding": "base64"}` | §9 — F5 unified all emitters to base64 |
 | `TTs` | `{"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?$"}` | §9 TTs |
 | `TTsTz` | `{"type": "string", "format": "date-time"}` + `x-idealingua-divergence: "Time-UTC-zone"` | §9 TTsTz |
 | `TTsU` | `{"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"}` | §9 TTsU |
@@ -279,11 +296,9 @@ The TextTree-style witness pattern (per M1.5 baboon investigation) is overkill h
 ### Aliases
 Inline-collapse via `domain.aliases.get(aliasId)` recursively. Never emit a schema entry for an alias.
 
-## 8. Open questions for the user
+## 8. Locked decisions (all resolved 2026-05-14)
 
-(Recommended defaults bold.)
-
-1. **Output envelope.** Bare JSON Schema only / OpenAPI 3.1 / MCP only / **all three (OpenAPI for schemas + MCP `tools.json` per service)** ?
+1. **Output envelope** — **OpenAPI 3.1 + MCP** `tools.json` per service.
    - Tradeoff: more files but cleanest separation. OpenAPI works in REST-tooling; MCP `tools.json` is what LLM clients ingest.
 2. **MCP spec version.** 2024-11-05 / **2025-06-18** / floating-latest ?
    - Tradeoff: 2025-06-18 makes `outputSchema` standard; older servers ignore the field.
