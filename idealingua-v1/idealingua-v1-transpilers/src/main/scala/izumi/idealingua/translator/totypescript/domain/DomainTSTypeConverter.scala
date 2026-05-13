@@ -51,7 +51,7 @@ final class DomainTSTypeConverter(domain: Domain) {
       case Primitive.TFloat  => "parseFloat(" + value + ")"
       case Primitive.TDouble => "parseFloat(" + value + ")"
       case Primitive.TUUID   => value
-      case Primitive.TBLOB   => ???
+      case Primitive.TBLOB   => value
       case Primitive.TTime   => "Date.parse(" + value + ")"
       case Primitive.TDate   => "Date.parse(" + value + ")"
       case Primitive.TTs     => "Date.parse(" + value + ")"
@@ -81,7 +81,7 @@ final class DomainTSTypeConverter(domain: Domain) {
       case Primitive.TFloat  => s"$value.toString()"
       case Primitive.TDouble => s"$value.toString()"
       case Primitive.TUUID   => value
-      case Primitive.TBLOB   => ???
+      case Primitive.TBLOB   => value
       case _: IdentifierId   => s"$value.toString()"
       case en: EnumId        => s"${en.name}[$value]"
       case _ => throw new Exception("Unsupported area in emitTypeAsString")
@@ -113,7 +113,7 @@ final class DomainTSTypeConverter(domain: Domain) {
       case Primitive.TFloat  => variable
       case Primitive.TDouble => variable
       case Primitive.TUUID   => variable
-      case Primitive.TBLOB   => ???
+      case Primitive.TBLOB   => variable
       case Primitive.TTime   => variable
       case Primitive.TDate   => variable
       case Primitive.TTs     => variable
@@ -202,7 +202,7 @@ final class DomainTSTypeConverter(domain: Domain) {
     case Primitive.TFloat  => "number"
     case Primitive.TDouble => "number"
     case Primitive.TUUID   => "string"
-    case Primitive.TBLOB   => ???
+    case Primitive.TBLOB   => "string"
     case Primitive.TTime   => if (forSerialized) "string" else "Date"
     case Primitive.TDate   => if (forSerialized) "string" else "Date"
     case Primitive.TTs     => if (forSerialized) "string" else "Date"
@@ -251,7 +251,7 @@ final class DomainTSTypeConverter(domain: Domain) {
     case Primitive.TFloat  => s"$name"
     case Primitive.TDouble => s"$name"
     case Primitive.TUUID   => s"$name"
-    case Primitive.TBLOB   => ???
+    case Primitive.TBLOB   => s"$name"
     case Primitive.TTime   => if (nonMember) s"Formatter.writeTime($name)" else s"${name}AsString";
     case Primitive.TDate   => if (nonMember) s"Formatter.writeDate($name)" else s"${name}AsString";
     case Primitive.TTs     => if (nonMember) s"Formatter.writeLocalDateTime($name)" else s"${name}AsString";
@@ -301,7 +301,7 @@ final class DomainTSTypeConverter(domain: Domain) {
     case Primitive.TFloat  => toDoubleField(name, 32, optional)
     case Primitive.TDouble => toDoubleField(name, 64, optional)
     case Primitive.TUUID   => toGuidField(name, optional)
-    case Primitive.TBLOB   => ???
+    case Primitive.TBLOB   => toStringField(name, Int.MinValue, optional)
     case Primitive.TTime   => toTimeField(name, optional)
     case Primitive.TDate   => toDateField(name, optional)
     case Primitive.TTs     => toDateTimeField(name, local = true, optional)
@@ -344,7 +344,7 @@ final class DomainTSTypeConverter(domain: Domain) {
     case Primitive.TFloat  => toPrivateMember(name, "number")
     case Primitive.TDouble => toPrivateMember(name, "number")
     case Primitive.TUUID   => toPrivateMember(name, "string")
-    case Primitive.TBLOB   => ???
+    case Primitive.TBLOB   => toPrivateMember(name, "string")
     case Primitive.TTime   => toPrivateMember(name, "Date")
     case Primitive.TDate   => toPrivateMember(name, "Date")
     case Primitive.TTs     => toPrivateMember(name, "Date")

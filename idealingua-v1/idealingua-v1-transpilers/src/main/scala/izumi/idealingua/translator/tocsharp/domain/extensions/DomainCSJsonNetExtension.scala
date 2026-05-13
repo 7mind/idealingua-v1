@@ -40,12 +40,14 @@ import izumi.idealingua.typer.ir.{Domain, FlatStruct, TypeDef => NewTypeDef}
   * `(implicit im: CSharpImports, domain: Domain)` — same shape the
   * renderers already use.
   *
-  * `TBLOB` paths preserve the legacy `???` defects (legacy `:188, 241, 351`).
-  * Per Q3 lock the wire format is base64-string for all three languages;
-  * the legacy C# emitter has a `???` defect that throws at codegen time
-  * for any DTO field of type `TBLOB`. Parity is required: the new
-  * extension preserves the same throw points so production-swap won't
-  * change the defect surface.
+  * `TBLOB` is wire-encoded as a base64 string per Q3 lock (PR-02 F5,
+  * resolved 2026-05-12). C# maps TBLOB → `byte[]`; the writer arm emits
+  * `System.Convert.ToBase64String(...)` so the serialized JSON is a
+  * plain string; the reader arm consumes `$src.Value<string>()` and
+  * decodes via `System.Convert.FromBase64String(...)`. Newtonsoft's
+  * default Encoder for `byte[]` IS base64, but we route through the
+  * explicit `Convert.ToBase64String` helper for symmetry with the reader
+  * and to keep the emitted code free of implicit-conversion surprises.
   */
 object DomainCSJsonNetExtension {
 
@@ -432,7 +434,7 @@ object DomainCSJsonNetExtension {
                 case Primitive.TUInt64 => s"writer.WriteValue($src);"
                 case Primitive.TFloat  => s"writer.WriteValue($src);"
                 case Primitive.TDouble => s"writer.WriteValue($src);"
-                case Primitive.TBLOB   => ???
+                case Primitive.TBLOB   => s"writer.WriteValue(System.Convert.ToBase64String($src));"
                 case Primitive.TUUID   => s"writer.WriteValue($src.ToString());"
                 case Primitive.TTime => s"""writer.WriteValue(string.Format("{0:00}:{1:00}:{2:00}.{3:000}", (int)$src.TotalHours, $src.Minutes, $src.Seconds, $src.Milliseconds));"""
                 case Primitive.TDate => s"""writer.WriteValue($src.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));"""
@@ -480,7 +482,7 @@ object DomainCSJsonNetExtension {
         case Primitive.TTs     => false
         case Primitive.TTsTz   => false
         case Primitive.TTsU    => false
-        case Primitive.TBLOB   => ???
+        case Primitive.TBLOB   => false
       }
     case c =>
       c match {
@@ -577,7 +579,7 @@ object DomainCSJsonNetExtension {
           case Primitive.TUInt64 => s"$src.Value<ulong>()"
           case Primitive.TFloat  => s"$src.Value<float>()"
           case Primitive.TDouble => s"$src.Value<double>()"
-          case Primitive.TBLOB   => ???
+          case Primitive.TBLOB   => s"System.Convert.FromBase64String($src.Value<string>())"
           case Primitive.TUUID   => s"new System.Guid($src.Value<string>())"
           case Primitive.TTime   => s"TimeSpan.Parse($src.Value<string>())"
           case Primitive.TDate   => s"DateTime.Parse($src.Value<string>(), CultureInfo.InvariantCulture)"

@@ -52,6 +52,8 @@ private[harness] object WireDispatch {
   import idltest.json.JSONLike._
   // Name_incoming has its own companion Circe; Name (interface) import not needed.
   import idltest.phase.Name_incoming._
+  // PR-02 F5: TBLOB base64 wire-format coverage.
+  import idltest.blobtest.BlobHolder._
 
   val entries: Map[String, RoundTripEntry] = Map(
 
@@ -218,5 +220,13 @@ private[harness] object WireDispatch {
     // 30. Extra Point fixture (different scenario values, same dispatch entry as row 1)
     // NOTE: Row 30 reuses "idltest.dtofields.Point" — no separate entry needed; T3 authors
     // a second fixture file under the same wireId directory.
+
+    // 31. TBLOB wire-format coverage (PR-02 F5). BlobHolder has one TBLOB
+    //     payload field (base64 string) + one TString label.
+    "idltest.blobtest.BlobHolder" -> RoundTripEntry(
+      "idltest.blobtest.BlobHolder",
+      json => json.as[idltest.blobtest.BlobHolder].asInstanceOf[Decoder.Result[Any]],
+      v    => v.asInstanceOf[idltest.blobtest.BlobHolder].asJson,
+    ),
   )
 }

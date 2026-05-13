@@ -52,7 +52,7 @@ object DomainTSIntrospectionExtension {
     case Primitive.TFloat  => "{intro: IntrospectorTypes.F32}"
     case Primitive.TDouble => "{intro: IntrospectorTypes.F64}"
     case Primitive.TUUID   => "{intro: IntrospectorTypes.Uid}"
-    case Primitive.TBLOB   => ???
+    case Primitive.TBLOB   => "{intro: IntrospectorTypes.Blob}"
     case Primitive.TTime   => "{intro: IntrospectorTypes.Time}"
     case Primitive.TDate   => "{intro: IntrospectorTypes.Date}"
     case Primitive.TTs     => "{intro: IntrospectorTypes.Tsl}"

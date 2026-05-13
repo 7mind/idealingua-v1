@@ -53,6 +53,13 @@ class ScalaTypeConverter(domain: DomainId) {
       case t: Generic =>
         toScala(toGeneric(t), t.args)
 
+      // PR-02 F5: TBLOB → Array[Byte]. `Array` is a Scala generic parameterised
+      // over its element type; we route it through the private generic path
+      // so the rendered Scala type comes out as `Array[Byte]` (typeFull) /
+      // `Array` (termFull) rather than tripping the no-parameters public arm.
+      case Primitive.TBLOB =>
+        toScala(model.JavaType(Seq.empty, "Array"), List(Primitive.TInt8: TypeId))
+
       case t: Primitive =>
         toScala(toPrimitive(t))
 

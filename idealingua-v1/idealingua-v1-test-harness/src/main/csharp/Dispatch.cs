@@ -56,6 +56,8 @@ namespace IdealinguaV1Harness.CSharpDriver {
                 { "izumi.test.domain01.AllTypes.Struct",        new DispatchEntry<Izumi.Test.Domain01.AllTypesStruct>() },
                 // Cross-domain reference
                 { "idltest.phase.Name_incoming",                new DispatchEntry<Idltest.Phase.Name_incoming>() },
+                // PR-02 F5: TBLOB base64 wire-format coverage
+                { "idltest.blobtest.BlobHolder",                new DispatchEntry<Idltest.Blobtest.BlobHolder>() },
             };
     }
 }

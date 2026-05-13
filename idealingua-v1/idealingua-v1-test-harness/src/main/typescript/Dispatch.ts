@@ -16,6 +16,7 @@ import { EmptyStruct } from 'idltest/inheritance/Empty';
 import { JSONLikeHelpers } from 'idltest/json/JSONLike';
 import { AllTypesStruct } from 'izumi/test/domain01/AllTypes';
 import { Name_incoming } from 'idltest/phase/Name_incoming';
+import { BlobHolder } from 'idltest/blobtest/BlobHolder';
 
 type DispatchEntry = {
   deserialize: (json: any) => any;
@@ -124,5 +125,12 @@ export const Dispatch: Record<string, DispatchEntry> = {
   "idltest.phase.Name_incoming": {
     deserialize: (json) => new Name_incoming(json),
     serialize: (val: Name_incoming) => val.serialize(),
+  },
+
+  // 18. TBLOB wire-format (PR-02 F5) — payload is a base64 string at the
+  //     TS layer; TS maps TBLOB → string so deserialize is a string-passthrough.
+  "idltest.blobtest.BlobHolder": {
+    deserialize: (json) => new BlobHolder(json),
+    serialize: (val: BlobHolder) => val.serialize(),
   },
 };

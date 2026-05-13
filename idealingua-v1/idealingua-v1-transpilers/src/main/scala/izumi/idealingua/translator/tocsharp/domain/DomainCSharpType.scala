@@ -93,7 +93,7 @@ final case class DomainCSharpType(
         case Primitive.TTs     => false
         case Primitive.TTsTz   => false
         case Primitive.TTsU    => false
-        case Primitive.TBLOB   => ???
+        case Primitive.TBLOB   => true
       }
     case _ =>
       id match {
@@ -253,7 +253,10 @@ final case class DomainCSharpType(
           case Primitive.TUInt64 => (2147483648L + rnd.nextInt(2147483647)).toString
           case Primitive.TFloat  => rnd.nextFloat().toString + "f"
           case Primitive.TDouble => (2147483648L + rnd.nextFloat()).toString
-          case Primitive.TBLOB   => ???
+          case Primitive.TBLOB   =>
+            val n     = 1 + rnd.nextInt(8)
+            val bytes = (0 until n).map(_ => rnd.nextInt(256)).mkString(", ")
+            s"new byte[] { $bytes }"
           case Primitive.TUUID   => s"""new System.Guid("${java.util.UUID.randomUUID.toString}")"""
           case Primitive.TTime =>
             s"""System.TimeSpan.Parse(string.Format("{0:D2}:{1:D2}:{2:D2}.{3:D3}", ${rnd.nextInt(24)}, ${rnd.nextInt(60)}, ${rnd.nextInt(60)}, ${100 + rnd.nextInt(
@@ -369,7 +372,7 @@ final case class DomainCSharpType(
       case Primitive.TUInt32 => return s"$name.ToString()"
       case Primitive.TUInt64 => return s"$name.ToString()"
       case Primitive.TBool   => return s"$name.ToString()"
-      case Primitive.TBLOB   => ???
+      case Primitive.TBLOB   => s"System.Convert.ToBase64String($name)"
       case Primitive.TUUID   => s"$name.ToString()"
       case _: EnumId         => s"$name.ToString()"
       case _: IdentifierId   => s"$name.ToString()"
@@ -396,7 +399,7 @@ final case class DomainCSharpType(
       case Primitive.TUInt64 => s"ulong.Parse($src)"
       case Primitive.TBool   => s"bool.Parse($src)"
       case Primitive.TUUID   => s"new Guid($source)"
-      case Primitive.TBLOB   => ???
+      case Primitive.TBLOB   => s"System.Convert.FromBase64String($source)"
       case _: EnumId         => s"${renderType(currentDomain != "" && currentDomain != id.uniqueDomainName)}Helpers.From($source)"
       case _: IdentifierId   => s"${renderType(currentDomain != "" && currentDomain != id.uniqueDomainName)}.From($source)"
       case _                 => throw new IDLException(s"Should never render non int, string, or Guid types to strings. Used for type ${id.name}")
@@ -442,7 +445,7 @@ final case class DomainCSharpType(
     case Primitive.TFloat  => "float"
     case Primitive.TDouble => "double"
     case Primitive.TUUID   => "Guid"
-    case Primitive.TBLOB   => ???
+    case Primitive.TBLOB   => "byte[]"
     case Primitive.TTime   => "TimeSpan"
     case Primitive.TDate   => "DateTime" // Could be Date
     case Primitive.TTs     => "DateTime"

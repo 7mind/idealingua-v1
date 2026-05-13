@@ -33,7 +33,8 @@ export enum IntrospectorTypes {
     Tsl,
     Tsu,
     Time,
-    Date
+    Date,
+    Blob
 }
 
 export interface IIntrospectorUserType extends IIntrospectorType {

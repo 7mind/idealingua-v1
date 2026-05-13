@@ -64,7 +64,7 @@ object DomainCSImports {
     case p: Primitive =>
       p match {
         case Primitive.TString => true
-        case Primitive.TBLOB   => ???
+        case Primitive.TBLOB   => true
         case _                 => false
       }
     case _: EnumId                        => false
@@ -178,7 +178,7 @@ object DomainCSImports {
       case Primitive.TTsU  => return Seq("System", "IRT", "System.Globalization")
       case Primitive.TDate => return Seq("System", "IRT", "System.Globalization")
       case Primitive.TUUID => return Seq("System")
-      case Primitive.TBLOB => ???
+      case Primitive.TBLOB => return Seq("System")
       case g: Generic =>
         g match {
           case _: Generic.TOption => return Seq("System")

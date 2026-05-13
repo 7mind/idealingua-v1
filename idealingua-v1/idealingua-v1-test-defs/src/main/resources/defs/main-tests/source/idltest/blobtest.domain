@@ -1,0 +1,8 @@
+domain idltest.blobtest
+
+// PR-02 F5: TBLOB wire-format coverage (base64 string per Q3 lock).
+
+data BlobHolder {
+  payload: blb
+  label: str
+}
