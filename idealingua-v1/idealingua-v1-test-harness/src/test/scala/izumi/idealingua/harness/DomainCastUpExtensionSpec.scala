@@ -67,10 +67,8 @@ final class DomainCastUpExtensionSpec extends AnyFunSuite {
 
     val ups = DomainCastUpExtension.generateUpcastsForDto(ctx, dtoTD)
     assert(ups.nonEmpty, "expected at least one upcast helper")
-    val syntax = {
-      import scala.meta.*
-      scala.meta.dialects.Scala213(ups.head).syntax
-    }
+    // F-TextTree M8a: extension returns rendered Scala source directly.
+    val syntax = ups.head
     assert(syntax.contains("_upcast_"), s"expected upcast helper name pattern: $syntax")
   }
 
@@ -84,10 +82,8 @@ final class DomainCastUpExtensionSpec extends AnyFunSuite {
     val ctx = ctxFor(Map(dto -> dtoTD), flats, Map.empty)
     val ups = DomainCastUpExtension.generateUpcastsForDto(ctx, dtoTD)
     assert(ups.size == 1, "expected exactly the self-cast helper")
-    val syntax = {
-      import scala.meta.*
-      scala.meta.dialects.Scala213(ups.head).syntax
-    }
+    // F-TextTree M8a: extension returns rendered Scala source directly.
+    val syntax = ups.head
     assert(syntax.contains("Solo_upcast_Solo"), s"expected self-cast `Solo_upcast_Solo`: $syntax")
   }
 }

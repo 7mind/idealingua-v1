@@ -3,7 +3,7 @@ package izumi.idealingua.translator.toscala.domain.extensions
 import izumi.idealingua.model.common.StructureId
 import izumi.idealingua.model.common.TypeId.DTOId
 import izumi.idealingua.model.il.ast.typed.Field
-import izumi.idealingua.translator.toscala.domain.DomainSTContext
+import izumi.idealingua.translator.toscala.domain.{DomainSTContext, DomainScalaParseBack}
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
 import scala.meta.*
@@ -30,27 +30,29 @@ import scala.meta.*
   */
 object DomainCastSimilarExtension {
 
-  /** Companion-object stats for `cast_into_*` helpers on a DTO. */
-  def mkConvertersForDto(ctx: DomainSTContext, dto: NewTypeDef.Dto): List[Stat] =
-    mkConverters(ctx, dto.id)
+  /** Companion-object stats for `cast_into_*` helpers on a DTO.
+    *
+    * F-TextTree M8a: returns rendered Scala source text. */
+  def mkConvertersForDto(ctx: DomainSTContext, dto: NewTypeDef.Dto): List[String] =
+    mkConverters(ctx, dto.id).map(DomainScalaParseBack.renderS30(_))
 
   /** Companion-object stats for `cast_into_*` helpers on an Interface. */
-  def mkConvertersForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[Stat] =
-    mkConverters(ctx, i.id)
+  def mkConvertersForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[String] =
+    mkConverters(ctx, i.id).map(DomainScalaParseBack.renderS30(_))
 
   /** Companion-object stats for `cast_into_*` helpers on the synthesized
     * impl-struct DTO of an interface (`<I>.Struct`). Mirrors legacy
     * `CastSimilarExtension.handleComposite` running on the impl emitted
     * by `CompositeRenderer.defns(_, CsInterface)`. */
-  def mkConvertersForImplStruct(ctx: DomainSTContext, implId: izumi.idealingua.model.common.TypeId.DTOId): List[Stat] =
-    mkConverters(ctx, implId)
+  def mkConvertersForImplStruct(ctx: DomainSTContext, implId: izumi.idealingua.model.common.TypeId.DTOId): List[String] =
+    mkConverters(ctx, implId).map(DomainScalaParseBack.renderS30(_))
 
   /** Companion-object stats for `cast_into_*` helpers on a service /
     * buzzer method Input or Output ephemeral DTO. Mirrors legacy
     * `CastSimilarExtension.handleComposite` running on the
     * `CompositeRenderer.defns(_, CsMethodInput | CsMethodOutput)` path. */
-  def mkConvertersForMethodStruct(ctx: DomainSTContext, dtoId: izumi.idealingua.model.common.TypeId.DTOId): List[Stat] =
-    mkConverters(ctx, dtoId)
+  def mkConvertersForMethodStruct(ctx: DomainSTContext, dtoId: izumi.idealingua.model.common.TypeId.DTOId): List[String] =
+    mkConverters(ctx, dtoId).map(DomainScalaParseBack.renderS30(_))
 
   private def mkConverters(ctx: DomainSTContext, thisId: StructureId): List[Stat] = {
     sameSignature(ctx, thisId).map { same =>

@@ -5,7 +5,7 @@ import izumi.idealingua.model.common.TypeId.DTOId
 import izumi.idealingua.model.common.{Builtin, TypeId}
 import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.runtime.circe.IRTTimeInstances
-import izumi.idealingua.translator.toscala.domain.DomainSTContext
+import izumi.idealingua.translator.toscala.domain.{DomainSTContext, DomainScalaParseBack}
 import izumi.idealingua.translator.toscala.types.runtime
 import izumi.idealingua.typer.ir.{Member, TypeDef => NewTypeDef}
 
@@ -48,7 +48,27 @@ import scala.meta.*
   */
 trait DomainCirceTranslatorExtensionBase {
 
-  protected case class CirceTrait(name: String, defn: Defn.Trait)
+  /** F-TextTree M8a: Circe trait carrier.
+    *
+    * Holds the trait's bare name (used to build the companion's
+    * `extends <Name>` init at the call site), the rendered trait source
+    * text (consumed as a `siblings` slot entry), and the rendered init
+    * text for the trait (consumed as a `companionCirceBases` slot entry).
+    * The Defn-level constructor is retained internally below; the
+    * `apply` factory renders both fragments via `renderS30`. */
+  /** F-TextTree M8a: Circe trait carrier.
+    *
+    * `defnText` is the rendered trait source for the `siblings` slot.
+    * `initText` is the rendered companion-base init for the
+    * `companionCirceBases` slot.
+    * `name` is exposed for trace/debug callers. */
+  protected case class CirceTrait(name: String, defnText: String, initText: String)
+
+  private def mkCirceTrait(ctx: DomainSTContext, name: String, defn: Defn.Trait, ownerId: izumi.idealingua.model.common.TypeId): CirceTrait = {
+    import ctx.conv.*
+    val init = ctx.conv.toScala(ownerId).sibling(name).init()
+    CirceTrait(name, DomainScalaParseBack.renderS30(defn), DomainScalaParseBack.renderS30(init))
+  }
 
   /** Scala-version-specific deriver imports — Scala 3 uses
     * `io.circe.generic.semiauto`, Scala 2.13 uses `io.circe.derivation`.
@@ -130,7 +150,8 @@ trait DomainCirceTranslatorExtensionBase {
              }
            """
         }
-      CirceTrait(
+      mkCirceTrait(
+        ctx,
         s"${name}Circe",
         q"""trait ${Type.Name(s"${name}Circe")} extends $base {
               import _root_.io.circe._
@@ -143,6 +164,7 @@ trait DomainCirceTranslatorExtensionBase {
               }
             }
         """,
+        dtoId,
       )
     } else {
       withDerivedStructCore(ctx, dtoId, flat.fields, scalaVersions)
@@ -177,7 +199,8 @@ trait DomainCirceTranslatorExtensionBase {
 
     val decCases = dec :+ missingDefinitionCase
 
-    CirceTrait(
+    mkCirceTrait(
+      ctx,
       s"${id.name}Circe",
       q"""trait ${Type.Name(s"${id.name}Circe")} {
              import _root_.io.circe.syntax._
@@ -202,6 +225,7 @@ trait DomainCirceTranslatorExtensionBase {
              )
           }
       """,
+      id,
     )
   }
 
@@ -298,7 +322,8 @@ trait DomainCirceTranslatorExtensionBase {
 
     val decCases = dec :+ missingDefinitionCase
 
-    CirceTrait(
+    mkCirceTrait(
+      ctx,
       s"${i.id.name}Circe",
       q"""trait ${Type.Name(s"${i.id.name}Circe")} {
              import _root_.io.circe.syntax._
@@ -321,13 +346,15 @@ trait DomainCirceTranslatorExtensionBase {
              )
           }
       """,
+      i.id,
     )
   }
 
   protected def withParseable(ctx: DomainSTContext, id: TypeId): CirceTrait = {
     val t   = ctx.conv.toScala(id)
     val tpe = t.typeFull
-    CirceTrait(
+    mkCirceTrait(
+      ctx,
       s"${id.name}Circe",
       q"""trait ${Type.Name(s"${id.name}Circe")} {
             import _root_.io.circe.{Encoder, Decoder, KeyEncoder, KeyDecoder}
@@ -340,6 +367,7 @@ trait DomainCirceTranslatorExtensionBase {
             }
           }
       """,
+      id,
     )
   }
 
@@ -385,7 +413,8 @@ trait DomainCirceTranslatorExtensionBase {
     if (anyvalCase && isScala3) {
       val singleField = dedupedFields.head.field
       val ftpe = ctx.conv.toScala(singleField.typeId).typeFull
-      CirceTrait(
+      mkCirceTrait(
+        ctx,
         s"${name}Circe",
         q"""trait ${Type.Name(s"${name}Circe")} extends $base {
               import _root_.io.circe.{Encoder, Decoder}
@@ -394,9 +423,11 @@ trait DomainCirceTranslatorExtensionBase {
               implicit val ${Pat.Var(Term.Name(s"decode$name"))}: Decoder[$tpe] = Decoder.forProduct1[$tpe, $ftpe](${Lit.String(singleField.name)})((d: $ftpe) => new ${stype.typeName}(d))
             }
         """,
+        id,
       )
     } else {
-      CirceTrait(
+      mkCirceTrait(
+        ctx,
         s"${name}Circe",
         q"""trait ${Type.Name(s"${name}Circe")} extends $base {
             ..${classDeriverImports(scalaVersions)}
@@ -406,6 +437,7 @@ trait DomainCirceTranslatorExtensionBase {
             implicit val ${Pat.Var(Term.Name(s"decode$name"))}: Decoder[$tpe] = deriveDecoder[$tpe]
           }
       """,
+        id,
       )
     }
   }

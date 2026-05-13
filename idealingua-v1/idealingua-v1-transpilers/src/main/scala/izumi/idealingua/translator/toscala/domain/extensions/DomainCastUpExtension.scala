@@ -2,7 +2,7 @@ package izumi.idealingua.translator.toscala.domain.extensions
 
 import izumi.idealingua.model.common.StructureId
 import izumi.idealingua.model.common.TypeId.{DTOId, InterfaceId}
-import izumi.idealingua.translator.toscala.domain.{DomainScalaStruct, DomainSTContext}
+import izumi.idealingua.translator.toscala.domain.{DomainScalaStruct, DomainSTContext, DomainScalaParseBack}
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
 import scala.meta.*
@@ -33,17 +33,17 @@ import scala.meta.*
   */
 object DomainCastUpExtension {
 
-  def generateUpcastsForDto(ctx: DomainSTContext, dto: NewTypeDef.Dto): List[Stat] =
-    generateUpcasts(ctx, dto.id)
+  def generateUpcastsForDto(ctx: DomainSTContext, dto: NewTypeDef.Dto): List[String] =
+    generateUpcasts(ctx, dto.id).map(DomainScalaParseBack.renderS30(_))
 
-  def generateUpcastsForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[Stat] =
-    generateUpcasts(ctx, i.id)
+  def generateUpcastsForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[String] =
+    generateUpcasts(ctx, i.id).map(DomainScalaParseBack.renderS30(_))
 
   /** Companion-object stats for `_upcast_*` helpers on a service / buzzer
     * method Input or Output ephemeral DTO. Mirrors legacy
     * `CastUpExtension.handleComposite` on `CsMethodInput`/`CsMethodOutput`. */
-  def generateUpcastsForMethodStruct(ctx: DomainSTContext, dtoId: DTOId): List[Stat] =
-    generateUpcasts(ctx, dtoId)
+  def generateUpcastsForMethodStruct(ctx: DomainSTContext, dtoId: DTOId): List[String] =
+    generateUpcasts(ctx, dtoId).map(DomainScalaParseBack.renderS30(_))
 
   /** Defect #2-Fd (impl-struct `Struct_upcast_*` set): legacy
     * `CompositeRenderer.defns(_, CsInterface)` ran the cast extension on the
@@ -57,6 +57,13 @@ object DomainCastUpExtension {
     * matching legacy.
     */
   def generateUpcastsForImplStruct(
+    ctx: DomainSTContext,
+    ifaceId: InterfaceId,
+    implId: DTOId,
+    implFlat: izumi.idealingua.typer.ir.FlatStruct,
+  ): List[String] = generateUpcastsForImplStructInternal(ctx, ifaceId, implId, implFlat).map(DomainScalaParseBack.renderS30(_))
+
+  private def generateUpcastsForImplStructInternal(
     ctx: DomainSTContext,
     ifaceId: InterfaceId,
     implId: DTOId,

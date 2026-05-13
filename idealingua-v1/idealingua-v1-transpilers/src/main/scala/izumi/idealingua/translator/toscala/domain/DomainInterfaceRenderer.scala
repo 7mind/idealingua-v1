@@ -100,47 +100,43 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
     // `Struct_upcast_<Self|Iface>` cast set on the inner companion.
     val scalaVersions = ctx.options.manifest.sbt.scalaVersions
     val structCirce = DomainCirceDerivationTranslatorExtension.emitForImplStruct(ctx, implId, implFlat, scalaVersions)
-    val structCirceInit = ctx.conv.toScala(implId).sibling(structCirce.name).init()
     // Legacy `defaultExtensions` order: CastSimilar before CastUp.
     val structSims    = DomainCastSimilarExtension.mkConvertersForImplStruct(ctx, implId)
     val structUpcasts = DomainCastUpExtension.generateUpcastsForImplStruct(ctx, i.id, implId, implFlat)
 
-    // AnyVal-eligibility for the impl DTO.
-    val implAnyvalBases: List[Init] = {
+    // F-TextTree M8a: AnyVal-eligibility for the impl DTO surfaces as a
+    // String slot entry. Pre-render the `AnyVal` init via `renderS30` so
+    // the carrier parses it back through the same boundary as every
+    // other slot entry.
+    val implAnyvalBases: List[String] = {
       val all = implFields.all.map(_.field.field)
       val canBeAnyVal = all.size == 1 && all.forall(f => structFieldQualifiesForAnyVal(f.typeId))
-      if (canBeAnyVal) List(ctx.conv.toScala(izumi.idealingua.model.JavaType(Seq.empty, "AnyVal")).init())
+      if (canBeAnyVal) List(DomainScalaParseBack.renderS30(ctx.conv.toScala(izumi.idealingua.model.JavaType(Seq.empty, "AnyVal")).init()))
       else List.empty
     }
 
-    // The impl render returns `CogenProduct[Defn.Class]`. Augment the
-    // companion (`Defn.Object`) with the StructCirce init prepend + the
-    // upcasts appended, and inject the StructCirce trait alongside the
-    // emitted impl Defns inside the interface companion. Order INSIDE the
-    // interface companion is `[case class Struct, StructCirce trait,
-    // object Struct]` per legacy emit order.
+    // F-TextTree M8a: the impl-struct extension chain now feeds the
+    // `CogenProduct` slot machinery. Carrier render order is
+    // `[case class, more, siblings, companion]` — pushing the
+    // StructCirce trait into `siblings` reproduces the legacy emit order
+    // `[case class Struct, trait StructCirce, object Struct extends StructCirce]`.
     val implAugmentedDefns: List[Defn] = implRaw match {
       case cp: CogenProduct[_] =>
         val typedCp = cp.asInstanceOf[CogenProduct[Defn.Class]]
-        val classWithAnyVal = typedCp.defn.prependBase(implAnyvalBases)
-        val newCompanionBase = typedCp.companionBase.prependBase(structCirceInit).appendDefinitions(structSims ++ structUpcasts)
         val newProduct = CogenProduct[Defn.Class](
-          defn          = classWithAnyVal,
-          companionBase = newCompanionBase,
-          tools         = typedCp.tools,
-          more          = typedCp.more,
-          preamble      = typedCp.preamble,
+          defn                = typedCp.defn,
+          companionBase       = typedCp.companionBase,
+          tools               = typedCp.tools,
+          more                = typedCp.more,
+          preamble            = typedCp.preamble,
+          defnAnyvalBases     = implAnyvalBases,
+          companionCirceBases = List(structCirce.initText),
+          companionCasts      = structSims ++ structUpcasts,
+          siblings            = List(structCirce.defnText),
         )
-        val rendered = newProduct.render
-        // Splice the StructCirce trait between the case class and the
-        // companion: legacy emit is `[case class Struct, trait StructCirce,
-        // object Struct extends StructCirce]`.
-        rendered match {
-          case caseClass :: rest => caseClass :: structCirce.defn :: rest
-          case Nil               => List(structCirce.defn)
-        }
+        newProduct.render
       case other =>
-        structCirce.defn :: other.render
+        DomainScalaParseBack.parseStat(structCirce.defnText).asInstanceOf[Defn] :: other.render
     }
 
     // Companion: `def apply(..decls) = TermName(..names)` factory + impl

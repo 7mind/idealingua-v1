@@ -63,10 +63,8 @@ final class DomainCastDownExpandExtensionSpec extends AnyFunSuite {
 
     val helpers = DomainCastDownExpandExtension.constructorsForInterface(ctx, ifaceTD)
     assert(helpers.size == 1, s"expected 1 downcast helper, got ${helpers.size}")
-    val syntax = {
-      import scala.meta.*
-      scala.meta.dialects.Scala213(helpers.head).syntax
-    }
+    // F-TextTree M8a: extension returns rendered Scala source directly.
+    val syntax = helpers.head
     assert(syntax.contains("_downcast_extend_"), s"expected downcast helper name: $syntax")
     assert(syntax.contains("def using"), s"expected using(...) factory: $syntax")
   }

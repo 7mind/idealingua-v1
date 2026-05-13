@@ -4,7 +4,7 @@ import izumi.idealingua.model.JavaType
 import izumi.idealingua.model.common.TypeId.{AdtId, AliasId, EnumId, IdentifierId, InterfaceId, DTOId}
 import izumi.idealingua.model.common.{Builtin, Generic, TypeId}
 import izumi.idealingua.model.problems.IDLException
-import izumi.idealingua.translator.toscala.domain.DomainSTContext
+import izumi.idealingua.translator.toscala.domain.{DomainSTContext, DomainScalaParseBack}
 import izumi.idealingua.translator.toscala.types.ScalaStruct
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
@@ -38,19 +38,27 @@ import scala.meta.*
   */
 object DomainAnyvalExtension {
 
-  /** AnyVal bases for a DTO or interface-impl composite. */
-  def withAnyvalForComposite(ctx: DomainSTContext, dto: NewTypeDef.Dto): List[Init] =
+  /** AnyVal bases for a DTO or interface-impl composite.
+    *
+    * F-TextTree M8a: returns rendered Scala source text instead of `Init`.
+    * Caller (DomainScalaTranslator) pushes these into the
+    * `defnAnyvalBases` slot on `CogenProduct`. */
+  def withAnyvalForComposite(ctx: DomainSTContext, dto: NewTypeDef.Dto): List[String] =
     doModify(ctx, "AnyVal", structCanBeAnyVal(ctx, dto))
 
   /** AnyVal bases for a service / buzzer method Input or Output ephemeral
-    * DTO. Single-scalar inputs and Singular-output wrappers qualify. */
-  def withAnyvalForMethodStruct(ctx: DomainSTContext, flat: izumi.idealingua.typer.ir.FlatStruct): List[Init] = {
+    * DTO. Single-scalar inputs and Singular-output wrappers qualify.
+    *
+    * F-TextTree M8a: returns rendered Scala source text. */
+  def withAnyvalForMethodStruct(ctx: DomainSTContext, flat: izumi.idealingua.typer.ir.FlatStruct): List[String] = {
     val all = dedupByName(flat.fields).map(_.field)
     val ok  = all.size == 1 && all.forall(f => canBeAnyValField(ctx, f.typeId))
     doModify(ctx, "AnyVal", ok)
   }
 
-  /** Any bases for a structural interface (trait). */
+  /** Any bases for a structural interface (trait). Returns `Init` because
+    * the (sole) renderer-internal caller splices the result directly into
+    * a `Defn.Trait` via `prependBase`. */
   def withAnyForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[Init] = {
     val flat = ctx.domain.flattenedStructs.get(i.id)
     val canBeAny = flat match {
@@ -60,7 +68,7 @@ object DomainAnyvalExtension {
         scalarOrEmpty && all.forall(f => canBeAnyValField(ctx, f.typeId))
       case None => false
     }
-    doModify(ctx, "Any", canBeAny)
+    doModifyInit(ctx, "Any", canBeAny)
   }
 
   /** Any bases for an arbitrary trait built from a `ScalaStruct`.
@@ -71,16 +79,22 @@ object DomainAnyvalExtension {
     * predicate matches the legacy `withAny(Struct)` arm — single-or-empty
     * scalar carrier whose every field qualifies as an `AnyVal`-eligible
     * type.
+    *
+    * Returns `Init` because `InterfaceRenderer.mkTrait` splices the result
+    * directly into a `Defn.Trait` via `prependBase`. The DTO carrier path
+    * uses `withAnyvalForComposite` (String slot) instead.
     */
   def withAnyForStruct(ctx: DomainSTContext, struct: ScalaStruct): List[Init] = {
     val all           = struct.all.map(_.field.field)
     val scalarOrEmpty = all.size <= 1
     val canBeAny      = scalarOrEmpty && all.forall(f => canBeAnyValField(ctx, f.typeId))
-    doModify(ctx, "Any", canBeAny)
+    doModifyInit(ctx, "Any", canBeAny)
   }
 
-  /** AnyVal bases for an Identifier. */
-  def withAnyvalForIdentifier(ctx: DomainSTContext, id: NewTypeDef.Identifier): List[Init] =
+  /** AnyVal bases for an Identifier.
+    *
+    * F-TextTree M8a: returns rendered Scala source text. */
+  def withAnyvalForIdentifier(ctx: DomainSTContext, id: NewTypeDef.Identifier): List[String] =
     doModify(ctx, "AnyVal", id.fields.size == 1)
 
   /** Public predicate reused by Circe (Scala 3 forProduct1 path). */
@@ -102,7 +116,12 @@ object DomainAnyvalExtension {
   ): List[izumi.idealingua.typer.ir.FlatField] =
     fields.groupBy(_.field.name).values.map(_.head).toList
 
-  private def doModify(ctx: DomainSTContext, base: String, modify: Boolean): List[Init] = {
+  private def doModify(ctx: DomainSTContext, base: String, modify: Boolean): List[String] = {
+    if (modify) List(DomainScalaParseBack.renderS30(ctx.conv.toScala(JavaType(Seq.empty, base)).init()))
+    else List.empty
+  }
+
+  private def doModifyInit(ctx: DomainSTContext, base: String, modify: Boolean): List[Init] = {
     if (modify) List(ctx.conv.toScala(JavaType(Seq.empty, base)).init())
     else List.empty
   }

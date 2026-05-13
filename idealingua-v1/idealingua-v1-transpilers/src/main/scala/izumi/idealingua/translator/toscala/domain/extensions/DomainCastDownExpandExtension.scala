@@ -1,7 +1,7 @@
 package izumi.idealingua.translator.toscala.domain.extensions
 
 import izumi.idealingua.model.common.{Builtin, SigParam, SigParamSource}
-import izumi.idealingua.translator.toscala.domain.DomainSTContext
+import izumi.idealingua.translator.toscala.domain.{DomainSTContext, DomainScalaParseBack}
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
 import scala.meta.*
@@ -30,7 +30,10 @@ import scala.meta.*
   */
 object DomainCastDownExpandExtension {
 
-  def constructorsForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[Stat] = {
+  def constructorsForInterface(ctx: DomainSTContext, i: NewTypeDef.Interface): List[String] =
+    constructorsForInterfaceInternal(ctx, i).map(DomainScalaParseBack.renderS30(_))
+
+  private def constructorsForInterfaceInternal(ctx: DomainSTContext, i: NewTypeDef.Interface): List[Stat] = {
     val ifaceFlat = ctx.domain.flattenedStructs.get(i.id).map(_.fields.map(_.field).toSet).getOrElse(Set.empty)
     val implementors = ctx.domain.implementingDtos.getOrElse(i.id, Set.empty).toList.sortBy(_.toString)
 

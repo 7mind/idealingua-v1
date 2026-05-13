@@ -69,18 +69,15 @@ final class DomainCirceExtensionSpec extends AnyFunSuite {
     new DomainSTContext(dom, parsed, options)
   }
 
-  private def renderSyntax(tree: scala.meta.Tree, isScala3: Boolean): String = {
-    import scala.meta.*
-    val dialect = if (isScala3) scala.meta.dialects.Scala30 else scala.meta.dialects.Scala213
-    dialect(tree).syntax
-  }
-
   test("identifier circe trait parses and contains Encoder/Decoder") {
     val id = IdentifierId(tp, "UserId")
     val td = NewTypeDef.Identifier(id, List(IdField.PrimitiveField(Primitive.TString, "value", emptyMeta)), emptyMeta)
     val ctx = ctxFor(Map(id -> td), Map.empty)
     val ct = DomainCirceDerivationTranslatorExtension.emitForIdentifier(ctx, td)
-    val s = renderSyntax(ct.defn, isScala3 = false)
+    // F-TextTree M8a: extension returns rendered Scala source directly
+    // under the Scala 3 dialect (kept Scala 3 for keyword-escape safety;
+    // shapes asserted here are 2.13/3-equivalent at the lexical level).
+    val s = ct.defnText
     assert(s.contains("UserIdCirce"))
     assert(s.contains("encodeUserId"))
     assert(s.contains("decodeUserId"))
@@ -91,7 +88,10 @@ final class DomainCirceExtensionSpec extends AnyFunSuite {
     val td = NewTypeDef.Enum(id, List(EnumMember("Red", emptyMeta), EnumMember("Green", emptyMeta)), emptyMeta)
     val ctx = ctxFor(Map(id -> td), Map.empty)
     val ct = DomainCirceDerivationTranslatorExtension.emitForEnum(ctx, td)
-    val s = renderSyntax(ct.defn, isScala3 = false)
+    // F-TextTree M8a: extension returns rendered Scala source directly
+    // under the Scala 3 dialect (kept Scala 3 for keyword-escape safety;
+    // shapes asserted here are 2.13/3-equivalent at the lexical level).
+    val s = ct.defnText
     assert(s.contains("ColorCirce"))
     assert(s.contains("encodeColor"))
   }
@@ -104,14 +104,14 @@ final class DomainCirceExtensionSpec extends AnyFunSuite {
     val flat = FlatStruct(id, List(FlatField(f1, id, 0), FlatField(f2, id, 0)), List.empty, List.empty)
     val ctx = ctxFor(Map(id -> td), Map(id -> flat))
     val ct213 = DomainCirceDerivationTranslatorExtension.emitForDto(ctx, td, List("2.13.18"))
-    val s213 = renderSyntax(ct213.defn, isScala3 = false)
+    val s213 = ct213.defnText
     assert(s213.contains("UserCirce"))
     assert(s213.contains("deriveEncoder[User]"))
     assert(s213.contains("deriveDecoder[User]"))
     assert(s213.contains("io.circe.derivation"), s"expected scala 2.13 deriver import: $s213")
 
     val ct3 = DomainCirceDerivationTranslatorExtension.emitForDto(ctx, td, List("3.8.3"))
-    val s3 = renderSyntax(ct3.defn, isScala3 = true)
+    val s3 = ct3.defnText
     assert(s3.contains("io.circe.generic.semiauto"), s"expected scala 3 deriver import: $s3")
   }
 
@@ -122,7 +122,10 @@ final class DomainCirceExtensionSpec extends AnyFunSuite {
     val td = NewTypeDef.Adt(adtId, List(AdtMember(a, None, emptyMeta), AdtMember(b, None, emptyMeta)), emptyMeta)
     val ctx = ctxFor(Map(adtId -> td), Map.empty)
     val ct = DomainCirceDerivationTranslatorExtension.emitForAdt(ctx, td)
-    val s = renderSyntax(ct.defn, isScala3 = false)
+    // F-TextTree M8a: extension returns rendered Scala source directly
+    // under the Scala 3 dialect (kept Scala 3 for keyword-escape safety;
+    // shapes asserted here are 2.13/3-equivalent at the lexical level).
+    val s = ct.defnText
     assert(s.contains("ChoiceCirce"))
     assert(s.contains("encodeChoice"))
     assert(s.contains("decodeChoice"))
@@ -139,7 +142,7 @@ final class DomainCirceExtensionSpec extends AnyFunSuite {
     val sqrTD = NewTypeDef.Dto(sqr, Struct(List.empty, List.empty, Super.empty.copy(interfaces = List(iface))), emptyMeta)
     val ctx = ctxFor(Map(iface -> td, cir -> cirTD, sqr -> sqrTD), Map.empty)
     val ct = DomainCirceDerivationTranslatorExtension.emitForInterface(ctx, td)
-    val s213 = renderSyntax(ct.defn, isScala3 = false)
+    val s213 = ct.defnText
     assert(s213.contains("ShapeCirce"))
     // wireId for cross-domain DTO is the fully qualified path; check substring
     val circleIdx = s213.indexOf("Circle")
@@ -159,7 +162,7 @@ final class DomainCirceExtensionSpec extends AnyFunSuite {
       extraMembers = Map[izumi.idealingua.model.common.TypeId, Member](mirrorId -> Member.Ephemeral(mirrorEph)),
     )
     val ct = DomainCirceDerivationTranslatorExtension.emitForInterface(ctx, td)
-    val s213 = renderSyntax(ct.defn, isScala3 = false)
+    val s213 = ct.defnText
     // Mirror DTO `Marker.Struct` must appear in the encoder cases.
     assert(s213.contains("Marker.Struct"), s"expected mirror case `Marker.Struct` in: $s213")
   }

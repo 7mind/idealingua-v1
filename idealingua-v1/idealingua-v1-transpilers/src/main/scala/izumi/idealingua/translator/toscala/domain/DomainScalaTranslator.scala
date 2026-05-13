@@ -14,7 +14,6 @@ import izumi.idealingua.translator.toscala.domain.extensions.{
 }
 import izumi.idealingua.translator.toscala.products.CogenProduct.{AdtProduct, EnumProduct}
 import izumi.idealingua.translator.toscala.products.CogenProduct
-import izumi.idealingua.translator.toscala.tools.ScalaMetaTools
 import izumi.idealingua.translator.{Translated, Translator}
 import izumi.idealingua.typer.ir.{Domain => NewDomain, TypeDef => NewTypeDef}
 
@@ -72,8 +71,6 @@ final class DomainScalaTranslator(
   parsed: DomainMeshResolved,
   options: ScalaTranslatorOptions,
 ) extends Translator {
-
-  import ScalaMetaTools._
 
   private val ctx = new DomainSTContext(domain, parsed, options)
 
@@ -164,125 +161,107 @@ final class DomainScalaTranslator(
   // --- Per-renderer emit wrappers with inline extension wiring. ---------
 
   private def emitEnum(e: NewTypeDef.Enum): Seq[Module] = {
-    import ctx.conv._
-    val base    = ctx.enumRenderer.renderEnumeration(e)
-    val circe   = DomainCirceDerivationTranslatorExtension.emitForEnum(ctx, e)
-    val sibling = ctx.conv.toScala(e.id).sibling(circe.name).init()
+    val base  = ctx.enumRenderer.renderEnumeration(e)
+    val circe = DomainCirceDerivationTranslatorExtension.emitForEnum(ctx, e)
 
+    // F-TextTree M8a: Circe sibling trait + companion-base init are
+    // pushed into String slots; the carrier parses them back at render
+    // time and splices into the inner Defn outer shell.
     val product = EnumProduct(
-      defn          = base.defn,
-      companionBase = base.companionBase.prependBase(sibling),
-      elements      = base.elements,
-      more          = base.more :+ circe.defn,
-      preamble      = base.preamble,
+      defn                = base.defn,
+      companionBase       = base.companionBase,
+      elements            = base.elements,
+      more                = base.more,
+      preamble            = base.preamble,
+      companionCirceBases = List(circe.initText),
+      siblings            = List(circe.defnText),
     )
     ctx.modules.toSource(domain.id, ctx.modules.toModuleId(e.id), product, options.manifest.sbt.scalaVersions)
   }
 
   private def emitIdentifier(id: NewTypeDef.Identifier): Seq[Module] = {
-    import ctx.conv._
     val base = ctx.idRenderer.renderIdentifier(id).asInstanceOf[CogenProduct[Defn.Class]]
 
     val anyvalBases = DomainAnyvalExtension.withAnyvalForIdentifier(ctx, id)
-    val withAnyVal  = base.defn.prependBase(anyvalBases)
-
-    val circe   = DomainCirceDerivationTranslatorExtension.emitForIdentifier(ctx, id)
-    val sibling = ctx.conv.toScala(id.id).sibling(circe.name).init()
+    val circe       = DomainCirceDerivationTranslatorExtension.emitForIdentifier(ctx, id)
 
     val product = CogenProduct[Defn.Class](
-      defn          = withAnyVal,
-      companionBase = base.companionBase.prependBase(sibling),
-      tools         = base.tools,
-      more          = base.more :+ circe.defn,
-      preamble      = base.preamble,
+      defn                = base.defn,
+      companionBase       = base.companionBase,
+      tools               = base.tools,
+      more                = base.more,
+      preamble            = base.preamble,
+      defnAnyvalBases     = anyvalBases,
+      companionCirceBases = List(circe.initText),
+      siblings            = List(circe.defnText),
     )
     ctx.modules.toSource(domain.id, ctx.modules.toModuleId(id.id), product, options.manifest.sbt.scalaVersions)
   }
 
   private def emitDto(dto: NewTypeDef.Dto): Seq[Module] = {
-    import ctx.conv._
     val base = ctx.compositeRenderer.renderDto(dto).asInstanceOf[CogenProduct[Defn.Class]]
 
     val anyvalBases = DomainAnyvalExtension.withAnyvalForComposite(ctx, dto)
-    val withAnyVal  = base.defn.prependBase(anyvalBases)
-
-    val sims               = DomainCastSimilarExtension.mkConvertersForDto(ctx, dto)
-    val ups                = DomainCastUpExtension.generateUpcastsForDto(ctx, dto)
-    val companionWithCasts = base.companionBase.appendDefinitions(sims ++ ups)
-
-    val circe          = DomainCirceDerivationTranslatorExtension.emitForDto(ctx, dto, options.manifest.sbt.scalaVersions)
-    val sibling        = ctx.conv.toScala(dto.id).sibling(circe.name).init()
-    val companionFinal = companionWithCasts.prependBase(sibling)
+    val sims        = DomainCastSimilarExtension.mkConvertersForDto(ctx, dto)
+    val ups         = DomainCastUpExtension.generateUpcastsForDto(ctx, dto)
+    val circe       = DomainCirceDerivationTranslatorExtension.emitForDto(ctx, dto, options.manifest.sbt.scalaVersions)
 
     val product = CogenProduct[Defn.Class](
-      defn          = withAnyVal,
-      companionBase = companionFinal,
-      tools         = base.tools,
-      more          = base.more :+ circe.defn,
-      preamble      = base.preamble,
+      defn                = base.defn,
+      companionBase       = base.companionBase,
+      tools               = base.tools,
+      more                = base.more,
+      preamble            = base.preamble,
+      defnAnyvalBases     = anyvalBases,
+      companionCirceBases = List(circe.initText),
+      companionCasts      = sims ++ ups,
+      siblings            = List(circe.defnText),
     )
     ctx.modules.toSource(domain.id, ctx.modules.toModuleId(dto.id), product, options.manifest.sbt.scalaVersions)
   }
 
   private def emitInterface(ifc: NewTypeDef.Interface): Seq[Module] = {
-    import ctx.conv._
     val base = ctx.interfaceRenderer.renderInterface(ifc).asInstanceOf[CogenProduct[Defn.Trait]]
 
-    // `Any` base for AnyVal-eligible interfaces is now applied inside
-    // `DomainInterfaceRenderer.mkTrait` so the mirror `Defn` traits in DTO
-    // companions also get the prepend (legacy parity). Top-level interface
-    // `defn` from `renderInterface` already carries it.
-    val withAny  = base.defn
-
-    val sims               = DomainCastSimilarExtension.mkConvertersForInterface(ctx, ifc)
-    val ups                = DomainCastUpExtension.generateUpcastsForInterface(ctx, ifc)
-    val downs              = DomainCastDownExpandExtension.constructorsForInterface(ctx, ifc)
+    // `Any` base for AnyVal-eligible interfaces is applied inside
+    // `DomainInterfaceRenderer.mkTrait` (legacy parity for mirror traits).
+    val sims  = DomainCastSimilarExtension.mkConvertersForInterface(ctx, ifc)
+    val ups   = DomainCastUpExtension.generateUpcastsForInterface(ctx, ifc)
+    val downs = DomainCastDownExpandExtension.constructorsForInterface(ctx, ifc)
     // Legacy `ScalaTranslator.defaultExtensions` order:
     //   CastSimilarExtension, CastDownExpandExtension, CastUpExtension.
-    // The append order here must match so the emitted companion-stat
-    // sequence is byte-identical between typers.
-    val companionWithCasts = base.companionBase.appendDefinitions(sims ++ downs ++ ups)
 
-    // Every user-declared interface receives Circe boilerplate (matches
-    // legacy `CirceTranslatorExtensionBase.handleInterface` which runs
-    // unconditionally). The implementor list always contains at least the
-    // synthesized mirror DTO `<I>.Struct` (Phase 7 `EphemeralSynthesizer`
-    // guarantees one mirror per user interface), so the
-    // `scala.meta` cases-non-empty invariant for the encoder match is
-    // satisfied. Defect #4 (IMPL-7a.2-Fc): previously the gate consulted
-    // `domain.implementingDtos` (user-DTO-only inversion) which could be
-    // empty for interfaces with no user-DTO descendants, even when the
-    // mirror existed.
-    val circe   = DomainCirceDerivationTranslatorExtension.emitForInterface(ctx, ifc)
-    val sibling = ctx.conv.toScala(ifc.id).sibling(circe.name).init()
-    val companionFinal = companionWithCasts.prependBase(sibling)
-    val moreFinal      = base.more :+ circe.defn
+    // Every user-declared interface receives Circe boilerplate (legacy
+    // parity); the mirror DTO ensures the encoder match is non-empty.
+    val circe = DomainCirceDerivationTranslatorExtension.emitForInterface(ctx, ifc)
 
     val product = CogenProduct[Defn.Trait](
-      defn          = withAny,
-      companionBase = companionFinal,
-      tools         = base.tools,
-      more          = moreFinal,
-      preamble      = base.preamble,
+      defn                = base.defn,
+      companionBase       = base.companionBase,
+      tools               = base.tools,
+      more                = base.more,
+      preamble            = base.preamble,
+      companionCirceBases = List(circe.initText),
+      companionCasts      = sims ++ downs ++ ups,
+      siblings            = List(circe.defnText),
     )
     ctx.modules.toSource(domain.id, ctx.modules.toModuleId(ifc.id), product, options.manifest.sbt.scalaVersions)
   }
 
   private def emitAdt(adt: NewTypeDef.Adt): Seq[Module] = {
-    import ctx.conv._
     val baseAdt = ctx.adtRenderer.renderAdt(adt).asInstanceOf[AdtProduct]
 
-    // Empty ADTs (no alternatives — should not occur on the wire) skip the
-    // tagged-union Circe emit. Matches M5 exerciser gating.
+    // Empty ADTs skip the tagged-union Circe emit.
     val product = if (adt.alternatives.nonEmpty) {
-      val circe   = DomainCirceDerivationTranslatorExtension.emitForAdt(ctx, adt)
-      val sibling = ctx.conv.toScala(adt.id).sibling(circe.name).init()
+      val circe = DomainCirceDerivationTranslatorExtension.emitForAdt(ctx, adt)
       AdtProduct(
-        defn          = baseAdt.defn,
-        companionBase = baseAdt.companionBase.prependBase(sibling),
-        elements      = baseAdt.elements,
-        more          = baseAdt.more :+ circe.defn,
-        preamble      = baseAdt.preamble,
+        defn                = baseAdt.defn,
+        companionBase       = baseAdt.companionBase,
+        elements            = baseAdt.elements,
+        more                = baseAdt.more,
+        preamble            = baseAdt.preamble,
+        companionCirceBases = List(circe.initText),
+        siblings            = List(circe.defnText),
       )
     } else baseAdt
 

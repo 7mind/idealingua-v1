@@ -67,10 +67,8 @@ final class DomainCastSimilarExtensionSpec extends AnyFunSuite {
     val convertersFromA = DomainCastSimilarExtension.mkConvertersForDto(ctx, aTD)
     assert(convertersFromA.size == 1, s"expected 1 cast helper from A→B, got ${convertersFromA.size}")
 
-    val syntax = {
-      import scala.meta.*
-      scala.meta.dialects.Scala213(convertersFromA.head).syntax
-    }
+    // F-TextTree M8a: extension returns rendered Scala source directly.
+    val syntax = convertersFromA.head
     assert(syntax.contains("A_cast_into_"), s"expected cast helper name pattern: $syntax")
   }
 

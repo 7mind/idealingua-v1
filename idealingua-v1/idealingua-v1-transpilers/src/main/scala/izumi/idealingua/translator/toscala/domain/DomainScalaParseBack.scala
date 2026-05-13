@@ -31,13 +31,13 @@ import scala.meta.*
   * re-prints byte-equal to legacy. `verifyGoldens` is byte-equal across
   * the corpus on both Scala 2.13 and 3.x.
   */
-private[domain] object DomainScalaParseBack {
+private[toscala] object DomainScalaParseBack {
 
   private val dialect = scala.meta.dialects.Scala30
 
   /** Parse a Scala source fragment to a `Stat`. Source must be a single
     * top-level statement. */
-  private def parseStat(src: String): Stat = dialect(src).parse[Stat].get
+  def parseStat(src: String): Stat = dialect(src).parse[Stat].get
 
   /** Parse `sealed trait … {}`. */
   def parseTrait(src: String): Defn.Trait = parseStat(src).asInstanceOf[Defn.Trait]
@@ -53,6 +53,20 @@ private[domain] object DomainScalaParseBack {
 
   /** Parse any `Defn` (e.g. the enum element case object). */
   def parseDefn(src: String): Defn = parseStat(src).asInstanceOf[Defn]
+
+  /** F-TextTree M8a: parse a base-class init fragment (e.g. `Foo[A]`,
+    * `IRTConversions[Bar]`, `AnyVal`) back to a `scala.meta.Init`. Used
+    * by `CogenProduct` to splice extension-produced String inits into
+    * the inner Defn outer shell at render time.
+    *
+    * Implementation: wrap the source as `class _Probe extends $src` then
+    * extract the single `Init` from the synthesized class's template.
+    * Direct `parse[Init]` is not exposed; the wrap-and-extract trick is
+    * the documented scala.meta workaround. */
+  def parseInit(src: String): Init = {
+    val probe = dialect(s"class _Probe extends $src").parse[Stat].get.asInstanceOf[Defn.Class]
+    probe.templ.inits.head
+  }
 
   /** Render a scala.meta tree to source under the Scala 3 dialect.
     *

@@ -12,7 +12,6 @@ import izumi.idealingua.translator.toscala.domain.extensions.{
   DomainCirceDerivationTranslatorExtension,
 }
 import izumi.idealingua.translator.toscala.products.CogenProduct
-import izumi.idealingua.translator.toscala.tools.ScalaMetaTools._
 import izumi.idealingua.translator.toscala.types.{ClassSource, ScalaField, ScalaType}
 import izumi.idealingua.typer.ir.{FlatStruct, TypeDef => NewTypeDef}
 
@@ -459,17 +458,17 @@ final case class DomainServiceMethodProduct(
       * service codecs' `value.asJson` and `packet.as[Output]` resolve at the
       * call site. */
     private def withAdtCirce(adt: NewTypeDef.Adt): List[Defn] = {
-      import ctx.conv.*
       val baseAdt = ctx.adtRenderer.renderAdt(adt, List.empty).asInstanceOf[izumi.idealingua.translator.toscala.products.CogenProduct.AdtProduct]
       if (adt.alternatives.nonEmpty) {
-        val circe   = DomainCirceDerivationTranslatorExtension.emitForAdt(ctx, adt)
-        val sibling = ctx.conv.toScala(adt.id).sibling(circe.name).init()
+        val circe = DomainCirceDerivationTranslatorExtension.emitForAdt(ctx, adt)
         val product = izumi.idealingua.translator.toscala.products.CogenProduct.AdtProduct(
-          defn          = baseAdt.defn,
-          companionBase = baseAdt.companionBase.prependBase(sibling),
-          elements      = baseAdt.elements,
-          more          = baseAdt.more :+ circe.defn,
-          preamble      = baseAdt.preamble,
+          defn                = baseAdt.defn,
+          companionBase       = baseAdt.companionBase,
+          elements            = baseAdt.elements,
+          more                = baseAdt.more,
+          preamble            = baseAdt.preamble,
+          companionCirceBases = List(circe.initText),
+          siblings            = List(circe.defnText),
         )
         product.render
       } else {
@@ -502,29 +501,27 @@ final case class DomainServiceMethodProduct(
     flat: FlatStruct,
     unwrap: Boolean,
   ): List[Defn] = {
-    val anyvalBases       = DomainAnyvalExtension.withAnyvalForMethodStruct(ctx, flat)
-    val withAnyVal        = base.defn.prependBase(anyvalBases)
-
-    val sims              = DomainCastSimilarExtension.mkConvertersForMethodStruct(ctx, dtoId)
-    val ups               = DomainCastUpExtension.generateUpcastsForMethodStruct(ctx, dtoId)
-    val companionWithCasts = base.companionBase.appendDefinitions(sims ++ ups)
-
-    val circe              = DomainCirceDerivationTranslatorExtension.emitForMethodStruct(
+    val anyvalBases = DomainAnyvalExtension.withAnyvalForMethodStruct(ctx, flat)
+    val sims        = DomainCastSimilarExtension.mkConvertersForMethodStruct(ctx, dtoId)
+    val ups         = DomainCastUpExtension.generateUpcastsForMethodStruct(ctx, dtoId)
+    val circe       = DomainCirceDerivationTranslatorExtension.emitForMethodStruct(
       ctx           = ctx,
       dtoId         = dtoId,
       flat          = flat,
       unwrap        = unwrap,
       scalaVersions = ctx.options.manifest.sbt.scalaVersions,
     )
-    val siblingInit        = ctx.conv.toScala(dtoId).sibling(circe.name).init()
-    val companionFinal     = companionWithCasts.prependBase(siblingInit)
 
     val augmented = CogenProduct[Defn.Class](
-      defn          = withAnyVal,
-      companionBase = companionFinal,
-      tools         = base.tools,
-      more          = base.more :+ circe.defn,
-      preamble      = base.preamble,
+      defn                = base.defn,
+      companionBase       = base.companionBase,
+      tools               = base.tools,
+      more                = base.more,
+      preamble            = base.preamble,
+      defnAnyvalBases     = anyvalBases,
+      companionCirceBases = List(circe.initText),
+      companionCasts      = sims ++ ups,
+      siblings            = List(circe.defnText),
     )
     augmented.render
   }
