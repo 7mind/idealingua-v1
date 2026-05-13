@@ -21,6 +21,13 @@
 #   sanity-scala              — alias for sanity
 #   sanity-typescript         — alias for sanity-ts
 #   sanity-csharp             — alias for sanity-cs
+#   sanity-broad              — HEAD vs HEAD against the broad corpus (Scala).
+#                               Zero divergences expected.
+#   v1419-vs-head-broad       — git:v1.4.19 vs HEAD against the broad corpus
+#                               (Scala). 13 fixtures across DTO + Enum +
+#                               Identifier. Compared to
+#                               selftest-expectations/v1419-vs-head.broad.scala.json
+#                               (empty per wire-format-invariant policy).
 #
 # All extra args after the mode are forwarded to idl-regress (matrix mode
 # does NOT forward args to the cell invocations).
@@ -35,6 +42,13 @@ MAIN_TESTS="$REPO_ROOT/idealingua-v1/idealingua-v1-test-defs/src/main/resources/
 # IMPL-9's Scala backend (no TBLOB -> Array[Byte] mapping pre-F5-fix). See the
 # M2 commit body for the cross-version audit finding.
 DTOFIELDS_ONLY="$HARNESS_DIR/selftest-corpus/dtofields-only"
+# Broadened in-tree corpus: dtofields + enums + identifiers. Covers DTO
+# (mixin composition), Enum (long + short syntax), and Identifier (uid +
+# i64 + str fields). Designed to compile cleanly under BOTH v1.4.19
+# (the most recent published release) and HEAD on wip/necromancy. Used by
+# the `v1419-vs-head-*` cells below — a 13-fixture cross-release regression
+# probe vs the 3-fixture dtofields-only probe.
+BROAD="$HARNESS_DIR/selftest-corpus/broad"
 
 mode="${1:-sanity}"
 shift || true
@@ -154,6 +168,32 @@ case "$mode" in
       --old "git:ea697f5" \
       --new self \
       --lang csharp \
+      "$@"
+    ;;
+  sanity-broad)
+    if [[ ! -d "$BROAD/source" ]]; then
+      echo "selftest: missing corpus at $BROAD/source" >&2
+      exit 2
+    fi
+    cd "$REPO_ROOT"
+    exec "$HARNESS_DIR/idl-regress" \
+      --project "$BROAD" \
+      --old self \
+      --new self \
+      --lang scala \
+      "$@"
+    ;;
+  v1419-vs-head-broad|v1419-vs-head-broad-scala)
+    if [[ ! -d "$BROAD/source" ]]; then
+      echo "selftest: missing corpus at $BROAD/source" >&2
+      exit 2
+    fi
+    cd "$REPO_ROOT"
+    exec "$HARNESS_DIR/idl-regress" \
+      --project "$BROAD" \
+      --old "git:v1.4.19" \
+      --new self \
+      --lang scala \
       "$@"
     ;;
   *)
