@@ -18,6 +18,14 @@ import izumi.idealingua.typer.phase._
   *     rather than raising `IDLException`.  Structured diagnostics (each
   *     anchored to an `InputPosition`) survive to the CLI through
   *     `LoadedModels.collectFailures`.
+  *
+  * Non-fatal diagnostics: per `Diagnostic.CyclicDomainImport` scaladoc, cycles
+  * in the cross-domain import graph are advisory — `FamilyIndex.loadOrder`
+  * still produces a deterministic, complete ordering and per-domain phases
+  * operate independently. The legacy typer accepted cyclic cross-domain
+  * imports (the `defs-special/scala-only/idltest/crossimports{1,2,3}`
+  * integration fixture is the regression oracle), so this pipeline filters
+  * `CyclicDomainImport` out of the fatal-issue set.
   */
 object NewTyperPipeline {
 
@@ -67,8 +75,15 @@ object NewTyperPipeline {
         rooted.diagnostics ++
         validatorDiags
 
-    if (allDiags.issues.nonEmpty) {
-      Left(allDiags)
+    // Filter out non-fatal diagnostics (see scaladoc): `CyclicDomainImport`
+    // is advisory; downstream phases still produce a usable `Domain`.
+    val fatal = allDiags.issues.filterNot {
+      case _: izumi.idealingua.typer.ir.Diagnostic.CyclicDomainImport => true
+      case _                                                          => false
+    }
+
+    if (fatal.nonEmpty) {
+      Left(izumi.idealingua.typer.ir.Diagnostics(fatal))
     } else {
       Right(domain)
     }
