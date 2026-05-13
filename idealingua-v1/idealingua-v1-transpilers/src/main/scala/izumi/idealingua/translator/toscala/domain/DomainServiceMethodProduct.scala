@@ -1,5 +1,7 @@
 package izumi.idealingua.translator.toscala.domain
 
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.common.TypeId.{AdtId, DTOId}
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.il.ast.typed.DefMethod.RPCMethod
@@ -14,9 +16,36 @@ import izumi.idealingua.translator.toscala.tools.ScalaMetaTools._
 import izumi.idealingua.translator.toscala.types.{ClassSource, ScalaField, ScalaType}
 import izumi.idealingua.typer.ir.{FlatStruct, TypeDef => NewTypeDef}
 
-import scala.meta._
+import scala.meta.Defn
 
 /** Per-method rendering helper for the Domain-IR Service / Buzzer renderer.
+  *
+  * F-TextTree M7: ported off `scala.meta` quasiquotes onto
+  * `TextTree[ScalaRefHandle]` composition + `.mapRender(resolver.resolve)`
+  * at the renderer boundary. Type references travel as
+  * `ScalaRefHandle.{TypeFull, TermFull}` value nodes; helpers expose
+  * `TextTree[ScalaRefHandle]` for splice points so the parent
+  * `DomainServiceRenderer` can assemble the 7 top-level Defns as text and
+  * parse them back via `DomainScalaParseBack` at a single boundary.
+  *
+  * Supporting `scala.meta` scaffolding (`DomainCompositeStructure`'s
+  * `Term.Param` / `Defn.Def` fragments, `DomainScalaStruct.scalaStruct`'s
+  * field shapes, and the extension family's `Defn` emissions) is spliced
+  * as pre-rendered text via `DomainScalaParseBack.renderS30(_)` — the same
+  * pattern M6 established for the structural renderers (`Composite`,
+  * `Interface`, `Id`). Migrating the scaffolding/extensions off `scala.meta`
+  * is M8 scope.
+  *
+  * **Carrier strategy** (same as M5/M6): `defStructs: List[Defn]` is the
+  * only `Defn`-returning method retained — it composes the Circe sibling
+  * + AnyVal + Cast* augmented method I/O `CogenProduct[Defn.Class]`
+  * surface via `withCirce(...)`, exactly as legacy did. The list is
+  * spliced into the parent methods-object as pre-rendered text by the
+  * renderer.
+  *
+  * **Byte parity**: every emitted text fragment is parse-roundtrip-safe
+  * (no empty `{}` pitfalls beyond what M5/M6 already characterised).
+  * `verifyGoldens` byte-equal across the corpus, both Scala 2.13 and 3.x.
   *
   * IMPL-7a.2 Phase B M4 (relaxed parity): twin of legacy
   * `types.ServiceMethodProduct`. Same code-emission strategy (Input
@@ -24,11 +53,6 @@ import scala.meta._
   * client wrapped variants), but every typespace lookup is replaced by a
   * direct read off `Domain.flattenedStructs` / `Domain.userTypes` (set up
   * by Phase 7 `EphemeralSynthesizer`).
-  *
-  * The renderer produces structurally-correct Scala — `compiles + emits the
-  * IRT runtime calls the legacy generates`. Byte parity with legacy is NOT
-  * a hard gate at M4; the contract is wire-format JSON equality
-  * (`runWireFixtures` + `runCrossLangInterop`), which M5 supplies.
   *
   * Output struct synthesis: per F5c (commit `1eb4377`), `EphemeralSynthesizer`
   * pre-materializes the input/output ephemeral DTOs and the Output/Alt ADTs,
@@ -44,167 +68,205 @@ final case class DomainServiceMethodProduct(
 
   import ctx.conv._
 
-  def defStructs: List[Stat] =
-    Input.inputDefn ++ Output.outputDefn
+  // -------- Splice helpers (TextTree[ScalaRefHandle]) ------------------
 
-  def defnMethod: Stat = {
-    q"""object $nameTerm extends ${ctx.rt.IRTMethodSignature.init()} {
-         final val id: ${ctx.rt.IRTMethodId.typeName} = ${ctx.rt.IRTMethodId.termName}(serviceId, ${ctx.rt.IRTMethodName.termName}(${Lit.String(name)}))
-         type Input = ${Input.typespaceType.typeName}
-         type Output = ${Output.wrappedTypespaceType.typeName}
-       }
-     """
+  /** Methods-object body — the per-method `object $name extends IRTMethodSignature { ... }` shape. */
+  def defnMethod: TextTree[ScalaRefHandle] = {
+    val nameLit       = q""""$name""""
+    val inputTypeName = TextTree.value[ScalaRefHandle](ScalaRefHandle.TypeName(Input.typespaceId))
+    val outputTypeName = TextTree.value[ScalaRefHandle](ScalaRefHandle.TypeName(Output.wrappedTypespaceTypeId))
+
+    val irtMethodSignatureInit = ctx.rt.IRTMethodSignature.typeFull.toString
+    val irtMethodId            = ctx.rt.IRTMethodId.typeName.toString
+    val irtMethodIdTerm        = ctx.rt.IRTMethodId.termName.toString
+    val irtMethodNameTerm      = ctx.rt.IRTMethodName.termName.toString
+
+    q"""object $name extends $irtMethodSignatureInit {
+       |  final val id: $irtMethodId = $irtMethodIdTerm(serviceId, $irtMethodNameTerm($nameLit))
+       |  type Input = $inputTypeName
+       |  type Output = $outputTypeName
+       |}""".stripMargin
   }
 
-  def defnMethodRegistration: Term = nameTerm
+  /** Bare method-name term reference for the `Seq[IRTMethodWrapper[...]]( ... )` list. */
+  def defnMethodRegistration: TextTree[ScalaRefHandle] = q"$name"
 
-  def defnCodecRegistration: Term.ApplyInfix =
-    q""" ${sp.svcMethods.termName}.$nameTerm.id -> ${sp.svcCodecs.termName}.$nameTerm """
-
-  def defnCodec: Stat = {
-    val methods = List(Input.defnEncoder, Input.defnDecoder, Output.defnEncoder, Output.defnDecoder)
-
-    q"""object $nameTerm extends IRTCirceMarshaller {
-          import ${sp.svcMethods.termName}.$nameTerm._
-          ..$methods
-       }
-     """
+  /** `TestService.<method>.id -> TestServiceCodecs.<method>` pair. */
+  def defnCodecRegistration: TextTree[ScalaRefHandle] = {
+    val methodsTerm = sp.svcMethods.termName.toString
+    val codecsTerm  = sp.svcCodecs.termName.toString
+    q"$methodsTerm.$name.id -> $codecsTerm.$name"
   }
 
-  def defnServerWrapped: Stat = {
-    val invoke = method.signature.output match {
+  /** Codecs object per-method body. */
+  def defnCodec: TextTree[ScalaRefHandle] = {
+    val methodsTerm = sp.svcMethods.termName.toString
+    q"""object $name extends IRTCirceMarshaller {
+       |  import $methodsTerm.$name.*
+       |  ${Input.defnEncoder.shift(2).trim}
+       |  ${Input.defnDecoder.shift(2).trim}
+       |  ${Output.defnEncoder.shift(2).trim}
+       |  ${Output.defnDecoder.shift(2).trim}
+       |}""".stripMargin
+  }
+
+  /** Server-side wrapped method body. */
+  def defnServerWrapped: TextTree[ScalaRefHandle] = {
+    val ctxT       = DomainScalaParseBack.renderS30(sp.Ctx.t)
+    val ioN        = DomainScalaParseBack.renderS30(sp.IO2.n)
+    val methodsTerm = sp.svcMethods.termName.toString
+    val codecsTerm  = sp.svcCodecs.termName.toString
+    val assertionLine =
+      "assert(ctx.asInstanceOf[_root_.scala.AnyRef] != null && input.asInstanceOf[_root_.scala.AnyRef] != null)"
+
+    val invoke: TextTree[ScalaRefHandle] = method.signature.output match {
       case DefMethod.Output.Singular(_) =>
-        q"""def invoke(ctx: ${sp.Ctx.t}, input: Input): Just[Output] = {
-              assert(ctx.asInstanceOf[_root_.scala.AnyRef] != null && input.asInstanceOf[_root_.scala.AnyRef] != null)
-            ${sp.IO2.n}.map(_service.$nameTerm(ctx, ..${Input.sigCall}))(v => new Output(v))
-           }"""
+        q"""def invoke(ctx: $ctxT, input: Input): Just[Output] = {
+           |  $assertionLine
+           |  $ioN.map(_service.$name(ctx${Input.sigCallPrefix}))(v => new Output(v))
+           |}""".stripMargin
 
       case DefMethod.Output.Void() =>
-        q"""def invoke(ctx: ${sp.Ctx.t}, input: Input): Just[Output] = {
-              assert(ctx.asInstanceOf[_root_.scala.AnyRef] != null && input.asInstanceOf[_root_.scala.AnyRef] != null)
-              ${sp.IO2.n}.map(_service.$nameTerm(ctx, ..${Input.sigCall}))(_ => new Output())
-           }"""
+        q"""def invoke(ctx: $ctxT, input: Input): Just[Output] = {
+           |  $assertionLine
+           |  $ioN.map(_service.$name(ctx${Input.sigCallPrefix}))(_ => new Output())
+           |}""".stripMargin
 
       case DefMethod.Output.Algebraic(_) | DefMethod.Output.Struct(_) =>
-        q"""def invoke(ctx: ${sp.Ctx.t}, input: Input): Just[Output] = {
-              assert(ctx.asInstanceOf[_root_.scala.AnyRef] != null && input.asInstanceOf[_root_.scala.AnyRef] != null)
-              _service.$nameTerm(ctx, ..${Input.sigCall})
-           }"""
+        q"""def invoke(ctx: $ctxT, input: Input): Just[Output] = {
+           |  $assertionLine
+           |  _service.$name(ctx${Input.sigCallPrefix})
+           |}""".stripMargin
 
       case DefMethod.Output.Alternative(_, _) =>
-        q"""
-           def invoke(ctx: ${sp.Ctx.t}, input: Input): Just[Output] = {
-              ${sp.IO2.n}.redeem(_service.$nameTerm(ctx, ..${Input.sigCall}))(
-                      err => _F.pure(new ${Output.negativeBranchType.typeFull}(err))
-                      , succ => _F.pure(new ${Output.positiveBranchType.typeFull}(succ))
-                   )
-           }"""
+        // Negative/positive *branch* types live inside the Output wrapper
+        // (e.g. `TestService.AlternativeOutput.Failure`). The wrapper type
+        // path is rooted at `svcBaseTpe.within(<OutputName>)` — emit fully
+        // pre-rendered via `ScalaType.within(_).typeFull.toString`.
+        val wrapTpe = sp.svcBaseTpe.within(Output.wrappedTypespaceName)
+        val negBranch = wrapTpe.within(Output.negativeBranchTypeName).typeFull.toString
+        val posBranch = wrapTpe.within(Output.positiveBranchTypeName).typeFull.toString
+        q"""def invoke(ctx: $ctxT, input: Input): Just[Output] = {
+           |  $ioN.redeem(_service.$name(ctx${Input.sigCallPrefix}))(err => _F.pure(new $negBranch(err)), succ => _F.pure(new $posBranch(succ)))
+           |}""".stripMargin
     }
 
-    q"""object $nameTerm extends IRTMethodWrapper[${sp.F.t}, ${sp.Ctx.t}] {
-          import ${sp.svcMethods.termName}.$nameTerm._
-
-          val signature: ${sp.svcMethods.termName}.$nameTerm.type = ${sp.svcMethods.termName}.$nameTerm
-          val marshaller: ${sp.svcCodecs.termName}.$nameTerm.type = ${sp.svcCodecs.termName}.$nameTerm
-
-          $invoke
-       }
-     """
+    q"""object $name extends IRTMethodWrapper[${DomainScalaParseBack.renderS30(sp.F.t)}, $ctxT] {
+       |  import $methodsTerm.$name.*
+       |  val signature: $methodsTerm.$name.type = $methodsTerm.$name
+       |  val marshaller: $codecsTerm.$name.type = $codecsTerm.$name
+       |  ${invoke.shift(2).trim}
+       |}""".stripMargin
   }
 
-  def defnClientWrapped: Stat = {
-    val exception =
-      q"""
-          val id = ${Lit.String(s"${sp.typeName}.${sp.svcWrappedClientTpe.termName.value}.$nameTerm")}
-          val expected = classOf[_M.$nameTerm.Input].toString
-          ${sp.IO2.n}.terminate(new IRTTypeMismatchException(s"Unexpected type in $$id: $$v, expected $$expected got $${v.getClass}", v, None))
-       """
+  /** Client-side wrapped method body. */
+  def defnClientWrapped: TextTree[ScalaRefHandle] = {
+    val ioN     = DomainScalaParseBack.renderS30(sp.IO2.n)
+    val wrapped = sp.svcWrappedClientTpe.termName.toString
+    val exception: TextTree[ScalaRefHandle] = {
+      val idLit = q""""${sp.typeName}.$wrapped.$name""""
+      // The legacy quasiquote produced an interpolated-string AST where
+      // `${v.getClass}` is a `Term.Block(Term.Select(v, getClass))`; the
+      // printer's canonical form for a Block-arg inside an `s"…"` is the
+      // multi-line `s"… ${\n  v.getClass\n}"` shape — match it explicitly
+      // so parse-back round-trips byte-equal to golden.
+      q"""val id = $idLit
+         |val expected = classOf[_M.$name.Input].toString
+         |$ioN.terminate(new IRTTypeMismatchException(s"Unexpected type in $$id: $$v, expected $$expected got $${
+         |  v.getClass
+         |}", v, None))""".stripMargin
+    }
 
+    // Body shape mirrors the golden's printer output verbatim — scalameta's
+    // Scala 3 printer is idempotent on its own output, so feeding the
+    // canonical layout into parse-back round-trips to byte-equal text.
+    // Reproducing the *legacy quasiquote source* layout doesn't work
+    // because `q"…".syntax` reformats to the printer's canonical shape.
     method.signature.output match {
       case DefMethod.Output.Singular(_) =>
-        q"""def $nameTerm(..${Input.signature}): ${Output.outputType} = {
-               ${sp.IO2.n}.redeem(_dispatcher
-                 .dispatch(IRTMuxRequest(IRTReqBody(new ${init"_M.$nameTerm.Input(..${Input.sigDirectCall})"}), _M.$nameTerm.id))
-               )(
-                  { err => ${sp.IO2.n}.terminate(err) },
-                  {
-                    case IRTMuxResponse(IRTResBody(v: _M.$nameTerm.Output), method) if method == _M.$nameTerm.id =>
-                      ${sp.IO2.n}.pure(v.value)
-                    case v => $exception
-                  })
-           }"""
+        q"""def $name(${Input.signatureText}): ${Output.outputType} = {
+           |  $ioN.redeem(_dispatcher.dispatch(IRTMuxRequest(IRTReqBody(new _M.$name.Input(${Input.sigDirectCallText})), _M.$name.id)))({
+           |    err => $ioN.terminate(err)
+           |  }, {
+           |    case IRTMuxResponse(IRTResBody(v: _M.$name.Output), method) if method == _M.$name.id =>
+           |      $ioN.pure(v.value)
+           |    case v =>
+           |      ${exception.shift(6).trim}
+           |  })
+           |}""".stripMargin
 
       case DefMethod.Output.Void() =>
-        q"""def $nameTerm(..${Input.signature}): ${Output.outputType} = {
-               ${sp.IO2.n}.redeem(_dispatcher
-                 .dispatch(IRTMuxRequest(IRTReqBody(new ${init"_M.$nameTerm.Input(..${Input.sigDirectCall})"}), _M.$nameTerm.id))
-               )(
-                   { err => ${sp.IO2.n}.terminate(err) },
-                   {
-                     case IRTMuxResponse(IRTResBody(_: _M.$nameTerm.Output), method) if method == _M.$nameTerm.id =>
-                       ${sp.IO2.n}.pure(())
-                     case v => $exception
-            })
-           }"""
+        q"""def $name(${Input.signatureText}): ${Output.outputType} = {
+           |  $ioN.redeem(_dispatcher.dispatch(IRTMuxRequest(IRTReqBody(new _M.$name.Input(${Input.sigDirectCallText})), _M.$name.id)))({
+           |    err => $ioN.terminate(err)
+           |  }, {
+           |    case IRTMuxResponse(IRTResBody(_: _M.$name.Output), method) if method == _M.$name.id =>
+           |      $ioN.pure(())
+           |    case v =>
+           |      ${exception.shift(6).trim}
+           |  })
+           |}""".stripMargin
 
       case DefMethod.Output.Algebraic(_) | DefMethod.Output.Struct(_) =>
-        q"""def $nameTerm(..${Input.signature}): ${Output.outputType} = {
-            ${sp.IO2.n}.redeem(_dispatcher
-                 .dispatch(IRTMuxRequest(IRTReqBody(new ${init"_M.$nameTerm.Input(..${Input.sigDirectCall})"}), _M.$nameTerm.id))
-               )(
-                    { err => ${sp.IO2.n}.terminate(err) },
-                    {
-                      case IRTMuxResponse(IRTResBody(v: _M.$nameTerm.Output), method) if method == _M.$nameTerm.id =>
-                        ${sp.IO2.n}.pure(v)
-                      case v => $exception
-                    })
-           }"""
+        q"""def $name(${Input.signatureText}): ${Output.outputType} = {
+           |  $ioN.redeem(_dispatcher.dispatch(IRTMuxRequest(IRTReqBody(new _M.$name.Input(${Input.sigDirectCallText})), _M.$name.id)))({
+           |    err => $ioN.terminate(err)
+           |  }, {
+           |    case IRTMuxResponse(IRTResBody(v: _M.$name.Output), method) if method == _M.$name.id =>
+           |      $ioN.pure(v)
+           |    case v =>
+           |      ${exception.shift(6).trim}
+           |  })
+           |}""".stripMargin
 
       case DefMethod.Output.Alternative(_, _) =>
-        q"""def $nameTerm(..${Input.signature}): ${Output.outputType} = {
-           ${sp.IO2.n}.redeem(_dispatcher
-                 .dispatch(IRTMuxRequest(IRTReqBody(new ${init"_M.$nameTerm.Input(..${Input.sigDirectCall})"}), _M.$nameTerm.id))
-               )(
-                    { err => ${sp.IO2.n}.terminate(err) },
-                    {
-                       case IRTMuxResponse(IRTResBody(r), method) if method == _M.$nameTerm.id =>
-                         r match {
-                           case va : ${Output.negativeBranchType.typeFull} =>
-                             ${sp.IO2.n}.fail(va.value)
-
-                           case va : ${Output.positiveBranchType.typeFull} =>
-                             ${sp.IO2.n}.pure(va.value)
-
-                           case v =>
-                             $exception
-                         }
-                       case v =>
-                         $exception
-                    })
-           }"""
+        val wrapTpe = sp.svcBaseTpe.within(Output.wrappedTypespaceName)
+        val negBranch = wrapTpe.within(Output.negativeBranchTypeName).typeFull.toString
+        val posBranch = wrapTpe.within(Output.positiveBranchTypeName).typeFull.toString
+        q"""def $name(${Input.signatureText}): ${Output.outputType} = {
+           |  $ioN.redeem(_dispatcher.dispatch(IRTMuxRequest(IRTReqBody(new _M.$name.Input(${Input.sigDirectCallText})), _M.$name.id)))({
+           |    err => $ioN.terminate(err)
+           |  }, {
+           |    case IRTMuxResponse(IRTResBody(r), method) if method == _M.$name.id =>
+           |      r match {
+           |        case va: $negBranch =>
+           |          $ioN.fail(va.value)
+           |        case va: $posBranch =>
+           |          $ioN.pure(va.value)
+           |        case v =>
+           |          ${exception.shift(10).trim}
+           |      }
+           |    case v =>
+           |      ${exception.shift(6).trim}
+           |  })
+           |}""".stripMargin
     }
   }
 
-  def defnServer: Stat =
-    q"def $nameTerm(ctx: ${sp.Ctx.t}, ..${Input.signature}): ${Output.outputType}"
+  def defnServer: TextTree[ScalaRefHandle] =
+    q"def $name(ctx: ${DomainScalaParseBack.renderS30(sp.Ctx.t)}${Input.signaturePrefix}): ${Output.outputType}"
 
-  def defnClient: Stat =
-    q"def $nameTerm(..${Input.signature}): ${Output.outputType}"
+  def defnClient: TextTree[ScalaRefHandle] =
+    q"def $name(${Input.signatureText}): ${Output.outputType}"
 
-  protected def name: String           = method.name
-  protected def nameTerm: Term.Name    = Term.Name(name)
+  /** Per-method `defStructs` — emitted into the methods-object body alongside
+    * the per-method signature objects. Returns Defn list (a List of Defn
+    * to be spliced as rendered text by the parent renderer).
+    */
+  def defStructs: List[Defn] = Input.inputDefn ++ Output.outputDefn
 
-  // ---- Input rendering ----
+  // -------- Internal accessors -----------------------------------------
+
+  protected def name: String = method.name
+
+  // -------- Input rendering --------------------------------------------
   protected object Input {
-    private def typespaceId: DTOId =
+    def typespaceId: DTOId =
       DTOId(sp.basePath, DomainNameMangling.methodToInputName(method))
 
     def typespaceType: ScalaType = ctx.conv.toScala(typespaceId)
 
     private def fields: List[ScalaField] = {
-      // Resolve the pre-synthesized input ephemeral DTO from flattenedStructs.
-      // EphemeralSynthesizer (Phase 7) creates a DTOId(svc, "<Name>Input") for
-      // every RPCMethod and registers a FlatStruct under that id.
       val flat = ctx.domain.flattenedStructs.getOrElse(
         typespaceId,
         FlatStruct(typespaceId, List.empty, List.empty, List.empty),
@@ -218,13 +280,36 @@ final case class DomainServiceMethodProduct(
       scalaStruct.all
     }
 
-    def signature: List[Term.Param] = {
+    /** Comma-separated rendered `Term.Param` list — e.g. `firstName: String, secondName: String`. */
+    def signatureText: String = {
       import izumi.idealingua.translator.toscala.types.ScalaField._
-      fields.toParams
+      val params = fields.toParams
+      params.map(DomainScalaParseBack.renderS30(_)).mkString(", ")
     }
 
-    def sigCall: List[Term.Select]      = fields.map(f => q"input.${f.name}")
-    def sigDirectCall: List[Term.Name]  = fields.map(_.name)
+    /** `, $signatureText` when non-empty, else "". Used at the
+      * `def $name(ctx: $ctxT$signaturePrefix)` server-side splice site so
+      * `(ctx: C)` does not pick up a trailing `, ` for zero-arg methods. */
+    def signaturePrefix: String = {
+      val s = signatureText
+      if (s.isEmpty) "" else s", $s"
+    }
+
+    /** Comma-separated `input.<field>` accessor list — server call site. */
+    def sigCallText: String =
+      fields.map(f => s"input.${DomainScalaParseBack.renderS30(f.name)}").mkString(", ")
+
+    /** `, $sigCallText` when non-empty, else "". Used at the
+      * `_service.$name(ctx$sigCallPrefix)` server-side wrapped call site
+      * so `(ctx)` does not pick up a trailing `, ` for zero-arg methods. */
+    def sigCallPrefix: String = {
+      val s = sigCallText
+      if (s.isEmpty) "" else s", $s"
+    }
+
+    /** Comma-separated bare field-name list — client constructor call site. */
+    def sigDirectCallText: String =
+      fields.map(f => DomainScalaParseBack.renderS30(f.name)).mkString(", ")
 
     def inputDefn: List[Defn] = {
       val flat = ctx.domain.flattenedStructs.getOrElse(
@@ -238,41 +323,61 @@ final case class DomainServiceMethodProduct(
       )
       val scalaStruct = DomainScalaStruct.scalaStruct(typespaceId, flat, supers, ctx.conv, ctx.domain)
       val composite   = new DomainCompositeStructure(ctx, scalaStruct)
-      // Use a stub legacy DTO via ClassSource.CsDTO — the composite renderer
-      // only matches on type, never reads the inner field, at the
-      // pre-extension layer.
       val stub = stubDto(typespaceId)
       val base = ctx.compositeRenderer.defns(composite, ClassSource.CsDTO(stub)).asInstanceOf[CogenProduct[Defn.Class]]
       withCirce(base, typespaceId, flat, unwrap = false)
     }
 
-    def defnEncoder: Defn.Def =
+    def defnEncoder: TextTree[ScalaRefHandle] =
       q"""def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
-            case IRTReqBody(value: Input) => value.asJson
-          }"""
+         |  case IRTReqBody(value: Input) =>
+         |    value.asJson
+         |}""".stripMargin
 
-    def defnDecoder: Defn.Def =
-      q"""def decodeRequest[Or[+_, +_] : IRTIO2]: PartialFunction[IRTJsonBody, Or[IRTDecodingFailure, IRTReqBody]] = {
-            case IRTJsonBody(m, packet) if m == id => this.decoded[Or, IRTReqBody](packet.as[Input].map(v => IRTReqBody(v)))
-          }
-       """
+    def defnDecoder: TextTree[ScalaRefHandle] =
+      q"""def decodeRequest[Or[+_, +_]: IRTIO2]: PartialFunction[IRTJsonBody, Or[IRTDecodingFailure, IRTReqBody]] = {
+         |  case IRTJsonBody(m, packet) if m == id =>
+         |    this.decoded[Or, IRTReqBody](packet.as[Input].map(v => IRTReqBody(v)))
+         |}""".stripMargin
   }
 
-  // ---- Output rendering ----
+  // -------- Output rendering -------------------------------------------
   protected object Output {
     private def typename: String = DomainNameMangling.methodToOutputName(method)
 
-    def outputType: Type = method.signature.output match {
+    /** Bare name of the wrapped output type (DTO or ADT) for use as the
+      * suffix in `<ServiceBase>.<OutputName>`. */
+    def wrappedTypespaceName: String = typename
+
+    def outputType: TextTree[ScalaRefHandle] = method.signature.output match {
       case DefMethod.Output.Void() =>
-        t"Just[Unit]"
+        q"Just[Unit]"
       case DefMethod.Output.Singular(tid) =>
-        val scalaType = ctx.conv.toScala(tid)
-        t"Just[${scalaType.typeFull}]"
+        val target = TextTree.value[ScalaRefHandle](ScalaRefHandle.TypeFull(tid))
+        q"Just[$target]"
       case DefMethod.Output.Struct(_) | DefMethod.Output.Algebraic(_) =>
-        val aliasType: ScalaType = sp.svcMethods.within(name).within("Output")
-        t"Just[${aliasType.typeFull}]"
+        val aliasType = sp.svcMethods.within(name).within("Output").typeFull.toString
+        q"Just[$aliasType]"
       case DefMethod.Output.Alternative(s, f) =>
-        t"Or[${render_Id_SHIM(f, negativeType.typeFull)}, ${render_Id_SHIM(s, positiveType.typeFull)}]"
+        val negTpe = renderIdShimNeg(f)
+        val posTpe = renderIdShimPos(s)
+        q"Or[$negTpe, $posTpe]"
+    }
+
+    private def renderIdShimNeg(out: DefMethod.Output.NonAlternativeOutput): TextTree[ScalaRefHandle] = out match {
+      case o: DefMethod.Output.Singular =>
+        TextTree.value[ScalaRefHandle](ScalaRefHandle.TypeFull(o.typeId))
+      case _ =>
+        val tpe = ctx.conv.toScala(wrappedTypespaceTypeId).within(negativeBranchTypeName).typeFull.toString
+        q"$tpe"
+    }
+
+    private def renderIdShimPos(out: DefMethod.Output.NonAlternativeOutput): TextTree[ScalaRefHandle] = out match {
+      case o: DefMethod.Output.Singular =>
+        TextTree.value[ScalaRefHandle](ScalaRefHandle.TypeFull(o.typeId))
+      case _ =>
+        val tpe = ctx.conv.toScala(wrappedTypespaceTypeId).within(positiveBranchTypeName).typeFull.toString
+        q"$tpe"
     }
 
     private def positiveId: String = DomainNameMangling.methodToPositiveTypeName(method)
@@ -284,34 +389,29 @@ final case class DomainServiceMethodProduct(
     private def adtId: AdtId = AdtId(sp.basePath, typename)
     private def dtoId: DTOId = DTOId(sp.basePath, typename)
 
-    def positiveBranchType: ScalaType =
-      wrappedTypespaceType.within(DomainNameMangling.toPositiveBranchName(adtId))
+    def positiveBranchTypeName: String = DomainNameMangling.toPositiveBranchName(adtId)
+    def negativeBranchTypeName: String = DomainNameMangling.toNegativeBranchName(adtId)
 
-    def negativeBranchType: ScalaType =
-      wrappedTypespaceType.within(DomainNameMangling.toNegativeBranchName(adtId))
-
-    def wrappedTypespaceType: ScalaType = {
-      val id = method.signature.output match {
-        case DefMethod.Output.Struct(_) | DefMethod.Output.Void() | DefMethod.Output.Singular(_) =>
-          dtoId
-        case DefMethod.Output.Algebraic(_) | DefMethod.Output.Alternative(_, _) =>
-          adtId
-      }
-      ctx.conv.toScala(id)
+    def wrappedTypespaceTypeId: izumi.idealingua.model.common.TypeId = method.signature.output match {
+      case DefMethod.Output.Struct(_) | DefMethod.Output.Void() | DefMethod.Output.Singular(_) =>
+        dtoId
+      case DefMethod.Output.Algebraic(_) | DefMethod.Output.Alternative(_, _) =>
+        adtId
     }
 
     def outputDefn: List[Defn] = renderOutput(typename, method.signature.output)
 
-    def defnEncoder: Defn.Def =
+    def defnEncoder: TextTree[ScalaRefHandle] =
       q"""def encodeResponse: PartialFunction[IRTResBody, IRTJson] = {
-            case IRTResBody(value: Output) => value.asJson
-          }"""
+         |  case IRTResBody(value: Output) =>
+         |    value.asJson
+         |}""".stripMargin
 
-    def defnDecoder: Defn.Def =
-      q"""def decodeResponse[Or[+_, +_] : IRTIO2]: PartialFunction[IRTJsonBody, Or[IRTDecodingFailure, IRTResBody]] = {
-            case IRTJsonBody(m, packet) if m == id =>
-              decoded[Or, IRTResBody](packet.as[Output].map(v => IRTResBody(v)))
-          }"""
+    def defnDecoder: TextTree[ScalaRefHandle] =
+      q"""def decodeResponse[Or[+_, +_]: IRTIO2]: PartialFunction[IRTJsonBody, Or[IRTDecodingFailure, IRTResBody]] = {
+         |  case IRTJsonBody(m, packet) if m == id =>
+         |    decoded[Or, IRTResBody](packet.as[Output].map(v => IRTResBody(v)))
+         |}""".stripMargin
 
     private def renderOutput(typename: String, out: DefMethod.Output): List[Defn] = out match {
       case DefMethod.Output.Struct(_) | DefMethod.Output.Void() | DefMethod.Output.Singular(_) =>
@@ -346,7 +446,7 @@ final case class DomainServiceMethodProduct(
           case Some(adt: NewTypeDef.Adt) => withAdtCirce(adt)
           case _                          => List.empty
         }
-        topAdt ++ render_SHIM(positiveId, success) ++ render_SHIM(negativeId, failure)
+        topAdt ++ renderShim(positiveId, success) ++ renderShim(negativeId, failure)
     }
 
     /** IMPL-7a.2-Fi1: service-output ADTs (`Output.Algebraic` and
@@ -377,14 +477,9 @@ final case class DomainServiceMethodProduct(
       }
     }
 
-    private def render_SHIM(typename: String, out: DefMethod.Output): scala.collection.immutable.Seq[Defn] = out match {
+    private def renderShim(typename: String, out: DefMethod.Output): List[Defn] = out match {
       case _: DefMethod.Output.Singular => List.empty
       case o                            => renderOutput(typename, o)
-    }
-
-    def render_Id_SHIM(s: DefMethod.Output.NonAlternativeOutput, typeFull: Type): Type = s match {
-      case o: DefMethod.Output.Singular => ctx.conv.toScala(o.typeId).typeFull
-      case _                            => typeFull
     }
   }
 

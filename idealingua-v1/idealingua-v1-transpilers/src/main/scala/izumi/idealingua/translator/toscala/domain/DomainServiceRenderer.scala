@@ -2,17 +2,31 @@ package izumi.idealingua.translator.toscala.domain
 
 import _root_.io.circe.{DecodingFailure, Json}
 import izumi.functional.bio.IO2
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.il.ast.typed.DefMethod.RPCMethod
 import izumi.idealingua.translator.toscala.products.CogenProduct.CogenServiceProduct
 import izumi.idealingua.translator.toscala.products.RenderableCogenProduct
 import izumi.idealingua.translator.toscala.types.runtime
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
-import scala.meta._
-
 /** Renders a new-IR `TypeDef.Service` (or `TypeDef.Buzzer` via the
   * service-shaped projection) as the same scala.meta `Defn`s the legacy
   * `ServiceRenderer.renderService` produces (modulo the extension chain).
+  *
+  * F-TextTree M7: ported off `scala.meta` quasiquotes onto
+  * `TextTree[ScalaRefHandle]` composition + `.mapRender(resolver.resolve)`
+  * at the renderer boundary. Each of the 7 top-level outputs (server +
+  * client traits, server + client wrapped class/companion pairs, methods
+  * + codecs companion objects) is assembled as a `TextTree`, lowered to
+  * `String` via `.mapRender(resolver.resolve)`, then re-parsed to the
+  * expected `Defn` shape via `DomainScalaParseBack`.
+  *
+  * Per-method splice points (server / client decls, wrapped server / client
+  * bodies, method-signature objects, codec objects, method registrations,
+  * codec registrations) are composed in `DomainServiceMethodProduct`, which
+  * exposes each as a `TextTree[ScalaRefHandle]`. Splice ordering matches
+  * the legacy renderer (`decls.map(_.defnServer)`, etc.) byte-for-byte.
   *
   * IMPL-7a.2 Phase B M4 (relaxed parity): emits server / client traits,
   * wrapped client / server classes, methods + codecs objects — same shape
@@ -28,6 +42,8 @@ import scala.meta._
   */
 final class DomainServiceRenderer(ctx: DomainSTContext) {
 
+  private val resolver = new DomainScalaTextResolver(ctx.conv)
+
   def renderService(svc: NewTypeDef.Service): RenderableCogenProduct =
     renderImpl(DomainServiceContext.forService(ctx, svc))
 
@@ -38,84 +54,128 @@ final class DomainServiceRenderer(ctx: DomainSTContext) {
     val decls = c.methods.collect { case rpc: RPCMethod => rpc }
       .map(DomainServiceMethodProduct(ctx, c, _))
 
-    val qqServer =
-      q"""trait ${c.svcServerTpe.typeName}[Or[+_, +_], ${c.Ctx.p}] {
-            type Just[+T] = Or[Nothing, T]
-            ..${decls.map(_.defnServer)}
-          }"""
+    val ctxT  = DomainScalaParseBack.renderS30(c.Ctx.t)
+    val ctxP  = DomainScalaParseBack.renderS30(c.Ctx.p)
+    val ft    = DomainScalaParseBack.renderS30(c.F.t)
+    // Pre-rendered scaffolding fragments — the legacy `${...}` interpolations
+    // bottom out in scala.meta tree text; we splice the `.syntax` form.
+    val irtDispatcherText = ctx.rt.IRTDispatcher.parameterize(List(c.F.t)).typeFull.toString
+    val irtServiceIdName   = ctx.rt.IRTServiceId.typeName.toString
+    val irtServiceIdTerm   = ctx.rt.IRTServiceId.termName.toString
+    val irtMethodIdName    = ctx.rt.IRTMethodId.typeName.toString
+    val irtWrappedClientInit = ctx.rt.IRTWrappedClient.typeFull.toString
+    val svcClientInitFt    = c.svcClientTpe.parameterize(List(c.F.t)).typeFull.toString
+    val methodImportText   = DomainScalaParseBack.renderS30(c.methodImport)
 
-    val qqClient =
-      q"""trait ${c.svcClientTpe.typeName}[Or[+_, +_]] {
-            type Just[+T] = Or[Nothing, T]
-            ..${decls.map(_.defnClient)}
-          }"""
+    val svcServer        = c.svcServerTpe.typeName.toString
+    val svcClient        = c.svcClientTpe.typeName.toString
+    val svcWrappedClient = c.svcWrappedClientTpe.typeName.toString
+    val svcWrappedClientTerm = c.svcWrappedClientTpe.termName.toString
+    val svcWrappedServer = c.svcWrappedServerTpe.typeName.toString
+    val svcWrappedServerTerm = c.svcWrappedServerTpe.termName.toString
+    val svcMethodsTerm   = c.svcMethods.termName.toString
+    val svcCodecsTerm    = c.svcCodecs.termName.toString
+    val typeNameLit      = s""""${c.typeName}""""
 
-    val qqClientWrapped =
-      q"""class ${c.svcWrappedClientTpe.typeName}[Or[+_, +_] : IRTIO2](_dispatcher: ${ctx.rt.IRTDispatcher.parameterize(List(c.F.t)).typeFull})
-               extends ${c.svcClientTpe.parameterize(List(c.F.t)).init()} {
-               final val _F: IRTIO2[${c.F.t}] =  implicitly
-               ${c.methodImport}
+    val serverDecls: Seq[TextTree[ScalaRefHandle]] = decls.map(_.defnServer)
+    val clientDecls: Seq[TextTree[ScalaRefHandle]] = decls.map(_.defnClient)
+    val clientWrappedDecls: Seq[TextTree[ScalaRefHandle]] = decls.map(_.defnClientWrapped)
+    val serverWrappedDecls: Seq[TextTree[ScalaRefHandle]] = decls.map(_.defnServerWrapped)
+    val methodSigDecls: Seq[TextTree[ScalaRefHandle]] = decls.map(_.defnMethod)
+    val codecDecls: Seq[TextTree[ScalaRefHandle]] = decls.map(_.defnCodec)
+    val codecRegs: TextTree[ScalaRefHandle] =
+      decls.map(_.defnCodecRegistration).join(", ")
+    val methodRegs: TextTree[ScalaRefHandle] =
+      decls.map(_.defnMethodRegistration).join(", ")
 
-               ..${decls.map(_.defnClientWrapped)}
-          }"""
+    // The per-method I/O DTOs + their Circe / AnyVal / Cast augmentation
+    // come back as pre-built `Defn` lists from `DomainServiceMethodProduct.defStructs`.
+    // Splicing them into the methods-object as pre-rendered text via
+    // `renderS30(_)` triggers a scalameta Scala 3 printer quirk: when the
+    // parsed object body mixes a short `final case class … extends …` (no
+    // body) with a following trait, the printer emits the trait at column
+    // 0 rather than at the object's body indent. The robust path is to
+    // build the methods object skeleton WITHOUT defStructs, parse-back to
+    // a `Defn.Object`, then append the pre-built defStructs via
+    // `appendDefinitions`. This skips the text round-trip for the
+    // already-Defn material and preserves the legacy printer behaviour
+    // exactly. */
+    val defStructs: List[scala.meta.Defn] = decls.flatMap(_.defStructs)
 
-    val qqClientWrappedCompanion =
-      q"""
-         object ${c.svcWrappedClientTpe.termName} extends ${ctx.rt.IRTWrappedClient.init()} {
-           val allCodecs: Map[${ctx.rt.IRTMethodId.typeName}, IRTCirceMarshaller] = {
-             Map(..${decls.map(_.defnCodecRegistration)})
-           }
-         }
-       """
+    val serverTree: TextTree[ScalaRefHandle] =
+      q"""trait $svcServer[$ft[+_, +_], $ctxP] {
+         |  type Just[+T] = $ft[Nothing, T]
+         |  ${serverDecls.joinN().shift(2).trim}
+         |}""".stripMargin
 
-    val qqServerWrapped =
-      q"""class ${c.svcWrappedServerTpe.typeName}[Or[+_, +_] : IRTIO2, ${c.Ctx.p}](
-              _service: ${c.svcServerTpe.typeName}[${c.F.t}, ${c.Ctx.t}]
-            )
-               extends IRTWrappedService[${c.F.t}, ${c.Ctx.t}] {
-            final val _F: IRTIO2[${c.F.t}] = implicitly
+    val clientTree: TextTree[ScalaRefHandle] =
+      q"""trait $svcClient[$ft[+_, +_]] {
+         |  type Just[+T] = $ft[Nothing, T]
+         |  ${clientDecls.joinN().shift(2).trim}
+         |}""".stripMargin
 
-            final val serviceId: ${ctx.rt.IRTServiceId.typeName} = ${c.svcMethods.termName}.serviceId
+    val clientWrappedTree: TextTree[ScalaRefHandle] =
+      q"""class $svcWrappedClient[$ft[+_, +_]: IRTIO2](_dispatcher: $irtDispatcherText) extends $svcClientInitFt {
+         |  final val _F: IRTIO2[$ft] = implicitly
+         |  $methodImportText
+         |  ${clientWrappedDecls.joinN().shift(2).trim}
+         |}""".stripMargin
 
-            val allMethods: Map[${ctx.rt.IRTMethodId.typeName}, IRTMethodWrapper[${c.F.t}, ${c.Ctx.t}]] = {
-              Seq[IRTMethodWrapper[${c.F.t}, ${c.Ctx.t}]](..${decls.map(_.defnMethodRegistration)})
-                .map(m => m.signature.id -> m)
-                .toMap
-            }
+    val clientWrappedCompanionTree: TextTree[ScalaRefHandle] =
+      q"""object $svcWrappedClientTerm extends $irtWrappedClientInit {
+         |  val allCodecs: Map[$irtMethodIdName, IRTCirceMarshaller] = {
+         |    Map($codecRegs)
+         |  }
+         |}""".stripMargin
 
-            ..${decls.map(_.defnServerWrapped)}
-          }"""
+    val serverWrappedTree: TextTree[ScalaRefHandle] =
+      q"""class $svcWrappedServer[$ft[+_, +_]: IRTIO2, $ctxP](_service: $svcServer[$ft, $ctxT]) extends IRTWrappedService[$ft, $ctxT] {
+         |  final val _F: IRTIO2[$ft] = implicitly
+         |  final val serviceId: $irtServiceIdName = $svcMethodsTerm.serviceId
+         |  val allMethods: Map[$irtMethodIdName, IRTMethodWrapper[$ft, $ctxT]] = {
+         |    Seq[IRTMethodWrapper[$ft, $ctxT]]($methodRegs).map(m => m.signature.id -> m).toMap
+         |  }
+         |  ${serverWrappedDecls.joinN().shift(2).trim}
+         |}""".stripMargin
 
-    val qqServerWrappedCompanion =
-      q"""
-         object ${c.svcWrappedServerTpe.termName} {
-         }
-       """
+    // Legacy emits `object $svcWrappedServerTerm { }`. The empty-brace pitfall
+    // (M5) applies — parse-back preserves source-level `{}` whereas the legacy
+    // printer drops them. Emit the bare object form so the parsed Defn
+    // re-prints byte-equal to legacy.
+    val serverWrappedCompanionTree: TextTree[ScalaRefHandle] =
+      q"""object $svcWrappedServerTerm"""
 
-    val qqServiceMethods =
-      q"""
-         object ${c.svcMethods.termName} {
-           final val serviceId: ${ctx.rt.IRTServiceId.typeName} = ${ctx.rt.IRTServiceId.termName}(${Lit.String(c.typeName)})
+    val methodsObjTree: TextTree[ScalaRefHandle] =
+      q"""object $svcMethodsTerm {
+         |  final val serviceId: $irtServiceIdName = $irtServiceIdTerm($typeNameLit)
+         |  ${methodSigDecls.joinN().shift(2).trim}
+         |}""".stripMargin
 
-           ..${decls.map(_.defnMethod)}
-           ..${decls.flatMap(_.defStructs)}
-         }
-       """
+    val codecsObjTree: TextTree[ScalaRefHandle] =
+      q"""object $svcCodecsTerm {
+         |  ${codecDecls.joinN().shift(2).trim}
+         |}""".stripMargin
 
-    val qqServiceCodecs =
-      q"""
-         object ${c.svcCodecs.termName} {
-          ..${decls.map(_.defnCodec)}
-         }
-       """
+    val serverDefn          = DomainScalaParseBack.parseTrait(serverTree.mapRender(resolver.resolve))
+    val clientDefn          = DomainScalaParseBack.parseTrait(clientTree.mapRender(resolver.resolve))
+    val clientWrappedDefn   = DomainScalaParseBack.parseClass(clientWrappedTree.mapRender(resolver.resolve))
+    val clientWrappedCompanionDefn = DomainScalaParseBack.parseObject(clientWrappedCompanionTree.mapRender(resolver.resolve))
+    val serverWrappedDefn   = DomainScalaParseBack.parseClass(serverWrappedTree.mapRender(resolver.resolve))
+    val serverWrappedCompanionDefn = DomainScalaParseBack.parseObject(serverWrappedCompanionTree.mapRender(resolver.resolve))
+    val methodsObjDefn      = {
+      val skeleton = DomainScalaParseBack.parseObject(methodsObjTree.mapRender(resolver.resolve))
+      import izumi.idealingua.translator.toscala.tools.ScalaMetaTools._
+      skeleton.appendDefinitions(defStructs: _*)
+    }
+    val codecsObjDefn       = DomainScalaParseBack.parseObject(codecsObjTree.mapRender(resolver.resolve))
 
     CogenServiceProduct(
-      qqServer,
-      qqClient,
-      CogenServiceProduct.Pair(qqServerWrapped, qqServerWrappedCompanion),
-      CogenServiceProduct.Pair(qqClientWrapped, qqClientWrappedCompanion),
-      qqServiceMethods,
-      qqServiceCodecs,
+      serverDefn,
+      clientDefn,
+      CogenServiceProduct.Pair(serverWrappedDefn, serverWrappedCompanionDefn),
+      CogenServiceProduct.Pair(clientWrappedDefn, clientWrappedCompanionDefn),
+      methodsObjDefn,
+      codecsObjDefn,
       List(
         runtime.Import.from(runtime.Pkg.language, "higherKinds"),
         runtime.Import.from(runtime.Pkg.of[IO2[Nothing]], "IO2", Some("IRTIO2")),
