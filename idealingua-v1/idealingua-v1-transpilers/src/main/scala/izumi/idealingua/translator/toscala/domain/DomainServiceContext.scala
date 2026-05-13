@@ -1,12 +1,10 @@
 package izumi.idealingua.translator.toscala.domain
 
 import izumi.idealingua.model.common.TypeId.{BuzzerId, ServiceId}
-import izumi.idealingua.model.common.{DomainId, IndefiniteId, TypeName, TypePath}
+import izumi.idealingua.model.common.{IndefiniteId, TypeName, TypePath}
 import izumi.idealingua.model.il.ast.typed.{DefMethod, NodeMeta}
 import izumi.idealingua.translator.toscala.types.ScalaType
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
-
-import scala.meta._
 
 /** Per-service rendering context for the new-IR Service/Buzzer renderer.
   *
@@ -20,6 +18,14 @@ import scala.meta._
   * `Buzzer.asService` bridge. Per F16, `Buzzer` and `Service` share the same
   * structural shape (id + method list), so the renderer body is identical;
   * only the `TypeId` constructor differs.
+  *
+  * F-TextTree M8e: scaffolder ported off `scala.meta`. The renderer-facing
+  * splice slots (`IO2.n`, `F.{t, p}`, `Ctx.{t, p}`, `methodImport`) now carry
+  * pre-rendered Scala 3 source text. Callers splice the strings verbatim
+  * (no `renderS30` boundary call). The legacy `q"_F"` / `t"Or"` /
+  * `tparam"Or[?, ?]"` / `Import(...)` shapes rendered to the same literal
+  * tokens under `dialect(Scala30).syntax`; emitting those tokens directly
+  * removes the round-trip without behavioural change.
   */
 final case class DomainServiceContext(
   ctx: DomainSTContext,
@@ -29,27 +35,33 @@ final case class DomainServiceContext(
 ) {
 
   object IO2 {
-    val n: Term.Name = q"_F"
+    val n: String = "_F"
   }
 
   object F {
-    val t: Type.Name      = t"Or"
-    val p: Type.Param     = tparam"Or[?, ?]"
+    val t: String = "Or"
+    // Type-param syntax form for `[Or[+_, +_]]` splice sites. The legacy
+    // `tparam"Or[?, ?]"` rendered to `Or[+_, +_]` under Scala 3 dialect
+    // because the existential `?` lowers to a variant wildcard in the
+    // type-param position.
+    val p: String = "Or[+_, +_]"
   }
 
   object Ctx {
-    val t: Type.Name  = t"C"
-    val p: Type.Param = tparam"C"
+    val t: String = "C"
+    val p: String = "C"
   }
 
   val typeName: TypeName = serviceId.name
 
-  private val pkg: Term.Ref = serviceId.domain.toPackage.foldLeft(Term.Name("_root_"): Term.Ref) {
-    case (acc, v) => Term.Select(acc, Term.Name(v))
-  }
+  private val pkg: List[String] = "_root_" :: serviceId.domain.toPackage.toList
 
-  val methodImport: Import =
-    Import(List(Importer(pkg, List(Importee.Rename(Name(typeName), Name("_M"))))))
+  /** `import _root_.<pkg>.<TypeName> as _M` (Scala 3 dialect form). The
+    * legacy `Import(List(Importer(pkgTerm, List(Importee.Rename(_, _)))))`
+    * tree printed identically under the Scala 3 dialect (`as` renaming,
+    * no braces for a single rename importee). */
+  val methodImport: String =
+    s"import ${pkg.mkString(".")}.${typeName} as _M"
 
   val basePath: TypePath = TypePath(serviceId.domain, Seq(typeName))
 

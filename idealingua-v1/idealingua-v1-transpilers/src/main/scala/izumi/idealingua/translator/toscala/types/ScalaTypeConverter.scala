@@ -13,12 +13,19 @@ import scala.meta._
 import scala.reflect.{ClassTag, classTag}
 
 class ScalaTypeConverter(domain: DomainId) {
+  // F-TextTree M8e: Scala 3 dialect handle for keyword-safe field-name
+  // rendering. `scala.meta`'s implicit `XtensionDialectApply` extends
+  // `Dialect` with an `apply[T <: Tree](tree: T): T`, but the implicit
+  // conversion needs an explicit method reference under Scala 2 when the
+  // dialect is referenced inline. Storing it in a `val` materialises the
+  // wrapper exactly like `DomainScalaParseBack.dialect`.
+  private val dialect = scala.meta.dialects.Scala30
+
   protected def toScalaField(field: ExtendedField): ScalaField = {
-    ScalaField(
-      Term.Name(field.field.name),
-      ScalaTypeConverter.this.toScala(field.field.typeId).typeFull,
-      field,
-    )
+    val name     = field.field.name
+    val nameSafe = dialect(Term.Name(name)).syntax
+    val tpe      = ScalaTypeConverter.this.toScala(field.field.typeId).typeFull.toString
+    ScalaField(name, nameSafe, tpe, field)
   }
 
   implicit class StructOps(fields: PlainStruct) {

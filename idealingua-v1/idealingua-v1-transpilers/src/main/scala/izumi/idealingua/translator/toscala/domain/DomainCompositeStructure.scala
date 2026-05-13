@@ -6,8 +6,7 @@ import izumi.idealingua.model.il.ast.typed.Interfaces
 import izumi.idealingua.model.typespace.structures.{ConverterDef, Struct}
 import izumi.idealingua.translator.toscala.types.{ScalaStruct, ScalaType}
 
-import scala.meta._
-import scala.annotation.nowarn
+import scala.meta.Term
 
 /** Wraps a `ScalaStruct` (from `DomainScalaStruct.scalaStruct`) with the
   * companion-object scaffolding (`decls`, `names`, `constructors`,
@@ -19,14 +18,25 @@ import scala.annotation.nowarn
   * `StructuralQueriesImpl.scala:128-165`. Aliases/dealiasing are read off
   * `domain.aliases` rather than `ts.dealias(...)`.
   *
-  * Under relaxed parity: the M3 contract is structural correctness, not
-  * byte equality with legacy. The constructor list is computed best-effort
-  * — synthesized DTO mirrors (`defnId(dto)`) that the legacy
-  * `interfaceEphemeralsReversed` map carries are not reproduced (the new
-  * IR's `ephemeralOwner` map is consulted for ephemeral detection, but the
-  * legacy mirror-DTO synthesis is a separate concern from M3 scope).
+  * F-TextTree M8e: scaffolder ported off `scala.meta`. `decls`, `names`,
+  * and `constructors` now return `List[String]` (pre-rendered Scala 3
+  * source fragments). Consumers (composite + interface renderers, service
+  * method product) splice the strings verbatim instead of feeding each
+  * fragment through `DomainScalaParseBack.renderS30`. The constructor body
+  * shapes (`def apply(...) = new T(...)` with the optional null-check
+  * `assert((a) && (b))` over non-builtin source params) match the legacy
+  * `q"..."`-quasiquote output byte-for-byte:
+  *   - assertion: one operand → `assert(x)`; multi → `assert((a) && (b))`
+  *     with operand parens (scalameta-printer parity, surfaced by
+  *     `idltest/ast/TAppNode.scala:42`).
+  *   - assignment ordering preserves the legacy fold:
+  *     `assertions.tail.foldLeft(assertions.head)((a, acc) => acc && a)`
+  *     puts the current element first — for fields `[typeinfo, appnode]`
+  *     the assertion becomes `appnode && typeinfo`.
+  *   - target / source field names are rendered through
+  *     `dialect(Scala30)(Term.Name(_)).syntax` for Scala-3 keyword
+  *     escape, matching the M8c cast-extension pattern.
   */
-@nowarn("msg=Unused import")
 final class DomainCompositeStructure(
   ctx: DomainSTContext,
   val fields: ScalaStruct,
@@ -37,12 +47,13 @@ final class DomainCompositeStructure(
 
   val composite: Interfaces = fields.fields.superclasses.interfaces
 
-  val decls: List[Term.Param] = fields.all.toParams
+  /** Field declaration list (`name: Type` strings, Scala 3 keyword-safe). */
+  val decls: List[String] = fields.all.toParams
 
-  val names: List[Term.Name] = fields.all.toNames
+  /** Bare field-name list (Scala 3 keyword-safe). */
+  val names: List[String] = fields.all.toNames
 
-  val constructors: List[Defn.Def] = {
-    import izumi.fundamentals.collections.IzCollections._
+  val constructors: List[String] = {
     val struct = fields.fields
 
     inlinedConstructors(struct)
@@ -53,12 +64,15 @@ final class DomainCompositeStructure(
       }
       .distinctBy(_._2.types)
       .map {
-        case (_, constructorSignature, fullConstructorCode) =>
-          val instantiator = q"new ${init"${t.typeFull}(..$fullConstructorCode)"}"
-          q"""def apply(..${constructorSignature.params}): ${t.typeFull} = {
-                ..${constructorSignature.assertion}
-                $instantiator
-              }"""
+        case (_, sig, assignments) =>
+          val params = sig.params.mkString(", ")
+          val tFull  = t.typeFull.toString
+          val ctor   = s"new $tFull(${assignments.mkString(", ")})"
+          val assertionLine = sig.assertion
+          val body   =
+            if (assertionLine.isEmpty) s"  $ctor"
+            else s"  $assertionLine\n  $ctor"
+          s"def apply($params): $tFull = {\n$body\n}"
       }
   }
 
@@ -125,37 +139,46 @@ final class DomainCompositeStructure(
   }
 
   // --- ported from ScalaTranslationTools.makeParams / makeConstructor ---
+  // F-TextTree M8e: returns Strings instead of `scala.meta.Term.Param` /
+  // `Term.ApplyInfix` trees.
   private def makeParams(t: ConverterDef): Params = {
-    val out = t.outerParams.map { f =>
+    final case class Slot(field: SigParamSource, source: TypeId, nameSafe: String, tpe: String)
+    val out: List[Slot] = t.outerParams.map { f =>
       val source = f.sourceType match {
         case s: DTOId => defnId(s)
         case o        => o
       }
       val scalaType = ctx.conv.toScala(source)
-      val name      = Term.Name(f.sourceName)
-      (f, source, (name, scalaType.typeFull))
+      val nameSafe  = DomainScalaParseBack.renderS30(Term.Name(f.sourceName))
+      Slot(f, source, nameSafe, scalaType.typeFull.toString)
     }
 
-    val assertions = out.map {
-      case (field, _, (name, _)) =>
-        val dealiased = dealias(field.sourceType)
-        if (!dealiased.isInstanceOf[Builtin]) {
-          List(q"$name.asInstanceOf[_root_.scala.AnyRef] ne null")
-        } else {
-          List.empty
-        }
+    val assertions: List[String] = out.flatMap { slot =>
+      val dealiased = dealias(slot.field.sourceType)
+      if (!dealiased.isInstanceOf[Builtin]) {
+        List(s"${slot.nameSafe}.asInstanceOf[_root_.scala.AnyRef] ne null")
+      } else {
+        List.empty
+      }
     }
 
-    Params(out.map(_._3).toParams, out.map(_._2), assertions.flatten)
+    Params(
+      params     = out.map(s => s"${s.nameSafe}: ${s.tpe}"),
+      types      = out.map(_.source),
+      assertions = assertions,
+    )
   }
 
-  private def makeConstructor(t: ConverterDef): List[Term.Assign] =
+  private def makeConstructor(t: ConverterDef): List[String] =
     t.allFields.map(toAssignment)
 
-  private def toAssignment(f: SigParam): Term.Assign = {
+  private def toAssignment(f: SigParam): String = {
+    val tgt = DomainScalaParseBack.renderS30(Term.Name(f.targetFieldName))
+    val src = DomainScalaParseBack.renderS30(Term.Name(f.source.sourceName))
     f.sourceFieldName match {
       case Some(sourceFieldName) =>
-        q""" ${Term.Name(f.targetFieldName)} = ${Term.Name(f.source.sourceName)}.${Term.Name(sourceFieldName)}  """
+        val sFn = DomainScalaParseBack.renderS30(Term.Name(sourceFieldName))
+        s"$tgt = $src.$sFn"
 
       case None =>
         val sourceType = f.source.sourceType
@@ -166,9 +189,10 @@ final class DomainCompositeStructure(
         }
 
         if (mirror == sourceType) {
-          q""" ${Term.Name(f.targetFieldName)} = ${Term.Name(f.source.sourceName)}  """
+          s"$tgt = $src"
         } else {
-          q""" ${Term.Name(f.targetFieldName)} = ${ctx.conv.toScala(sourceType).termFull}(${Term.Name(f.source.sourceName)})"""
+          val ctor = ctx.conv.toScala(sourceType).termFull.toString
+          s"$tgt = $ctor($src)"
         }
     }
   }
@@ -180,14 +204,49 @@ final class DomainCompositeStructure(
   }
 }
 
-final case class Params(params: List[Term.Param], types: List[TypeId], assertions: List[Term.ApplyInfix]) {
-  def assertion: List[Term] = {
-    if (assertions.isEmpty) List.empty
+/** Constructor signature carrier.
+  *
+  * F-TextTree M8e: `params` and `assertions` are now String fragments
+  * (Scala-3 rendered source text). `assertion` joins them per the legacy
+  * `q"$acc && $a"` foldLeft shape — current element on the left, previous
+  * accumulator on the right — so the printed text matches the legacy
+  * scalameta-printer output byte-for-byte. Operand parens are added to
+  * each `ne null` operand when there is more than one assertion, matching
+  * the scalameta printer's disambiguation convention for
+  * `Term.ApplyInfix(_, &&, _)` over `Term.ApplyInfix(_, ne, _)` (same
+  * pattern as M8c's `DomainCastDownExpandExtension`).
+  */
+final case class Params(params: List[String], types: List[TypeId], assertions: List[String]) {
+  /** Rendered assertion line (empty string when no assertions).
+    *
+    * F-TextTree M8e: mirrors the legacy
+    * `assertions.tail.foldLeft(assertions.head)((a, acc) => q"$acc && $a")`
+    * fold. Each operand is a `Term.ApplyInfix(_, ne, _)`; the scalameta
+    * printer parenthesizes each `ne` operand (`(x ne null)`) under an
+    * outer `&&`. For 3+ operands the legacy AST is right-grouped
+    * (`x2 && (x1 && x0)`) because each fold step nests the accumulator
+    * on the right side of `&&`; the printer parenthesizes the inner
+    * `&&` because its default-parse would be left-associative.
+    *
+    * We replicate the right-grouped layout by walking the tail in order,
+    * wrapping the running accumulator in parens for size > 1.
+    */
+  def assertion: String = {
+    if (assertions.isEmpty) ""
+    else if (assertions.size == 1) s"assert(${assertions.head})"
     else {
-      val expr = assertions.tail.foldLeft(assertions.head: Term) {
-        case (a, acc) => q"$acc && $a"
-      }
-      List(q"assert($expr)")
+      // Walk the tail in order, tracking iteration count. The first
+      // combination produces `(x1) && (x0)` — both operands are bare `ne`
+      // terms, so the printer parenthesizes each one. Subsequent
+      // combinations wrap the running accumulator in parens to surface
+      // the right-grouping convention the scalameta printer applies.
+      val (rendered, _) =
+        assertions.tail.foldLeft((s"(${assertions.head})", 0)) {
+          case ((acc, n), elem) =>
+            val next = if (n == 0) s"($elem) && $acc" else s"($elem) && ($acc)"
+            (next, n + 1)
+        }
+      s"assert($rendered)"
     }
   }
 }

@@ -62,12 +62,17 @@ final class DomainIdRenderer(ctx: DomainSTContext) {
 
     val typeName = i.id.name
 
+    // F-TextTree M8e: `ScalaField` is String-native. Build the field set
+    // with pre-rendered Scala-3 keyword-safe names and full type text.
     val scalaFields: List[ScalaField] = i.fields.map { idf =>
-      val widened = idfieldToField(idf)
+      val widened  = idfieldToField(idf)
+      val nameSafe = DomainScalaParseBack.renderS30(Term.Name(idf.name))
+      val tpe      = ctx.conv.toScala(idf.typeId).typeFull.toString
       ScalaField(
-        Term.Name(idf.name),
-        ctx.conv.toScala(idf.typeId).typeFull,
-        izumi.idealingua.model.common.ExtendedField(
+        name      = idf.name,
+        nameSafe  = nameSafe,
+        fieldType = tpe,
+        field     = izumi.idealingua.model.common.ExtendedField(
           field = widened,
           defn  = izumi.idealingua.model.common.FieldDef(
             definedBy        = i.id,
@@ -79,10 +84,7 @@ final class DomainIdRenderer(ctx: DomainSTContext) {
       )
     }
 
-    // Splice as pre-rendered `Term.Param.syntax` (each `Term.Param` is a
-    // `scala.meta` tree built by `ScalaField.toParams`; `.syntax` yields
-    // the same `name: Type` shape the legacy `q"… (..$decls)"` produced).
-    val declsText = scalaFields.toParams.map(DomainScalaParseBack.renderS30(_)).mkString(", ")
+    val declsText = scalaFields.toParams.mkString(", ")
 
     val sortedFields = scalaFields.sortBy(_.field.field.name)
 
@@ -91,7 +93,10 @@ final class DomainIdRenderer(ctx: DomainSTContext) {
     // join later with ", " into the call site.
     val parsers: List[TextTree[ScalaRefHandle]] = sortedFields.zipWithIndex.map {
       case (field, idx) =>
-        val nameText = field.name.value
+        // F-TextTree M8e: `field.name` is now `String` (bare). Splice for
+        // the named-arg LHS uses the bare form to mirror the legacy
+        // `Term.Name(name).syntax` output for plain identifiers.
+        val nameText = field.name
         val idxLit   = idx.toString
         field.field.field.typeId match {
           case t: EnumId =>
@@ -101,11 +106,9 @@ final class DomainIdRenderer(ctx: DomainSTContext) {
             val termFull: TextTree[ScalaRefHandle] = TextTree.value(ScalaRefHandle.TermFull(t))
             q"$nameText = $termFull.parse(parts($idxLit))"
           case _: PrimitiveId =>
-            // `field.fieldType` is a `scala.meta.Type`; the legacy renderer
-            // spliced it twice (type argument + classOf operand). Pre-render
-            // via `.syntax` (yields minimised form like `String`,
-            // `java.util.UUID`).
-            val fieldTypeText = DomainScalaParseBack.renderS30(field.fieldType)
+            // F-TextTree M8e: `field.fieldType` is now the pre-rendered
+            // Scala 3 type text (e.g. `String`, `java.util.UUID`).
+            val fieldTypeText = field.fieldType
             q"$nameText = parsePart[$fieldTypeText](parts($idxLit), classOf[$fieldTypeText])"
           case o =>
             throw new IDLException(s"Impossible case/id field: $o")
@@ -119,7 +122,7 @@ final class DomainIdRenderer(ctx: DomainSTContext) {
     // sort-order (`Seq(this.company, this.value)` for `value, company`
     // declaration order).
     val partsBuilders: List[TextTree[ScalaRefHandle]] =
-      sortedFields.map(fi => q"this.${fi.name.value}")
+      sortedFields.map(fi => q"this.${fi.name}")
 
     // ---- Tools implicit class -------------------------------------------
     // Legacy: `q"""implicit class ${tools.typeName}(_value: ${t.typeFull}) {}"""`.

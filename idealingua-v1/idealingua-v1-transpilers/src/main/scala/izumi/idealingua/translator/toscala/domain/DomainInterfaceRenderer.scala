@@ -15,7 +15,7 @@ import izumi.idealingua.translator.toscala.tools.ScalaMetaTools._
 import izumi.idealingua.translator.toscala.types.{ClassSource, ScalaStruct, ScalaType}
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
-import scala.meta.{Decl, Defn, Init}
+import scala.meta.{Defn, Init}
 
 /** Renders a new-IR `TypeDef.Interface` as the same scala.meta `Defn`s the
   * legacy `InterfaceRenderer.renderInterface` produces (modulo the
@@ -52,8 +52,6 @@ import scala.meta.{Decl, Defn, Init}
   * `Struct` synthetic), tools implicit class.
   */
 final class DomainInterfaceRenderer(ctx: DomainSTContext) {
-
-  import ctx.conv._
 
   private val resolver = new DomainScalaTextResolver(ctx.conv)
 
@@ -141,8 +139,9 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
 
     // Companion: `def apply(..decls) = TermName(..names)` factory + impl
     // Defns. Splice decls / names / impl Defns as pre-rendered text.
-    val applyDeclsText = implStructure.decls.map(DomainScalaParseBack.renderS30(_)).mkString(", ")
-    val applyNamesText = implStructure.names.map(DomainScalaParseBack.renderS30(_)).mkString(", ")
+    // F-TextTree M8e: `implStructure.decls` / `.names` are now `List[String]`.
+    val applyDeclsText = implStructure.decls.mkString(", ")
+    val applyNamesText = implStructure.names.mkString(", ")
     val implTermNameBare = ctx.conv.toScala(implId).termName.value
     val implAugmentedText = implAugmentedDefns.map(DomainScalaParseBack.renderS30(_)).mkString("\n")
 
@@ -205,9 +204,11 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
     * call sites) consume the trait as a `Defn`.
     */
   def mkTrait(supers: Interfaces, t: ScalaType, fields: ScalaStruct): Defn.Trait = {
-    // `Decl.Def(...)` is a `scala.meta` tree; splice as `.syntax` text.
+    // F-TextTree M8e: `f.nameSafe` + `f.fieldType` are pre-rendered strings.
+    // Legacy `Decl.Def(List.empty, Term.Name(n), List.empty, Type)`.syntax
+    // emits `def n: T`; compose directly.
     val declsText = fields.all.map { f =>
-      DomainScalaParseBack.renderS30(Decl.Def(List.empty, f.name, List.empty, f.fieldType))
+      s"def ${f.nameSafe}: ${f.fieldType}"
     }.mkString("; ")
 
     // Trait bases = `IDLGeneratedType` first, then each declared parent

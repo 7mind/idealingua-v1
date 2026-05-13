@@ -54,18 +54,22 @@ final class DomainServiceRenderer(ctx: DomainSTContext) {
     val decls = c.methods.collect { case rpc: RPCMethod => rpc }
       .map(DomainServiceMethodProduct(ctx, c, _))
 
-    val ctxT  = DomainScalaParseBack.renderS30(c.Ctx.t)
-    val ctxP  = DomainScalaParseBack.renderS30(c.Ctx.p)
-    val ft    = DomainScalaParseBack.renderS30(c.F.t)
+    val ctxT  = c.Ctx.t
+    val ctxP  = c.Ctx.p
+    val ft    = c.F.t
     // Pre-rendered scaffolding fragments — the legacy `${...}` interpolations
     // bottom out in scala.meta tree text; we splice the `.syntax` form.
-    val irtDispatcherText = ctx.rt.IRTDispatcher.parameterize(List(c.F.t)).typeFull.toString
+    // F-TextTree M8e: `c.F.t` is a `String` ("Or"); wrap in `Type.Name` for
+    // the `parameterize(List[Type])` call sites that still consume
+    // `scala.meta.Type`.
+    val fTypeName = scala.meta.Type.Name(ft)
+    val irtDispatcherText = ctx.rt.IRTDispatcher.parameterize(List(fTypeName)).typeFull.toString
     val irtServiceIdName   = ctx.rt.IRTServiceId.typeName.toString
     val irtServiceIdTerm   = ctx.rt.IRTServiceId.termName.toString
     val irtMethodIdName    = ctx.rt.IRTMethodId.typeName.toString
     val irtWrappedClientInit = ctx.rt.IRTWrappedClient.typeFull.toString
-    val svcClientInitFt    = c.svcClientTpe.parameterize(List(c.F.t)).typeFull.toString
-    val methodImportText   = DomainScalaParseBack.renderS30(c.methodImport)
+    val svcClientInitFt    = c.svcClientTpe.parameterize(List(fTypeName)).typeFull.toString
+    val methodImportText   = c.methodImport
 
     val svcServer        = c.svcServerTpe.typeName.toString
     val svcClient        = c.svcClientTpe.typeName.toString

@@ -173,13 +173,15 @@ object DomainScalaStruct {
   ): ScalaStruct = {
     val legacyStruct = fromFlat(id, flat, supers, domain)
 
+    // F-TextTree M8e: `ScalaField` is String-native. Scala 3 keyword escape
+    // for field identifier names (`package` → `` `package` ``) is applied
+    // via `DomainScalaParseBack.renderS30(Term.Name(_))`, the same pattern
+    // M8c uses inside cast extensions for reserved field names.
     def toScalaField(field: ExtendedField): ScalaField = {
-      import scala.meta._
-      ScalaField(
-        Term.Name(field.field.name),
-        conv.toScala(field.field.typeId).typeFull,
-        field,
-      )
+      val name     = field.field.name
+      val nameSafe = DomainScalaParseBack.renderS30(scala.meta.Term.Name(name))
+      val tpe      = conv.toScala(field.field.typeId).typeFull.toString
+      ScalaField(name, nameSafe, tpe, field)
     }
 
     val good = legacyStruct.unambigious.map(toScalaField)

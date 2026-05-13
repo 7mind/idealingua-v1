@@ -109,8 +109,8 @@ final class DomainCompositeRenderer(ctx: DomainSTContext) {
     val tNameTree: TextTree[ScalaRefHandle] = TextTree.value(ScalaRefHandle.TypeName(struct.fields.id))
 
     // ---- final case class -----------------------------------------------
-    // `struct.decls` is `List[Term.Param]`; splice each via `.syntax`.
-    val declsText = struct.decls.map(DomainScalaParseBack.renderS30(_)).mkString(", ")
+    // F-TextTree M8e: `struct.decls` is now `List[String]` — splice verbatim.
+    val declsText = struct.decls.mkString(", ")
 
     val compositeTree: TextTree[ScalaRefHandle] =
       q"""final case class $tNameTree($declsText)$superClassesText"""
@@ -124,9 +124,12 @@ final class DomainCompositeRenderer(ctx: DomainSTContext) {
       q"""implicit class $toolsName(override protected val _value: $tFullTree) extends $toolsBaseText"""
 
     // ---- Companion object -----------------------------------------------
-    // Splice mirror trait + constructors as pre-rendered Defn.syntax text.
+    // Splice mirror trait + constructors as pre-rendered text.
+    // F-TextTree M8e: `struct.constructors` is now `List[String]`; the
+    // mirror trait is still a `scala.meta.Defn.Trait` (built by
+    // `interfaceRenderer.mkTrait`) and needs `renderS30` until M8f.
     val mirrorText      = mirrorInterface.map(DomainScalaParseBack.renderS30(_)).mkString("\n")
-    val constructorsText = struct.constructors.map(DomainScalaParseBack.renderS30(_)).mkString("\n")
+    val constructorsText = struct.constructors.mkString("\n")
     val bodyText        = (Seq(mirrorText, constructorsText).filter(_.nonEmpty)).mkString("\n")
 
     // The companion's term-name is the DTO's bare term name — emit as the

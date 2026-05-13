@@ -111,8 +111,8 @@ final case class DomainServiceMethodProduct(
 
   /** Server-side wrapped method body. */
   def defnServerWrapped: TextTree[ScalaRefHandle] = {
-    val ctxT       = DomainScalaParseBack.renderS30(sp.Ctx.t)
-    val ioN        = DomainScalaParseBack.renderS30(sp.IO2.n)
+    val ctxT       = sp.Ctx.t
+    val ioN        = sp.IO2.n
     val methodsTerm = sp.svcMethods.termName.toString
     val codecsTerm  = sp.svcCodecs.termName.toString
     val assertionLine =
@@ -150,7 +150,7 @@ final case class DomainServiceMethodProduct(
            |}""".stripMargin
     }
 
-    q"""object $name extends IRTMethodWrapper[${DomainScalaParseBack.renderS30(sp.F.t)}, $ctxT] {
+    q"""object $name extends IRTMethodWrapper[${sp.F.t}, $ctxT] {
        |  import $methodsTerm.$name.*
        |  val signature: $methodsTerm.$name.type = $methodsTerm.$name
        |  val marshaller: $codecsTerm.$name.type = $codecsTerm.$name
@@ -160,7 +160,7 @@ final case class DomainServiceMethodProduct(
 
   /** Client-side wrapped method body. */
   def defnClientWrapped: TextTree[ScalaRefHandle] = {
-    val ioN     = DomainScalaParseBack.renderS30(sp.IO2.n)
+    val ioN     = sp.IO2.n
     val wrapped = sp.svcWrappedClientTpe.termName.toString
     val exception: TextTree[ScalaRefHandle] = {
       val idLit = q""""${sp.typeName}.$wrapped.$name""""
@@ -243,7 +243,7 @@ final case class DomainServiceMethodProduct(
   }
 
   def defnServer: TextTree[ScalaRefHandle] =
-    q"def $name(ctx: ${DomainScalaParseBack.renderS30(sp.Ctx.t)}${Input.signaturePrefix}): ${Output.outputType}"
+    q"def $name(ctx: ${sp.Ctx.t}${Input.signaturePrefix}): ${Output.outputType}"
 
   def defnClient: TextTree[ScalaRefHandle] =
     q"def $name(${Input.signatureText}): ${Output.outputType}"
@@ -279,11 +279,11 @@ final case class DomainServiceMethodProduct(
       scalaStruct.all
     }
 
-    /** Comma-separated rendered `Term.Param` list — e.g. `firstName: String, secondName: String`. */
+    /** Comma-separated rendered param list — e.g. `firstName: String, secondName: String`.
+      * F-TextTree M8e: `ScalaField.toParams` returns `List[String]`. */
     def signatureText: String = {
       import izumi.idealingua.translator.toscala.types.ScalaField._
-      val params = fields.toParams
-      params.map(DomainScalaParseBack.renderS30(_)).mkString(", ")
+      fields.toParams.mkString(", ")
     }
 
     /** `, $signatureText` when non-empty, else "". Used at the
@@ -296,7 +296,7 @@ final case class DomainServiceMethodProduct(
 
     /** Comma-separated `input.<field>` accessor list — server call site. */
     def sigCallText: String =
-      fields.map(f => s"input.${DomainScalaParseBack.renderS30(f.name)}").mkString(", ")
+      fields.map(f => s"input.${f.nameSafe}").mkString(", ")
 
     /** `, $sigCallText` when non-empty, else "". Used at the
       * `_service.$name(ctx$sigCallPrefix)` server-side wrapped call site
@@ -308,7 +308,7 @@ final case class DomainServiceMethodProduct(
 
     /** Comma-separated bare field-name list — client constructor call site. */
     def sigDirectCallText: String =
-      fields.map(f => DomainScalaParseBack.renderS30(f.name)).mkString(", ")
+      fields.map(_.nameSafe).mkString(", ")
 
     def inputDefn: List[Defn] = {
       val flat = ctx.domain.flattenedStructs.getOrElse(
