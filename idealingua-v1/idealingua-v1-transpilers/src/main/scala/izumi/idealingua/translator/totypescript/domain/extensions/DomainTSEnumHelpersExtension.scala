@@ -1,20 +1,21 @@
 package izumi.idealingua.translator.totypescript.domain.extensions
 
 import izumi.fundamentals.platform.strings.IzString.*
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
+import izumi.idealingua.translator.totypescript.domain.TSRefHandle
 import izumi.idealingua.translator.totypescript.products.CogenProduct.EnumProduct
 import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 
 /** PR-02 IMPL-7b Phase B M4: new-IR port of `EnumHelpersExtension`.
   *
-  * Emits the `<EnumName>Helpers` companion class (with the static `all`
-  * array and `isValid` predicate) appended to the `EnumProduct.content`
-  * produced by `DomainTSEnumRenderer`. Wire-format-critical: the
-  * `<EnumName>Helpers.all` literal feeds the introspection registration
-  * emitted by `DomainTSIntrospectionExtension.handleEnum`.
-  *
-  * Reads only the new IR's `TypeDef.Enum` (no `Domain`, no `Typespace`).
-  * Output is byte-equal to the legacy `EnumHelpersExtension.handleEnum`
-  * for the same enum (verified by `DomainTSEnumHelpersExtensionSpec`).
+  * F-TextTree M2 — ported to the typed-renderer protocol. The helper
+  * body has no type references (operates on the enum's own value list as
+  * plain strings), so the harvest contribution is empty and the
+  * `TextTree[TSRefHandle]` is rendered via plain `.render` after the
+  * compile-time `T =:= Nothing` evidence is loaded. The protocol
+  * adoption is structural — keeps the extension family on the same
+  * surface as renderers for the future option-B' layouter pass.
   */
 object DomainTSEnumHelpersExtension {
 
@@ -25,8 +26,8 @@ object DomainTSEnumHelpersExtension {
         s"${enumeration.id.name}.$m" + (if (it.hasNext) "," else "")
     }.mkString("\n")
 
-    val extension =
-      s"""
+    val extension: TextTree[TSRefHandle] =
+      q"""
          |export class ${enumeration.id.name}Helpers {
          |    public static readonly all = [
          |${values.shift(8)}
@@ -38,6 +39,6 @@ object DomainTSEnumHelpersExtension {
          |}
        """.stripMargin
 
-    EnumProduct(product.content + extension, product.preamble)
+    EnumProduct(product.content + extension.mapRender(_ => ""), product.preamble)
   }
 }

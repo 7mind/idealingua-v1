@@ -1,42 +1,35 @@
 package izumi.idealingua.translator.totypescript.domain
 
 import izumi.fundamentals.platform.strings.IzString.*
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.{Algebraic, Alternative, Singular, Struct, Void}
 import izumi.idealingua.model.il.ast.typed.{SimpleStructure}
 
 /** Per-method rendering helpers for the TypeScript service / buzzer
   * renderer. Mirrors the inline methods on the legacy `TypeScriptTranslator`
-  * that operate on a single `DefMethod` (`renderRPCMethodSignature`,
-  * `renderServiceMethodOutputSignature`, `renderRPCMethodModels`,
-  * `renderServiceMethodInModel`, `renderServiceMethodOutModel`,
-  * `renderRPCClientMethod`, `renderServiceDispatcherHandler`,
-  * `renderAlternative`).
+  * that operate on a single `DefMethod`.
   *
-  * IMPL-7b Phase B M3: per-method codegen extracted into its own class so
-  * the service renderer body composes by mapping over a list of methods.
-  * Counterpart of `DomainServiceMethodProduct` on the Scala side, though
-  * the TS version is string-based (no scala.meta AST).
-  *
-  * Per-method ephemerals (`In<Method>` / `Out<Method>` classes) emit the
-  * input + output struct shapes the legacy translator emits inline. The
-  * field set comes straight off `method.signature.input.fields` and
-  * `method.signature.output` — no `Domain.flattenedStructs` lookup needed,
-  * because service / buzzer method I/O structs aren't structurally
-  * inherited (`SimpleStructure` has no `superclasses`).
-  *
-  * `Typespace` is threaded per-call for the converter (`toNativeType`,
-  * `serializeField`, `deserializeField`, `deserializeType`,
-  * `serializeValue`) — same threading convention as M2 renderers.
+  * F-TextTree M2 — ported to the M1.5 typed-renderer protocol. The
+  * public methods now return `TextTree[TSRefHandle]`-backed values
+  * (rendered via `resolver.resolve` at the boundary), so the parent
+  * `DomainTSServiceRenderer` can compose the full service body with the
+  * harvest pathway intact. Internal helpers that emit nested ADT /
+  * Alternative type unions delegate the alternative-`TypeId` emission to
+  * `TextTree.value(TSRefHandle.TypeRef(...))`; everything else
+  * (constructor bodies, dispatcher switches, client promise wrappers)
+  * stays as String-level composition.
   */
 final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: DomainTSAdtRenderer) {
 
   import ctx._
 
+  private val resolver = new DomainTSTypeResolver(conv)
+
   // -- Signatures ----------------------------------------------------------
 
-  /** Mirror of legacy `renderRPCMethodSignature`
-    * (`TypeScriptTranslator.scala:637-648`). */
+  /** Mirror of legacy `renderRPCMethodSignature`. */
   def renderRPCMethodSignature(method: DefMethod, spread: Boolean = false, forClient: Boolean = true): String = method match {
     case m: DefMethod.RPCMethod =>
       if (spread) {
@@ -87,8 +80,7 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
 
   // -- Models --------------------------------------------------------------
 
-  /** Mirror of legacy `renderRPCMethodModels`
-    * (`TypeScriptTranslator.scala:829-835`). */
+  /** Mirror of legacy `renderRPCMethodModels`. */
   def renderRPCMethodModels(method: DefMethod): String = method match {
     case m: DefMethod.RPCMethod =>
       s"""${renderServiceMethodInModel(s"In${m.name.capitalize}", "IncomingData", m.signature.input, exported = false)}
@@ -97,31 +89,45 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
   }
 
   private def renderServiceMethodInModel(name: String, implements: String, structure: SimpleStructure, exported: Boolean): String = {
-    s"""${if (exported) "export " else ""}class $name implements $implements {
-       |${structure.fields.map(f => conv.toFieldMember(f)).mkString("\n").shift(4)}
-       |${structure.fields.map(f => conv.toFieldMethods(f)).mkString("\n").shift(4)}
-       |    constructor(data: ${name}Serialized = undefined) {
-       |        if (typeof data === 'undefined' || data === null) {
-       |            return;
-       |        }
-       |
-       |${structure.fields
-        .map(f => s"${conv.deserializeName("this." + conv.safeName(f.name), f.typeId)} = ${conv.deserializeType("data." + f.name, f.typeId)};").mkString(
-          "\n"
-        ).shift(8)}
-       |    }
-       |
-       |    public serialize(): ${name}Serialized {
-       |        return {
-       |${renderSerializedObject(structure.fields).shift(12)}
-       |        };
-       |    }
-       |}
-       |
-       |${if (exported) "export " else ""}interface ${name}Serialized {
-       |${structure.fields.map(f => s"${conv.toNativeTypeName(f.name, f.typeId)}: ${conv.toNativeType(f.typeId, forSerialized = true)};").mkString("\n").shift(4)}
-       |}
-     """.stripMargin
+    val exp = if (exported) "export " else ""
+
+    val membersBlock = structure.fields.map(f => conv.toFieldMember(f)).mkString("\n").shift(4)
+    val methodsBlock = structure.fields.map(f => conv.toFieldMethods(f)).mkString("\n").shift(4)
+    val fromObject   = structure.fields
+      .map(f => s"${conv.deserializeName("this." + conv.safeName(f.name), f.typeId)} = ${conv.deserializeType("data." + f.name, f.typeId)};").mkString("\n").shift(8)
+    val serializedBody = renderSerializedObject(structure.fields).shift(12)
+
+    val serializedFields: TextTree[TSRefHandle] =
+      structure.fields.map { f =>
+        val nm = conv.toNativeTypeName(f.name, f.typeId)
+        q"$nm: ${TextTree.value[TSRefHandle](TSRefHandle.SerializedTypeRef(f.typeId))};"
+      }.joinN()
+
+    val tree: TextTree[TSRefHandle] =
+      q"""${exp}class $name implements $implements {
+         |$membersBlock
+         |$methodsBlock
+         |    constructor(data: ${name}Serialized = undefined) {
+         |        if (typeof data === 'undefined' || data === null) {
+         |            return;
+         |        }
+         |
+         |$fromObject
+         |    }
+         |
+         |    public serialize(): ${name}Serialized {
+         |        return {
+         |$serializedBody
+         |        };
+         |    }
+         |}
+         |
+         |${exp}interface ${name}Serialized {
+         |${serializedFields.shift(4)}
+         |}
+       """.stripMargin
+
+    tree.mapRender(resolver.resolve)
   }
 
   private def renderServiceMethodOutModel(name: String, implements: String, out: DefMethod.Output): String = out match {
@@ -177,13 +183,14 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
     }
 
     val name = s"$method"
+    val exp  = if (exported) "export " else ""
 
     s"""$left
        |$right
-       |${if (exported) "export " else ""}type $name = Either<$leftTypeName, $rightTypeName>;
-       |${if (exported) "export " else ""}type ${name}Serialized = {[key in 'Success' | 'Failure']?: any};
+       |${exp}type $name = Either<$leftTypeName, $rightTypeName>;
+       |${exp}type ${name}Serialized = {[key in 'Success' | 'Failure']?: any};
        |
-       |${if (exported) "export " else ""}class ${name}Helpers {
+       |${exp}class ${name}Helpers {
        |    public static serialize(either: $name): ${name}Serialized {
        |        return either.isRight() ? {
        |            'Success': $rightTypeSerialize
@@ -226,8 +233,7 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
 
   // -- Client / dispatcher -------------------------------------------------
 
-  /** Mirror of legacy `renderRPCClientMethod`
-    * (`TypeScriptTranslator.scala:682-751`). */
+  /** Mirror of legacy `renderRPCClientMethod`. */
   def renderRPCClientMethod(service: String, method: DefMethod): String = method match {
     case m: DefMethod.RPCMethod =>
       m.signature.output match {
@@ -299,8 +305,7 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
       }
   }
 
-  /** Mirror of legacy `renderServiceDispatcherHandler`
-    * (`TypeScriptTranslator.scala:855-891`). */
+  /** Mirror of legacy `renderServiceDispatcherHandler`. */
   def renderServiceDispatcherHandler(method: DefMethod, impl: String, useRawMarshaller: Boolean = false): String = {
     val useRawParam = if (useRawMarshaller) ", true" else ""
     method match {

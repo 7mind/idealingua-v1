@@ -1,6 +1,8 @@
 package izumi.idealingua.translator.totypescript.domain
 
 import izumi.fundamentals.platform.strings.IzString.*
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.common.{Generic, TypeId}
 import izumi.idealingua.model.common.TypeId.{InterfaceId, AliasId}
 import izumi.idealingua.model.il.ast.typed.Field
@@ -10,34 +12,21 @@ import izumi.idealingua.typer.ir.{FlatStruct, TypeDef => NewTypeDef}
 /** Renders a new-IR `TypeDef.Dto` as the same `CompositeProduct` the legacy
   * `TypeScriptTranslator.renderDto` produces (modulo the extension chain).
   *
-  * IMPL-7b Phase B M2: byte-parity port. DTOs may carry inherited fields
-  * via `i.struct.superclasses.interfaces`; we project the flattened struct
-  * from `Domain.flattenedStructs(i.id)` and re-derive the legacy `Struct`
-  * shape via `DomainTSStruct.fromFlat` (same sort key + dedup as legacy
-  * `StructuralQueriesImpl`, language-agnostic).
-  *
-  * Cross-references the interface impl id (`<Iface>Struct`) for interface
-  * serializer/loader and the static `.register(...)` calls; we use
-  * `DomainTSStruct.implId(iid)` which is structurally equivalent to
-  * `typespace.tools.implId(iid)` (`DTOId(iid, "Struct")`).
-  *
-  * "Unique interfaces" (the set of interface ancestors used for
-  * `to<Iface>Serialized` / `load<Iface>` helpers and `.register(...)` calls)
-  * is mirrored via the legacy `ts.inheritance.parentsInherited(i.id)`
-  * call. The new IR equivalent is `Domain.parents`, but the order matters
-  * for byte parity. At M2 we re-use the legacy `Typespace` for the parents
-  * query — same Typespace already used by the converter for imports.
-  * M3+ can swap to `Domain.parents` once the ordering invariant is verified.
-  *
-  * Extension chain (`ctx.ext.extend(i, CompositeProduct(...), _.handleDTO)`)
-  * is omitted: the default TS extension set
-  * (`EnumHelpersExtension`, `IntrospectionExtension`) has no `handleDTO`
-  * override, so the pre-extension product is byte-equal to the
-  * post-extension product for the default extension list.
+  * F-TextTree M2 — ported to the M1.5 typed-renderer protocol. Type
+  * references inside the serialized-interface field list flow through the
+  * tree as `TextTree.value(TSRefHandle.SerializedTypeRef(...))` (the
+  * `forSerialized = true` variant); inline `<Name>Serialized` shapes
+  * use `SerializedTypeRef` for the wrap, plain `TypeRef` would here be
+  * inappropriate. All other surface (constructor body, runtime-name
+  * block, per-interface serializer / loader helpers, the
+  * `.register(...)` call list) uses converter helpers as plain-text
+  * interpolations.
   */
 final class DomainTSCompositeRenderer(ctx: DomainTSContext) {
 
   import ctx._
+
+  private val resolver = new DomainTSTypeResolver(conv)
 
   def renderDto(i: NewTypeDef.Dto): CompositeProduct = {
     val imports = DomainTSImports.forTypeDef(i, i.id.path.toPackage, ctx.domain, options.manifest)
@@ -66,42 +55,56 @@ final class DomainTSCompositeRenderer(ctx: DomainTSContext) {
 
     val uniqueInterfaces = DomainTSStruct.parentsInherited(ctx.domain, i.id).distinctBy(_.name)
 
-    val dto =
-      s"""export class ${i.id.name} $implementsInterfaces {
-         |${renderRuntimeNames(i.id, i.id.name).shift(4)}
-         |${distinctFields.map(f => conv.toFieldMember(f)).mkString("\n").shift(4)}
+    val runtimeNames        = renderRuntimeNames(i.id, i.id.name).shift(4)
+    val membersBlock        = distinctFields.map(f => conv.toFieldMember(f)).mkString("\n").shift(4)
+    val methodsBlock        = distinctFields.map(f => conv.toFieldMethods(f)).mkString("\n").shift(4)
+    val defaultAssigns      = distinctFields
+      .map(f => renderDefaultAssign(conv.deserializeName("this." + conv.safeName(f.name), f.typeId), f.typeId)).filterNot(_.isEmpty).mkString("\n").shift(12)
+    val fromObject = distinctFields
+      .map(f => s"${conv.deserializeName("this." + conv.safeName(f.name), f.typeId)} = ${conv.deserializeType("data." + f.name, f.typeId)};").mkString("\n").shift(8)
+    val serializersBlock = uniqueInterfaces.map(si => renderDtoInterfaceSerializer(si)).mkString("\n").shift(4)
+    val loadersBlock     = uniqueInterfaces.map(si => renderDtoInterfaceLoader(si)).mkString("\n").shift(4)
+    val serializedBody   = renderSerializedObject(distinctFields.toList).shift(12)
+    val registrations    = uniqueInterfaces.map(sc => sc.name + DomainTSStruct.implId(sc).name + s".register(${i.id.name}.FullClassName, ${i.id.name});").mkString("\n")
+
+    val serializedFields: TextTree[TSRefHandle] =
+      distinctFields.map { f =>
+        val nm = conv.toNativeTypeName(f.name, f.typeId)
+        q"$nm: ${TextTree.value[TSRefHandle](TSRefHandle.SerializedTypeRef(f.typeId))};"
+      }.joinN()
+
+    val dto: TextTree[TSRefHandle] =
+      q"""export class ${i.id.name} $implementsInterfaces {
+         |$runtimeNames
+         |$membersBlock
          |
-         |${distinctFields.map(f => conv.toFieldMethods(f)).mkString("\n").shift(4)}
+         |$methodsBlock
          |    constructor(data: ${i.id.name}Serialized = undefined) {
          |        if (typeof data === 'undefined' || data === null) {
-         |${distinctFields
-          .map(f => renderDefaultAssign(conv.deserializeName("this." + conv.safeName(f.name), f.typeId), f.typeId)).filterNot(_.isEmpty).mkString("\n").shift(12)}
+         |$defaultAssigns
          |            return;
          |        }
          |
-         |${distinctFields
-          .map(f => s"${conv.deserializeName("this." + conv.safeName(f.name), f.typeId)} = ${conv.deserializeType("data." + f.name, f.typeId)};").mkString(
-            "\n"
-          ).shift(8)}
+         |$fromObject
          |    }
          |
-         |${uniqueInterfaces.map(si => renderDtoInterfaceSerializer(si)).mkString("\n").shift(4)}
-         |${uniqueInterfaces.map(si => renderDtoInterfaceLoader(si)).mkString("\n").shift(4)}
+         |$serializersBlock
+         |$loadersBlock
          |    public serialize(): ${i.id.name}Serialized {
          |        return {
-         |${renderSerializedObject(distinctFields.toList).shift(12)}
+         |$serializedBody
          |        };
          |    }
          |}
          |
          |export interface ${i.id.name}Serialized $extendsInterfacesSerialized {
-         |${distinctFields.map(f => s"${conv.toNativeTypeName(f.name, f.typeId)}: ${conv.toNativeType(f.typeId, forSerialized = true)};").mkString("\n").shift(4)}
+         |${serializedFields.shift(4)}
          |}
          |
-         |${uniqueInterfaces.map(sc => sc.name + DomainTSStruct.implId(sc).name + s".register(${i.id.name}.FullClassName, ${i.id.name});").mkString("\n")}
+         |$registrations
          """.stripMargin
 
-    CompositeProduct(dto, imports.render, s"// ${i.id.name} DTO")
+    CompositeProduct(dto.mapRender(resolver.resolve), imports.render, s"// ${i.id.name} DTO")
   }
 
   private def renderDtoInterfaceSerializer(iid: InterfaceId): String = {

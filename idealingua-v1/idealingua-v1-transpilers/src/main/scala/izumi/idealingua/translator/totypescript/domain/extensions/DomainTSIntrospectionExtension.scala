@@ -1,40 +1,28 @@
 package izumi.idealingua.translator.totypescript.domain.extensions
 
 import izumi.fundamentals.platform.strings.IzString.*
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.common.TypeId.*
 import izumi.idealingua.model.common.{Generic, Primitive, TypeId}
 import izumi.idealingua.model.il.ast.typed.{Field, IdField}
 import izumi.idealingua.model.publishing.manifests.TypeScriptProjectLayout
 import izumi.idealingua.translator.CompilerOptions.TypescriptTranslatorOptions
-import izumi.idealingua.translator.totypescript.domain.{DomainTSStruct, DomainTSTypeConverter}
+import izumi.idealingua.translator.totypescript.domain.{DomainTSStruct, DomainTSTypeConverter, TSRefHandle}
 import izumi.idealingua.translator.totypescript.products.CogenProduct.*
 import izumi.idealingua.typer.ir.{Domain, FlatStruct, TypeDef => NewTypeDef}
 
 /** PR-02 IMPL-7b Phase B M4: new-IR port of `IntrospectionExtension`.
   *
-  * Emits the wire-format-bridging `Introspector.register(...)` registration
-  * block appended to each `EnumProduct` / `IdentifierProduct.identifierInterface` /
-  * `CompositeProduct.more` / `InterfaceProduct.companion` / `AdtProduct.content`
-  * produced by the corresponding new-IR renderers.
-  *
-  * Reads only the new IR's `Domain` (`flattenedStructs`, `aliases`) plus the
-  * `TypeDef` being rendered, the `TypescriptTranslatorOptions` (for the
-  * IRT-import-path derivation), and the `TypeScriptTypeConverter` (for the
-  * `safeName` mapping used in DTO field accessors). No `Typespace` lookup.
-  *
-  * Alias resolution: legacy `ts.dealias(al)` is replaced by a single lookup
-  * in `Domain.aliases`. By Phase 3 (`AliasDealiaser`) every `AliasId` maps
-  * directly to its fully-dealiased target `TypeId`, so no recursion is
-  * needed; if an alias is somehow missing from the map the renderer falls
-  * back to the alias itself (which the legacy converter would have
-  * `wireId`-rendered identically).
-  *
-  * Interface impl-DTO companion id: legacy `ts.tools.implId(iid)` is replaced
-  * by `DomainTSStruct.implId(iid) = DTOId(iid, "Struct")` — structurally
-  * equivalent.
-  *
-  * Output is byte-equal to the legacy `IntrospectionExtension` for the same
-  * inputs (verified by `DomainTSIntrospectionExtensionSpec`).
+  * F-TextTree M2 — ported to the typed-renderer protocol. The
+  * registration blocks themselves emit fully-qualified TS literals
+  * (`'full.class.name'`, primitive descriptors), not native-TS type
+  * references, so the harvest contribution is empty for this extension.
+  * The protocol adoption is structural; the body composes through
+  * `q"..."` and is rendered with a resolver-less mapRender (the
+  * trees carry no `ValueNode`s) preserving byte parity. Per-call
+  * resolver creation is kept inline so the extension can be invoked from
+  * the legacy production path without DI changes.
   */
 object DomainTSIntrospectionExtension {
 
@@ -97,12 +85,19 @@ object DomainTSIntrospectionExtension {
     }
   }
 
+  /** Render a tree that carries no `TSRefHandle` value nodes (this
+    * extension's emitted blocks are all string-literal-based). A
+    * fall-through resolver suffices.
+    */
+  private def render(tree: TextTree[TSRefHandle]): String =
+    tree.mapRender(_ => "")
+
   def handleEnum(options: TypescriptTranslatorOptions, enumeration: NewTypeDef.Enum, product: EnumProduct): EnumProduct = {
     val pkg   = enumeration.id.path.toPackage.mkString(".")
     val short = enumeration.id.name
     val full  = pkg + "." + short
-    val extension =
-      s"""
+    val extension: TextTree[TSRefHandle] =
+      q"""
          |// Introspector registration
          |import { Introspector, IntrospectorTypes, IIntrospectorEnumObject } from '${irtImportPath(options, enumeration.id)}';
          |Introspector.register('$full', {
@@ -115,7 +110,7 @@ object DomainTSIntrospectionExtension {
          |);
        """.stripMargin
 
-    EnumProduct(product.content + extension, product.preamble)
+    EnumProduct(product.content + render(extension), product.preamble)
   }
 
   def handleIdentifier(
@@ -127,8 +122,9 @@ object DomainTSIntrospectionExtension {
   ): IdentifierProduct = {
     val short = identifier.id.name
     val fields: List[IdField] = identifier.fields
-    val extension =
-      s"""
+    val unwound = fields.map(f => unwindField(domain, conv, f.name, f.typeId)).mkString(",\n").shift(12)
+    val extension: TextTree[TSRefHandle] =
+      q"""
          |// Introspector registration
          |import {
          |    Introspector,
@@ -145,40 +141,33 @@ object DomainTSIntrospectionExtension {
          |        type: IntrospectorTypes.Id,
          |        ctor: () => new $short(),
          |        fields: [
-         |${fields.map(f => unwindField(domain, conv, f.name, f.typeId)).mkString(",\n").shift(12)}
+         |$unwound
          |        ]
          |    } as IIntrospectorIdObject
          |);
        """.stripMargin
 
-    // Mirror legacy `IntrospectionExtension.handleIdentifier` exactly: it
-    // calls the 3-arg `IdentifierProduct(...)` constructor, which means the
-    // `preamble` slot drops to its default `""` rather than being preserved
-    // from the input product. Match that behaviour for byte parity.
-    IdentifierProduct(product.identitier, product.identifierInterface + extension, product.header)
+    IdentifierProduct(product.identitier, product.identifierInterface + render(extension), product.header)
   }
 
   private def renderDTOIntrospector(domain: Domain, conv: DomainTSTypeConverter, name: String, fields: Iterable[Field]): String = {
-    s"""Introspector.register($name.FullClassName, {
-       |        full: $name.FullClassName,
-       |        short: $name.ClassName,
-       |        package: $name.PackageName,
-       |        type: IntrospectorTypes.Data,
-       |        ctor: () => new $name(),
-       |        fields: [
-       |${fields.map(f => unwindField(domain, conv, f.name, f.typeId)).mkString(",\n").shift(12)}
-       |        ]
-       |    } as IIntrospectorDataObject
-       |);
-     """.stripMargin
+    val unwound = fields.map(f => unwindField(domain, conv, f.name, f.typeId)).mkString(",\n").shift(12)
+    val tree: TextTree[TSRefHandle] =
+      q"""Introspector.register($name.FullClassName, {
+         |        full: $name.FullClassName,
+         |        short: $name.ClassName,
+         |        package: $name.PackageName,
+         |        type: IntrospectorTypes.Data,
+         |        ctor: () => new $name(),
+         |        fields: [
+         |$unwound
+         |        ]
+         |    } as IIntrospectorDataObject
+         |);
+       """.stripMargin
+    render(tree)
   }
 
-  /** Project the new-IR flat struct down to the same `List[Field]` shape the
-    * legacy `ts.structure.structure(dto.id).all.distinctBy(_.field.name).map(_.field)`
-    * walk produces. `FlatStruct.fields` is already in resolved inheritance
-    * order (legacy `StructuralQueriesImpl.scala:41`), so `distinctBy(_.name)`
-    * preserves the first occurrence per name, matching the legacy semantics.
-    */
   private def flatDtoFields(domain: Domain, dtoId: DTOId): List[Field] = {
     val flat = domain.flattenedStructs.getOrElse(dtoId, FlatStruct(dtoId, List.empty, List.empty, List.empty))
     flat.fields.map(_.field).distinctBy(_.name)
@@ -193,8 +182,9 @@ object DomainTSIntrospectionExtension {
   ): CompositeProduct = {
     val short  = dto.id.name
     val fields = flatDtoFields(domain, dto.id)
-    val extension =
-      s"""
+    val introspector = renderDTOIntrospector(domain, conv, short, fields)
+    val extension: TextTree[TSRefHandle] =
+      q"""
          |// Introspector registration
          |import {
          |    Introspector,
@@ -204,10 +194,10 @@ object DomainTSIntrospectionExtension {
          |    IIntrospectorMapType,
          |    IIntrospectorDataObject
          |} from '${irtImportPath(options, dto.id)}';
-         |${renderDTOIntrospector(domain, conv, short, fields)}
+         |$introspector
        """.stripMargin
 
-    CompositeProduct(product.more + extension, product.header, product.preamble)
+    CompositeProduct(product.more + render(extension), product.header, product.preamble)
   }
 
   def handleInterface(
@@ -224,8 +214,11 @@ object DomainTSIntrospectionExtension {
     val implId = DomainTSStruct.implId(interface.id)
     val eid    = interface.id.name + implId.name
 
-    val extension =
-      s"""
+    val unwound      = fields.map(f => unwindField(domain, conv, f.name, f.typeId)).mkString(",\n").shift(12)
+    val introspector = renderDTOIntrospector(domain, conv, eid, fields)
+
+    val extension: TextTree[TSRefHandle] =
+      q"""
          |// Introspector registration
          |import {
          |    Introspector,
@@ -243,15 +236,15 @@ object DomainTSIntrospectionExtension {
          |        type: IntrospectorTypes.Mixin,
          |        ctor: () => new $eid(),
          |        fields: [
-         |${fields.map(f => unwindField(domain, conv, f.name, f.typeId)).mkString(",\n").shift(12)}
+         |$unwound
          |        ],
          |        implementations: $eid.getRegisteredTypes
          |    } as IIntrospectorMixinObject
          |);
-         |${renderDTOIntrospector(domain, conv, eid, fields)}
+         |$introspector
        """.stripMargin
 
-    InterfaceProduct(product.iface, product.companion + extension, product.header, product.preamble)
+    InterfaceProduct(product.iface, product.companion + render(extension), product.header, product.preamble)
   }
 
   def handleAdt(
@@ -264,8 +257,10 @@ object DomainTSIntrospectionExtension {
     val short = adt.id.name
     val full  = pkg + "." + short
 
-    val extension =
-      s"""
+    val members = adt.alternatives.map(f => unwindAdtMember(domain, f.wireId, f.typeId)).mkString(",\n").shift(12)
+
+    val extension: TextTree[TSRefHandle] =
+      q"""
          |// Introspector registration
          |import {
          |    Introspector,
@@ -281,12 +276,12 @@ object DomainTSIntrospectionExtension {
          |        package: '$pkg',
          |        type: IntrospectorTypes.Adt,
          |        options: [
-         |${adt.alternatives.map(f => unwindAdtMember(domain, f.wireId, f.typeId)).mkString(",\n").shift(12)}
+         |$members
          |        ]
          |    } as IIntrospectorAdtObject
          |);
        """.stripMargin
 
-    AdtProduct(product.content + extension, product.header, product.preamble)
+    AdtProduct(product.content + render(extension), product.header, product.preamble)
   }
 }

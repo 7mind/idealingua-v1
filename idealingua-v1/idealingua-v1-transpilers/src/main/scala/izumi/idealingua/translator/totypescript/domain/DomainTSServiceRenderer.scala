@@ -1,6 +1,8 @@
 package izumi.idealingua.translator.totypescript.domain
 
 import izumi.fundamentals.platform.strings.IzString.*
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.publishing.manifests.TypeScriptProjectLayout
 import izumi.idealingua.translator.totypescript.products.CogenProduct.{BuzzerProduct, ServiceProduct}
@@ -13,37 +15,23 @@ import izumi.idealingua.model.common.Package
   * `TypeScriptTranslator.renderService` / `renderBuzzer` produces (modulo
   * the extension chain).
   *
-  * IMPL-7b Phase B M3: byte-parity port. Emits the four-block service
-  * shape:
-  *   - Models block: `In<Method>` / `Out<Method>` classes + Serialized
-  *     interfaces (one pair per method).
-  *   - Client block: `I<Name>Client` interface + `<Name>Client` class with
-  *     `_transport: ClientTransport` and per-method send/promise wrappers.
-  *   - Dispatcher block: `I<Name>Server<C>` interface + `<Name>Dispatcher<C, D>`
-  *     class with `ServiceDispatcher` mixin and `dispatch` switch over
-  *     `<methodName>`.
-  *   - Server block: `<Name>Server<C, D>` abstract class extending
-  *     `<Name>Dispatcher` with dummy method implementations.
-  *
-  * Buzzer parallel emits the same shape but routed through
-  * `ServerSocketTransport` (vs `ClientTransport`) and
-  * `<Name>BuzzerHandlers` (vs `<Name>Server`). Per F16 absorption, the
-  * services + buzzers live in `domain.userTypes` (new IR consolidation).
-  *
-  * `Typespace` threading per-call mirrors M2 — the converter
-  * (`TypeScriptTypeConverter`) and imports (`TypeScriptImports.apply`) both
-  * walk the legacy typespace; M3 keeps that plumbing.
-  *
-  * Extension chain: legacy `TypeScriptTranslator.renderService` / `renderBuzzer`
-  * do NOT thread `ext.extend` — `TypeScriptTranslatorExtension` has no
-  * `handleService` / `handleBuzzer` overrides, so the pre-extension product
-  * equals the post-extension product.
+  * F-TextTree M2 — ported to the M1.5 typed-renderer protocol. The
+  * service body composes through `q"..."` with subordinate
+  * `DomainTSServiceMethodProduct` returning pre-rendered Strings (those
+  * inner methods are themselves tree-backed and apply their own
+  * `.mapRender`). Naked `conv.toNativeType(id)` call sites appear only
+  * inside `renderRPCMethodSignature` for the per-field input typings,
+  * which `DomainTSServiceMethodProduct` already handles inline. The
+  * service-renderer envelope itself contributes no extra type-reference
+  * nodes — the harvest pathway is exercised through the method-product
+  * sub-trees.
   */
 final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSAdtRenderer) {
 
   import ctx._
 
-  private val methodProduct = new DomainTSServiceMethodProduct(ctx, adtRenderer)
+  private val resolver       = new DomainTSTypeResolver(conv)
+  private val methodProduct  = new DomainTSServiceMethodProduct(ctx, adtRenderer)
 
   // -- Service -------------------------------------------------------------
 
@@ -51,8 +39,8 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
     val imports  = DomainTSImports.forService(i, i.id.domain.toPackage, ctx.domain, manifest)
     val typeName = i.id.name
 
-    val svc =
-      s"""// Models
+    val svcTree: TextTree[TSRefHandle] =
+      q"""// Models
          |${renderServiceModels(i)}
          |
          |// Client
@@ -65,15 +53,15 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
          |${renderServiceServer(i)}
          """.stripMargin
 
-    val header =
-      s"""${imports.render}
+    val headerTree: TextTree[TSRefHandle] =
+      q"""${imports.render}
          |${importFromIRT(
           List("ServiceDispatcher", "Marshaller", "Void", "IncomingData", "OutgoingData", "ClientTransport", "Either", "Left as EitherLeft", "Right as EitherRight"),
           i.id.domain.toPackage,
         )}
          """.stripMargin
 
-    ServiceProduct(svc, header, s"// $typeName client")
+    ServiceProduct(svcTree.mapRender(resolver.resolve), headerTree.mapRender(resolver.resolve), s"// $typeName client")
   }
 
   private def renderServiceModels(i: NewTypeDef.Service): String =
@@ -175,8 +163,8 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
     val imports  = DomainTSImports.forBuzzer(i, i.id.domain.toPackage, ctx.domain, manifest)
     val typeName = i.id.name
 
-    val svc =
-      s"""// Models
+    val svcTree: TextTree[TSRefHandle] =
+      q"""// Models
          |${renderBuzzerModels(i)}
          |
          |// Client
@@ -189,8 +177,8 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
          |${renderBuzzerBase(i)}
          """.stripMargin
 
-    val header =
-      s"""${imports.render}
+    val headerTree: TextTree[TSRefHandle] =
+      q"""${imports.render}
          |${importFromIRT(
           List(
             "ServiceDispatcher",
@@ -207,7 +195,7 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
         )}
          """.stripMargin
 
-    BuzzerProduct(svc, header, s"// $typeName")
+    BuzzerProduct(svcTree.mapRender(resolver.resolve), headerTree.mapRender(resolver.resolve), s"// $typeName")
   }
 
   private def renderBuzzerModels(i: NewTypeDef.Buzzer): String =
@@ -305,8 +293,6 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
 
   // -- Shared helpers ------------------------------------------------------
 
-  /** Mirror of legacy `renderRuntimeNames(s: ServiceId, holderName: String)`
-    * (`TypeScriptTranslator.scala:104-115`). */
   private def renderRuntimeNamesForService(s: izumi.idealingua.model.common.TypeId.ServiceId, holderName: String): String = {
     val pkg = s.domain.toPackage.mkString(".")
     s"""// Runtime identification methods
@@ -320,8 +306,6 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
        """.stripMargin
   }
 
-  /** Mirror of legacy `renderRuntimeNames(i: BuzzerId, holderName: String)`
-    * (`TypeScriptTranslator.scala:117-128`). */
   private def renderRuntimeNamesForBuzzer(i: izumi.idealingua.model.common.TypeId.BuzzerId, holderName: String): String = {
     val pkg = i.domain.toPackage.mkString(".")
     s"""// Runtime identification methods
@@ -335,8 +319,6 @@ final class DomainTSServiceRenderer(ctx: DomainTSContext, adtRenderer: DomainTSA
        """.stripMargin
   }
 
-  /** Mirror of legacy `importFromIRT`
-    * (`TypeScriptTranslator.scala:948-959`). */
   private def importFromIRT(names: List[String], pkg: Package): String = {
     var importOffset = ""
     (1 to pkg.length).foreach(_ => importOffset += "../")

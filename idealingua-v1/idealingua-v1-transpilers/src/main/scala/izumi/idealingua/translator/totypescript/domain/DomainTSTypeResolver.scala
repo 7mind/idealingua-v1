@@ -31,7 +31,8 @@ final class DomainTSTypeResolver(conv: DomainTSTypeConverter) {
     * legacy name-shape contract (verified by `verifyGoldens`).
     */
   def resolve(ref: TSRefHandle): String = ref match {
-    case TSRefHandle.TypeRef(id) => conv.toNativeType(id)
+    case TSRefHandle.TypeRef(id)           => conv.toNativeType(id)
+    case TSRefHandle.SerializedTypeRef(id) => conv.toNativeType(id, forSerialized = true)
   }
 
   /** Project a collected reference set into the import contributions for a
@@ -47,5 +48,8 @@ final class DomainTSTypeResolver(conv: DomainTSTypeConverter) {
     * via `TSRefHandle.TypeRef(<primitive>)` nodes in the tree itself.
     */
   def harvestTypeIds(refs: Iterable[TSRefHandle]): List[TypeId] =
-    refs.collect { case TSRefHandle.TypeRef(id) => id }.toList.distinct
+    refs.collect {
+      case TSRefHandle.TypeRef(id)           => id
+      case TSRefHandle.SerializedTypeRef(id) => id
+    }.toList.distinct
 }

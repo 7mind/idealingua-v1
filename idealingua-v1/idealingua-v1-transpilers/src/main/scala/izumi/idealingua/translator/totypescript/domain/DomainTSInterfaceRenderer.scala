@@ -1,6 +1,8 @@
 package izumi.idealingua.translator.totypescript.domain
 
 import izumi.fundamentals.platform.strings.IzString.*
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.common.{Generic, TypeId}
 import izumi.idealingua.model.common.TypeId.AliasId
 import izumi.idealingua.translator.totypescript.products.CogenProduct.InterfaceProduct
@@ -10,30 +12,18 @@ import izumi.idealingua.typer.ir.{FlatStruct, TypeDef => NewTypeDef}
   * legacy `TypeScriptTranslator.renderInterface` produces (modulo the
   * extension chain).
   *
-  * IMPL-7b Phase B M2: byte-parity port. Two emitted top-level shapes:
-  *   - `export interface <Name> extends ... { ... }` plus
-  *     `export interface <Name>StructSerialized extends ... { ... }`
-  *   - `export class <Name>Struct implements <Name> { ... }` with the
-  *     polymorphic registration helpers, plus the `.register(...)` calls
-  *     against each transitively-inherited parent interface.
-  *
-  * Flattened struct comes from `Domain.flattenedStructs(i.id)`; `Super`
-  * comes from `i.struct.superclasses`. The legacy `<Iface>Struct` impl id
-  * is synthesized via `DomainTSStruct.implId(i.id)` matching legacy
-  * `typespace.tools.implId(i.id)`.
-  *
-  * `parentsInherited(i.id)` comes from the legacy `ts.inheritance` for
-  * order-preserving M2 parity — the new IR `Domain.parents` set has the
-  * same membership but no defined order; using legacy threading keeps M2
-  * focused on the renderer-shape port without surfacing ordering invariants.
-  *
-  * Extension chain (`handleInterface`) is omitted: default TS extensions
-  * (`EnumHelpersExtension`, `IntrospectionExtension`) have no
-  * `handleInterface` override.
+  * F-TextTree M2 — ported to the M1.5 typed-renderer protocol. Type
+  * references in the emitted interface and serialized-interface field
+  * lists flow through the tree as
+  * `TextTree.value(TSRefHandle.TypeRef(...))` (and the `Serialized`
+  * variant). Everything else is composed with `q"..."` plus String
+  * helpers.
   */
 final class DomainTSInterfaceRenderer(ctx: DomainTSContext) {
 
   import ctx._
+
+  private val resolver = new DomainTSTypeResolver(conv)
 
   def renderInterface(i: NewTypeDef.Interface): InterfaceProduct = {
     val imports = DomainTSImports.forTypeDef(i, i.id.path.toPackage, ctx.domain, options.manifest)
@@ -62,46 +52,63 @@ final class DomainTSInterfaceRenderer(ctx: DomainTSContext) {
     val implId         = DomainTSStruct.implId(i.id)
     val eid            = i.id.name + implId.name
 
-    val iface =
-      s"""export interface ${i.id.name} $extendsInterfaces{
+    val ifaceFields: TextTree[TSRefHandle] =
+      fields.all.map { f =>
+        val nm = conv.toNativeTypeName(conv.safeName(f.field.name), f.field.typeId)
+        q"$nm: ${TextTree.value[TSRefHandle](TSRefHandle.TypeRef(f.field.typeId))};"
+      }.joinN()
+
+    val ifaceSerializedFields: TextTree[TSRefHandle] =
+      fields.all.map { f =>
+        val nm = conv.toNativeTypeName(f.field.name, f.field.typeId)
+        q"$nm: ${TextTree.value[TSRefHandle](TSRefHandle.SerializedTypeRef(f.field.typeId))};"
+      }.joinN()
+
+    val iface: TextTree[TSRefHandle] =
+      q"""export interface ${i.id.name} $extendsInterfaces{
          |    getPackageName(): string;
          |    getClassName(): string;
          |    getFullClassName(): string;
          |    serialize(): ${eid}Serialized;
          |
-         |${fields.all
-          .map(f => s"${conv.toNativeTypeName(conv.safeName(f.field.name), f.field.typeId)}: ${conv.toNativeType(f.field.typeId)};").mkString("\n").shift(4)}
+         |${ifaceFields.shift(4)}
          |}
          |
          |export interface ${eid}Serialized $extendsInterfacesSerialized{
-         |${fields.all
-          .map(f => s"${conv.toNativeTypeName(f.field.name, f.field.typeId)}: ${conv.toNativeType(f.field.typeId, forSerialized = true)};").mkString("\n").shift(4)}
+         |${ifaceSerializedFields.shift(4)}
          |}
        """.stripMargin
 
     val uniqueInterfaces = DomainTSStruct.parentsInherited(ctx.domain, i.id).distinctBy(_.name)
-    val companion =
-      s"""export class $eid implements ${i.id.name} {
-         |${renderRuntimeNames(implId, eid).shift(4)}
-         |${fields.all.map(f => conv.toFieldMember(f.field)).mkString("\n").shift(4)}
+
+    val runtimeNames    = renderRuntimeNames(implId, eid).shift(4)
+    val membersBlock    = fields.all.map(f => conv.toFieldMember(f.field)).mkString("\n").shift(4)
+    val methodsBlock    = fields.all.map(f => conv.toFieldMethods(f.field)).mkString("\n").shift(4)
+    val defaultAssigns  = distinctFields
+      .map(f => renderDefaultAssign(conv.deserializeName("this." + conv.safeName(f.name), f.typeId), f.typeId)).filterNot(_.isEmpty).mkString("\n").shift(12)
+    val fromObject      = distinctFields
+      .map(f => s"${conv.deserializeName("this." + conv.safeName(f.name), f.typeId)} = ${conv.deserializeType("data." + f.name, f.typeId)};").mkString("\n").shift(8)
+    val serializedBody  = renderSerializedObject(distinctFields.toList).shift(12)
+    val registrations   = uniqueInterfaces.map(sc => sc.name + DomainTSStruct.implId(sc).name + s".register($eid.FullClassName, $eid);").mkString("\n")
+
+    val companion: TextTree[TSRefHandle] =
+      q"""export class $eid implements ${i.id.name} {
+         |$runtimeNames
+         |$membersBlock
          |
-         |${fields.all.map(f => conv.toFieldMethods(f.field)).mkString("\n").shift(4)}
+         |$methodsBlock
          |    constructor(data: ${eid}Serialized = undefined) {
          |        if (typeof data === 'undefined' || data === null) {
-         |${distinctFields
-          .map(f => renderDefaultAssign(conv.deserializeName("this." + conv.safeName(f.name), f.typeId), f.typeId)).filterNot(_.isEmpty).mkString("\n").shift(12)}
+         |$defaultAssigns
          |            return;
          |        }
          |
-         |${distinctFields
-          .map(f => s"${conv.deserializeName("this." + conv.safeName(f.name), f.typeId)} = ${conv.deserializeType("data." + f.name, f.typeId)};").mkString(
-            "\n"
-          ).shift(8)}
+         |$fromObject
          |    }
          |
          |    public serialize(): ${eid}Serialized {
          |        return {
-         |${renderSerializedObject(distinctFields.toList).shift(12)}
+         |$serializedBody
          |        };
          |    }
          |
@@ -109,11 +116,11 @@ final class DomainTSInterfaceRenderer(ctx: DomainTSContext) {
          |    // which will add it to the known list. You can also overwrite the existing registrations
          |    // in order to provide extended functionality on existing models, preserving the original class name.
          |
-         |    private static _knownPolymorphic: {[key: string]: {new (data?: $eid| ${eid}Serialized): ${i.id.name}}} = {
+         |    private static _knownPolymorphic: {[key: string]: {new (data?: ${eid + "| " + eid + "Serialized"}): ${i.id.name}}} = {
          |        // This basic registration will happen below [$eid.FullClassName]: $eid
          |    };
          |
-         |    public static register(className: string, ctor: {new (data?: $eid| ${eid}Serialized): ${i.id.name}}): void {
+         |    public static register(className: string, ctor: {new (data?: ${eid + "| " + eid + "Serialized"}): ${i.id.name}}): void {
          |        this._knownPolymorphic[className] = ctor;
          |    }
          |
@@ -136,10 +143,10 @@ final class DomainTSInterfaceRenderer(ctx: DomainTSContext) {
          |    }
          |}
          |
-         |${uniqueInterfaces.map(sc => sc.name + DomainTSStruct.implId(sc).name + s".register($eid.FullClassName, $eid);").mkString("\n")}
+         |$registrations
        """.stripMargin
 
-    InterfaceProduct(iface, companion, imports.render, s"// ${i.id.name} Interface")
+    InterfaceProduct(iface.mapRender(resolver.resolve), companion.mapRender(resolver.resolve), imports.render, s"// ${i.id.name} Interface")
   }
 
   private def renderSerializedObject(fields: List[izumi.idealingua.model.il.ast.typed.Field]): String = {

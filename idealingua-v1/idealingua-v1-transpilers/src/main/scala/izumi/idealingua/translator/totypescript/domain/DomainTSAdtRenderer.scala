@@ -1,6 +1,8 @@
 package izumi.idealingua.translator.totypescript.domain
 
 import izumi.fundamentals.platform.strings.IzString.*
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.common.TypeId.*
 import izumi.idealingua.model.il.ast.typed.AdtMember
 import izumi.idealingua.translator.totypescript.products.CogenProduct.AdtProduct
@@ -9,31 +11,26 @@ import izumi.idealingua.typer.ir.{TypeDef => NewTypeDef}
 /** Renders a new-IR `TypeDef.Adt` as the same `AdtProduct` the legacy
   * `TypeScriptTranslator.renderAdt` produces (modulo the extension chain).
   *
-  * IMPL-7b Phase B M3: byte-parity port. The emitted top-level shape is
-  * the standard ADT triple:
-  *   - `export type <Name> = A | B | ...`
-  *   - `export type <Name>Serialized = ASerialized | BSerialized | ...`
-  *   - `export class <Name>Helpers { isInstanceOf, serialize, deserialize }`
-  *
-  * Per-branch helpers (interface impl-id resolution via `ts.tools.implId`,
-  * alias dealiasing via `ts.dealias`) keep the legacy `Typespace` threaded
-  * per-call — the new IR carries enough state for these queries, but
-  * delegating to `Typespace` keeps M3 focused on shape parity without
-  * re-deriving the dealias / impl-id rules in TS form.
-  *
-  * Extension chain (`ctx.ext.extend(i, AdtProduct(...), _.handleAdt)`) is
-  * omitted: this renderer emits the pre-extension product, matching the
-  * convention from M1 / M2. The default TS extension list does include
-  * `IntrospectionExtension.handleAdt`, but the byte-parity unit test
-  * compares against the legacy renderer with the SAME empty extension list.
+  * F-TextTree M2 — ported to the M1.5 typed-renderer protocol. The two
+  * top-level type-union lines (`export type <Name> = A | B | ...` and
+  * `export type <Name>Serialized = ASerialized | BSerialized | ...`)
+  * carry alternative `TypeId`s as `TextTree.value(TSRefHandle.TypeRef(...))`
+  * and `TextTree.value(TSRefHandle.SerializedTypeRef(...))` (where
+  * applicable), so the harvest pathway can recover the precise reference
+  * set for the import section. The `<Name>Helpers` companion class body
+  * stays as String-level composition: per-branch dispatch (interface
+  * impl-id resolution, alias dealiasing) requires conditional shape
+  * decisions that are clearer expressed as plain Scala.
   */
 final class DomainTSAdtRenderer(ctx: DomainTSContext) {
 
   import ctx._
 
+  private val resolver = new DomainTSTypeResolver(conv)
+
   def renderAdt(i: NewTypeDef.Adt): AdtProduct = {
     val imports = DomainTSImports.forTypeDef(i, i.id.path.toPackage, ctx.domain, options.manifest)
-    val base    = renderAdtImpl(i.id.name, i.alternatives, exported = true)
+    val base    = renderAdtImplTree(i.id.name, i.alternatives, exported = true).mapRender(resolver.resolve)
 
     AdtProduct(
       base,
@@ -42,89 +39,101 @@ final class DomainTSAdtRenderer(ctx: DomainTSContext) {
     )
   }
 
-  /** Mirror of legacy `TypeScriptTranslator.renderAdtImpl` (lines 363-448).
-    * Public so `DomainTSServiceMethodProduct` can reuse it for nested ADT
-    * outputs (`Algebraic`) in service methods.
+  /** Public string-typed gate; used by `DomainTSServiceMethodProduct` for
+    * nested ADT outputs (`Algebraic`). Internally resolves the tree.
     */
-  def renderAdtImpl(name: String, alternatives: List[AdtMember], exported: Boolean = true): String = {
-    val hasInterfaces = alternatives.count(al => al.typeId.isInstanceOf[InterfaceId]) > 0
+  def renderAdtImpl(name: String, alternatives: List[AdtMember], exported: Boolean = true): String =
+    renderAdtImplTree(name, alternatives, exported).mapRender(resolver.resolve)
 
-    s"""${if (exported) "export " else ""}type $name = ${alternatives.map(alt => conv.toNativeType(alt.typeId)).mkString(" | ")};
-       |${if (exported) "export " else ""}type ${name}Serialized = ${alternatives
-        .map(alt => conv.toNativeType(alt.typeId, forSerialized = true)).mkString(" | ")}
+  /** Tree-typed core: composes the ADT body as `TextTree[TSRefHandle]` so
+    * the alternative `TypeId`s flow through the harvest pathway.
+    */
+  def renderAdtImplTree(name: String, alternatives: List[AdtMember], exported: Boolean = true): TextTree[TSRefHandle] = {
+    val hasInterfaces = alternatives.count(al => al.typeId.isInstanceOf[InterfaceId]) > 0
+    val exp           = if (exported) "export " else ""
+
+    val nativeUnion: TextTree[TSRefHandle] =
+      alternatives.map(alt => TextTree.value[TSRefHandle](TSRefHandle.TypeRef(alt.typeId))).join(" | ")
+
+    val nativeSerializedUnion: TextTree[TSRefHandle] =
+      alternatives.map(alt => TextTree.value[TSRefHandle](TSRefHandle.SerializedTypeRef(alt.typeId))).join(" | ")
+
+    val isInstanceOfChecks: String =
+      alternatives.map(alt =>
+        if (alt.typeId.isInstanceOf[InterfaceId])
+          s"${alt.typeId.name}${DomainTSStruct.implId(alt.typeId.asInstanceOf[InterfaceId]).name}.isRegisteredType(fullClassName)"
+        else if (alt.typeId.isInstanceOf[AdtId]) s"${alt.typeId.name}Helpers.isInstanceOf(o)"
+        else "o instanceof " + conv.toNativeType(alt.typeId)
+      ).mkString(" || ")
+
+    val serializeReturn: String =
+      alternatives.map(alt =>
+        alt.typeId match {
+          case interfaceId: InterfaceId => alt.typeId.name + DomainTSStruct.implId(interfaceId).name + "Serialized"
+          case al: AliasId => {
+            val dealiased = DomainTSImports.dealias(ctx.domain, al)
+            dealiased match {
+              case _: IdentifierId => "string"
+              case _               => dealiased.name + "Serialized"
+            }
+          }
+          case _: IdentifierId => "string"
+          case _               => alt.typeId.name + "Serialized"
+        }
+      ).mkString(" | ")
+
+    val fullClassDecl     = if (hasInterfaces) "const fullClassName = o.getFullClassName();" else ""
+    val fullClassDeclAdt  = if (hasInterfaces) "const fullClassName = adt.getFullClassName();" else ""
+    val needsSerializedTmp = adtHasAdt(alternatives) || hasInterfaces
+    val serializedDecl    = if (needsSerializedTmp) "let serialized: any = undefined;" else ""
+
+    val adtBranches: String =
+      alternatives.filter(al => al.typeId.isInstanceOf[AdtId]).map(al => al.typeId.asInstanceOf[AdtId]).map(adtId =>
+        s"if (${adtId.name}Helpers.isInstanceOf(adt)) {\n    className = '${adtId.name}';\n    serialized = ${adtId.name}Helpers.serialize(adt as ${adtId.name});\n}"
+      ).mkString(" else \n").shift(8)
+
+    val ifaceBranches: String =
+      alternatives.filter(al => al.typeId.isInstanceOf[InterfaceId]).map(al => al.typeId.asInstanceOf[InterfaceId]).map(interfaceId =>
+        s"if (${interfaceId.name}${DomainTSStruct.implId(interfaceId).name}.isRegisteredType(fullClassName)) {\n    className = '${interfaceId.name}'; serialized = {[fullClassName]: adt.serialize()};\n}"
+      ).mkString(" else \n").shift(8)
+
+    val memberNameBranches: String =
+      alternatives.filter(al => al.memberName.isDefined).map(a => s"if (className == '${a.typeId.name}') {\n    className = '${a.memberName.get}'\n}").mkString("\n").shift(8)
+
+    val returnSerialized = if (needsSerializedTmp) "serialized || " else ""
+
+    val cases: String =
+      alternatives.map(a => "case '" + a.wireId + "': return " + conv.deserializeType("content", a.typeId, asAny = true) + ";").mkString("\n").shift(12)
+
+    q"""${exp}type $name = $nativeUnion;
+       |${exp}type ${name}Serialized = $nativeSerializedUnion
        |
-       |${if (exported) "export " else ""}class ${name}Helpers {
+       |${exp}class ${name}Helpers {
        |    public static isInstanceOf(o: any): boolean {
        |        if (!o['getClassName'] || typeof o['getClassName'] !== 'function') {
        |            return false;
        |        }
-       |        ${if (hasInterfaces) "const fullClassName = o.getFullClassName();" else ""}
-       |        return ${alternatives
-        .map(
-          alt =>
-            if (alt.typeId.isInstanceOf[InterfaceId])
-              s"${alt.typeId.name}${DomainTSStruct.implId(alt.typeId.asInstanceOf[InterfaceId]).name}.isRegisteredType(fullClassName)"
-            else if (alt.typeId.isInstanceOf[AdtId]) s"${alt.typeId.name}Helpers.isInstanceOf(o)"
-            else "o instanceof " + conv.toNativeType(alt.typeId)
-        ).mkString(" || ")};
+       |        $fullClassDecl
+       |        return $isInstanceOfChecks;
        |    }
        |
-       |    public static serialize(adt: $name): {[key: string]: ${alternatives
-        .map(
-          alt =>
-            alt.typeId match {
-              case interfaceId: InterfaceId => alt.typeId.name + DomainTSStruct.implId(interfaceId).name + "Serialized"
-              case al: AliasId => {
-                val dealiased = DomainTSImports.dealias(ctx.domain, al)
-                dealiased match {
-                  case _: IdentifierId => "string"
-                  case _               => dealiased.name + "Serialized"
-                }
-              }
-              case _: IdentifierId => "string"
-              case _               => alt.typeId.name + "Serialized"
-            }
-        ).mkString(" | ")}} {
+       |    public static serialize(adt: $name): {[key: string]: $serializeReturn} {
        |        let className = adt.getClassName();
-       |        ${if (hasInterfaces) "const fullClassName = adt.getFullClassName();" else ""}
-       |        ${if (adtHasAdt(alternatives) || hasInterfaces) "let serialized: any = undefined;" else ""}
-       |${alternatives
-        .filter(al => al.typeId.isInstanceOf[AdtId]).map(al => al.typeId.asInstanceOf[AdtId]).map(
-          adtId =>
-            s"if (${adtId.name}Helpers.isInstanceOf(adt)) {\n    className = '${adtId.name}';\n    serialized = ${adtId.name}Helpers.serialize(adt as ${adtId.name});\n}"
-        ).mkString(" else \n").shift(8)}
-       |${alternatives
-        .filter(al => al.typeId.isInstanceOf[InterfaceId]).map(al => al.typeId.asInstanceOf[InterfaceId]).map(
-          interfaceId =>
-            s"if (${interfaceId.name}${DomainTSStruct.implId(interfaceId).name}.isRegisteredType(fullClassName)) {\n    className = '${interfaceId.name}'; serialized = {[fullClassName]: adt.serialize()};\n}"
-        ).mkString(" else \n").shift(8)}
-       |${alternatives
-        .filter(al => al.memberName.isDefined).map(a => s"if (className == '${a.typeId.name}') {\n    className = '${a.memberName.get}'\n}").mkString("\n").shift(8)}
+       |        $fullClassDeclAdt
+       |        $serializedDecl
+       |$adtBranches
+       |$ifaceBranches
+       |$memberNameBranches
        |        return {
-       |            [className]: ${if (adtHasAdt(alternatives) || hasInterfaces) "serialized || " else ""}adt.serialize()
+       |            [className]: ${returnSerialized}adt.serialize()
        |        };
        |    }
        |
-       |    public static deserialize(data: {[key: string]: ${alternatives
-        .map(
-          alt =>
-            alt.typeId match {
-              case interfaceId: InterfaceId => alt.typeId.name + DomainTSStruct.implId(interfaceId).name + "Serialized"
-              case al: AliasId => {
-                val dealiased = DomainTSImports.dealias(ctx.domain, al)
-                dealiased match {
-                  case _: IdentifierId => "string"
-                  case _               => dealiased.name + "Serialized"
-                }
-              }
-              case _: IdentifierId => "string"
-              case _               => alt.typeId.name + "Serialized"
-            }
-        ).mkString(" | ")}}): $name {
+       |    public static deserialize(data: {[key: string]: $serializeReturn}): $name {
        |        const id = Object.keys(data)[0];
        |        const content = (data as any)[id];
        |        switch (id) {
-       |${alternatives.map(a => "case '" + a.wireId + "': return " + conv.deserializeType("content", a.typeId, asAny = true) + ";").mkString("\n").shift(12)}
+       |$cases
        |            default:
        |                throw new Error('Unknown type id ' + id + ' for $name');
        |        }

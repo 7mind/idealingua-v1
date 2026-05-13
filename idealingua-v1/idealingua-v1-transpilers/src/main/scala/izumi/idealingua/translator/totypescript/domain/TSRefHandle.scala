@@ -36,4 +36,12 @@ object TSRefHandle {
     * import contribution.
     */
   final case class TypeRef(typeId: TypeId) extends TSRefHandle
+
+  /** Reference to the serialized (`forSerialized = true`) shape of the
+    * given type. Resolver delegates to
+    * `DomainTSTypeConverter.toNativeType(id, forSerialized = true)`.
+    * F-TextTree M2: introduced to capture the second-most-common typed
+    * reference in TS renderers (DTO/Interface/AltOut shapes).
+    */
+  final case class SerializedTypeRef(typeId: TypeId) extends TSRefHandle
 }
