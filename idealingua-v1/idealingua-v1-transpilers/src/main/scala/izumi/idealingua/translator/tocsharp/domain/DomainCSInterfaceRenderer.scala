@@ -1,6 +1,8 @@
 package izumi.idealingua.translator.tocsharp.domain
 
 import izumi.fundamentals.platform.strings.IzString._
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.common.TypeId.InterfaceId
 import izumi.idealingua.model.il.ast.typed.{NodeMeta, Structure, Super, TypeDef => LegacyTypeDef}
 import izumi.idealingua.translator.tocsharp.CSharpImports
@@ -11,16 +13,12 @@ import izumi.idealingua.typer.ir.{Domain, FlatStruct, TypeDef => NewTypeDef}
   * `InterfaceProduct` the legacy `CSharpTranslator.renderInterface`
   * produces (modulo the extension chain).
   *
-  * IMPL-10-prep-Cs1: byte-parity port now consumes `DomainCSClass` /
-  * `DomainCSField` (Domain-backed). `Typespace` no longer threaded; the
-  * legacy `ts.inheritance.parentsInherited(i.id).filter(_ != i.id)` lookup
-  * collapses to `domain.parents.getOrElse(i.id, Set.empty)` (which is by
-  * contract the set of transitively-inherited interfaces, excluding self).
-  *
-  * Two emitted top-level shapes: the interface declaration and the
-  * companion implementing class (`<Name><Name>Struct`).
-  *
-  * Extension chain is omitted as in the legacy default.
+  * F-TextTree M3 — ported to the typed-renderer protocol. Two emitted
+  * top-level shapes: the interface declaration and the companion
+  * implementing class (`<Name><Name>Struct`). The envelope is composed
+  * as `TextTree[CSRefHandle]`; the interface inheritance list is
+  * pre-rendered (since legacy emits `<IfaceName>` plain — not a fully
+  * qualified path — through `iface.name`, not through the converter).
   */
 final class DomainCSInterfaceRenderer(ctx: DomainCSContext) {
 
@@ -45,6 +43,7 @@ final class DomainCSInterfaceRenderer(ctx: DomainCSContext) {
   ): InterfaceProduct = {
     implicit val _domain: Domain    = ctx.domain
     implicit val _im: CSharpImports = im
+    val resolver                    = new DomainCSTypeResolver()
 
     val flat = ctx.domain.flattenedStructs.getOrElse(
       i.id,
@@ -53,15 +52,9 @@ final class DomainCSInterfaceRenderer(ctx: DomainCSContext) {
     val structure = DomainCSStruct.fromFlat(i.id, flat, i.struct.superclasses, ctx.domain)
     val eid       = DomainCSStruct.implId(i.id)
 
-    // Legacy `ts.inheritance.parentsInherited(i.id).filter(_ != i.id)` —
-    // walks ONLY the `interfaces` edge (not `+concept` mixins). The
-    // `domain.parents(i.id)` set is broader: it includes concept-derived
-    // interface mixins too. Recompute the strict-interface-edge closure
-    // here so `+IntPair`-mixed fields stay surfaced on the iface (legacy
-    // `InheritanceQueriesImpl.safeParentsInherited`).
     val parentIfaces: Set[izumi.idealingua.model.common.TypeId] =
       strictInterfaceClosure(i.id).toSet[izumi.idealingua.model.common.TypeId]
-    val validFields  = structure.all.filterNot(f => parentIfaces.contains(f.defn.definedBy))
+    val validFields = structure.all.filterNot(f => parentIfaces.contains(f.defn.definedBy))
     val ifaceFields =
       validFields.map(f => (f.defn.variance.nonEmpty, DomainCSField(f.field, eid.name, Seq.empty)))
 
@@ -79,18 +72,20 @@ final class DomainCSInterfaceRenderer(ctx: DomainCSContext) {
     )
     val _ = _dto
 
-    val iface =
-      s"""${im.renderUsings()}
+    val ifaceFieldsRendered = ifaceFields
+      .map(f => s"${if (f._1) "// Would have been covariance, but C# doesn't support it:\n// " else ""}${f._2.renderMember(true)}").mkString("\n")
+
+    val ifaceTree: TextTree[CSRefHandle] =
+      q"""${im.renderUsings()}
          |$ifacePreSplice
          |public interface ${i.id.name}$ifaceImplements {
-         |${ifaceFields
-          .map(f => s"${if (f._1) "// Would have been covariance, but C# doesn't support it:\n// " else ""}${f._2.renderMember(true)}").mkString("\n").shift(4)}
+         |${ifaceFieldsRendered.shift(4)}
          |}
          |$ifacePostSplice
          |       """.stripMargin
 
-    val companion =
-      s"""$companionPreSplice
+    val companionTree: TextTree[CSRefHandle] =
+      q"""$companionPreSplice
          |${struct.renderHeader()} {
          |${struct.render(withWrapper = false, withSlices = true, withRTTI = true, withCTORs = Some(i.id.name)).shift(4)}
          |}
@@ -98,17 +93,13 @@ final class DomainCSInterfaceRenderer(ctx: DomainCSContext) {
          |       """.stripMargin
 
     InterfaceProduct(
-      iface,
-      companion,
+      ifaceTree.mapRender(resolver.resolve),
+      companionTree.mapRender(resolver.resolve),
       im.renderImports(List("IRT", "System", "System.Collections", "System.Collections.Generic", "System.Reflection") ++ extraImports),
     )
   }
 
-  /** Strict-interface-edge transitive closure (mirrors legacy
-    * `InheritanceQueriesImpl.safeParentsInherited`). Walks only
-    * `struct.superclasses.interfaces`, not concept mixins. Returns the
-    * set of transitive parent interfaces *excluding* `start` itself.
-    */
+  /** Strict-interface-edge transitive closure. */
   private def strictInterfaceClosure(start: InterfaceId): Set[InterfaceId] = {
     val acc     = scala.collection.mutable.LinkedHashSet.empty[InterfaceId]
     val visited = scala.collection.mutable.LinkedHashSet.empty[InterfaceId]

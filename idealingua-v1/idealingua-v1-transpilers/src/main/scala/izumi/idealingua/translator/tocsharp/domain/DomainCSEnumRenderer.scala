@@ -1,32 +1,18 @@
 package izumi.idealingua.translator.tocsharp.domain
 
-import izumi.fundamentals.platform.strings.IzString._
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.translator.tocsharp.products.CogenProduct.EnumProduct
 import izumi.idealingua.typer.ir.TypeDef
 
 /** Renders a new-IR `TypeDef.Enum` as the same pre-extension `EnumProduct`
-  * the legacy `CSharpTranslator.renderEnumeration` produces before the
-  * extension chain runs.
+  * the legacy `CSharpTranslator.renderEnumeration` produces.
   *
-  * IMPL-7c Phase B M1 scope: enum body + `<Name>Helpers` companion only.
-  * The legacy `renderEnumeration` interpolates
-  * `${ext.postModelEmit(ctx, i)}` at the tail of the body and threads
-  * `ext.imports(ctx, i)` into the header import list. The default C#
-  * extension set (`JsonNetExtension`) has no `postModelEmit` for
-  * `Enumeration` and no `imports` for `Enumeration` — both return empty
-  * with the default extension list, so the pre-extension product is
-  * byte-equal to the post-extension product for the default
-  * configuration. M2+ will reintegrate the extension chain when it
-  * starts to matter for richer renderers.
-  *
-  * `TypeDef.Enum` carries `id: EnumId`, `members: List[EnumMember]`,
-  * `meta: NodeMeta` — `EnumMember` is the legacy `EnumMember` type
-  * (see `idealingua-v1-model/.../typed/TypeDef.scala`), so the body
-  * construction is field-for-field identical to legacy.
-  *
-  * The header is `im.renderImports(List("System"))` and is threaded from
-  * the call-site (the per-definition `CSharpImports` instance is owned
-  * by the production translator, not this renderer).
+  * F-TextTree M3 — ported to the typed-renderer protocol. The enum body
+  * contributes no type references (members are plain string literals),
+  * so the harvest set is empty; protocol adoption is purely structural,
+  * keeping the renderer family uniform for the future option-B'
+  * import-collection pass.
   */
 final class DomainCSEnumRenderer(@annotation.unused ctx: DomainCSContext) {
 
@@ -35,31 +21,43 @@ final class DomainCSEnumRenderer(@annotation.unused ctx: DomainCSContext) {
 
   /** M5 production-swap variant: takes a `postSplice` (JsonNet converter
     * block) spliced into the legacy `${ext.postModelEmit(ctx, i)}` slot
-    * (legacy `:292`) and a `header` (import lines) for the product header.
-    *
-    * The default no-splice call (used by M1 unit tests) preserves the
-    * exact pre-M5 string shape (`postSplice = ""`, `header = ""`).
+    * and a `header` (import lines) for the product header.
     */
   def renderEnumeration(i: TypeDef.Enum, postSplice: String, header: String): EnumProduct = {
     val name = i.id.name
 
-    val members =
-      i.members.map(_.value).map(m => s"$m${if (m == i.members.last.value) "" else ","}").mkString("\n").shift(4)
-    val allMembers =
-      i.members.map(_.value).map(m => s"$name.$m${if (m == i.members.last.value) "" else ","}").mkString("\n").shift(8)
-    val fromCases =
-      i.members.map(_.value).map(m => s"""case \"$m\": return $name.$m;""").mkString("\n").shift(12)
+    val membersTree: TextTree[CSRefHandle] = {
+      val it = i.members.map(_.value).iterator
+      it.map { m =>
+        val suffix = if (it.hasNext) "," else ""
+        TextTree.text[CSRefHandle](s"$m$suffix")
+      }.toList.joinN()
+    }
 
-    val decl: String =
-      s"""// $name Enumeration
+    val allMembersTree: TextTree[CSRefHandle] = {
+      val it = i.members.map(_.value).iterator
+      it.map { m =>
+        val suffix = if (it.hasNext) "," else ""
+        TextTree.text[CSRefHandle](s"$name.$m$suffix")
+      }.toList.joinN()
+    }
+
+    val fromCasesTree: TextTree[CSRefHandle] = {
+      i.members.map(_.value).map { m =>
+        TextTree.text[CSRefHandle](s"""case "$m": return $name.$m;""")
+      }.joinN()
+    }
+
+    val tree: TextTree[CSRefHandle] =
+      q"""// $name Enumeration
          |public enum $name {
-         |$members
+         |${membersTree.shift(4)}
          |}
          |
          |public static class ${name}Helpers {
          |    public static $name From(string value) {
          |        switch (value) {
-         |$fromCases
+         |${fromCasesTree.shift(12)}
          |            default:
          |                throw new ArgumentOutOfRangeException();
          |        }
@@ -71,7 +69,7 @@ final class DomainCSEnumRenderer(@annotation.unused ctx: DomainCSContext) {
          |
          |    // The elements in the array are still changeable, please use with care.
          |    private static readonly $name[] all = new $name[] {
-         |$allMembers
+         |${allMembersTree.shift(8)}
          |    };
          |
          |    public static $name[] GetAll() {
@@ -88,6 +86,6 @@ final class DomainCSEnumRenderer(@annotation.unused ctx: DomainCSContext) {
          |$postSplice
          |""".stripMargin
 
-    EnumProduct(decl, header, "")
+    EnumProduct(tree.mapRender(_ => ""), header, "")
   }
 }

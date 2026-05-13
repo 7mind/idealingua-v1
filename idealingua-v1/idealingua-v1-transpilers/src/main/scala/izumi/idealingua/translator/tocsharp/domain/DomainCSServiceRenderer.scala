@@ -1,6 +1,8 @@
 package izumi.idealingua.translator.tocsharp.domain
 
 import izumi.fundamentals.platform.strings.IzString._
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.common.TypeId.DTOId
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.Algebraic
@@ -12,9 +14,16 @@ import izumi.idealingua.typer.ir.{Domain, TypeDef => NewTypeDef}
   * `ServiceProduct` / `BuzzerProduct` the legacy
   * `CSharpTranslator.renderService` / `renderBuzzer` produces.
   *
-  * IMPL-10-prep-Cs2: body uses Domain-backed converter family AND
-  * Domain-backed JsonNet extension. `Typespace` is no longer threaded
-  * anywhere on the C# new-typer path.
+  * F-TextTree M3 — the top-level service / buzzer envelopes are composed
+  * as `TextTree[CSRefHandle]` and rendered via `.mapRender(resolver.resolve)`
+  * at the product boundary. Inner section helpers (`renderServiceClient`,
+  * `renderServiceDispatcher`, etc.) continue to return `String`: the
+  * sections are heavily templated with conditional substitutions
+  * delegating into `methodProduct` and `adtRenderer`, which themselves
+  * already render fully-resolved C# code via the converter family.
+  * Adopting TextTree at the envelope keeps the renderer family on the
+  * typed protocol while avoiding gratuitous churn in the per-section
+  * helpers — the byte-parity contract is preserved by `verifyGoldens`.
   */
 final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSAdtRenderer) {
 
@@ -30,24 +39,31 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
   def renderService(i: NewTypeDef.Service, im: CSharpImports, withJsonNet: Boolean): ServiceProduct = {
     implicit val _domain: Domain    = ctx.domain
     implicit val _im: CSharpImports = im
+    val resolver                    = new DomainCSTypeResolver()
     spliceJsonNet = withJsonNet
 
-    val svc =
-      s"""${renderServiceUsings(i)}
+    val usings     = renderServiceUsings(i)
+    val models     = renderServiceModels(i)
+    val client     = renderServiceClient(i)
+    val dispatcher = renderServiceDispatcher(i)
+    val serverBase = renderServiceServerBase(i)
+
+    val tree: TextTree[CSRefHandle] =
+      q"""$usings
          |
          |public static class ${i.id.name} {
-         |${renderServiceModels(i).shift(4)}
+         |${models.shift(4)}
          |}
          |
          |// ============== Service Client ==============
-         |${renderServiceClient(i)}
+         |$client
          |
          |// ============== Service Dispatcher ==============
-         |${renderServiceDispatcher(i)}
+         |$dispatcher
          |
          |// ============== Service Server Base ==============
-         |${renderServiceServerBase(i)}
-         """.stripMargin
+         |$serverBase
+         |         """.stripMargin
 
     val baseImports = List("IRT", "IRT.Marshaller", "IRT.Transport.Client", "System", "System.Collections", "System.Collections.Generic")
     val extraImports =
@@ -56,7 +72,7 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
          izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.importsAdt).distinct
       else List.empty
     ServiceProduct(
-      svc,
+      tree.mapRender(resolver.resolve),
       im.renderImports(baseImports ++ extraImports),
     )
   }
@@ -158,24 +174,31 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
   def renderBuzzer(i: NewTypeDef.Buzzer, im: CSharpImports, withJsonNet: Boolean): BuzzerProduct = {
     implicit val _domain: Domain    = ctx.domain
     implicit val _im: CSharpImports = im
+    val resolver                    = new DomainCSTypeResolver()
     spliceJsonNet = withJsonNet
 
-    val svc =
-      s"""${renderBuzzerUsings(i)}
+    val usings     = renderBuzzerUsings(i)
+    val models     = renderBuzzerModels(i)
+    val client     = renderBuzzerClient(i)
+    val dispatcher = renderBuzzerDispatcher(i)
+    val handlers   = renderBuzzerHandlersDummy(i)
+
+    val tree: TextTree[CSRefHandle] =
+      q"""$usings
          |
          |public static class ${i.id.name} {
-         |${renderBuzzerModels(i).shift(4)}
+         |${models.shift(4)}
          |}
          |
          |// ============== Client ==============
-         |${renderBuzzerClient(i)}
+         |$client
          |
          |// ============== Dispatcher ==============
-         |${renderBuzzerDispatcher(i)}
+         |$dispatcher
          |
          |// ============== Buzzer Handlers Base ==============
-         |${renderBuzzerHandlersDummy(i)}
-         """.stripMargin
+         |$handlers
+         |         """.stripMargin
 
     val baseImports = List("IRT", "IRT.Marshaller", "IRT.Transport.Client", "System", "System.Collections", "System.Collections.Generic")
     val extraImports =
@@ -184,7 +207,7 @@ final class DomainCSServiceRenderer(ctx: DomainCSContext, adtRenderer: DomainCSA
          izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.importsAdt).distinct
       else List.empty
     BuzzerProduct(
-      svc,
+      tree.mapRender(resolver.resolve),
       im.renderImports(baseImports ++ extraImports),
     )
   }

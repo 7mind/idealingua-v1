@@ -1,5 +1,7 @@
 package izumi.idealingua.translator.tocsharp.domain
 
+import izumi.fundamentals.platform.strings.TextTree
+import izumi.fundamentals.platform.strings.TextTree.*
 import izumi.idealingua.model.common.TypeId.{BuzzerId, DTOId, ServiceId}
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.{Algebraic, Alternative, Singular, Struct, Void}
@@ -9,10 +11,15 @@ import izumi.idealingua.typer.ir.{Domain, TypeDef => NewTypeDef}
 
 /** Per-method rendering helpers for the C# service / buzzer renderer.
   *
-  * IMPL-10-prep-Cs2: body uses `DomainCSharpType` / `DomainCSClass` /
-  * `DomainCSField` (Domain-backed) for renderer-internal codegen. The
-  * JsonNet extension is itself fully Domain-backed (Cs2), so no
-  * `Typespace` parameter is threaded anywhere on the new-typer path.
+  * F-TextTree M3 — the outer output-model envelopes (`renderServiceMethodInModel`,
+  * `renderMethodOutModelImpl`) are composed as `TextTree[CSRefHandle]` and
+  * rendered at the helper return boundary. Per-method signature and
+  * dispatcher helpers continue to return `String`: they emit short
+  * inline fragments (single switch arms, comma-separated argument lists,
+  * etc.) whose `s"..."` shape exactly matches what gets spliced into the
+  * enclosing service envelope. Porting those to TextTree would add
+  * indentation noise without functional improvement; the byte-parity
+  * contract is what `verifyGoldens` enforces.
   */
 final class DomainCSServiceMethodProduct(ctx: DomainCSContext, adtRenderer: DomainCSAdtRenderer) {
 
@@ -82,27 +89,27 @@ final class DomainCSServiceMethodProduct(ctx: DomainCSContext, adtRenderer: Doma
   def renderServiceMethodInModel(i: DTOId, structure: SimpleStructure)(implicit imports: CSharpImports, domain: Domain): String =
     renderServiceMethodInModel(i, structure, withExtensions = false)
 
-  /** When `withExtensions = true`, splices the JsonNet pre/post around the
-    * per-method I/O DTO emission. Both renderer-internal codegen and the
-    * JsonNet extension are Domain-backed (Cs2), so no `Typespace` is
-    * threaded on this path.
-    */
   def renderServiceMethodInModel(i: DTOId, structure: SimpleStructure, withExtensions: Boolean)(
     implicit imports: CSharpImports,
     domain: Domain,
   ): String = {
-    val csClass = DomainCSClass(i, structure)
+    val resolver = new DomainCSTypeResolver()
+    val csClass  = DomainCSClass(i, structure)
 
     if (!withExtensions) {
-      s"""
-         |${csClass.render(withWrapper = true, withSlices = false, withRTTI = true)}
-         |""".stripMargin
+      val tree: TextTree[CSRefHandle] =
+        q"""
+           |${csClass.render(withWrapper = true, withSlices = false, withRTTI = true)}
+           |""".stripMargin
+      tree.mapRender(resolver.resolve)
     } else {
       val pre  = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.preStruct(csClass.id.name)
       val post = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.postStruct(ctx.domain, csClass.id.name, csClass)
-      s"""$pre
-         |${csClass.render(withWrapper = true, withSlices = false, withRTTI = true)}
-         |$post""".stripMargin
+      val tree: TextTree[CSRefHandle] =
+        q"""$pre
+           |${csClass.render(withWrapper = true, withSlices = false, withRTTI = true)}
+           |$post""".stripMargin
+      tree.mapRender(resolver.resolve)
     }
   }
 
