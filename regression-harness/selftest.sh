@@ -49,6 +49,10 @@ DTOFIELDS_ONLY="$HARNESS_DIR/selftest-corpus/dtofields-only"
 # the `v1419-vs-head-*` cells below — a 13-fixture cross-release regression
 # probe vs the 3-fixture dtofields-only probe.
 BROAD="$HARNESS_DIR/selftest-corpus/broad"
+# X1 corpus: subset of main-tests that BOTH v1.4.19 and HEAD idlc compile (excludes
+# the 10 R2-added coverage/* fixtures + idltest/blobtest.domain which exercises
+# TBLOB → Array[Byte] not implemented in v1.4.19's Scala backend).
+V1419_COMPAT="$HARNESS_DIR/selftest-corpus/main-tests-v1419-compat"
 
 mode="${1:-sanity}"
 shift || true
@@ -194,6 +198,24 @@ case "$mode" in
       --old "git:v1.4.19" \
       --new self \
       --lang scala \
+      "$@"
+    ;;
+  v1419-vs-head-compat-scala|v1419-vs-head-compat-typescript|v1419-vs-head-compat-csharp)
+    if [[ ! -d "$V1419_COMPAT/source" ]]; then
+      echo "selftest: missing corpus at $V1419_COMPAT/source" >&2
+      exit 2
+    fi
+    case "$mode" in
+      v1419-vs-head-compat-scala)      lang=scala ;;
+      v1419-vs-head-compat-typescript) lang=typescript ;;
+      v1419-vs-head-compat-csharp)     lang=csharp ;;
+    esac
+    cd "$REPO_ROOT"
+    exec "$HARNESS_DIR/idl-regress" \
+      --project "$V1419_COMPAT" \
+      --old "git:v1.4.19" \
+      --new self \
+      --lang "$lang" \
       "$@"
     ;;
   *)

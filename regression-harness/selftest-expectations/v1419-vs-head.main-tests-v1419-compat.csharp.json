@@ -1,0 +1,19 @@
+{
+  "comment": "X1 baseline for `idl-regress --old git:v1.4.19 --new self --lang csharp` against the v1.4.19-compatible subset (28 domains, coverage/ + blobtest excluded). Same regression class as the Scala leg: **v1.4.19's idlc compiles the corpus cleanly** (269 .cs files emitted; matches HEAD's idlc on the same input), and the failure is **on the dotnet sample-app build side**: 4 wireIds in `izumi.test.domain02.DTO1` family hit CS1503 `cannot convert from 'long' to 'Izumi.Test.Domain01.TestValIdentifier'` (and vice versa) at sample_app.cs lines 302, 315, 319, 321. Root cause: case-class / record field-order regression in DTO1 (TestInterface2 + TestInterface3 inheritance): v1.4.19 emits `(if1Field_overriden, if1Field_inherited, fromOtherDomain, fromOtherDomainDirect, if3Field, if2Field, sameField, sameEverywhereField)`, HEAD emits `(if1Field_overriden, if1Field_inherited, sameField, sameEverywhereField, fromOtherDomain, fromOtherDomainDirect, if3Field, if2Field)`. Identical to the Scala leg's finding (same generator, different rendering target). The TS leg PASSES (zero divergences) because the TS sample-app uses object-literal construction and isn't sensitive to positional-arg ordering. Action: future runs MUST observe the same build-failure-old-side mode at the same 4 wireIds; a change is an explicit signal that ordering shifted again. Separate pre-existing C# adapter defect (`dotnet run` SYSLIB0014 stdout/stderr leak surfaced in R4) is NOT relevant here — the build fails BEFORE the sample app runs, so the canonicalize defect doesn't surface in this baseline.",
+  "old": "git:v1.4.19",
+  "new": "self",
+  "lang": "csharp",
+  "corpus": "main-tests-v1419-compat",
+  "exit_kind": "build-failure-old-side",
+  "exit_code": 2,
+  "failure_site": "dotnet build of sample-app against v1.4.19-generated DTO1",
+  "failure_message": "dotnet exit=1: 16x CS1503 `cannot convert from 'long' to TestValIdentifier`/`TestValIdentifier to long` at sample_app.cs lines 302, 315, 319, 321 (the four DTO1 positional ctor invocations across DTO1, SomeResp.DTO1, TestAliasServ.OutTestADTIdImportedReturn.DTO1, TestAliasServ.OutTestADTIdReturn.DTO1)",
+  "version_gap_class": "case-class field order regression in inherited-fields layout (TestInterface2 + TestInterface3): v1.4.19 places `fromOtherDomain*` ahead of `sameField*`; HEAD places `sameField*` ahead",
+  "affected_wireids": [
+    "izumi.test.domain02.DTO1",
+    "izumi.test.domain02.SomeResp\tDTO1",
+    "izumi.test.domain02.TestAliasServ.OutTestADTIdImportedReturn\tDTO1",
+    "izumi.test.domain02.TestAliasServ.OutTestADTIdReturn\tDTO1"
+  ],
+  "divergences": []
+}

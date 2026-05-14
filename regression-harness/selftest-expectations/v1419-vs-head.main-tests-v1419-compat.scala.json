@@ -1,0 +1,19 @@
+{
+  "comment": "X1 baseline for `idl-regress --old git:v1.4.19 --new self --lang scala` against the v1.4.19-compatible subset of `main-tests/source/`. The subset excludes (a) the 10 R2-added `coverage/*.domain` fixtures and (b) the F5-fix-added `idltest/blobtest.domain` (TBLOB → Array[Byte] mapping not implemented in v1.4.19's ScalaTypeConverter, raises `IDLException: No type->generic mappings implemented yet`). With those exclusions, **v1.4.19's idlc compiles the corpus cleanly** (29 → 28 domains, 214 .scala files emitted; matches HEAD's idlc on the same input). The remaining failure is **on the sample-app build side, not the idlc side**: 4 wireIds in domain02 (`izumi.test.domain02.DTO1`, `SomeResp.DTO1`, `TestAliasServ.TestADTIdImportedReturnOutput.DTO1`, `TestAliasServ.TestADTIdReturnOutput.DTO1`) fail to compile against v1.4.19-generated code because **`DTO1`'s case-class field order changed between v1.4.19 and HEAD**. This is a REAL wire-format-impacting regression: v1.4.19 emits `final case class DTO1(if1Field_overriden, if1Field_inherited, fromOtherDomain, fromOtherDomainDirect, if3Field, if2Field, sameField, sameEverywhereField)` while HEAD emits `final case class DTO1(if1Field_overriden, if1Field_inherited, sameField, sameEverywhereField, fromOtherDomain, fromOtherDomainDirect, if3Field, if2Field)`. Same field SET; different ORDER. The positional `new DTO1(...)` call in `sample_app.scala` therefore type-checks against one version but not the other. PR-02 IMPL-7a.2-Fe series (see tasks.md commits ef4a75a..fa11569) is the in-flight refinement of inherited-field ordering — this baseline pins the surfaced regression. Action: future runs MUST observe the same build-failure-old-side mode at the same 4 wireIds; any change is an explicit signal that DTO1 ordering shifted again and the operator must re-baseline (or that the regression got resolved, in which case the baseline should flip to divergences=[]).",
+  "old": "git:v1.4.19",
+  "new": "self",
+  "lang": "scala",
+  "corpus": "main-tests-v1419-compat",
+  "exit_kind": "build-failure-old-side",
+  "exit_code": 2,
+  "failure_site": "scala-cli sample-app build against v1.4.19-generated DTO1",
+  "failure_message": "scala-cli exit=1: 16x `type mismatch; found: Long(2L)/TestValIdentifier; required: TestValIdentifier/Long` at sample_app.scala lines 897, 1353, 1361, 1369 (all four DTO1-positional invocations)",
+  "version_gap_class": "case-class field order regression in inherited-fields layout (TestInterface2 + TestInterface3): v1.4.19 places `fromOtherDomain*` ahead of `sameField*`; HEAD places `sameField*` ahead",
+  "affected_wireids": [
+    "izumi.test.domain02.DTO1",
+    "izumi.test.domain02.SomeResp\tDTO1",
+    "izumi.test.domain02.TestAliasServ.TestADTIdImportedReturnOutput\tDTO1",
+    "izumi.test.domain02.TestAliasServ.TestADTIdReturnOutput\tDTO1"
+  ],
+  "divergences": []
+}
