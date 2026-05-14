@@ -477,27 +477,48 @@ object Idealingua {
         ).map(_ in Scope.Compile.all),
         platforms = Targets.jvm3,
         settings  = Seq(
-          "unmanagedSourceDirectories" in SettingScope.Compile += """(LocalRootProject / baseDirectory).value / "idealingua-v1" / "idealingua-v1-test-defs" / "golden" / "scala"""".raw,
-          "regenerateGoldens" := """{
-                                   |  val log      = streams.value.log
-                                   |  val repoRoot = (LocalRootProject / baseDirectory).value.getAbsolutePath
-                                   |  log.info("regenerateGoldens: starting")
-                                   |  val cp = (Compile / fullClasspath).value.files
-                                   |  val r  = (Compile / runner).value
-                                   |  r.run("izumi.idealingua.harness.RegenerateMain", cp, Seq(repoRoot), log)
-                                   |    .failed.foreach(e => throw e)
-                                   |  log.info("regenerateGoldens: done")
-                                   |}""".stripMargin.raw,
-          "verifyGoldens" := """{
-                               |  val log      = streams.value.log
-                               |  val repoRoot = (LocalRootProject / baseDirectory).value.getAbsolutePath
-                               |  log.info("verifyGoldens: starting")
-                               |  val cp = (Compile / fullClasspath).value.files
-                               |  val r  = (Compile / runner).value
-                               |  r.run("izumi.idealingua.harness.VerifyMain", cp, Seq(repoRoot), log)
-                               |    .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
-                               |  log.info("verifyGoldens: all goldens match")
-                               |}""".stripMargin.raw,
+          // R1: test sources are generated at build time (under
+          // `<harnessTarget>/generated-sources/test-harness/`) by the
+          // `idealingua-v1-compiler` module's `TestCodegenMain` entrypoint.
+          // Generation is wired as a `Compile / sourceGenerators` task so
+          // sbt invokes it before `Compile / compile`. The MCP bridge
+          // classpath resources land under `scala-mcp-resources/` and are
+          // exposed via `unmanagedResourceDirectories`.
+          //
+          // The `scala/` subtree is the Scala-translator output and feeds
+          // compilation. `scala-mcp/` (per-service bridge sources) is NOT
+          // compiled — those modules depend on http4s symbols that aren't on
+          // this module's classpath; they exist as artefacts the
+          // `McpBridgeConsistencySpec` reads at test time. `scala-mcp-resources/`
+          // is wired below as a `Compile` resource directory.
+          "sourceGenerators" in SettingScope.Compile += """Def.task[Seq[File]] {
+                                   |  val log         = streams.value.log
+                                   |  val repoRoot    = (LocalRootProject / baseDirectory).value.toPath.toAbsolutePath
+                                   |  val genRoot     = (Compile / target).value.toPath.resolve("generated-sources/test-harness").toAbsolutePath
+                                   |  val codegenCp   = (`idealingua-v1-compiler` / Compile / fullClasspath).value.files
+                                   |  val codegenRun  = (`idealingua-v1-compiler` / Compile / runner).value
+                                   |  log.info(s"test-harness codegen: generating into $genRoot")
+                                   |  codegenRun.run(
+                                   |    "izumi.idealingua.compiler.testcodegen.TestCodegenMain",
+                                   |    codegenCp,
+                                   |    Seq(repoRoot.toString, genRoot.toString),
+                                   |    log,
+                                   |  ).failed.foreach(e => throw new MessageOnlyException(e.getMessage))
+                                   |  val scalaSubdir = genRoot.resolve("scala")
+                                   |  if (java.nio.file.Files.exists(scalaSubdir)) {
+                                   |    val s = java.nio.file.Files.walk(scalaSubdir)
+                                   |    try {
+                                   |      val it  = s.iterator()
+                                   |      val buf = scala.collection.mutable.ArrayBuffer.empty[java.io.File]
+                                   |      while (it.hasNext) {
+                                   |        val p = it.next()
+                                   |        if (java.nio.file.Files.isRegularFile(p) && p.getFileName.toString.endsWith(".scala")) buf += p.toFile
+                                   |      }
+                                   |      buf.toSeq
+                                   |    } finally s.close()
+                                   |  } else Seq.empty[java.io.File]
+                                   |}.taskValue""".stripMargin.raw,
+          "unmanagedResourceDirectories" in SettingScope.Compile += """(Compile / target).value / "generated-sources" / "test-harness" / "scala-mcp-resources"""".raw,
           "runWireFixtures" := """{
                                |  val log      = streams.value.log
                                |  val repoRoot = (LocalRootProject / baseDirectory).value.toPath
@@ -548,10 +569,8 @@ object Idealingua {
       Import("""scala.sys.process._
                |
                |lazy val refreshFlakeTask    = taskKey[Unit]("Refresh flake.nix")
-               |lazy val regenerateGoldens   = taskKey[Unit]("Regenerate Layer A goldens")
-               |lazy val verifyGoldens       = taskKey[Unit]("Verify Layer A goldens against legacy compiler")
-               |lazy val runWireFixtures     = taskKey[Unit]("Run Layer B wire-byte fixtures (placeholder for PR-03.2)")
-               |lazy val runCrossLangInterop = taskKey[Unit]("Run Layer C cross-language interop (placeholder for PR-03.4)")
+               |lazy val runWireFixtures     = taskKey[Unit]("Run Layer B wire-byte fixtures")
+               |lazy val runCrossLangInterop = taskKey[Unit]("Run Layer C cross-language interop")
                |""".stripMargin),
     ),
     globalLibs = Seq(

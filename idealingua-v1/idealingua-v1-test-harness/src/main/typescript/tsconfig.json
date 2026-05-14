@@ -13,7 +13,7 @@
     "noEmit": true,
     "rootDirs": [
       ".",
-      "../../../../idealingua-v1-test-defs/golden/typescript",
+      "../../../target/generated-sources/test-harness/typescript",
       "../../../../idealingua-v1-runtime-rpc-typescript/src/main/resources/runtime/typescript"
     ],
     "baseUrl": ".",
@@ -21,14 +21,14 @@
       "irt": ["../../../../idealingua-v1-runtime-rpc-typescript/src/main/resources/runtime/typescript/irt"],
       "moment": ["./node_modules/moment"],
       "websocket": ["./node_modules/websocket"],
-      "*": ["../../../../idealingua-v1-test-defs/golden/typescript/*"]
+      "*": ["../../../target/generated-sources/test-harness/typescript/*"]
     }
   },
   "include": [
     "driver.ts",
     "Dispatch.ts",
     "FixtureSeeder.ts",
-    "../../../../idealingua-v1-test-defs/golden/typescript/**/*.ts",
+    "../../../target/generated-sources/test-harness/typescript/**/*.ts",
     "../../../../idealingua-v1-runtime-rpc-typescript/src/main/resources/runtime/typescript/irt/**/*.ts"
   ]
 }

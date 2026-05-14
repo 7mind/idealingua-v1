@@ -15,14 +15,15 @@
     <Compile Include="../../../../idealingua-v1-runtime-rpc-csharp/src/main/resources/runtime/csharp/IRT/Marshaller/**/*.cs" />
     <Compile Include="../../../../idealingua-v1-runtime-rpc-csharp/src/main/resources/runtime/csharp/IRT/Logger/**/*.cs" />
     <Compile Include="../../../../idealingua-v1-runtime-rpc-csharp/src/main/resources/runtime/csharp/IRT/*.cs" />
-    <!-- Goldens. -->
-    <Compile Include="../../../../idealingua-v1-test-defs/golden/csharp/**/*.cs" />
-    <!-- Exclude service/buzzer goldens that pull IRT.Transport.Client. -->
-    <Compile Remove="../../../../idealingua-v1-test-defs/golden/csharp/Idltest/Services/TestService.cs" />
-    <Compile Remove="../../../../idealingua-v1-test-defs/golden/csharp/Idltest/Events/TestBuzzer.cs" />
-    <Compile Remove="../../../../idealingua-v1-test-defs/golden/csharp/Izumi/Test/Domain02/TestAliasServ.cs" />
-    <Compile Remove="../../../../idealingua-v1-test-defs/golden/csharp/Izumi/Test/Domain02/NestedAdtsService.cs" />
-    <Compile Remove="../../../../idealingua-v1-test-defs/golden/csharp/Izumi/Test/Domain02/ImportIdService.cs" />
-    <Compile Remove="../../../../idealingua-v1-test-defs/golden/csharp/Izumi/Test/Domain01/OptionalService.cs" />
+    <!-- Build-time generated C# sources (R1: replaces the retired
+         idealingua-v1-test-defs/golden/csharp/ tree). -->
+    <Compile Include="../../../target/generated-sources/test-harness/csharp/**/*.cs" />
+    <!-- Exclude service/buzzer sources that pull IRT.Transport.Client. -->
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Idltest/Services/TestService.cs" />
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Idltest/Events/TestBuzzer.cs" />
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Izumi/Test/Domain02/TestAliasServ.cs" />
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Izumi/Test/Domain02/NestedAdtsService.cs" />
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Izumi/Test/Domain02/ImportIdService.cs" />
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Izumi/Test/Domain01/OptionalService.cs" />
   </ItemGroup>
 </Project>

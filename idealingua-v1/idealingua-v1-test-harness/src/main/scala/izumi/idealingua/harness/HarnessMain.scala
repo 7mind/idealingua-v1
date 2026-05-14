@@ -6,32 +6,13 @@ import java.nio.file.Paths
   *
   * Each object accepts a single argument: the repo root path.
   *
-  * PR-02 IMPL-10b: `RegenerateNewTyperMain` was retired. The harness now runs
-  * `TyperImpl.NewTyper` end-to-end across all three backends, so the dedicated
-  * new-typer regeneration entry point and its `regenerateGoldensNewTyper` sbt
-  * task are redundant — plain `regenerateGoldens` is the canonical path.
+  * R1 (2026-05-14): the `RegenerateMain` and `VerifyMain` entrypoints were
+  * retired alongside the committed `golden/` tree. Per-language test sources
+  * are now generated at build time under
+  * `<harnessModuleTarget>/generated-sources/test-harness/` by the
+  * `idealingua-v1-compiler` module's `TestCodegenMain` entrypoint, wired into
+  * the harness module's `Compile / sourceGenerators`.
   */
-object RegenerateMain {
-  def main(args: Array[String]): Unit = {
-    require(args.length == 1, s"Usage: RegenerateMain <repoRoot>, got ${args.mkString(", ")}")
-    val repoRoot = Paths.get(args(0))
-    GoldenGenerator.regenerate(
-      HarnessCorpus.corpusRoot(repoRoot),
-      HarnessCorpus.goldenRoot(repoRoot),
-    )
-  }
-}
-
-object VerifyMain {
-  def main(args: Array[String]): Unit = {
-    require(args.length == 1, s"Usage: VerifyMain <repoRoot>, got ${args.mkString(", ")}")
-    val repoRoot = Paths.get(args(0))
-    GoldenVerifier.verify(
-      HarnessCorpus.corpusRoot(repoRoot),
-      HarnessCorpus.goldenRoot(repoRoot),
-    )
-  }
-}
 
 object WireFixturesMain {
   def main(args: Array[String]): Unit = {

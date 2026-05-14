@@ -11,8 +11,21 @@ object HarnessCorpus {
   def corpusRoot(repoRoot: Path): Path =
     repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs/main-tests/source")
 
-  def goldenRoot(repoRoot: Path): Path =
-    repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/golden")
+  /** Build-time generated tree root (R1).
+    *
+    * Layout under `<repoRoot>/idealingua-v1/idealingua-v1-test-harness/target/generated-sources/test-harness/`:
+    *
+    *   - `scala/`              — Scala translator output (Compile sources).
+    *   - `scala-mcp/`          — Scala MCP bridge output (Compile sources).
+    *   - `scala-mcp-resources/mcp/` — bridge `*.mcp.json` classpath resources.
+    *   - `typescript/`         — TS translator output + `irt` symlink.
+    *   - `csharp/`             — C# translator output.
+    *
+    * Replaces the legacy committed `idealingua-v1-test-defs/golden/` tree.
+    * Re-populated by the `Compile / sourceGenerators` hook on every build.
+    */
+  def harnessGenRoot(repoRoot: Path): Path =
+    repoRoot.resolve("idealingua-v1/idealingua-v1-test-harness/target/generated-sources/test-harness")
 
   /**
     * Returns the Scala-language sub-tree of the wire-fixtures directory.

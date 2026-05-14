@@ -20,27 +20,30 @@ import scala.meta.*
   * The generator (`DomainServiceMcpRenderer.renderMatchArm`) invokes
   * `OutputWrapPolicy.isWrapped` directly when emitting the wrap literal — so
   * a fresh emission is consistent by construction. The value of this spec is
-  * **drift detection on the golden artefacts**: the
-  * `idealingua-v1-test-defs/golden/scala-mcp/` files are committed copies of
-  * the generator output, NOT regenerated on every test run. If someone
-  * refactors `OutputWrapPolicy.isWrapped` (e.g. flips the `Struct` arm to
-  * `true`) without re-running `regenerateGoldens`, the goldens stay stale and
-  * this test flags the inconsistency.
+  * **drift detection across the renderer / wrap-policy pair**: the test
+  * recompiles the corpus through both the bridge renderer (via the
+  * build-time-generated `<harness-target>/generated-sources/test-harness/scala-mcp/`
+  * sources) AND `OutputWrapPolicy.isWrapped`, and asserts they agree
+  * per-method. R1 (2026-05-14): the read path now points at the
+  * build-time-generated tree instead of the retired committed
+  * `idealingua-v1-test-defs/golden/scala-mcp/` tree — semantically the same
+  * drift check, only the source-of-truth moved from commit-time to
+  * build-time.
   *
   * Mechanics:
-  *   1. Parse each `<Service>Mcp.scala` golden via scala.meta. Extract every
-  *      `(methodName, wrapFlag)` pair from `call(req, argsJson,
-  *      methodId_<m>, wrap = <bool>, ...)` invocations.
+  *   1. Parse each `<Service>Mcp.scala` build-time-generated source via
+  *      scala.meta. Extract every `(methodName, wrapFlag)` pair from
+  *      `call(req, argsJson, methodId_<m>, wrap = <bool>, ...)` invocations.
   *   2. Compile the corpus IDL. Walk every `TypeDef.Service`, then every
   *      `DefMethod.RPCMethod`. Apply `OutputWrapPolicy.isWrapped` to the
   *      output.
   *   3. Assert: for every `(serviceName, methodName)` key, the parsed
-  *      goldenflag equals the computed flag.
+  *      parsed flag equals the computed flag.
   *
   * Hand-written services in `idealingua-v1-test-defs/src/main/scala/...`
   * (e.g. `GreeterService`) are NOT covered — they have no IDL definition, so
   * `OutputWrapPolicy.isWrapped` has nothing to apply to. They appear only as
-  * test fixtures, not as goldens.
+  * test fixtures, not as IDL-driven generator output.
   */
 final class McpBridgeConsistencySpec extends AnyFunSuite {
 
@@ -49,27 +52,27 @@ final class McpBridgeConsistencySpec extends AnyFunSuite {
     val corpusRoot = HarnessCorpus.corpusRoot(repoRoot)
     val loaded     = HarnessCorpus.loadCorpus(corpusRoot)
 
-    val goldenRoot = repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/golden/scala-mcp")
-    assert(Files.isDirectory(goldenRoot), s"golden tree missing: $goldenRoot")
+    val mcpRoot = HarnessCorpus.harnessGenRoot(repoRoot).resolve("scala-mcp")
+    assert(Files.isDirectory(mcpRoot), s"generated MCP-bridge tree missing: $mcpRoot")
 
-    val goldenSources: Seq[Path] = {
+    val generatedSources: Seq[Path] = {
       val buf = mutable.ArrayBuffer.empty[Path]
-      val it  = Files.walk(goldenRoot).iterator()
+      val it  = Files.walk(mcpRoot).iterator()
       try while (it.hasNext) {
         val p = it.next()
         if (Files.isRegularFile(p) && p.getFileName.toString.endsWith("Mcp.scala")) buf += p
       } finally ()
       buf.toSeq.sortBy(_.toString)
     }
-    assert(goldenSources.nonEmpty, s"no <Service>Mcp.scala goldens under $goldenRoot")
+    assert(generatedSources.nonEmpty, s"no <Service>Mcp.scala sources under $mcpRoot")
 
-    // Parsed: map from serviceName -> map[methodName -> wrapFlag-from-golden].
-    val parsedFlags: Map[String, Map[String, Boolean]] = goldenSources.iterator.map { p =>
+    // Parsed: map from serviceName -> map[methodName -> wrapFlag-from-generated-source].
+    val parsedFlags: Map[String, Map[String, Boolean]] = generatedSources.iterator.map { p =>
       val text   = new String(Files.readAllBytes(p), StandardCharsets.UTF_8)
       val source = dialects.Scala213(text).parse[Source] match {
         case parsers.Parsed.Success(tree) => tree
         case parsers.Parsed.Error(_, msg, _) =>
-          fail(s"failed to parse golden $p: $msg")
+          fail(s"failed to parse generated source $p: $msg")
       }
 
       // Service name lives in `object <Name>McpRoutes` — strip the trailing
@@ -154,11 +157,11 @@ final class McpBridgeConsistencySpec extends AnyFunSuite {
     val computedSvcs = computedFlags.keySet
     assert(
       parsedSvcs.subsetOf(computedSvcs),
-      s"goldens reference services not in the compiled corpus: ${parsedSvcs &~ computedSvcs}",
+      s"generated sources reference services not in the compiled corpus: ${parsedSvcs &~ computedSvcs}",
     )
     assert(
       computedSvcs.subsetOf(parsedSvcs),
-      s"corpus has services with no golden bridge: ${computedSvcs &~ parsedSvcs}",
+      s"corpus has services with no generated bridge source: ${computedSvcs &~ parsedSvcs}",
     )
 
     // Pair-wise compare. Collect ALL divergences then report — surfacing the
@@ -173,11 +176,11 @@ final class McpBridgeConsistencySpec extends AnyFunSuite {
         (parsedMethods.get(m), computedMethods.get(m)) match {
           case (Some(p), Some(c)) if p == c => ()
           case (Some(p), Some(c)) =>
-            divergences += s"$svc.$m: golden wrap=$p, computed wrap=$c"
+            divergences += s"$svc.$m: generated wrap=$p, computed wrap=$c"
           case (Some(_), None) =>
-            divergences += s"$svc.$m: present in golden, missing from corpus method list"
+            divergences += s"$svc.$m: present in generated source, missing from corpus method list"
           case (None, Some(_)) =>
-            divergences += s"$svc.$m: present in corpus, missing match arm in golden"
+            divergences += s"$svc.$m: present in corpus, missing match arm in generated source"
           case (None, None) => ()
         }
       }
