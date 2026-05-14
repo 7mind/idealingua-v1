@@ -20,13 +20,6 @@
 //   # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventOutput\tFailure  (service/buzzer ephemeral not exported in TS)
 //   # x-skip-positional  ... (full list at bottom)
 //
-// REMAINING TIMESTAMP-BEARING SKIPS (4 wireIds):
-//   - `coverage.primitives.AllPrimitivesFlat\tdefault` — large; reachable but no immediate
-//     gain over already-covered timestamp types.
-//   - `izumi.test.domain01.AllTypes.Struct\tdefault`, `AllTypesObject\tdefault`,
-//     `izumi.test.domain01.AnAdt\tAllTypes` — recursive (self-referencing list/map/option/set
-//     fields); the Scala-side sample assembles a multi-level instance graph. These remain
-//     skipped pending a separate effort.
 
 import { BuzzerErr } from './coverage/buzzers/alloutputs/BuzzerErr';
 import { BuzzerOk } from './coverage/buzzers/alloutputs/BuzzerOk';
@@ -39,6 +32,7 @@ import { BlobContainers } from './coverage/generics/blob/BlobContainers';
 import { MapWithVariousKeys } from './coverage/generics/mapkeys/MapWithVariousKeys';
 import { Leaf } from './coverage/generics/nested/Leaf';
 import { NestedGenerics } from './coverage/generics/nested/NestedGenerics';
+import { AllPrimitivesFlat } from './coverage/primitives/AllPrimitivesFlat';
 import { ErrorPayload } from './coverage/services/alloutputs/ErrorPayload';
 import { Greeting } from './coverage/services/alloutputs/Greeting';
 import { UsesSingleton } from './coverage/usertypes/enumsingle/UsesSingleton';
@@ -157,6 +151,8 @@ import { TestMixinStruct } from './idltest/syntax/TestMixin';
 import { IdentifiableStruct } from './idltest/upcasts/Identifiable';
 import { Item } from './idltest/upcasts/Item';
 import { ItemContentStruct } from './idltest/upcasts/ItemContent';
+import { AllTypesStruct, AllTypesStructSerialized } from './izumi/test/domain01/AllTypes';
+import { AllTypesObject } from './izumi/test/domain01/AllTypesObject';
 import { AnotherTestObject } from './izumi/test/domain01/AnotherTestObject';
 import { AnyValTestStruct } from './izumi/test/domain01/AnyValTest';
 import { BasicFailure } from './izumi/test/domain01/BasicFailure';
@@ -215,7 +211,8 @@ out.push("coverage.crossdom.leaf.LeafMixin.Struct" + '\t' + "default" + '\t' + J
 out.push("coverage.generics.blob.BlobContainers" + '\t' + "default" + '\t' + JSON.stringify(new BlobContainers({ one: "aGkh", optional: "aGkh", many: ["aGkh"], unique: ["aGkh"], labelled: {   ["s1"]: "aGkh" } }).serialize()));
 out.push("coverage.generics.mapkeys.MapWithVariousKeys" + '\t' + "default" + '\t' + JSON.stringify(new MapWithVariousKeys({ byInt32: {   [1]: "s1" }, byInt64: {   [2]: "s1" }, byUInt32: {   [1]: "s1" }, byUuid: {   ["3a7f0c12-1234-5678-9abc-fedcba987654"]: "s1" }, byEnum: {   ["Alpha"]: "s1" } }).serialize()));
 out.push("coverage.generics.nested.Leaf" + '\t' + "default" + '\t' + JSON.stringify(new Leaf({ v: 1 }).serialize()));
-out.push("coverage.generics.nested.NestedGenerics" + '\t' + "default" + '\t' + JSON.stringify(new NestedGenerics({ matrix: [[1]], byTag: {   ["s1"]: [{ v: 1 }] }, histogram: [{   ["s1"]: 2 }], options: [{   ["s1"]: { v: 1 } }] }).serialize()));
+out.push("coverage.generics.nested.NestedGenerics" + '\t' + "default" + '\t' + JSON.stringify(new NestedGenerics({ matrix: [[1]], byTag: {   ["s1"]: [{ v: 1 }] }, histogram: [{   ["s1"]: 2 }], options: [{   ["s1"]: { v: 1 } }], setOfOpt: [1] }).serialize()));
+out.push("coverage.primitives.AllPrimitivesFlat" + '\t' + "default" + '\t' + JSON.stringify(new AllPrimitivesFlat({ b_bool: true, s_str: "s1", i8: 1, i16: 2, i32: 1, i64: 2, u8: 1, u16: 2, u32: 1, u64: 2, f_flt: 1.5, d_dbl: 2.5, uuid: "3a7f0c12-1234-5678-9abc-fedcba987654", blob: "aGkh", ts_zoned: "2025-01-15T10:30:45Z", ts_local: "2025-01-15T10:30:45", ts_unix: "2025-01-15T10:30:45Z", time_only: "10:30:45", date_only: "2025-01-15" }).serialize()));
 out.push("coverage.services.alloutputs.ErrorPayload" + '\t' + "default" + '\t' + JSON.stringify(new ErrorPayload({ code: 1, message: "s1" }).serialize()));
 out.push("coverage.services.alloutputs.Greeting" + '\t' + "default" + '\t' + JSON.stringify(new Greeting({ text: "s1" }).serialize()));
 out.push("coverage.usertypes.enumsingle.UsesSingleton" + '\t' + "default" + '\t' + JSON.stringify(new UsesSingleton({ tag: "Only" }).serialize()));
@@ -370,6 +367,49 @@ out.push("idltest.syntax.TestMixin.Struct" + '\t' + "default" + '\t' + JSON.stri
 out.push("idltest.upcasts.Identifiable.Struct" + '\t' + "default" + '\t' + JSON.stringify(new IdentifiableStruct({ id: "3a7f0c12-1234-5678-9abc-fedcba987654" }).serialize()));
 out.push("idltest.upcasts.Item" + '\t' + "default" + '\t' + JSON.stringify(new Item({ id: "3a7f0c12-1234-5678-9abc-fedcba987654", name: "s1", price: 1 }).serialize()));
 out.push("idltest.upcasts.ItemContent.Struct" + '\t' + "default" + '\t' + JSON.stringify(new ItemContentStruct({ id: "3a7f0c12-1234-5678-9abc-fedcba987654", name: "s1" }).serialize()));
+// AllTypes wire-format coverage. The Serialized form carries recursive
+// self-references as `{[fullClassName]: AllTypesStructSerialized}` envelopes;
+// here we go one level deep with an inner instance whose own recursive fields
+// are all empty, matching the Scala/C# samples.
+const allTypesEmpty: AllTypesStructSerialized = {
+    b: true, s: "s1",
+    int8: 1, int16: 2, int32: 1, int64: 2,
+    f: 1.5, d: 2.5,
+    uuid: "3a7f0c12-1234-5678-9abc-fedcba987654",
+    ts: "2025-01-15T10:30:45Z",
+    tslocal: "2025-01-15T10:30:45",
+    tsuni: "2025-01-15T10:30:45Z",
+    time: "10:30:45",
+    date: "2025-01-15",
+    uint8: 1, uint16: 2, uint32: 1, uint64: 2,
+    list: [], another: [], selfMap: {}, enumMap: {},
+    option: undefined, selfSet: [],
+    optionDate: undefined, optionTime: undefined,
+};
+const allTypesEmptyWrapped = { "izumi.test.domain01.AllTypes.Struct": allTypesEmpty };
+const allTypesPopulated: AllTypesStructSerialized = {
+    b: true, s: "s1",
+    int8: 1, int16: 2, int32: 1, int64: 2,
+    f: 1.5, d: 2.5,
+    uuid: "3a7f0c12-1234-5678-9abc-fedcba987654",
+    ts: "2025-01-15T10:30:45Z",
+    tslocal: "2025-01-15T10:30:45",
+    tsuni: "2025-01-15T10:30:45Z",
+    time: "10:30:45",
+    date: "2025-01-15",
+    uint8: 1, uint16: 2, uint32: 1, uint64: 2,
+    list: [allTypesEmptyWrapped],
+    another: [allTypesEmptyWrapped],
+    selfMap: { "s1": allTypesEmptyWrapped },
+    enumMap: { "s1": "Val1" },
+    option: allTypesEmptyWrapped,
+    selfSet: [allTypesEmptyWrapped],
+    optionDate: "2025-01-15T10:30:45",
+    optionTime: "10:30:45",
+};
+out.push("izumi.test.domain01.AllTypes.Struct" + '\t' + "default" + '\t' + JSON.stringify(new AllTypesStruct(allTypesPopulated).serialize()));
+out.push("izumi.test.domain01.AllTypesObject" + '\t' + "default" + '\t' + JSON.stringify(new AllTypesObject(allTypesPopulated as any).serialize()));
+out.push("izumi.test.domain01.AnAdt" + '\t' + "AllTypes" + '\t' + JSON.stringify({ "AllTypes": { "izumi.test.domain01.AllTypes.Struct": new AllTypesStruct(allTypesPopulated).serialize() } }));
 out.push("izumi.test.domain01.AnAdt" + '\t' + "AnotherMember" + '\t' + JSON.stringify(({ "AnotherMember": { boolField: true } })));
 out.push("izumi.test.domain01.AnAdt" + '\t' + "TestObject" + '\t' + JSON.stringify(({ "TestObject": { userId: "s1", accountBalance: 1, latestLogin: 2, keys: {   ["s1"]: "s1" }, nicknames: ["s1"] } })));
 out.push("izumi.test.domain01.AnotherTestObject" + '\t' + "default" + '\t' + JSON.stringify(new AnotherTestObject({ parent_embedded: "s1", parent: "s1", embedded: true, own: 1 }).serialize()));
@@ -434,7 +474,6 @@ for (const l of out) console.log(l);
 // # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.StructEventOutput\tdefault
 // # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.VoidEventInput\tdefault
 // # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.VoidEventOutput\tdefault
-// # x-skip-positional  coverage.primitives.AllPrimitivesFlat\tdefault
 // # x-skip-positional  coverage.services.alloutputs.AllOutputsService.AlgebraicInput\tdefault
 // # x-skip-positional  coverage.services.alloutputs.AllOutputsService.AlgebraicOutput\tErrorPayload
 // # x-skip-positional  coverage.services.alloutputs.AllOutputsService.AlgebraicOutput\tGreeting
@@ -536,9 +575,6 @@ for (const l of out) console.log(l);
 // # x-skip-positional  idltest.syntax.TestDto\tdefault
 // # x-skip-positional  idltest.syntax.TestDto1\tdefault
 // # x-skip-positional  idltest.syntax.TestOneliners\tdefault
-// # x-skip-positional  izumi.test.domain01.AllTypes.Struct\tdefault
-// # x-skip-positional  izumi.test.domain01.AllTypesObject\tdefault
-// # x-skip-positional  izumi.test.domain01.AnAdt\tAllTypes
 // # x-skip-positional  izumi.test.domain01.AnyValTest2.Struct\tdefault
 // # x-skip-positional  izumi.test.domain01.OptionalService.OptionalMethodInput\tdefault
 // # x-skip-positional  izumi.test.domain01.OptionalService.OptionalMethodOutput\tdefault

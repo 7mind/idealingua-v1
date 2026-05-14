@@ -64,9 +64,11 @@ case "$mode" in
       "impl9-vs-head-scala"
       "v1419-vs-head-compat-scala"
       "sanity-typescript"
+      "sanity-typescript-full"
       "impl9-vs-head-typescript"
       "v1419-vs-head-compat-typescript"
       "sanity-csharp"
+      "sanity-csharp-full"
       "impl9-vs-head-csharp"
       "v1419-vs-head-compat-csharp"
     )
@@ -86,7 +88,7 @@ case "$mode" in
     done
     echo
     echo "=============================================================="
-    echo "matrix summary (3 langs × {sanity, impl9-vs-head, v1419-vs-head-compat} = 9 cells)"
+    echo "matrix summary (sanity + impl9-vs-head + v1419-vs-head-compat + TS/CS full = 11 cells)"
     echo "=============================================================="
     for r in "${results[@]}"; do
       echo "  $r"
@@ -96,6 +98,32 @@ case "$mode" in
   sanity-scala) exec "$0" sanity "$@" ;;
   sanity-typescript) exec "$0" sanity-ts "$@" ;;
   sanity-csharp) exec "$0" sanity-cs "$@" ;;
+  sanity-typescript-full)
+    if [[ ! -d "$MAIN_TESTS/source" ]]; then
+      echo "selftest: missing corpus at $MAIN_TESTS/source" >&2
+      exit 2
+    fi
+    cd "$REPO_ROOT"
+    exec "$HARNESS_DIR/idl-regress" \
+      --project "$MAIN_TESTS" \
+      --old self \
+      --new self \
+      --lang typescript \
+      "$@"
+    ;;
+  sanity-csharp-full)
+    if [[ ! -d "$MAIN_TESTS/source" ]]; then
+      echo "selftest: missing corpus at $MAIN_TESTS/source" >&2
+      exit 2
+    fi
+    cd "$REPO_ROOT"
+    exec "$HARNESS_DIR/idl-regress" \
+      --project "$MAIN_TESTS" \
+      --old self \
+      --new self \
+      --lang csharp \
+      "$@"
+    ;;
   impl9-vs-head-scala) exec "$0" impl9-vs-head "$@" ;;
   impl9-vs-head-typescript) exec "$0" impl9-vs-head-ts "$@" ;;
   impl9-vs-head-csharp) exec "$0" impl9-vs-head-cs "$@" ;;

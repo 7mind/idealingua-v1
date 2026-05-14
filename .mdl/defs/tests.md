@@ -55,15 +55,19 @@ ret success:bool=true
 
 # action: test-regression
 
-Cross-version regression harness: runs the high-value selftest cells
-(`impl9-vs-head-*` and `v1419-vs-head-compat-*` across all three languages).
-Catches wire-format and constructor-order regressions like F-DTO1-fieldorder
-that the unit suite cannot surface.
+Cross-version regression harness: runs the selftest cells that catch
+wire-format and constructor-order regressions like F-DTO1-fieldorder
+that the unit suite cannot surface. Three cell families across all three
+languages:
 
-The full-corpus `sanity-scala` cell is intentionally NOT included here:
-its sample-app cache depends on an LLM-driven regeneration step keyed by
-the IDL sha, and the in-tree cache lags the corpus on `wip/necromancy`.
-The two cell families that ARE included use stable sample-app caches.
+  - `sanity-{scala,typescript-full,csharp-full}` — HEAD vs HEAD against
+    the full main-tests corpus (smoke: sample app builds and produces
+    byte-stable JSON).
+  - `impl9-vs-head-{scala,typescript,csharp}` — git:ea697f5 (IMPL-9
+    default-flip era) vs HEAD against `dtofields-only`.
+  - `v1419-vs-head-compat-{scala,typescript,csharp}` — git:v1.4.19 vs
+    HEAD against the v1.4.19-compatible subset of main-tests. Catches
+    cross-release wire-format regressions.
 
 ```bash
 dep action.gen
@@ -73,6 +77,9 @@ prepare_build_env "${args.scala-version}"
 ensure_numcpu
 
 cells=(
+  "sanity-scala"
+  "sanity-typescript-full"
+  "sanity-csharp-full"
   "impl9-vs-head-scala"
   "impl9-vs-head-typescript"
   "impl9-vs-head-csharp"
@@ -98,7 +105,7 @@ done
 
 echo
 echo "=============================================================="
-echo "regression-harness summary (3 langs × 2 cells = 6 cells)"
+echo "regression-harness summary (3 langs × 3 cell families = 9 cells)"
 echo "=============================================================="
 for r in "${results[@]}"; do
   echo "  $r"
