@@ -894,7 +894,7 @@ object SampleApp {
       lines += s"izumi.test.domain02.AliasedUsageData\tdefault\t${(v: _root_.izumi.test.domain02.AliasedUsageData).asJson.printWith(P)}"
     }
     {
-      val v: _root_.izumi.test.domain02.DTO1 = new _root_.izumi.test.domain02.DTO1(1, 1, 2L, 2L, new _root_.izumi.test.domain01.TestValIdentifier("s1"), new _root_.izumi.test.domain01.TestValIdentifier("s1"), 2L, 2L)
+      val v: _root_.izumi.test.domain02.DTO1 = new _root_.izumi.test.domain02.DTO1(1, 1, new _root_.izumi.test.domain01.TestValIdentifier("s1"), new _root_.izumi.test.domain01.TestValIdentifier("s1"), 2L, 2L, 2L, 2L)
       lines += s"izumi.test.domain02.DTO1\tdefault\t${(v: _root_.izumi.test.domain02.DTO1).asJson.printWith(P)}"
     }
     {
@@ -1350,7 +1350,7 @@ object SampleApp {
       lines += s"izumi.test.domain02.SomeResp\tImportedBasicFailure\t${(v: _root_.izumi.test.domain02.SomeResp).asJson.printWith(P)}"
     }
     {
-      val v: _root_.izumi.test.domain02.SomeResp = new _root_.izumi.test.domain02.SomeResp.DTO1(new _root_.izumi.test.domain02.DTO1(1, 1, 2L, 2L, new _root_.izumi.test.domain01.TestValIdentifier("s1"), new _root_.izumi.test.domain01.TestValIdentifier("s1"), 2L, 2L))
+      val v: _root_.izumi.test.domain02.SomeResp = new _root_.izumi.test.domain02.SomeResp.DTO1(new _root_.izumi.test.domain02.DTO1(1, 1, new _root_.izumi.test.domain01.TestValIdentifier("s1"), new _root_.izumi.test.domain01.TestValIdentifier("s1"), 2L, 2L, 2L, 2L))
       lines += s"izumi.test.domain02.SomeResp\tDTO1\t${(v: _root_.izumi.test.domain02.SomeResp).asJson.printWith(P)}"
     }
     {
@@ -1358,7 +1358,7 @@ object SampleApp {
       lines += s"izumi.test.domain02.TestAliasServ.TestADTIdImportedReturnOutput\tImportedIDForDomain2\t${(v: _root_.izumi.test.domain02.TestAliasServ.TestADTIdImportedReturnOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.izumi.test.domain02.TestAliasServ.TestADTIdImportedReturnOutput = new _root_.izumi.test.domain02.TestAliasServ.TestADTIdImportedReturnOutput.DTO1(new _root_.izumi.test.domain02.DTO1(1, 1, 2L, 2L, new _root_.izumi.test.domain01.TestValIdentifier("s1"), new _root_.izumi.test.domain01.TestValIdentifier("s1"), 2L, 2L))
+      val v: _root_.izumi.test.domain02.TestAliasServ.TestADTIdImportedReturnOutput = new _root_.izumi.test.domain02.TestAliasServ.TestADTIdImportedReturnOutput.DTO1(new _root_.izumi.test.domain02.DTO1(1, 1, new _root_.izumi.test.domain01.TestValIdentifier("s1"), new _root_.izumi.test.domain01.TestValIdentifier("s1"), 2L, 2L, 2L, 2L))
       lines += s"izumi.test.domain02.TestAliasServ.TestADTIdImportedReturnOutput\tDTO1\t${(v: _root_.izumi.test.domain02.TestAliasServ.TestADTIdImportedReturnOutput).asJson.printWith(P)}"
     }
     {
@@ -1366,7 +1366,7 @@ object SampleApp {
       lines += s"izumi.test.domain02.TestAliasServ.TestADTIdReturnOutput\tTestIDReturn\t${(v: _root_.izumi.test.domain02.TestAliasServ.TestADTIdReturnOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.izumi.test.domain02.TestAliasServ.TestADTIdReturnOutput = new _root_.izumi.test.domain02.TestAliasServ.TestADTIdReturnOutput.DTO1(new _root_.izumi.test.domain02.DTO1(1, 1, 2L, 2L, new _root_.izumi.test.domain01.TestValIdentifier("s1"), new _root_.izumi.test.domain01.TestValIdentifier("s1"), 2L, 2L))
+      val v: _root_.izumi.test.domain02.TestAliasServ.TestADTIdReturnOutput = new _root_.izumi.test.domain02.TestAliasServ.TestADTIdReturnOutput.DTO1(new _root_.izumi.test.domain02.DTO1(1, 1, new _root_.izumi.test.domain01.TestValIdentifier("s1"), new _root_.izumi.test.domain01.TestValIdentifier("s1"), 2L, 2L, 2L, 2L))
       lines += s"izumi.test.domain02.TestAliasServ.TestADTIdReturnOutput\tDTO1\t${(v: _root_.izumi.test.domain02.TestAliasServ.TestADTIdReturnOutput).asJson.printWith(P)}"
     }
 

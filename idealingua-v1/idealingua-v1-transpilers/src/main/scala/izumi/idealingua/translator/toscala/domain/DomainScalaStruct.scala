@@ -75,26 +75,38 @@ object DomainScalaStruct {
       )
     }
 
-    // Defect #7 / IMPL-7a.2-Fe4: field-name dedup matching legacy
-    // `StructuralQueriesImpl.NonContradictive`.
+    // Defect #7 / IMPL-7a.2-Fe4 (revised, F-DTO1-fieldorder): field-name
+    // dedup matching legacy `StructuralQueriesImpl.NonContradictive`.
     //
-    // Legacy `FieldExtractor.extractFields` returns
-    // `superFields ++ embeddedFields ++ thisFields`, so parent
-    // declarations (deeper distance) appear FIRST in the conflict list.
-    // The legacy `NonContradictive` branch for equal-type duplicates
-    // returns `Some(fields.head)` — the head is therefore the deepest
-    // (parent) occurrence.
+    // Legacy `FieldExtractor.extractFields` emits
+    // `superFields ++ embeddedFields ++ thisFields` recursively (DFS), and
+    // the `NonContradictive` branch for equal-type duplicates returns
+    // `Some(fields.head)` — the FIRST occurrence in that DFS emission order.
     //
-    // The new IR's BFS-flattener emits in the opposite order
-    // (`thisFields ++ embeddedFields`, self-first), so the equivalent
-    // "first-encounter in legacy order" is the entry with the LARGEST
-    // distance.  Replicate:
-    //   - Group by field name.
-    //   - If all occurrences share the same `Field` value, keep the
-    //     LARGEST-distance entry (the parent in legacy emission order).
-    //   - Otherwise (true covariant override), keep the smallest-
-    //     distance entry — the closest declaration is the type-refined
-    //     primary.
+    // The new IR's flattener emits BFS, which does NOT in general agree with
+    // legacy DFS on which occurrence comes first. Counter-example
+    // (`izumi.test.domain02.DTO1` mixing `& TestInterface2` + `& TestInterface3`,
+    // where `TestInterface3 & TestInterface1`):
+    //   - `sameField` exists on TestInterface2 (distance 1, declared directly
+    //     on a sibling parent) AND on TestInterface1 (distance 2, reached
+    //     through TestInterface3).
+    //   - Legacy DFS visits TestInterface2 first (the first sibling super),
+    //     so `head` is the TestInterface2 entry → distance 1.
+    //   - Fe4's "max distance" rule picked the TestInterface1 entry
+    //     (distance 2), producing a different case-class constructor
+    //     parameter order vs v1.4.19's idlc (regression surfaced by
+    //     X1 `v1419-vs-head-compat-{scala,csharp}` baselines).
+    //
+    // Fix: replicate the legacy DFS emission order explicitly via
+    // `legacyDfsPosition`, then for equal-type duplicates keep the
+    // smallest-position entry (== `fields.head` under legacy emission).
+    // For true covariant overrides (different `Field` typeIds across
+    // occurrences) keep the smallest-distance entry — the closest
+    // declaration is the type-refined primary, matching legacy
+    // `NonContradictive`'s `x.head` after `sortBy(_.defn.distance)`.
+    val dfsPos: Map[(TypeId, String), Int] = legacyDfsPosition(id, domain)
+    def posOf(ef: ExtendedField): Int =
+      dfsPos.getOrElse((ef.defn.definedBy, ef.field.name), Int.MaxValue)
     val deduped: List[ExtendedField] = {
       val byName  = scala.collection.mutable.LinkedHashMap.empty[String, scala.collection.mutable.ListBuffer[ExtendedField]]
       extendedRaw.foreach { f =>
@@ -103,7 +115,7 @@ object DomainScalaStruct {
       }
       byName.values.map { occurrences =>
         val typesEqual = occurrences.map(_.field).toSet.size == 1
-        if (typesEqual) occurrences.maxBy(_.defn.distance)
+        if (typesEqual) occurrences.minBy(posOf)
         else occurrences.minBy(_.defn.distance)
       }.toList
     }
@@ -127,6 +139,57 @@ object DomainScalaStruct {
       ambigious    = ambigious,
       all          = sorted,
     )
+  }
+
+  /** Replicate legacy `FieldExtractor.extractFields` DFS emission order
+    * for `id` and return a positional index per `(origin, fieldName)`.
+    *
+    * Legacy: `extractFields(t, depth) = superFields ++ embeddedFields ++
+    * thisFields` where
+    *   - `superFields  = struct.superclasses.interfaces.flatMap(extractFields(_, depth+1))`
+    *   - `embeddedFields = struct.superclasses.concepts.flatMap(extractFields(_, depth+1))`
+    *   - `thisFields = struct.fields` declared on `t` (in source order).
+    *
+    * Cycles short-circuit via `visited` (legacy `.distinct` collapses repeat
+    * encounters; we just stop recursing). Identifier/enum/alias supertypes
+    * contribute no fields (not StructureIds and not in `views`).
+    *
+    * Used to break dedup ties for equal-type field duplicates so the new IR
+    * picks the same primary as legacy `NonContradictive` returning
+    * `fields.head` (F-DTO1-fieldorder).
+    */
+  private def legacyDfsPosition(id: StructureId, domain: Domain): Map[(TypeId, String), Int] = {
+    val buf     = scala.collection.mutable.LinkedHashMap.empty[(TypeId, String), Int]
+    val visited = scala.collection.mutable.LinkedHashSet.empty[TypeId]
+    def fieldsOfStruct(tid: TypeId): Option[(List[Field], Super)] = {
+      domain.userTypes.get(tid) match {
+        case Some(d: NewTypeDef.Dto)       => Some((d.struct.fields, d.struct.superclasses))
+        case Some(i: NewTypeDef.Interface) => Some((i.struct.fields, i.struct.superclasses))
+        case _ =>
+          domain.members.get(tid) match {
+            case Some(Member.Ephemeral(eph)) => Some((eph.struct.fields, eph.struct.superclasses))
+            case _                           => None
+          }
+      }
+    }
+    def walk(tid: TypeId): Unit = {
+      if (!visited.add(tid)) return
+      fieldsOfStruct(tid) match {
+        case Some((thisFields, sup)) =>
+          // superFields: recurse interfaces first
+          sup.interfaces.foreach(walk)
+          // embeddedFields: recurse concepts next
+          sup.concepts.foreach(walk)
+          // thisFields: record own fields in declaration order
+          thisFields.foreach { f =>
+            val key = (tid, f.name)
+            if (!buf.contains(key)) buf.update(key, buf.size)
+          }
+        case None => ()
+      }
+    }
+    walk(id)
+    buf.toMap
   }
 
   /** Recover legacy `definedWithIndex` for a field defined on `origin`:
