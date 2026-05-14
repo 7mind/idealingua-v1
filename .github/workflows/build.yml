@@ -75,6 +75,22 @@ jobs:
           path: '**/target/spec-reports/**/*.xml'
           reporter: java-junit
 
+  test-regression:
+    runs-on: ubuntu-latest
+    needs: [ 'checksecret' ]
+    steps:
+      - uses: 7mind/github-env@minimal
+      - name: Fetch refs for cross-version cells (v1.4.19 tag + ea697f5 IMPL-9 commit)
+        run: |
+          # `git:v1.4.19` and `git:ea697f5` are resolved by IdlcResolver into git
+          # worktrees. The default GitHub checkout depth may not include either —
+          # unshallow + fetch tags so both refs are locally accessible.
+          git fetch --unshallow --tags origin || git fetch --tags origin || true
+          git fetch origin v1.4.19 || true
+          git fetch origin ea697f5c069217eff871178971b641bde6e5ec11 || true
+      - name: Cross-version regression harness
+        run: nix develop --command mdl --github-actions --scala-version=2.13 :test-regression
+
   publish-npm:
     runs-on: ubuntu-latest
     needs: [ 'checksecret', 'test-compiler' ]
@@ -144,7 +160,7 @@ jobs:
   all-good:
     if: always()
     runs-on: ubuntu-latest
-    needs: [ 'build', 'test-compiler', 'test-flake' ]
+    needs: [ 'build', 'test-compiler', 'test-flake', 'test-regression' ]
     steps:
       - name: Decide whether the needed jobs succeeded or failed
         uses: re-actors/alls-green@release/v1

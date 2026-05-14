@@ -462,7 +462,17 @@ object Idealingua {
           Projects.idealingua.testDefs,
         ).map(_ in Scope.Compile.all),
         platforms = Targets.jvm3,
-        settings  = Seq.empty,
+        settings  = Seq(
+          // R1a added `testcodegen.TestCodegenMain` alongside the public
+          // `CommandlineIDLCompiler.main`. Without an explicit `mainClass`,
+          // sbt-native-packager's staged launcher prompts `-main <class>`
+          // instead of running the compiler directly — which breaks
+          // `regression-harness/idl-regress` (it invokes the launcher
+          // positionally with `--root=…`). Pin the entry point to the
+          // public compiler. (Was added to build.sbt directly in X2; moved
+          // into sbtgen here so `mdl :gen` doesn't regress it.)
+          "mainClass" in SettingScope.Compile := """Some("izumi.idealingua.compiler.CommandlineIDLCompiler")""".raw,
+        ),
         plugins = Plugins(
           Seq(Plugin("JavaAppPackaging"))
         ),
