@@ -4,7 +4,7 @@ import io.circe.parser.parse
 import izumi.idealingua.translator.{ExtendedModule, IDLLanguage, TypespaceCompilerBaseFacade, UntypedCompilerOptions}
 import org.scalatest.funsuite.AnyFunSuite
 
-/** PR-04 MCP Mb1: smoke test for the http4s bridge emitter.
+/** PR-04 MCP Mb2: smoke test for the http4s bridge emitter.
   *
   * Compiles `main-tests` with `ScalaBuildManifest.emitMcpBridge = true` and
   * asserts:
@@ -15,8 +15,11 @@ import org.scalatest.funsuite.AnyFunSuite
   *   - the default (`emitMcpBridge = false`) path emits NO bridge modules,
   *   - the bridge Scala source contains a `routes[F[+_, +_]: IO2: Error2, C]`
   *     entrypoint and per-method `toolName_/methodId_` constants,
-  *   - `Singular`-output methods in the matched fixture dispatch via `call(`
-  *     and `Struct`-output methods stub via the Mb1 placeholder.
+  *   - all 5 `Output` variants (Void / Singular / Struct / Algebraic /
+  *     Alternative) dispatch uniformly via `call(...)` (D5) — no Mb1
+  *     placeholder stubs remain — and `Struct`-output methods pass
+  *     `wrap = false` while all other variants pass `wrap = true` per
+  *     `OutputWrapPolicy.isWrapped`.
   *
   * Fixture: `idltest.services.TestService` (chosen because it has Singular,
   * Struct, Algebraic, and Alternative output variants).
@@ -86,23 +89,40 @@ final class McpBridgeEmissionSpec extends AnyFunSuite {
     assert(src.contains("getResourceAsStream(\"mcp/TestService.mcp.json\")"), "missing classpath resource lookup")
     assert(src.contains("private val methodId_simple "), "missing methodId_simple constant")
 
-    // Mb1 dispatch invariants:
-    //   - Singular-output method `parameterless` routes via `call(...)`.
-    //   - Struct-output method `simple` (`(+Request) => (+Request)`) stubs
-    //     with the Mb1 placeholder error.
+    // Mb2 dispatch invariants:
+    //   - Every variant (Singular / Void / Struct / Algebraic / Alternative)
+    //     routes through `call(...)` — no Mb1 placeholder stubs remain.
+    //   - The static `wrap` flag matches `OutputWrapPolicy.isWrapped`:
+    //     Struct => `wrap = false`; all others => `wrap = true`.
     assert(
-      src.contains("call(req, argsJson, methodId_parameterless"),
-      "Singular-output `parameterless` should dispatch via call(...) (Mb1 path)",
+      !src.contains("method not implemented in Mb1"),
+      "Mb2: no Mb1 placeholder stubs should remain in generated bridge",
     )
-
-    // Struct-output `simple` (input `(+Request)` / output `(+Request)`) stubs
-    // until Mb2. The match arm for `simple` should map to the Mb1 placeholder.
+    assert(
+      src.contains("call(req, argsJson, methodId_parameterless, wrap = true"),
+      "Singular-output `parameterless` should dispatch via call(..., wrap = true)",
+    )
+    // Struct-output `simple` (input `(+Request)` / output `(+Request)`) now
+    // dispatches via call(...) with `wrap = false` per OutputWrapPolicy.
     val arms = src.split("case Some\\(`toolName_simple`\\)")
     assert(arms.length == 2, s"expected exactly one match arm for `simple`, got ${arms.length - 1}")
     val simpleArmBody = arms(1).take(200)
     assert(
-      simpleArmBody.contains("method not implemented in Mb1"),
-      s"Struct-output `simple` should stub in Mb1, got: ${simpleArmBody.linesIterator.take(3).mkString(" / ")}",
+      simpleArmBody.contains("call(req, argsJson, methodId_simple, wrap = false"),
+      s"Struct-output `simple` should dispatch via call(..., wrap = false), got: ${simpleArmBody.linesIterator.take(3).mkString(" / ")}",
+    )
+    // Spot-check the other variants: Void / Algebraic / Alternative all dispatch with wrap = true.
+    assert(
+      src.contains("call(req, argsJson, methodId_unitToUnit, wrap = true"),
+      "Void-output `unitToUnit` should dispatch via call(..., wrap = true)",
+    )
+    assert(
+      src.contains("call(req, argsJson, methodId_greetAlgebraicOut, wrap = true"),
+      "Algebraic-output `greetAlgebraicOut` should dispatch via call(..., wrap = true)",
+    )
+    assert(
+      src.contains("call(req, argsJson, methodId_alternative, wrap = true"),
+      "Alternative-output `alternative` should dispatch via call(..., wrap = true)",
     )
   }
 
