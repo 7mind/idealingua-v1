@@ -62,10 +62,13 @@ case "$mode" in
     cells=(
       "sanity-scala"
       "impl9-vs-head-scala"
+      "v1419-vs-head-compat-scala"
       "sanity-typescript"
       "impl9-vs-head-typescript"
+      "v1419-vs-head-compat-typescript"
       "sanity-csharp"
       "impl9-vs-head-csharp"
+      "v1419-vs-head-compat-csharp"
     )
     declare -a results=()
     overall=0
@@ -82,9 +85,9 @@ case "$mode" in
       fi
     done
     echo
-    echo "=========================================================="
-    echo "matrix summary (3 langs × {sanity, impl9-vs-head} = 6 cells)"
-    echo "=========================================================="
+    echo "=============================================================="
+    echo "matrix summary (3 langs × {sanity, impl9-vs-head, v1419-vs-head-compat} = 9 cells)"
+    echo "=============================================================="
     for r in "${results[@]}"; do
       echo "  $r"
     done

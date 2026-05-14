@@ -52,6 +52,19 @@ final class IdlcResolver(
   private val LauncherRel =
     s"$StageRel/bin/idealingua-v1-compiler"
 
+  /** Source roots whose `.scala` mtimes feed the self-launcher staleness check.
+   *  Anything newer than the staged launcher under any of these triggers a
+   *  restage. The compiler module owns the launcher's `Main`; transpilers
+   *  contribute the codegen logic; model is shared IR. Other modules
+   *  (runtimes, tests, harness itself) do not affect the staged idlc binary.
+   */
+  private val SelfWatchedSources: Seq[String] = Seq(
+    "idealingua-v1/idealingua-v1-compiler/src/main/scala",
+    "idealingua-v1/idealingua-v1-transpilers/src/main/scala",
+    "idealingua-v1/idealingua-v1-model/src/main/scala",
+    "idealingua-v1/idealingua-v1-core/src/main/scala",
+  )
+
   private val cacheRoot: Path = repoRoot.resolve("target/regression-harness/cache/idlc")
 
   /** Maven artifact stem (no scala suffix). Both modules are crossProjects;
@@ -91,15 +104,20 @@ final class IdlcResolver(
 
   private def resolveSelf(needsScalaRuntime: Boolean): IdlcResolution = {
     val launcher = repoRoot.resolve(LauncherRel)
-    if (!Files.isExecutable(launcher)) {
-      Harness.say("staging idealingua-v1-compiler (self)…")
-      val rc = Process(Seq("sbt", "-batch", "idealingua-v1-compiler/stage"), repoRoot.toFile).!
-      if (rc != 0) throw new RuntimeException(s"sbt stage failed (exit=$rc). Expected: a staged launcher at $launcher. Observed: sbt exited non-zero. Next: re-run `sbt idealingua-v1-compiler/stage` interactively to see the failure.")
-      if (!Files.isExecutable(launcher)) {
-        throw new RuntimeException(s"sbt stage succeeded but launcher missing. Expected: $launcher to exist and be executable. Observed: file missing. Next: inspect `target/universal/stage/` under idealingua-v1-compiler.")
-      }
-    } else {
-      Harness.say(s"reusing self launcher at $launcher")
+    val needsStage: Option[String] =
+      if (!Files.isExecutable(launcher)) Some("launcher missing or non-executable")
+      else staleStagedLauncher(launcher)
+
+    needsStage match {
+      case Some(reason) =>
+        Harness.say(s"staging idealingua-v1-compiler (self)… [$reason]")
+        val rc = Process(Seq("sbt", "-batch", "idealingua-v1-compiler/stage"), repoRoot.toFile).!
+        if (rc != 0) throw new RuntimeException(s"sbt stage failed (exit=$rc). Expected: a staged launcher at $launcher. Observed: sbt exited non-zero. Next: re-run `sbt idealingua-v1-compiler/stage` interactively to see the failure.")
+        if (!Files.isExecutable(launcher)) {
+          throw new RuntimeException(s"sbt stage succeeded but launcher missing. Expected: $launcher to exist and be executable. Observed: file missing. Next: inspect `target/universal/stage/` under idealingua-v1-compiler.")
+        }
+      case None =>
+        Harness.say(s"reusing self launcher at $launcher")
     }
 
     val version   = readVersion(repoRoot)
@@ -132,6 +150,41 @@ final class IdlcResolver(
       runtimeRepoUri  = "ivy2Local",
       runtimeVersion  = version,
     )
+  }
+
+  /** Detect a stale `self` launcher: if any watched `.scala` source has a
+   *  newer mtime than the launcher binary, the staged tree predates the
+   *  current working copy and must be restaged. Returns `Some(reason)` if
+   *  stale, `None` if fresh.
+   *
+   *  Walks `SelfWatchedSources` (compiler + transpilers + model + core
+   *  Scala source roots) and compares each `.scala` file's mtime to the
+   *  launcher's. Returns at the first newer file rather than collecting all
+   *  of them — one is enough to trigger restage. Quiet on `NoSuchFile` for
+   *  missing source roots (cross-project layouts where one of the modules
+   *  isn't checked out — unlikely in the in-tree harness but cheap to be
+   *  defensive about).
+   */
+  private def staleStagedLauncher(launcher: Path): Option[String] = {
+    val launcherMtime = Files.getLastModifiedTime(launcher).toMillis
+    def firstNewerUnder(root: Path): Option[Path] = {
+      if (!Files.isDirectory(root)) return None
+      val stream = Files.walk(root)
+      try {
+        stream
+          .iterator()
+          .asScala
+          .filter(p => Files.isRegularFile(p) && p.getFileName.toString.endsWith(".scala"))
+          .find(p => Files.getLastModifiedTime(p).toMillis > launcherMtime)
+      } finally {
+        stream.close()
+      }
+    }
+    SelfWatchedSources.iterator
+      .map(repoRoot.resolve)
+      .flatMap(r => firstNewerUnder(r).iterator)
+      .nextOption()
+      .map(p => s"stale launcher: ${repoRoot.relativize(p)} newer than ${repoRoot.relativize(launcher)}")
   }
 
   // -------------------- git --------------------
