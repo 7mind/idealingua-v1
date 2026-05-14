@@ -3,6 +3,7 @@ package izumi.idealingua.translator
 import izumi.idealingua.model.loader.LoadedDomain
 import izumi.idealingua.translator.tocsharp.CSharpTranslatorDescriptor
 import izumi.idealingua.translator.toscala.ScalaTranslatorDescriptor
+import izumi.idealingua.translator.toschema.SchemaTranslatorDescriptor
 import izumi.idealingua.translator.totypescript.TypescriptTranslatorDescriptor
 
 class TypespaceCompilerBaseFacade(options: UntypedCompilerOptions) {
@@ -31,6 +32,7 @@ object TypespaceCompilerBaseFacade {
     ScalaTranslatorDescriptor,
     TypescriptTranslatorDescriptor,
     CSharpTranslatorDescriptor,
+    SchemaTranslatorDescriptor,
   )
 
   private def descriptorsMap: Map[IDLLanguage, TranslatorDescriptor[?]] = descriptors.map(d => d.language -> d).toMap

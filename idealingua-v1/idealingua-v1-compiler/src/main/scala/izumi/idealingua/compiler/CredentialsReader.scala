@@ -22,6 +22,8 @@ class CredentialsReader(lang: IDLLanguage, file: File) {
     case IDLLanguage.Scala      => read[ScalaCredentials](file, overrides)
     case IDLLanguage.Typescript => read[TypescriptCredentials](file, overrides)
     case IDLLanguage.CSharp     => read[CsharpCredentials](file, overrides)
+    case IDLLanguage.JsonSchema =>
+      Left(new IllegalArgumentException("JSON Schema target does not support publishing"))
   }
 
   def read[T <: Credentials](file: File, overrides: Json)(implicit d: io.circe.Decoder[T]): Either[Throwable, Credentials] = for {

@@ -21,6 +21,8 @@ class ManifestWriter() {
         m.asJson
       case m: CSharpBuildManifest =>
         m.asJson
+      case m: SchemaBuildManifest =>
+        m.asJson
     }).toString()
   }
 }
@@ -34,6 +36,8 @@ class ManifestReader(conf: IDLCArgs, log: CompilerLog, shutdown: Shutdown, patch
         readManifest(TypeScriptBuildManifest.example)
       case IDLLanguage.CSharp =>
         readManifest(CSharpBuildManifest.example)
+      case IDLLanguage.JsonSchema =>
+        readManifest(SchemaBuildManifest.example)
     }
   }
 

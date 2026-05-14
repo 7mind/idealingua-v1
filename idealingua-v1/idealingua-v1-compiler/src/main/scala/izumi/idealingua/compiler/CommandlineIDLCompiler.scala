@@ -280,6 +280,7 @@ object VersionOverlay {
         IDLLanguage.Scala      -> "SNAPSHOT",
         IDLLanguage.Typescript -> "build.0",
         IDLLanguage.CSharp     -> "alpha",
+        IDLLanguage.JsonSchema -> "SNAPSHOT",
       ).map { case (k, v) => k.toString.toLowerCase -> v },
     )
   }

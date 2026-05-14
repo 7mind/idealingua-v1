@@ -79,6 +79,7 @@ object IDLCArgs {
           RoleParserSchema("scala", LP, Some("scala target"), None, freeArgsAllowed                                  = false),
           RoleParserSchema("csharp", LP, Some("C#/Unity target"), None, freeArgsAllowed                              = false),
           RoleParserSchema("typescript", LP, Some("Typescript target"), None, freeArgsAllowed                        = false),
+          RoleParserSchema("schema", LP, Some("JSON Schema + MCP target"), None, freeArgsAllowed                     = false),
         ),
       )
     )

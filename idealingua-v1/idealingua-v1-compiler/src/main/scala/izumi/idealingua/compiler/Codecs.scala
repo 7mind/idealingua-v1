@@ -33,6 +33,8 @@ trait Codecs extends PlatformEnumCodecs {
 
   implicit def decNugetOptions: Decoder[NugetOptions] = deriveDecoder
 
+  implicit def decSchemaBuildManifest: Decoder[SchemaBuildManifest] = deriveDecoder
+
   implicit def encMFUrl: Encoder[MFUrl] = deriveEncoder
 
   implicit def encLicense: Encoder[License] = deriveEncoder
@@ -56,6 +58,8 @@ trait Codecs extends PlatformEnumCodecs {
   implicit def encCs: Encoder[CSharpBuildManifest] = deriveEncoder
 
   implicit def encNugetOptions: Encoder[NugetOptions] = deriveEncoder
+
+  implicit def encSchemaBuildManifest: Encoder[SchemaBuildManifest] = deriveEncoder
   //
 
   implicit def decProjectVersion: Decoder[ProjectVersion] = deriveDecoder

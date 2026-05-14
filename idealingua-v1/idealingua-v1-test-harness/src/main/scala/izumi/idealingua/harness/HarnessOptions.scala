@@ -9,6 +9,7 @@ import izumi.idealingua.model.publishing.manifests.{
   SbtOptions,
   ScalaBuildManifest,
   ScalaProjectLayout,
+  SchemaBuildManifest,
   TypeScriptBuildManifest,
   TypeScriptProjectLayout,
   YarnOptions,
@@ -46,10 +47,13 @@ object HarnessOptions {
     enableNUnit = false,
   )
 
+  val schema: SchemaBuildManifest = SchemaBuildManifest(common = pinnedCommon)
+
   def manifestFor(lang: IDLLanguage): BuildManifest = lang match {
     case IDLLanguage.Scala      => scala
     case IDLLanguage.Typescript => typescript
     case IDLLanguage.CSharp     => csharp
+    case IDLLanguage.JsonSchema => schema
   }
 
   /** Standard harness options. IMPL-10c retired the `TyperImpl` enum (only

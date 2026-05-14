@@ -15,6 +15,10 @@ object IDLLanguage {
     override val toString: String = "csharp"
   }
 
+  case object JsonSchema extends IDLLanguage {
+    override val toString: String = "schema"
+  }
+
   def parse(s: String): IDLLanguage = {
     (s.trim.toLowerCase: @unchecked) match {
       case Scala.toString =>
@@ -23,6 +27,8 @@ object IDLLanguage {
         Typescript
       case CSharp.toString =>
         CSharp
+      case JsonSchema.toString =>
+        JsonSchema
     }
   }
 }
