@@ -1,0 +1,33 @@
+domain coverage.crossdom.importer
+
+import coverage.crossdom.leaf
+
+// R2 coverage: cross-domain consumer exercising
+//   - alias chain across domains (LeafAlias -> LeafDto)
+//   - alias of an alias (LeafAliasChain -> LeafAlias)
+//   - direct cross-domain field reference (other_domain#TypeName)
+//   - cross-domain mixin inheritance via `& LeafMixin`
+//   - ADT branch sourced from another domain.
+
+alias LeafAlias      = coverage.crossdom.leaf#LeafDto
+alias LeafAliasChain = LeafAlias
+
+data ExtendsForeignMixin {
+  & coverage.crossdom.leaf#LeafMixin
+  own: str
+}
+
+data UsesForeignField {
+  fromOther : coverage.crossdom.leaf#LeafDto
+  chained   : LeafAliasChain
+  tag       : coverage.crossdom.leaf#LeafEnum
+}
+
+data LocalBranch {
+  marker: str
+}
+
+adt ForeignAdt {
+  coverage.crossdom.leaf#LeafDto as ForeignLeaf
+  LocalBranch
+}

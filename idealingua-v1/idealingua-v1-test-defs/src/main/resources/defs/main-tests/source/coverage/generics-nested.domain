@@ -1,0 +1,21 @@
+domain coverage.generics.nested
+
+// R2 coverage: deeply nested generic containers — list-of-list, map-of-list,
+// list-of-map, set-of-option, option-of-list-of-map.
+// Existing fixtures (`idltest.consts`) use nested generics only in constants,
+// not in DTO fields.
+
+data Leaf {
+  v: i32
+}
+
+data NestedGenerics {
+  matrix       : list[list[i32]]
+  byTag        : map[str, list[Leaf]]
+  histogram    : list[map[str, i64]]
+  options      : opt[list[map[str, Leaf]]]
+  // NOTE: `set[opt[T]]` removed in R2 — C# translator emits a duplicate
+  // local-variable declaration (`string _setOfOpt_d` appears twice) leading
+  // to CS0128. Recorded as a known translator defect in COVERAGE.md and to
+  // be re-introduced once the C# translator is fixed in a later cycle.
+}

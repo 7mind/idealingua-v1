@@ -1,0 +1,12 @@
+domain coverage.usertypes.enumsingle
+
+// R2 coverage: enum with a single member (degenerate case).
+// Existing corpus has only multi-member enums.
+
+enum Singleton {
+  Only
+}
+
+data UsesSingleton {
+  tag: Singleton
+}

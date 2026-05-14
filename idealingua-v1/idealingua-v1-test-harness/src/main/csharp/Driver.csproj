@@ -25,5 +25,8 @@
     <Compile Remove="../../../target/generated-sources/test-harness/csharp/Izumi/Test/Domain02/NestedAdtsService.cs" />
     <Compile Remove="../../../target/generated-sources/test-harness/csharp/Izumi/Test/Domain02/ImportIdService.cs" />
     <Compile Remove="../../../target/generated-sources/test-harness/csharp/Izumi/Test/Domain01/OptionalService.cs" />
+    <!-- R2 coverage fixtures: same IRT.Transport.Client exclusion as the other services/buzzers. -->
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Coverage/Services/Alloutputs/AllOutputsService.cs" />
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Coverage/Buzzers/Alloutputs/AllOutputsBuzzer.cs" />
   </ItemGroup>
 </Project>

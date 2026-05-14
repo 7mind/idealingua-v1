@@ -1,0 +1,33 @@
+domain coverage.buzzers.alloutputs
+
+// R2 coverage: one buzzer exercising every Output variant.
+// Existing `idltest.events.TestBuzzer` only covers Void and Singular(primitive)
+// (with a single Singular(str) for `hello` and singular-on-enum-input).
+
+data BuzzerOk {
+  v: str
+}
+
+data BuzzerErr {
+  code: i32
+}
+
+buzzer AllOutputsBuzzer {
+  // Output.Void
+  line voidEvent()
+
+  // Output.Singular(primitive)
+  line primEvent(): str
+
+  // Output.Singular(DTO)
+  line dtoEvent(): BuzzerOk
+
+  // Output.Struct
+  line structEvent() => (firstName: str, age: i32)
+
+  // Output.Algebraic
+  line algebraicEvent() => (BuzzerOk | BuzzerErr)
+
+  // Output.Alternative
+  line alternativeEvent() => BuzzerOk !! BuzzerErr
+}

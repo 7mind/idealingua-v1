@@ -8,6 +8,33 @@ Status: `[ ]` planned · `[~]` in progress · `[x]` done · `[!]` blocked
 
 ---
 
+- **R2: audit + expand test corpus for full feature coverage** (2026-05-14) — Phase A: produced a feature-by-feature coverage audit of the 28 existing `.domain` files in `idealingua-v1-test-defs/src/main/resources/defs/main-tests/source/` against the Primitive subclasses in `idealingua-v1-model/.../typer/ir/TypeDef.scala`, the Generic subclasses, the user-type kinds, the 5 `RawMethod.Output` variants, cross-domain references, and the misc surface (constants, annotations, docs, overlays). Wrote the audit to a new `idealingua-v1-test-defs/src/main/resources/defs/main-tests/COVERAGE.md` (~150 LOC). Phase B: added 10 minimal gap-filling fixtures under `source/coverage/` totaling ~150 LOC:
+  - `primitives-flat.domain` — every primitive as a bare DTO field (`coverage.primitives.AllPrimitivesFlat`).
+  - `generics-blob.domain` — TBLOB inside opt/list/set/map value (`coverage.generics.blob.BlobContainers`).
+  - `generics-map-keys.domain` — non-string map keys i32/i64/u32/uid/enum (`coverage.generics.mapkeys.MapWithVariousKeys`).
+  - `generics-nested.domain` — list[list[i32]] / map[str,list[T]] / list[map[str,i64]] / opt[list[map[str,T]]] (`coverage.generics.nested.NestedGenerics`).
+  - `enum-single-member.domain` — single-member enum (`coverage.usertypes.enumsingle.Singleton`).
+  - `identifier-single-field.domain` — single-field identifier (`coverage.usertypes.idsingle.Singleton`).
+  - `service-all-outputs.domain` — one service covering Void / Singular(primitive) / Singular(DTO) / Struct / Algebraic / Alternative (`coverage.services.alloutputs.AllOutputsService`).
+  - `buzzer-all-outputs.domain` — buzzer counterpart of the all-outputs witness (`coverage.buzzers.alloutputs.AllOutputsBuzzer`).
+  - `crossdom-leaf.domain` + `crossdom-importer.domain` — cross-domain alias chain (`LeafAliasChain → LeafAlias → other#LeafDto`), cross-domain mixin inheritance (`& other#LeafMixin`), cross-domain ADT branch (`other#LeafDto as ForeignLeaf` inside `ForeignAdt`), foreign-typed field, foreign-typed map key (`other#LeafEnum`). New domains `coverage.crossdom.leaf` + `coverage.crossdom.importer`.
+
+  Phase C: build-time source generator (`TestCodegenMain` invoked from `idealingua-v1-test-harness/Compile/sourceGenerators`) picks up all new fixtures automatically. C# `Driver.csproj` updated to exclude `Coverage/Services/Alloutputs/AllOutputsService.cs` and `Coverage/Buzzers/Alloutputs/AllOutputsBuzzer.cs` from compilation (same `IRT.Transport.Client` exclusion the existing 6 service/buzzer files already get). Existing 28 fixtures left untouched (history + downstream sample-app consumers depend on their exact wire shape).
+
+  Translator defect surfaced: **C# translator emits a duplicate local variable declaration `string _<field>_d` for `set[opt[<primitive>]]`** (CS0128 + CS0165). Worked around by removing the offending field from `generics-nested.domain`; defect documented in COVERAGE.md "Translator defects surfaced" section. Other nested patterns (`opt[list[map[str,T]]]`, `list[list[i32]]`, `list[map[str,T]]`, `map[str,list[T]]`) all compile cleanly.
+
+  Verification matrix (3 FROZEN contracts × 2 Scala versions = 6 green):
+  - 2.13.18 `runWireFixtures`: 26 Scala + 20 TypeScript + 21 CSharp fixtures match.
+  - 2.13.18 `runCrossLangInterop`: 118 verified, 10 skipped (F9 gap), 6 excluded (F10/F13).
+  - 2.13.18 `idealingua-v1-test-harness/test`: 48/48 pass — includes `TyperDiagnosticsSpec.new typer accepts every domain in the corpus` (regression guard) accepting all 10 new fixtures.
+  - 3.8.3 `runWireFixtures`: identical totals (26+20+21).
+  - 3.8.3 `runCrossLangInterop`: identical totals.
+  - 3.8.3 `idealingua-v1-test-harness/test`: 48/48 pass.
+
+  Path to R3: with the corpus expanded, R3 ships full-corpus sample apps that exercise every wireId end-to-end (Scala + TS + C# round-trip) and re-checks against the v1.4.19 baseline. R4 then locks the regression contract by running the regression-harness adapter over the expanded corpus against the v1.4.19 reference.
+
+---
+
 ## Milestones (high-level)
 
 - [x] **M1 — Modernization design package.** Three plan documents that together describe (a) the Baboon typer architecture lessons we adopt, (b) the concrete idealingua-v1 typer/IR/backend modernization plan, (c) the wire-format backward-compatibility test harness.
