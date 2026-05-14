@@ -8,7 +8,7 @@ import izumi.idealingua.model.publishing.manifests.SchemaBuildManifest
 import izumi.idealingua.translator.CompilerOptions
 import izumi.idealingua.translator.{Translated, Translator}
 import izumi.idealingua.translator.toschema.domain._
-import izumi.idealingua.typer.ir.{Domain, TypeDef}
+import izumi.idealingua.typer.ir.{Domain, EphemeralOrigin, Member, TypeDef}
 
 /** Domain-IR walker for the JSON Schema + MCP target.
   *
@@ -28,11 +28,13 @@ final class DomainSchemaTranslator(
   private val dtoRenderer    = new SchemaDtoRenderer(domain, resolver)
   private val enumRenderer   = new SchemaEnumRenderer
   private val idRenderer     = new SchemaIdentifierRenderer(resolver)
+  private val adtRenderer    = new SchemaAdtRenderer
+  private val ifcRenderer    = new SchemaInterfaceRenderer(domain)
   private val docBuilder     = new SchemaDocBuilder
   private val printer        = Printer.spaces2.copy(dropNullValues = false)
 
-  private val todoStub: Json =
-    Json.obj("x-idealingua-todo" -> Json.fromString("M2"))
+  private val todoStubM3: Json =
+    Json.obj("x-idealingua-todo" -> Json.fromString("M3"))
 
   override def translate(): Translated = {
     val typesByName: Map[String, TypeDef] =
@@ -47,14 +49,20 @@ final class DomainSchemaTranslator(
         typesByName.get(raw.id.name).foreach(emitTypeDef(_, components))
       case RawTopLevelDefn.TLDService(raw) =>
         typesByName.get(raw.id.name).foreach { td =>
-          val _ = components.put(td.id.wireId, todoStub)
+          val _ = components.put(td.id.wireId, todoStubM3)
         }
       case RawTopLevelDefn.TLDBuzzer(raw) =>
         typesByName.get(raw.id.name).foreach { td =>
-          val _ = components.put(td.id.wireId, todoStub)
+          val _ = components.put(td.id.wireId, todoStubM3)
         }
       case _ => ()
     }
+
+    // Emit interface-mirror ephemeral DTOs (`<Iface>.Struct`) so the
+    // SchemaInterfaceRenderer `$ref`s into the same document resolve. The
+    // mirror is referenced by its full wireId per wire-format §4. Method
+    // input/output ephemerals belong to services and stay stubbed for M3.
+    emitInterfaceMirrors(components)
 
     val infoVersion = resolveInfoVersion()
     val description = domain.meta.meta.doc
@@ -87,11 +95,30 @@ final class DomainSchemaTranslator(
     case dto: TypeDef.Dto =>
       val _ = out.put(dto.id.wireId, dtoRenderer.render(dto))
     case adt: TypeDef.Adt =>
-      val _ = out.put(adt.id.wireId, todoStub)
+      val _ = out.put(adt.id.wireId, adtRenderer.render(adt))
     case ifc: TypeDef.Interface =>
-      val _ = out.put(ifc.id.wireId, todoStub)
+      val _ = out.put(ifc.id.wireId, ifcRenderer.render(ifc))
     case _ =>
       ()
+  }
+
+  /** Emits interface-mirror ephemerals (`<Iface>.Struct`) as flat-object
+    * schemas. The interface's `oneOf` branches `$ref` these by full wireId.
+    * Mirror emission order is sorted by wireId for byte-stable output.
+    */
+  private def emitInterfaceMirrors(
+    out: scala.collection.mutable.LinkedHashMap[String, Json],
+  ): Unit = {
+    val mirrors = domain.members.collect {
+      case (_, Member.Ephemeral(eph)) if eph.origin.isInstanceOf[EphemeralOrigin.InterfaceMirror] =>
+        eph
+    }.toList.sortBy(_.id.wireId)
+
+    mirrors.foreach { eph =>
+      val flatFields = domain.flattenedStructs.get(eph.id).map(_.fields).getOrElse(Nil)
+      val schema     = dtoRenderer.renderFromFlat(eph.id.wireId, flatFields, None)
+      val _          = out.put(eph.id.wireId, schema)
+    }
   }
 
   /** Per plan D24: domain `meta.version` annotation (future) → BuildManifest

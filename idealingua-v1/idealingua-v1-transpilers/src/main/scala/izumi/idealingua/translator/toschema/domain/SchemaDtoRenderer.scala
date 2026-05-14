@@ -1,7 +1,7 @@
 package izumi.idealingua.translator.toschema.domain
 
 import io.circe.Json
-import izumi.idealingua.typer.ir.{Domain, TypeDef}
+import izumi.idealingua.typer.ir.{Domain, FlatField, TypeDef}
 
 /** Emits a flat-object JSON Schema for a DTO.
   *
@@ -16,14 +16,19 @@ import izumi.idealingua.typer.ir.{Domain, TypeDef}
 final class SchemaDtoRenderer(domain: Domain, resolver: SchemaTypeResolver) {
 
   def render(dto: TypeDef.Dto): Json = {
-    val flat = domain.flattenedStructs.get(dto.id)
+    val fields = domain.flattenedStructs.get(dto.id).map(_.fields).getOrElse(Nil)
+    renderFromFlat(dto.id.wireId, fields, dto.meta.doc)
+  }
 
-    val fields = flat.map(_.fields).getOrElse(Nil)
-
+  /** Renders a flat-object schema from a pre-flattened field list. Used for
+    * interface-mirror ephemerals (`<Iface>.Struct`), whose flat struct lives
+    * in `domain.flattenedStructs` but which are not in `userTypes`.
+    */
+  def renderFromFlat(wireId: String, fields: List[FlatField], doc: Option[String]): Json = {
     // Preserve resolved-inheritance order; deduplicate by simple name keeping
     // the first occurrence (legacy Circe deriveEncoder collapses overrides
     // the same way).
-    val seen     = scala.collection.mutable.LinkedHashMap.empty[String, izumi.idealingua.model.il.ast.typed.Field]
+    val seen = scala.collection.mutable.LinkedHashMap.empty[String, izumi.idealingua.model.il.ast.typed.Field]
     fields.foreach { ff =>
       if (!seen.contains(ff.field.name)) seen.put(ff.field.name, ff.field)
     }
@@ -38,9 +43,9 @@ final class SchemaDtoRenderer(domain: Domain, resolver: SchemaTypeResolver) {
     }
 
     val base = scala.collection.mutable.LinkedHashMap.empty[String, Json]
-    base += "type" -> Json.fromString("object")
-    base += "title" -> Json.fromString(dto.id.wireId)
-    dto.meta.doc.foreach(d => base += "description" -> Json.fromString(d))
+    base += "type"  -> Json.fromString("object")
+    base += "title" -> Json.fromString(wireId)
+    doc.foreach(d => base += "description" -> Json.fromString(d))
     base += "properties"           -> Json.fromFields(propsList)
     base += "required"             -> Json.fromValues(required)
     base += "additionalProperties" -> Json.False
