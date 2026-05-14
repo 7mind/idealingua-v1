@@ -74,8 +74,16 @@ final class ScalaAdapter(repoRoot: Path) extends LangAdapter {
       e => { stderrBuf.append(e); stderrBuf.append('\n') },
     )
 
-    val cmd = Seq("scala-cli", "run", workDir.toString)
-    Harness.say(s"+ ${cmd.mkString(" ")}")
+    // scala-cli's directory scanner silently skips any source under a directory named
+    // `test/` (it's part of the hidden `--default-forbidden-directories` list — see
+    // `scala-cli run --help-full`). The corpus under main-tests contains `izumi/test/*.domain`
+    // which generates output under `generated/izumi/test/...`; passing the workDir alone would
+    // drop those without any warning. Enumerate every `.scala` file explicitly so the scanner's
+    // directory heuristic never applies. `project.scala` (using-directives) is included by
+    // the same walk and is honored by scala-cli regardless of position in the input list.
+    val inputs = listScalaInputs(workDir).map(_.toString)
+    val cmd    = Seq("scala-cli", "run") ++ inputs
+    Harness.say(s"+ scala-cli run <${inputs.size} .scala files under $workDir>")
     val proc = Process(cmd).run(logger)
 
     val deadline = System.nanoTime() + Timeout.toNanos
@@ -102,6 +110,21 @@ final class ScalaAdapter(repoRoot: Path) extends LangAdapter {
     pathEnv.split(java.io.File.pathSeparatorChar).iterator
       .map(p => Path.of(p, "scala-cli"))
       .find(Files.isExecutable)
+  }
+
+  /** Enumerate every `.scala` file under `root` as an absolute path list. Stable order
+   *  (lexicographic) for reproducibility of the invocation; ordering does not affect
+   *  scala-cli compilation semantics. Used to bypass scala-cli's directory-based source
+   *  scanner (which skips `test/` subdirs); when files are passed individually they are
+   *  always accepted.
+   */
+  private def listScalaInputs(root: Path): Seq[Path] = {
+    if (!Files.isDirectory(root)) return Seq.empty
+    val buf = scala.collection.mutable.ArrayBuffer.empty[Path]
+    Files.walk(root).iterator().asScala.foreach { p =>
+      if (Files.isRegularFile(p) && p.getFileName.toString.endsWith(".scala")) buf += p
+    }
+    buf.sortBy(_.toString).toSeq
   }
 
   private def copyScalaSources(src: Path, dst: Path): Unit = {

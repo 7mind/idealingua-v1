@@ -1,5 +1,10 @@
 
-import * as moment from 'moment';
+// F13 fix: moment's TS d.ts declares `export = moment`, so `import * as moment from 'moment'`
+// produces a non-callable namespace object under modern CJS transformers (tsx/esbuild's __toESM
+// wraps the function in an Object.create(Function.prototype) that is itself not callable).
+// `import x = require(...)` is the TS-idiomatic form for `export =` modules and works with
+// both esModuleInterop=true and =false without depending on synthetic default imports.
+import moment = require('moment');
 
 export class Formatter {
     public static readonly DATETIME_FORMATS = [
