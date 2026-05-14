@@ -23,9 +23,25 @@
     <Compile Include="csharp/IRT/IServiceDispatcher.cs" />
     <Compile Include="csharp/IRT/RTTI.cs" />
     <Compile Include="csharp/IRT/Void.cs" />
-    <!-- Domain types: everything under csharp/ except IRT/ (Transport pulls
-         WebSocketSharp; UrlEscaper depends on System.Web which is not auto-
-         referenced in net9.0 — none of it is needed for sample-app emit). -->
+    <!-- Transport interfaces + Authorization tree — the broad corpus' generated
+         service/buzzer Client classes reference IClientTransport, IClientTransportContext,
+         IClientSocketTransport, IClientTransportCallback, and ClientTransportCallback,
+         all defined under IRT/Transport/. Include the small set of files that don't
+         pull WebSocketSharp / HttpClient. WebSocket* and AsyncHttp/SyncHttp generic
+         implementations are excluded since they reference WebSocketSharp/HttpClient. -->
+    <Compile Include="csharp/IRT/Transport/Authorization/**/*.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/IClientTranport.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/IClientTransportCallback.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/IClientTransportContext.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/ClientTransportCallback.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/SyncHttpTransport.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/SyncHttpTransportGeneric.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/AsyncHttpTransport.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/AsyncHttpTransportGeneric.cs" />
+    <Compile Include="csharp/IRT/Transport/TransportException.cs" />
+    <!-- Domain types: everything under csharp/ except IRT/ (the IRT subset above is
+         what we need; UrlEscaper.cs depends on System.Web which is not auto-referenced
+         in net9.0 — sample_app.cs supplies a shim namespace IRT.Transport.UrlEscaper). -->
     <Compile Include="csharp/**/*.cs" Exclude="csharp/IRT/**/*.cs" />
     <Compile Include="sample_app.cs" />
   </ItemGroup>
