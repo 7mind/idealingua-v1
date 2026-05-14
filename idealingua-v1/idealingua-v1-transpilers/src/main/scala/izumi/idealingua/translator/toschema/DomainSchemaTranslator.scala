@@ -14,9 +14,15 @@ import izumi.idealingua.typer.ir.{Domain, EphemeralOrigin, Member, TypeDef}
   *
   * Mirrors `DomainScalaTranslator` (Phase B M6) — consumes the new typer's
   * `Domain` IR directly, in `parsed.members` declaration order. Each
-  * user-type emit produces one entry into `components.schemas`. Aliases are
-  * collapsed (no slot); ADTs / Interfaces / Services / Buzzers are stubbed
-  * with `{"x-idealingua-todo": "M2"}` at M1.
+  * user-type emit produces one entry into `components.schemas`.
+  *
+  * At M3 the service/buzzer stubs are replaced with full MCP
+  * `ListToolsResult` envelopes, one `.mcp.json` per service or buzzer.
+  * Method input ephemeral DTOs and method output ephemerals
+  * (`Singular`/`Struct`/`Void` DTOs + `Algebraic`/`Alternative` ADTs) are
+  * emitted into `components.schemas` so `x-idealingua-wireId-input` /
+  * `x-idealingua-wireId-output` `$ref`s resolve inside the same OpenAPI
+  * document.
   */
 final class DomainSchemaTranslator(
   domain: Domain,
@@ -24,23 +30,26 @@ final class DomainSchemaTranslator(
   options: CompilerOptions[SchemaBuildManifest],
 ) extends Translator {
 
-  private val resolver       = new SchemaTypeResolver(domain)
-  private val dtoRenderer    = new SchemaDtoRenderer(domain, resolver)
-  private val enumRenderer   = new SchemaEnumRenderer
-  private val idRenderer     = new SchemaIdentifierRenderer(resolver)
-  private val adtRenderer    = new SchemaAdtRenderer
-  private val ifcRenderer    = new SchemaInterfaceRenderer(domain)
-  private val docBuilder     = new SchemaDocBuilder
-  private val printer        = Printer.spaces2.copy(dropNullValues = false)
-
-  private val todoStubM3: Json =
-    Json.obj("x-idealingua-todo" -> Json.fromString("M3"))
+  private val resolver        = new SchemaTypeResolver(domain)
+  private val dtoRenderer     = new SchemaDtoRenderer(domain, resolver)
+  private val enumRenderer    = new SchemaEnumRenderer
+  private val idRenderer      = new SchemaIdentifierRenderer(resolver)
+  private val adtRenderer     = new SchemaAdtRenderer
+  private val ifcRenderer     = new SchemaInterfaceRenderer(domain)
+  private val docBuilder      = new SchemaDocBuilder
+  private val methodOutput    = new SchemaMethodOutput(resolver)
+  private val serviceRenderer = new SchemaServiceRenderer(domain.id, methodOutput)
+  private val buzzerRenderer  = new SchemaBuzzerRenderer(domain.id, methodOutput)
+  private val printer         = Printer.spaces2.copy(dropNullValues = false)
 
   override def translate(): Translated = {
     val typesByName: Map[String, TypeDef] =
       domain.userTypes.toSeq.map { case (id, td) => id.name -> td }.toMap
 
     val components = scala.collection.mutable.LinkedHashMap.empty[String, Json]
+    val mcpModules = scala.collection.mutable.ArrayBuffer.empty[Module]
+
+    val pkgPath = domain.id.toPackage.toList
 
     parsed.members.foreach {
       case RawTopLevelDefn.TLDBaseType(raw) =>
@@ -48,21 +57,34 @@ final class DomainSchemaTranslator(
       case RawTopLevelDefn.TLDNewtype(raw) =>
         typesByName.get(raw.id.name).foreach(emitTypeDef(_, components))
       case RawTopLevelDefn.TLDService(raw) =>
-        typesByName.get(raw.id.name).foreach { td =>
-          val _ = components.put(td.id.wireId, todoStubM3)
+        typesByName.get(raw.id.name).foreach {
+          case svc: TypeDef.Service =>
+            val doc      = serviceRenderer.render(svc)
+            val rendered = printer.print(doc) + "\n"
+            val moduleId = ModuleId(pkgPath, s"${svc.id.name}.mcp.json")
+            mcpModules += Module(moduleId, rendered)
+          case _ => ()
         }
       case RawTopLevelDefn.TLDBuzzer(raw) =>
-        typesByName.get(raw.id.name).foreach { td =>
-          val _ = components.put(td.id.wireId, todoStubM3)
+        typesByName.get(raw.id.name).foreach {
+          case bz: TypeDef.Buzzer =>
+            val doc      = buzzerRenderer.render(bz)
+            val rendered = printer.print(doc) + "\n"
+            val moduleId = ModuleId(pkgPath, s"${bz.id.name}.mcp.json")
+            mcpModules += Module(moduleId, rendered)
+          case _ => ()
         }
       case _ => ()
     }
 
     // Emit interface-mirror ephemeral DTOs (`<Iface>.Struct`) so the
-    // SchemaInterfaceRenderer `$ref`s into the same document resolve. The
-    // mirror is referenced by its full wireId per wire-format §4. Method
-    // input/output ephemerals belong to services and stay stubbed for M3.
+    // SchemaInterfaceRenderer `$ref`s into the same document resolve.
     emitInterfaceMirrors(components)
+
+    // Emit method input/output ephemerals (MethodInput/MethodOutput DTOs +
+    // ephemeral ADTs for Algebraic/Alternative outputs) so MCP `*-wireId-*`
+    // annotations point at concrete schema components.
+    emitMethodEphemerals(components)
 
     val infoVersion = resolveInfoVersion()
     val description = domain.meta.meta.doc
@@ -75,11 +97,10 @@ final class DomainSchemaTranslator(
     )
 
     val rendered = printer.print(doc) + "\n"
-
-    val pkgPath  = domain.id.toPackage.toList
     val moduleId = ModuleId(pkgPath, "schema.json")
+    val schema   = Module(moduleId, rendered)
 
-    Translated(domain.id, domain.meta, Seq(Module(moduleId, rendered)))
+    Translated(domain.id, domain.meta, schema +: mcpModules.toSeq)
   }
 
   private def emitTypeDef(
@@ -118,6 +139,52 @@ final class DomainSchemaTranslator(
       val flatFields = domain.flattenedStructs.get(eph.id).map(_.fields).getOrElse(Nil)
       val schema     = dtoRenderer.renderFromFlat(eph.id.wireId, flatFields, None)
       val _          = out.put(eph.id.wireId, schema)
+    }
+  }
+
+  /** Emits method-input + method-output ephemerals. DTO-shaped ephemerals
+    * (`MethodInput`, `MethodOutput` for `Singular`/`Struct`/`Void`) are
+    * rendered as flat-object schemas via `SchemaDtoRenderer.renderFromFlat`.
+    * ADT-shaped output ephemerals (`Algebraic`/`Alternative`) are placed in
+    * `Member.User` by `EphemeralSynthesizer.placeEphemeralAdt` and are
+    * rendered via `SchemaAdtRenderer`.
+    *
+    * Emission order: sorted by wireId for byte-stability across runs.
+    */
+  private def emitMethodEphemerals(
+    out: scala.collection.mutable.LinkedHashMap[String, Json],
+  ): Unit = {
+    // 1. MethodInput / MethodOutput DTO ephemerals.
+    val dtoEphemerals = domain.members.collect {
+      case (_, Member.Ephemeral(eph)) =>
+        eph.origin match {
+          case _: EphemeralOrigin.MethodInput  => Some(eph)
+          case _: EphemeralOrigin.MethodOutput => Some(eph)
+          case _                               => None
+        }
+    }.flatten.toList.sortBy(_.id.wireId)
+
+    dtoEphemerals.foreach { eph =>
+      val flatFields = domain.flattenedStructs.get(eph.id).map(_.fields).getOrElse(Nil)
+      val schema     = dtoRenderer.renderFromFlat(eph.id.wireId, flatFields, None)
+      val _          = out.put(eph.id.wireId, schema)
+    }
+
+    // 2. Ephemeral ADTs (Algebraic / Alternative outputs). These are
+    //    `Member.User(TypeDef.Adt)` keyed by AdtId whose owner (`ephemeralOwner`)
+    //    points at a service/buzzer. Selecting them via `ephemeralOwner`
+    //    avoids accidentally re-emitting user-declared ADTs (which the main
+    //    `emitTypeDef` walk already handles).
+    val ownedAdts = domain.ephemeralOwner.keysIterator.collect {
+      case adtId =>
+        domain.userTypes.get(adtId) match {
+          case Some(a: TypeDef.Adt) if !out.contains(a.id.wireId) => Some(a)
+          case _                                                  => None
+        }
+    }.flatten.toList.sortBy(_.id.wireId)
+
+    ownedAdts.foreach { adt =>
+      val _ = out.put(adt.id.wireId, adtRenderer.render(adt))
     }
   }
 
