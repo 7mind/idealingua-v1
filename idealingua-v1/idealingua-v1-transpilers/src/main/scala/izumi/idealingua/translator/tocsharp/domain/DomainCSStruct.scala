@@ -50,6 +50,20 @@ object DomainCSStruct {
       )
     }
 
+    // F-DTO1-fieldorder: equal-type duplicates must pick the smallest-position
+    // entry under legacy DFS emission (`fields.head` in
+    // `StructuralQueriesImpl.NonContradictive`), not the deepest-distance one.
+    // See `DomainScalaStruct.fromFlat` for the full rationale — the C#
+    // translator has the same regression for the same reason (Fe4 "max
+    // distance" rule diverges from legacy DFS on diamond inheritance).
+    //
+    // The covariant-narrowing branch below is C#-specific (C# does not
+    // support covariant property overrides) and remains unchanged: it picks
+    // the deepest entry and stores the variance chain for the renderer to
+    // emit the commented-out workaround.
+    val dfsPos: Map[(TypeId, String), Int] = legacyDfsPosition(id, domain)
+    def posOf(ef: ExtendedField): Int =
+      dfsPos.getOrElse((ef.defn.definedBy, ef.field.name), Int.MaxValue)
     val deduped: List[ExtendedField] = {
       val byName = scala.collection.mutable.LinkedHashMap.empty[String, scala.collection.mutable.ListBuffer[ExtendedField]]
       extendedRaw.foreach { f =>
@@ -58,7 +72,7 @@ object DomainCSStruct {
       }
       byName.values.map { occurrences =>
         val typesEqual = occurrences.map(_.field).toSet.size == 1
-        if (typesEqual) occurrences.maxBy(_.defn.distance)
+        if (typesEqual) occurrences.minBy(posOf)
         else {
           // Covariant field-type narrowing: legacy C# goldens predate
           // covariant override propagation into the parent interface's
@@ -97,6 +111,42 @@ object DomainCSStruct {
       ambigious    = ambigious,
       all          = sorted,
     )
+  }
+
+  /** Replicate legacy `FieldExtractor.extractFields` DFS emission order for
+    * `id` and return a positional index per `(origin, fieldName)`. Mirrors
+    * `DomainScalaStruct.legacyDfsPosition` — same legacy algorithm, the
+    * underlying typespace question is language-agnostic.
+    */
+  private def legacyDfsPosition(id: StructureId, domain: Domain): Map[(TypeId, String), Int] = {
+    val buf     = scala.collection.mutable.LinkedHashMap.empty[(TypeId, String), Int]
+    val visited = scala.collection.mutable.LinkedHashSet.empty[TypeId]
+    def fieldsOfStruct(tid: TypeId): Option[(List[Field], Super)] = {
+      domain.userTypes.get(tid) match {
+        case Some(d: NewTypeDef.Dto)       => Some((d.struct.fields, d.struct.superclasses))
+        case Some(i: NewTypeDef.Interface) => Some((i.struct.fields, i.struct.superclasses))
+        case _ =>
+          domain.members.get(tid) match {
+            case Some(Member.Ephemeral(eph)) => Some((eph.struct.fields, eph.struct.superclasses))
+            case _                           => None
+          }
+      }
+    }
+    def walk(tid: TypeId): Unit = {
+      if (!visited.add(tid)) return
+      fieldsOfStruct(tid) match {
+        case Some((thisFields, sup)) =>
+          sup.interfaces.foreach(walk)
+          sup.concepts.foreach(walk)
+          thisFields.foreach { f =>
+            val key = (tid, f.name)
+            if (!buf.contains(key)) buf.update(key, buf.size)
+          }
+        case None => ()
+      }
+    }
+    walk(id)
+    buf.toMap
   }
 
   /** Recover legacy `definedWithIndex` — see `DomainScalaStruct.originIndex`. */
