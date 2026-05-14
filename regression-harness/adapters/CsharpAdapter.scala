@@ -44,6 +44,18 @@ final class CsharpAdapter(repoRoot: Path) extends LangAdapter {
 
   private val Timeout = 5.minutes
 
+  /** NDJSON line shape — matches `Canonicalize.LineRx`.
+   *
+   *  `dotnet run` interleaves SDK chatter on stdout (e.g. the `SYSLIB0014`
+   *  deprecation warning from `WebClient` in some IRT helpers) even with
+   *  `--verbosity quiet --nologo`. We pre-filter stdout to only retain
+   *  lines matching the canonical NDJSON form before persisting `rawOut`,
+   *  so downstream `Canonicalize` does not fail on warning-shaped lines.
+   *  The unfiltered stream is kept beside as `<rawOut>.unfiltered` for
+   *  postmortem inspection.
+   */
+  private val NdjsonLine = """^[A-Za-z0-9_.]+\t[A-Za-z0-9_-]+\t.+$""".r
+
   override def buildAndRun(
     workDir:    Path,
     genDir:     Path,
@@ -108,16 +120,27 @@ final class CsharpAdapter(repoRoot: Path) extends LangAdapter {
     val rc =
       if (proc.isAlive()) {
         proc.destroy()
-        Files.writeString(rawOut, stdoutBuf.toString)
-        Files.writeString(Path.of(rawOut.toString + ".stderr"), stderrBuf.toString)
+        persistStreams(rawOut, stdoutBuf.toString, stderrBuf.toString)
         return Left(s"dotnet timed out after $Timeout")
       } else proc.exitValue()
 
-    Files.writeString(rawOut, stdoutBuf.toString)
-    Files.writeString(Path.of(rawOut.toString + ".stderr"), stderrBuf.toString)
+    persistStreams(rawOut, stdoutBuf.toString, stderrBuf.toString)
 
     if (rc != 0) Left(s"dotnet exit=$rc (stderr captured at ${rawOut}.stderr)")
     else Right(())
+  }
+
+  /** Write stdout (NDJSON-filtered) to `rawOut`, raw stdout to
+   *  `<rawOut>.unfiltered`, and stderr to `<rawOut>.stderr`.
+   */
+  private def persistStreams(rawOut: Path, stdout: String, stderr: String): Unit = {
+    val filtered = stdout.linesIterator
+      .filter(l => NdjsonLine.matches(l.stripLineEnd))
+      .mkString("\n")
+    val toWrite = if (filtered.isEmpty) "" else filtered + "\n"
+    Files.writeString(rawOut, toWrite)
+    Files.writeString(Path.of(rawOut.toString + ".unfiltered"), stdout)
+    Files.writeString(Path.of(rawOut.toString + ".stderr"), stderr)
   }
 
   // ------------------------------------------------------------------

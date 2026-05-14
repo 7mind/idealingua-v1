@@ -1403,7 +1403,14 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "com.lihaoyi" % "sourcecode_2.13"
       )
       case (_, _) => Seq.empty
-    } }
+    } },
+    // X2 (2026-05-14): R1a added `testcodegen.TestCodegenMain` alongside the
+    // public `CommandlineIDLCompiler.main`. Without an explicit `mainClass`,
+    // sbt-native-packager's staged launcher prompts `-main <class>` instead of
+    // running the compiler directly — which breaks `regression-harness/idl-regress`
+    // (it invokes the launcher positionally with `--root=…`). Pin the entry
+    // point to the public compiler.
+    Compile / mainClass := Some("izumi.idealingua.compiler.CommandlineIDLCompiler")
   )
   .enablePlugins(JavaAppPackaging, IzumiPlugin)
 
