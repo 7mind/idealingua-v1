@@ -191,7 +191,12 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
     out.map {
       m =>
         val pid = naming.projectId(did)
-        m.copy(id = m.id.copy(path = Seq(pid, "src", "main", "scala") ++ m.id.path))
+        // PR-04 MCP Mb1: modules tagged `meta("resource") == "true"` (e.g. the
+        // per-service `mcp/<Name>.mcp.json` companion the bridge code reads
+        // via `getResourceAsStream`) route to `src/main/resources/` so they
+        // land on the classpath as resources, not as Scala sources.
+        val srcDir = if (m.meta.get("resource").contains("true")) "resources" else "scala"
+        m.copy(id = m.id.copy(path = Seq(pid, "src", "main", srcDir) ++ m.id.path))
     }
   }
 

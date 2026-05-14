@@ -1,0 +1,68 @@
+{
+  "tools" : [
+    {
+      "name" : "izumi.test.domain01.OptionalService.optionalMethod",
+      "description" : " method doc",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "oneOf" : [
+              {
+                "$ref" : "#/components/schemas/izumi.test.domain01.NestedClass"
+              },
+              {
+                "type" : "null"
+              }
+            ]
+          },
+          "b" : {
+            "oneOf" : [
+              {
+                "type" : "integer",
+                "minimum" : -2147483648,
+                "maximum" : 2147483647
+              },
+              {
+                "type" : "null"
+              }
+            ]
+          },
+          "c" : {
+            "oneOf" : [
+              {
+                "$ref" : "#/components/schemas/izumi.test.domain01.NestedClass"
+              },
+              {
+                "type" : "null"
+              }
+            ]
+          }
+        },
+        "required" : [
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "type" : "integer",
+            "minimum" : -2147483648,
+            "maximum" : 2147483647
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "izumi.test.domain01.OptionalService.OptionalMethodInput",
+      "x-idealingua-wire-type-output" : "izumi.test.domain01.OptionalService.OptionalMethodOutput",
+      "x-idealingua-kind" : "rpc"
+    }
+  ]
+}

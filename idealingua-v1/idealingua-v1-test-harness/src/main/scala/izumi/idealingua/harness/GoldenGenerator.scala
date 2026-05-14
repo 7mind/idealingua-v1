@@ -30,6 +30,11 @@ object GoldenGenerator {
         deleteRecursively(langDir)
       }
     }
+    // Clear the MCP-bridge virtual target subdir too (PR-04 Mb1).
+    val mcpDir = goldenRoot.resolve(GoldenCompile.mcpBridgeGoldenSubdir)
+    if (Files.exists(mcpDir)) {
+      deleteRecursively(mcpDir)
+    }
 
     // Write all produced files
     for ((targetPath, bytes) <- produced) {

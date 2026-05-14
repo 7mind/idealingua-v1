@@ -2,6 +2,7 @@ package izumi.idealingua.translator.toschema.domain
 
 import io.circe.Json
 import izumi.idealingua.model.il.ast.typed.{AdtMember, DefMethod, SimpleStructure}
+import izumi.idealingua.translator.toscala.domain.OutputWrapPolicy
 
 /** Dispatches `DefMethod.Output` to a JSON Schema fragment for use as the
   * MCP `outputSchema` of a tool envelope.
@@ -28,8 +29,18 @@ final class SchemaMethodOutput(resolver: SchemaTypeResolver) {
 
   /** MCP `outputSchema` for a method. Always returns a schema whose top-level
     * `type == "object"` (M5.5 / F-M5-3). Non-object outputs are wrapped.
+    *
+    * Per plan §6 D6 (MCP HTTP4s bridge): the wrap decision is delegated to
+    * the shared `OutputWrapPolicy.isWrapped` predicate so the http4s bridge
+    * (`DomainServiceMcpRenderer`) emits the same per-method static `wrap` flag
+    * the schema describes. Behaviour-preserving: each `Output` variant lands
+    * in the same wrap-or-not bucket as the prior `wrapIfNonObject(rendered)`
+    * pass — see `OutputWrapPolicy` for the variant→bucket table.
     */
-  def dispatch(out: DefMethod.Output): Json = wrapIfNonObject(rawDispatch(out))
+  def dispatch(out: DefMethod.Output): Json = {
+    val raw = rawDispatch(out)
+    if (OutputWrapPolicy.isWrapped(out)) wrapInResultEnvelope(raw) else raw
+  }
 
   /** Pre-wrap dispatch — the "intrinsic" shape of the output as a schema. */
   private def rawDispatch(out: DefMethod.Output): Json = out match {
@@ -62,6 +73,10 @@ final class SchemaMethodOutput(resolver: SchemaTypeResolver) {
     * `{type:object, properties:{result:<schema>}, required:[result],
     *  additionalProperties:false, x-idealingua-wrapped:true}` envelope.
     *
+    * Kept as a public method for callers that need to wrap an arbitrary
+    * already-rendered schema (defensive layer). The dispatch path now goes
+    * through `OutputWrapPolicy.isWrapped(Output)` for the IR-level decision.
+    *
     * A schema counts as "object" iff its top-level `type` field is exactly
     * the string `"object"`. `oneOf` schemas, primitive `type:"null"`, and
     * anything else gets wrapped — even if every `oneOf` branch is itself
@@ -70,15 +85,17 @@ final class SchemaMethodOutput(resolver: SchemaTypeResolver) {
     */
   def wrapIfNonObject(schema: Json): Json = {
     val isObject = schema.asObject.flatMap(_.apply("type")).flatMap(_.asString).contains("object")
-    if (isObject) schema
-    else Json.obj(
-      "type"                  -> Json.fromString("object"),
-      "properties"            -> Json.obj("result" -> schema),
-      "required"              -> Json.arr(Json.fromString("result")),
-      "additionalProperties"  -> Json.False,
-      "x-idealingua-wrapped"  -> Json.True,
-    )
+    if (isObject) schema else wrapInResultEnvelope(schema)
   }
+
+  /** Construct the canonical `{result:<schema>}` MCP envelope. */
+  private def wrapInResultEnvelope(schema: Json): Json = Json.obj(
+    "type"                 -> Json.fromString("object"),
+    "properties"           -> Json.obj("result" -> schema),
+    "required"             -> Json.arr(Json.fromString("result")),
+    "additionalProperties" -> Json.False,
+    "x-idealingua-wrapped" -> Json.True,
+  )
 
   /** Flat-object schema from a `SimpleStructure` (input bag or struct output). */
   def structSchema(s: SimpleStructure): Json = {

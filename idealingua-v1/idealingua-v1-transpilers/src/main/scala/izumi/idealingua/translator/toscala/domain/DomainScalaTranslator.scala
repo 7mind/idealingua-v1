@@ -71,6 +71,14 @@ final class DomainScalaTranslator(
 
   private val ctx = new DomainSTContext(domain, parsed, options)
 
+  // PR-04 MCP Mb1: optional MCP / HTTP4s bridge codegen (D1, D13). Gated by
+  // `ScalaBuildManifest.emitMcpBridge`; default `false` — opt-in, backwards
+  // compatible. When enabled, `emitService` appends a per-service
+  // `<ServiceName>Mcp.scala` source module + a `mcp/<ServiceName>.mcp.json`
+  // classpath resource module.
+  private lazy val mcpRenderer: DomainServiceMcpRenderer =
+    new DomainServiceMcpRenderer(domain)
+
   override def translate(): Translated = {
     val typesByName: Map[String, NewTypeDef] =
       domain.userTypes.toSeq.map { case (id, td) => id.name -> td }.toMap
@@ -242,7 +250,26 @@ final class DomainScalaTranslator(
 
   private def emitService(svc: NewTypeDef.Service): Seq[Module] = {
     val product = ctx.serviceRenderer.renderService(svc)
-    ctx.modules.toSource(domain.id, ctx.modules.toModuleId(svc.id), product, options.manifest.sbt.scalaVersions)
+    val base    = ctx.modules.toSource(domain.id, ctx.modules.toModuleId(svc.id), product, options.manifest.sbt.scalaVersions)
+    if (options.manifest.emitMcpBridge) base ++ emitMcpBridgeModules(svc) else base
+  }
+
+  /** Mb1 MCP bridge: per-service `<Name>Mcp.scala` source + `mcp/<Name>.mcp.json`
+    * classpath resource. The Scala source is placed under the service's
+    * package (same package path as `<Name>.scala`); the resource is placed at
+    * `mcp/<Name>.mcp.json` and tagged with `meta("resource") = "true"` so the
+    * layouter routes it to `src/main/resources` instead of `src/main/scala`
+    * under SBT layout. Under PLAIN layout the module path is preserved
+    * verbatim — landing at `<output>/mcp/<Name>.mcp.json`.
+    */
+  private def emitMcpBridgeModules(svc: NewTypeDef.Service): Seq[Module] = {
+    val (scalaSrc, json) = mcpRenderer.render(svc)
+    val pkg              = domain.id.toPackage
+    val scalaModuleId    = ModuleId(pkg, s"${svc.id.name}Mcp.scala")
+    val resourceModuleId = ModuleId(Seq("mcp"), s"${svc.id.name}.mcp.json")
+    val scalaModule      = Module(scalaModuleId, scalaSrc)
+    val resourceModule   = Module(resourceModuleId, json, meta = Map("resource" -> "true"))
+    Seq(scalaModule, resourceModule)
   }
 
   private def emitBuzzer(bz: NewTypeDef.Buzzer): Seq[Module] = {

@@ -1,0 +1,166 @@
+{
+  "tools" : [
+    {
+      "name" : "izumi.test.domain02.ImportIdService.some",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/izumi.test.domain01.ImportAppId"
+          }
+        },
+        "required" : [
+          "id"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "oneOf" : [
+              {
+                "type" : "integer",
+                "minimum" : 0,
+                "maximum" : 9007199254740991
+              },
+              {
+                "type" : "string",
+                "pattern" : "^[0-9]{1,20}$"
+              }
+            ]
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "izumi.test.domain02.ImportIdService.SomeInput",
+      "x-idealingua-wire-type-output" : "izumi.test.domain02.ImportIdService.SomeOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "izumi.test.domain02.ImportIdService.mixi",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "par" : {
+            "$ref" : "#/components/schemas/izumi.test.domain01.GenericFailureData"
+          }
+        },
+        "required" : [
+          "par"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "oneOf" : [
+              {
+                "type" : "object",
+                "properties" : {
+                  "AdtA2" : {
+                    "$ref" : "#/components/schemas/izumi.test.domain02.AdtA2"
+                  }
+                },
+                "required" : [
+                  "AdtA2"
+                ],
+                "additionalProperties" : false
+              },
+              {
+                "type" : "object",
+                "properties" : {
+                  "GenericFailureData" : {
+                    "$ref" : "#/components/schemas/izumi.test.domain01.GenericFailureData"
+                  }
+                },
+                "required" : [
+                  "GenericFailureData"
+                ],
+                "additionalProperties" : false
+              }
+            ],
+            "x-idealingua-kind" : "adt"
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "izumi.test.domain02.ImportIdService.MixiInput",
+      "x-idealingua-wire-type-output" : "izumi.test.domain02.ImportIdService.MixiOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "izumi.test.domain02.ImportIdService.update",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/izumi.test.domain01.ImportAppId"
+          }
+        },
+        "required" : [
+          "id"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "oneOf" : [
+              {
+                "type" : "object",
+                "properties" : {
+                  "AdtA2" : {
+                    "$ref" : "#/components/schemas/izumi.test.domain02.AdtA2"
+                  }
+                },
+                "required" : [
+                  "AdtA2"
+                ],
+                "additionalProperties" : false
+              },
+              {
+                "type" : "object",
+                "properties" : {
+                  "GenericFailure" : {
+                    "$ref" : "#/components/schemas/izumi.test.domain01.GenericFailure"
+                  }
+                },
+                "required" : [
+                  "GenericFailure"
+                ],
+                "additionalProperties" : false
+              }
+            ],
+            "x-idealingua-kind" : "adt"
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "izumi.test.domain02.ImportIdService.UpdateInput",
+      "x-idealingua-wire-type-output" : "izumi.test.domain02.ImportIdService.UpdateOutput",
+      "x-idealingua-kind" : "rpc"
+    }
+  ]
+}
