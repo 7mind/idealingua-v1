@@ -2,17 +2,21 @@ package izumi.test.domain01
 
 import _root_.cats.effect.Async
 import _root_.io.circe.{Json, parser}
-import izumi.functional.bio.{Error2, Exit, F, IO2}
+import izumi.functional.bio.{Error2, Exit, IO2}
 import izumi.idealingua.runtime.rpc.{
   IRTDecodingException,
+  IRTGenericFailure,
+  IRTLimitReachedException,
   IRTMethodId,
   IRTMethodName,
   IRTMissingHandlerException,
   IRTServerMultiplexor,
   IRTServiceId,
+  IRTTypeMismatchException,
   IRTUnathorizedRequestContextException,
+  IRTUnparseableDataException,
 }
-import org.http4s.{HttpRoutes, Request, Response, Status}
+import org.http4s.{HttpRoutes, Request, Response}
 import org.http4s.circe._
 import org.http4s.dsl.Http4sDsl
 
@@ -97,13 +101,50 @@ object OptionalServiceMcpRoutes {
         "isError"           -> Json.False,
       )
     }).sandboxExit.flatMap {
-      case Exit.Success(j)                                          => Ok(j)
-      case Exit.Error(_: IRTMissingHandlerException, _)             => Ok(mcpError(-32601, "Method not found"))
-      case Exit.Error(_: IRTDecodingException, _)                   => Ok(mcpError(-32602, "Invalid arguments"))
-      case Exit.Error(_: _root_.io.circe.Error, _)                  => Ok(mcpError(-32602, "Invalid arguments"))
-      case Exit.Error(_: IRTUnathorizedRequestContextException, _)  => F.pure(Response[F[Throwable, _]](status = Status.Unauthorized))
-      case _                                                        => Ok(mcpError(-32603, "Internal error"))
+      // Plan §9 mapping: IRT semantic failures surface in-band as MCP
+      // `isError:true` envelopes (HTTP 200). Out-of-band HTTP statuses
+      // are reserved for transport-layer failures (malformed body,
+      // route mismatch, unhandled middleware exception) — those are
+      // already produced by http4s before this `call` runs.
+      // Codes follow JSON-RPC 2.0 reserved range: -32700 parse,
+      // -32601 method-not-found, -32602 invalid-params, -32603 internal,
+      // -32000..-32099 server-defined (rate-limit, unauthorized).
+      // Diverges from `HttpServer.handleHttpResult` (HTTP 401, 429) per
+      // plan §9: MCP semantics treat auth + rate-limit as tool-level
+      // failures, not transport-level.
+      // Underlying `getMessage` is surfaced for decoding errors; we
+      // deliberately do NOT surface stack traces or causes (avoid
+      // leaking server internals).
+      case Exit.Success(j) => Ok(j)
+      case Exit.Error(_: IRTMissingHandlerException, _) =>
+        Ok(mcpError(-32601, s"Method not found: ${methodId.service.value}.${methodId.methodId.value}"))
+      case Exit.Error(e: IRTUnparseableDataException, _) =>
+        Ok(mcpError(-32700, s"Parse error: ${safeMsg(e)}"))
+      case Exit.Error(e: IRTTypeMismatchException, _) =>
+        Ok(mcpError(-32602, s"Invalid arguments (type mismatch): ${safeMsg(e)}"))
+      case Exit.Error(e: IRTDecodingException, _) =>
+        Ok(mcpError(-32602, s"Invalid arguments: ${safeMsg(e)}"))
+      case Exit.Error(e: _root_.io.circe.Error, _) =>
+        Ok(mcpError(-32602, s"Invalid arguments: ${safeMsg(e)}"))
+      case Exit.Error(e: IRTLimitReachedException, _) =>
+        Ok(mcpError(-32000, s"Rate limit exceeded: ${safeMsg(e)}"))
+      case Exit.Error(_: IRTUnathorizedRequestContextException, _) =>
+        Ok(mcpError(-32001, "Unauthorized"))
+      case Exit.Error(_: IRTGenericFailure, _) =>
+        Ok(mcpError(-32603, "Internal error"))
+      case _ =>
+        Ok(mcpError(-32603, "Internal error"))
     }
+  }
+
+  /** Surface the exception's own message only — never the cause chain
+    * or stack trace — and fall back to the class name if `getMessage`
+    * is `null`. Prevents leaking server internals (file paths,
+    * library-version strings, host names) into the MCP envelope.
+    */
+  private def safeMsg(t: Throwable): String = {
+    val m = t.getMessage
+    if (m == null) t.getClass.getSimpleName else m
   }
 
   private def mcpError(code: Int, msg: String): Json = Json.obj(
