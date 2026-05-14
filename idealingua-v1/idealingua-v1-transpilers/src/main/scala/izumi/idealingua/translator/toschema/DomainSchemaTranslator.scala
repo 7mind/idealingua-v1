@@ -137,7 +137,7 @@ final class DomainSchemaTranslator(
 
     mirrors.foreach { eph =>
       val flatFields = domain.flattenedStructs.get(eph.id).map(_.fields).getOrElse(Nil)
-      val schema     = dtoRenderer.renderFromFlat(eph.id.wireId, flatFields, None)
+      val schema     = dtoRenderer.renderFromFlat(eph.id, flatFields, None)
       val _          = out.put(eph.id.wireId, schema)
     }
   }
@@ -166,7 +166,7 @@ final class DomainSchemaTranslator(
 
     dtoEphemerals.foreach { eph =>
       val flatFields = domain.flattenedStructs.get(eph.id).map(_.fields).getOrElse(Nil)
-      val schema     = dtoRenderer.renderFromFlat(eph.id.wireId, flatFields, None)
+      val schema     = dtoRenderer.renderFromFlat(eph.id, flatFields, None)
       val _          = out.put(eph.id.wireId, schema)
     }
 

@@ -1,9 +1,9 @@
 package izumi.idealingua.translator.toschema.domain
 
 import io.circe.Json
-import izumi.idealingua.model.common.TypeId
-import izumi.idealingua.model.il.ast.typed.Field
-import izumi.idealingua.typer.ir.{Domain, FlatField, Member, TypeDef}
+import izumi.idealingua.model.common.{ExtendedField, FieldDef, StructureId, TypeId}
+import izumi.idealingua.translator.common.LegacyStructOrdering
+import izumi.idealingua.typer.ir.{Domain, FlatField, TypeDef}
 
 /** Emits a flat-object JSON Schema for a DTO.
   *
@@ -25,26 +25,24 @@ final class SchemaDtoRenderer(domain: Domain, resolver: SchemaTypeResolver) {
 
   def render(dto: TypeDef.Dto): Json = {
     val fields = domain.flattenedStructs.get(dto.id).map(_.fields).getOrElse(Nil)
-    renderFromFlat(dto.id.wireId, fields, dto.meta.doc)
+    renderFromFlat(dto.id, fields, dto.meta.doc)
   }
 
   /** Renders a flat-object schema from a pre-flattened field list. Used for
     * interface-mirror ephemerals (`<Iface>.Struct`), whose flat struct lives
     * in `domain.flattenedStructs` but which are not in `userTypes`.
     */
-  def renderFromFlat(wireId: String, fields: List[FlatField], doc: Option[String]): Json = {
-    val orderedFields = orderForEmission(fields)
+  def renderFromFlat(id: StructureId, fields: List[FlatField], doc: Option[String]): Json = {
+    val orderedFields = orderForEmission(id, fields)
 
-    val propsList = orderedFields.map { case (name, field) =>
-      name -> resolver.schemaFor(field.typeId)
-    }
+    val propsList = orderedFields.map(f => f.field.name -> resolver.schemaFor(f.field.typeId))
     val required  = orderedFields.collect {
-      case (name, field) if !resolver.isOptional(field.typeId) => Json.fromString(name)
+      case f if !resolver.isOptional(f.field.typeId) => Json.fromString(f.field.name)
     }
 
     val base = scala.collection.mutable.LinkedHashMap.empty[String, Json]
     base += "type"  -> Json.fromString("object")
-    base += "title" -> Json.fromString(wireId)
+    base += "title" -> Json.fromString(id.wireId)
     doc.foreach(d => base += "description" -> Json.fromString(d))
     base += "properties"           -> Json.fromFields(propsList)
     base += "required"             -> Json.fromValues(required)
@@ -53,76 +51,51 @@ final class SchemaDtoRenderer(domain: Domain, resolver: SchemaTypeResolver) {
     Json.fromFields(base.toList)
   }
 
-  /** Apply the canonical Scala-leg sort + dedup so emitted property order
-    * matches case-class constructor parameter order. Mirrors
-    * `DomainScalaStruct.fromFlat`'s sort/dedup logic — see that method for the
-    * authoritative rationale.
+  /** Apply the canonical sort + dedup matching `DomainScalaStruct.fromFlat`
+    * so emitted property order matches case-class constructor parameter
+    * order.
     */
-  private def orderForEmission(fields: List[FlatField]): List[(String, Field)] = {
-    // 1. Recover `definedWithIndex` per field (position in the originating
-    //    type's declared `Struct.fields`). Fall back to the per-origin
-    //    declaration order within `flat.fields` when the origin can't be
-    //    located in `userTypes`/`members`.
+  private def orderForEmission(id: StructureId, fields: List[FlatField]): List[ExtendedField] = {
     val seenPerOrigin = scala.collection.mutable.LinkedHashMap.empty[TypeId, Int]
-    val annotated: List[OrderedField] = fields.map { ff =>
+    val annotated: List[ExtendedField] = fields.map { ff =>
       val perOriginIdx = {
         val n = seenPerOrigin.getOrElse(ff.origin, 0)
         seenPerOrigin.update(ff.origin, n + 1)
         n
       }
-      val idx = originIndex(ff.origin, ff.field.name).getOrElse(perOriginIdx)
-      OrderedField(ff.field, ff.origin, ff.distance, idx)
+      val idx = LegacyStructOrdering.originIndex(domain, ff.origin, ff.field.name).getOrElse(perOriginIdx)
+      ExtendedField(
+        field = ff.field,
+        defn  = FieldDef(
+          definedBy        = ff.origin,
+          definedWithIndex = idx,
+          usedBy           = id,
+          distance         = ff.distance,
+        ),
+      )
     }
 
-    // 2. Same-name dedup matching legacy `NonContradictive` behaviour:
-    //    - identical-Field across occurrences: keep the deepest-distance one
-    //      (legacy emission order put parent declarations first);
-    //    - true covariant overrides: keep the closest declaration (smallest
-    //      distance) so the type-refined primary wins.
-    val deduped: List[OrderedField] = {
+    // F-DTO1-fieldorder: equal-type duplicates use legacy DFS emission order
+    // (`fields.head` in legacy `NonContradictive`), genuine covariant
+    // overrides keep the closest declaration. Same rule as
+    // `DomainScalaStruct` / `DomainTSStruct`.
+    val dfsPos = LegacyStructOrdering.legacyDfsPosition(id, domain)
+    def posOf(ef: ExtendedField): Int =
+      dfsPos.getOrElse((ef.defn.definedBy, ef.field.name), Int.MaxValue)
+    val deduped: List[ExtendedField] = {
       val byName = scala.collection.mutable.LinkedHashMap
-        .empty[String, scala.collection.mutable.ListBuffer[OrderedField]]
+        .empty[String, scala.collection.mutable.ListBuffer[ExtendedField]]
       annotated.foreach { f =>
         val buf = byName.getOrElseUpdate(f.field.name, scala.collection.mutable.ListBuffer.empty)
         buf += f
       }
       byName.values.map { occurrences =>
         val typesEqual = occurrences.map(_.field).toSet.size == 1
-        if (typesEqual) occurrences.maxBy(_.distance)
-        else occurrences.minBy(_.distance)
+        if (typesEqual) occurrences.minBy(posOf)
+        else occurrences.minBy(_.defn.distance)
       }.toList
     }
 
-    // 3. Apply the legacy sort key — same as `DomainScalaStruct.fromFlat`.
-    val sorted: List[OrderedField] =
-      deduped
-        .sortBy(f => (f.distance, f.definedBy.toString, -f.definedWithIndex))
-        .reverse
-
-    sorted.map(of => of.field.name -> of.field)
+    LegacyStructOrdering.sortLegacyKey(deduped)
   }
-
-  private def originIndex(origin: TypeId, fieldName: String): Option[Int] = {
-    def indexIn(fs: List[Field]): Option[Int] = {
-      val idx = fs.indexWhere(_.name == fieldName)
-      if (idx < 0) None else Some(idx)
-    }
-    import izumi.idealingua.typer.ir.{TypeDef => NTD}
-    domain.userTypes.get(origin) match {
-      case Some(d: NTD.Dto)        => indexIn(d.struct.fields)
-      case Some(i: NTD.Interface)  => indexIn(i.struct.fields)
-      case _ =>
-        domain.members.get(origin) match {
-          case Some(Member.Ephemeral(eph)) => indexIn(eph.struct.fields)
-          case _                           => None
-        }
-    }
-  }
-
-  private case class OrderedField(
-    field: Field,
-    definedBy: TypeId,
-    distance: Int,
-    definedWithIndex: Int,
-  )
 }

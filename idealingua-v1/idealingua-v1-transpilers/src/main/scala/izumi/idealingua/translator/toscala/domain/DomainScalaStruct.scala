@@ -3,9 +3,10 @@ package izumi.idealingua.translator.toscala.domain
 import izumi.idealingua.model.common.TypeId.InterfaceId
 import izumi.idealingua.model.common.{ExtendedField, FieldDef, StructureId, TypeId}
 import izumi.idealingua.model.il.ast.typed.{Field, Super}
+import izumi.idealingua.translator.common.LegacyStructOrdering
 import izumi.idealingua.translator.toscala.tools.ScalaTextHelpers
 import izumi.idealingua.translator.toscala.types.{ScalaField, ScalaStruct, ScalaTypeConverter}
-import izumi.idealingua.typer.ir.{Domain, FlatStruct, Member, Struct, TypeDef => NewTypeDef}
+import izumi.idealingua.typer.ir.{Domain, FlatStruct, Struct, TypeDef => NewTypeDef}
 
 /** Adapter that surfaces the legacy `Struct`-shape (`fields`, `superclasses`,
   * `all`, `unambigious`, `ambigious`) from the new IR's `FlatStruct`.
@@ -63,7 +64,7 @@ object DomainScalaStruct {
         seenPerOrigin.update(ff.origin, n + 1)
         n
       }
-      val idx = originIndex(domain, ff.origin, ff.field.name).getOrElse(perOriginIdx)
+      val idx = LegacyStructOrdering.originIndex(domain, ff.origin, ff.field.name).getOrElse(perOriginIdx)
       ExtendedField(
         field = ff.field,
         defn  = FieldDef(
@@ -104,7 +105,7 @@ object DomainScalaStruct {
     // occurrences) keep the smallest-distance entry — the closest
     // declaration is the type-refined primary, matching legacy
     // `NonContradictive`'s `x.head` after `sortBy(_.defn.distance)`.
-    val dfsPos: Map[(TypeId, String), Int] = legacyDfsPosition(id, domain)
+    val dfsPos: Map[(TypeId, String), Int] = LegacyStructOrdering.legacyDfsPosition(id, domain)
     def posOf(ef: ExtendedField): Int =
       dfsPos.getOrElse((ef.defn.definedBy, ef.field.name), Int.MaxValue)
     val deduped: List[ExtendedField] = {
@@ -121,10 +122,7 @@ object DomainScalaStruct {
     }
 
     // Defect #5: apply the legacy sort key.
-    val sorted: List[ExtendedField] =
-      deduped
-        .sortBy(f => (f.defn.distance, f.defn.definedBy.toString, -f.defn.definedWithIndex))
-        .reverse
+    val sorted: List[ExtendedField] = LegacyStructOrdering.sortLegacyKey(deduped)
 
     val ambiguousNames: Set[String] =
       (flat.conflictsSoft.map(_.name) ++ flat.conflictsHard.map(_.name)).toSet
@@ -139,90 +137,6 @@ object DomainScalaStruct {
       ambigious    = ambigious,
       all          = sorted,
     )
-  }
-
-  /** Replicate legacy `FieldExtractor.extractFields` DFS emission order
-    * for `id` and return a positional index per `(origin, fieldName)`.
-    *
-    * Legacy: `extractFields(t, depth) = superFields ++ embeddedFields ++
-    * thisFields` where
-    *   - `superFields  = struct.superclasses.interfaces.flatMap(extractFields(_, depth+1))`
-    *   - `embeddedFields = struct.superclasses.concepts.flatMap(extractFields(_, depth+1))`
-    *   - `thisFields = struct.fields` declared on `t` (in source order).
-    *
-    * Cycles short-circuit via `visited` (legacy `.distinct` collapses repeat
-    * encounters; we just stop recursing). Identifier/enum/alias supertypes
-    * contribute no fields (not StructureIds and not in `views`).
-    *
-    * Used to break dedup ties for equal-type field duplicates so the new IR
-    * picks the same primary as legacy `NonContradictive` returning
-    * `fields.head` (F-DTO1-fieldorder).
-    */
-  private def legacyDfsPosition(id: StructureId, domain: Domain): Map[(TypeId, String), Int] = {
-    val buf     = scala.collection.mutable.LinkedHashMap.empty[(TypeId, String), Int]
-    val visited = scala.collection.mutable.LinkedHashSet.empty[TypeId]
-    def fieldsOfStruct(tid: TypeId): Option[(List[Field], Super)] = {
-      domain.userTypes.get(tid) match {
-        case Some(d: NewTypeDef.Dto)       => Some((d.struct.fields, d.struct.superclasses))
-        case Some(i: NewTypeDef.Interface) => Some((i.struct.fields, i.struct.superclasses))
-        case _ =>
-          domain.members.get(tid) match {
-            case Some(Member.Ephemeral(eph)) => Some((eph.struct.fields, eph.struct.superclasses))
-            case _                           => None
-          }
-      }
-    }
-    def walk(tid: TypeId): Unit = {
-      if (!visited.add(tid)) return
-      fieldsOfStruct(tid) match {
-        case Some((thisFields, sup)) =>
-          // superFields: recurse interfaces first
-          sup.interfaces.foreach(walk)
-          // embeddedFields: recurse concepts next
-          sup.concepts.foreach(walk)
-          // thisFields: record own fields in declaration order
-          thisFields.foreach { f =>
-            val key = (tid, f.name)
-            if (!buf.contains(key)) buf.update(key, buf.size)
-          }
-        case None => ()
-      }
-    }
-    walk(id)
-    buf.toMap
-  }
-
-  /** Recover legacy `definedWithIndex` for a field defined on `origin`:
-    * the index of the field within the originating type's declared
-    * `Struct.fields` list. Mirrors `FieldExtractor.toExtendedFields`
-    * (`FieldExtractor.scala:47-52`) — `fields.zipWithIndex`.
-    *
-    * Lookup order: user types first (DTO/Interface/Identifier), then
-    * ephemerals (`Member.Ephemeral`) — both can be field origins after F8
-    * (synthesized method-input/output DTOs participate in flattening).
-    *
-    * Returns 0 when the origin can't be located in the domain (test stubs
-    * with `userTypes = Map.empty` for example). The sort key then degrades
-    * to `(distance, definedBy.toString)` which still produces a stable
-    * legacy-compatible order for single-distance, single-origin cases.
-    */
-  private def originIndex(domain: Domain, origin: TypeId, fieldName: String): Option[Int] = {
-    def indexIn(fields: List[Field]): Option[Int] = {
-      val idx = fields.indexWhere(_.name == fieldName)
-      if (idx < 0) None else Some(idx)
-    }
-    // Identifier types aren't `StructureId`s and never appear as an origin
-    // in `FlatStruct.fields`, so only DTO/Interface user-types plus
-    // synthesized ephemerals need handling.
-    domain.userTypes.get(origin) match {
-      case Some(d: NewTypeDef.Dto)        => indexIn(d.struct.fields)
-      case Some(i: NewTypeDef.Interface)  => indexIn(i.struct.fields)
-      case _ =>
-        domain.members.get(origin) match {
-          case Some(Member.Ephemeral(eph)) => indexIn(eph.struct.fields)
-          case _                           => None
-        }
-    }
   }
 
   /** Convenience: build a `ScalaStruct` (rendered-form) directly from the
