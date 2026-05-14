@@ -14,8 +14,5 @@ data NestedGenerics {
   byTag        : map[str, list[Leaf]]
   histogram    : list[map[str, i64]]
   options      : opt[list[map[str, Leaf]]]
-  // NOTE: `set[opt[T]]` removed in R2 — C# translator emits a duplicate
-  // local-variable declaration (`string _setOfOpt_d` appears twice) leading
-  // to CS0128. Recorded as a known translator defect in COVERAGE.md and to
-  // be re-introduced once the C# translator is fixed in a later cycle.
+  setOfOpt     : set[opt[i32]]
 }

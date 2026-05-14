@@ -546,7 +546,15 @@ object DomainCSJsonNetExtension {
         case o: Generic.TOption =>
           val ot       = DomainCSharpType(o.valueType)
           val proxySrc = dst + "Raw"
-          Some(s"""${i.renderType(true)} $dst = null;
+          // Fix: when `createDst=false` the caller (TSet/TList/TMap) has already
+          // declared `<type> $dst;`, so re-declaring here triggers CS0128
+          // (duplicate local) — visible on `set[opt[<primitive>]]` and the
+          // analogous list/map shapes. Emit a plain `$dst = null;` initialiser
+          // in that case so the outer-declared local is definitely assigned
+          // before any subsequent `_set.Add($dst)` (which otherwise triggers
+          // CS0165, "use of unassigned local").
+          val declHead = if (createDst) s"${i.renderType(true)} $dst" else dst
+          Some(s"""$declHead = null;
                   |var $proxySrc = $src;
                   |if ($proxySrc != null && $proxySrc.Type != JTokenType.Null) {
                   |${(if (propertyNeedsPrepare(domain, o.valueType)) prepareReadPropertyValue(domain, proxySrc, dst, ot, createDst = false, currentDomain).get
