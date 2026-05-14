@@ -3,7 +3,7 @@
 **Date:** 2026-05-14
 **Branch:** wip/necromancy
 **Author:** planning subagent
-**Status:** draft — D8, D11 carry user-decision items; rest pre-locked
+**Status:** locked — all user-decision items resolved 2026-05-14
 
 ## 1. Goal & non-goals
 
@@ -33,10 +33,10 @@ Emit per-service Scala source files that expose the existing IRT server multiple
 | **D5** | Dispatch via `IRTServerMultiplexor.invokeMethod(methodId)(ctx, parsedBody)` rather than re-decoding through generated case classes | The mux already performs Circe decode → handler call → encode. Bridge becomes thin envelope-translation. No second codec layer. |
 | **D6** | Wrap-on-response: per-method static `wrap: Boolean` flag — `true` iff the method's `outputSchema` (computed at codegen time by `SchemaMethodOutput.wrapIfNonObject`) carries `x-idealingua-wrapped:true`. The bridge emits `Json.obj("result" -> rawResponse)` when `wrap`. | Compile-time decision; zero runtime introspection. Same predicate applied in both schema renderer and bridge renderer — guaranteed consistency. Factor into shared `OutputWrapPolicy`. |
 | **D7** | Errors: MCP `CallToolResult { isError: true, content: [{type:"text", text:"<msg>"}], structuredContent: {error:{code,message}} }`. HTTP 4xx/5xx reserved for transport-layer failures only. Mapping mirrors `HttpServer.handleHttpResult`. | MCP spec semantics: tool failures are in-band; HTTP failures are transport-layer. |
-| **D8** | **tools/list source — USER-DECISION (recommend a):** (a) bridge embeds the per-service `*.mcp.json` content as a `Json` literal compiled into the generated Scala. (b) read from classpath resource at `mcp/<ServiceName>.mcp.json`. | (a) ensures the served schema and the wrap behaviour cannot drift (both compiled from the same IR pass); (b) lets out-of-band updates of the resource file desync from the wrap behaviour. |
+| **D8** | **LOCKED (b):** read from classpath resource at `mcp/<ServiceName>.mcp.json`. `:scala` translator emits both the routes file AND the resource JSON when `emitMcpBridge=true`. Bridge reads via `getClass.getClassLoader.getResourceAsStream` at request time. | Handles arbitrary corpus sizes without `.class` constant-pool concerns; resource lives at a predictable location. Wrap-policy drift mitigated by emitting the resource from the same `:scala` invocation that emits the bridge code; the resource is documented as compile-time companion, not for out-of-band edit. |
 | **D9** | Bridge entrypoint: `object <ServiceName>McpRoutes { def routes[F[+_,+_]: IO2: Error2, C](mux: IRTServerMultiplexor[F, C], extractCtx: Request[F[Throwable, _]] => F[Throwable, C], dsl: Http4sDsl[F[Throwable, _]]): HttpRoutes[F[Throwable, _]] }`. | Composable with existing `HttpServer`; users mount at `/mcp` or anywhere. `extractCtx` mirrors `HttpContextExtractor.extract`. |
 | **D10** | Tool name dispatch: pattern-match on the string `<pkg>.<ServiceName>.<method>` (D22 from schema plan); per-service routes handle only their own service's names; unknown name in own service prefix → `isError:true { code: -32601, message: "Method not found" }`. Names outside own prefix → fall through. | Single-route-per-service avoids one giant generated dispatch table. |
-| **D11** | Buzzers — **USER-DECISION (recommend a):** (a) expose as MCP tools with `outputSchema: {type:object, properties:{result:{type:null}}, required:[result]}` (already what `SchemaBuzzerRenderer` emits per M5.5); on call, dispatch into the buzzer mux (unified per F16 absorption) and return `{result: null}`. (b) skip entirely. | Buzzer wire-shape is already symmetric with services in IRT (`IRTWrappedService` covers both); codegen path stays uniform. |
+| **D11** | **LOCKED (b):** skip buzzers entirely in the bridge codegen. No `<BuzzerName>Mcp.scala` emission; no buzzer tool entries in the per-service `mcp.json` resource. Schema-side `SchemaBuzzerRenderer` (M3+M4) continues to emit the standalone `*.mcp.json` for tooling that wants buzzer discoverability — bridge just doesn't serve it. | Cleaner RPC semantics; eliminates fire-and-forget race + auth/rate-limiting concerns; reduces codegen scope. |
 | **D12** | Streams: skip silently in bridge codegen | Consistent with M3+M4 streams-skip. |
 | **D13** | Manifest flag wire-up: `BuildManifest.scala`'s `LanguageManifest` extension fields gain `emitMcpBridge: Boolean = false`. | Backwards-compatible; opt-in. |
 | **D14** | Bridge code lives in `idealingua-v1-transpilers/src/main/scala/izumi/idealingua/translator/toscala/domain/DomainServiceMcpRenderer.scala`; wired into `DomainServiceRenderer.renderService/renderBuzzer` as an additional artefact, gated by manifest flag. | Schema-derived wrap policy reachable in same renderer pass. |
@@ -56,9 +56,13 @@ import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
 
 object GreetServiceMcp {
-  private val toolsListJson: Json = parser.parse(
-    "{...verbatim *.mcp.json...}"
-  ).toTry.get
+  // D8(b): tools/list loaded from classpath resource at first access.
+  private lazy val toolsListJson: Json = {
+    val stream = getClass.getClassLoader.getResourceAsStream("mcp/GreetService.mcp.json")
+    require(stream != null, "Missing classpath resource: mcp/GreetService.mcp.json")
+    try parser.parse(scala.io.Source.fromInputStream(stream, "UTF-8").mkString).toTry.get
+    finally stream.close()
+  }
 
   private val toolName_simple = "idltest.services.GreetService.simple"
   private val methodId_simple =
