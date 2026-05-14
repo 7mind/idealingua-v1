@@ -36,6 +36,7 @@ object Idealingua {
 
     val scala_java_time = Version.VExpr("V.scala_java_time")
     val scodec_bits     = Version.VExpr("V.scodec_bits")
+    val json_schema_validator = Version.VExpr("V.json_schema_validator")
   }
 
   object PV {
@@ -137,6 +138,10 @@ object Idealingua {
     // scodec-bits: used by Fingerprint in izumi.idealingua.typer.ir (IMPL-1).
     // Cross-builds on Scala 2.13 + 3.x (JVM + JS). See tasks.md F1.
     val scodec_bits = Library("org.scodec", "scodec-bits", V.scodec_bits, LibraryType.Auto) in Scope.Compile.all
+    // json-schema-validator: used by the harness PR-04 IMPL-MCP-M5 validation specs
+    // (Layer A — fixtures vs emitted schemas; Layer B — *.mcp.json vs MCP ListToolsResult schema).
+    // 1.5.9 supports JSON Schema 2020-12. Test-scope only.
+    val json_schema_validator = Library("com.networknt", "json-schema-validator", V.json_schema_validator, LibraryType.Invariant) in Scope.Test.jvm
   }
 
   import Deps._
@@ -464,7 +469,7 @@ object Idealingua {
       ),
       Artifact(
         name      = Projects.idealingua.testHarness,
-        libs      = Seq.empty,
+        libs      = Seq(Deps.json_schema_validator),
         depends   = Seq(
           Projects.idealingua.transpilers,
           Projects.idealingua.compiler,

@@ -26,4 +26,7 @@ object V {
   val typesafe_config = "1.4.6"
 
   val scodec_bits = "1.1.38"
+
+  // PR-04 IMPL-MCP-M5: JSON Schema 2020-12 validator (test-scope only).
+  val json_schema_validator = "1.5.9"
 }

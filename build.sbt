@@ -8,11 +8,11 @@ import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import sbtrelease.ReleaseStateTransformations._
 import scala.sys.process._
 
-lazy val refreshFlakeTask           = taskKey[Unit]("Refresh flake.nix")
-lazy val regenerateGoldens          = taskKey[Unit]("Regenerate Layer A goldens")
-lazy val verifyGoldens              = taskKey[Unit]("Verify Layer A goldens against legacy compiler")
-lazy val runWireFixtures            = taskKey[Unit]("Run Layer B wire-byte fixtures (placeholder for PR-03.2)")
-lazy val runCrossLangInterop        = taskKey[Unit]("Run Layer C cross-language interop (placeholder for PR-03.4)")
+lazy val refreshFlakeTask    = taskKey[Unit]("Refresh flake.nix")
+lazy val regenerateGoldens   = taskKey[Unit]("Regenerate Layer A goldens")
+lazy val verifyGoldens       = taskKey[Unit]("Verify Layer A goldens against legacy compiler")
+lazy val runWireFixtures     = taskKey[Unit]("Run Layer B wire-byte fixtures (placeholder for PR-03.2)")
+lazy val runCrossLangInterop = taskKey[Unit]("Run Layer C cross-language interop (placeholder for PR-03.4)")
 
 
 enablePlugins(SbtgenVerificationPlugin)
@@ -25,10 +25,10 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
   .settings(
     libraryDependencies ++= Seq(
       "org.scalatest" %%% "scalatest" % V.scalatest % Test,
+      "org.scodec" %%% "scodec-bits" % V.scodec_bits,
       "io.7mind.izumi" %%% "fundamentals-collections" % Izumi.version,
       "io.7mind.izumi" %%% "fundamentals-platform" % Izumi.version,
-      "io.7mind.izumi" %%% "fundamentals-functional" % Izumi.version,
-      "org.scodec" %%% "scodec-bits" % V.scodec_bits
+      "io.7mind.izumi" %%% "fundamentals-functional" % Izumi.version
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
       compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
@@ -1417,7 +1417,8 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
   )
   .settings(
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % V.scalatest % Test
+      "org.scalatest" %% "scalatest" % V.scalatest % Test,
+      "com.networknt" % "json-schema-validator" % V.json_schema_validator % Test
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
       compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
