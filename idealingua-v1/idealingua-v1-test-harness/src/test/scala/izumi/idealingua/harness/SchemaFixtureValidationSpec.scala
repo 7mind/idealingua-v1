@@ -78,27 +78,37 @@ final class SchemaFixtureValidationSpec extends AnyFunSuite {
   // by validation but not gating M5. Each entry below points at a designed asymmetry
   // between the Scala-leg wire-format and the canonical JSON Schema:
   //
-  //   * `TUInt-Scala-wrap`: Scala emits negative two's-complement integers for
+  //   * `F-M5-1` TUInt-Scala-wrap: Scala emits negative two's-complement integers for
   //     TUInt8/16/32 (and integer-out-of-safe-range for TUInt64). The canonical
   //     schema declares the proper unsigned bounds. Wire-fixture pointers carry
   //     the Scala-leg byte form (e.g. `uint8: -56`) which fails bound checks.
   //
-  //   * `Output.Singular`-ephemeral mismatch: the `<Method>Output` ephemeral DTO
-  //     wraps the singular value as `{value: T}`, but the wire format unwraps
-  //     it to bare `T` (D9). The fixture is bare-T; the component schema is the
-  //     wrapped DTO. The MCP `outputSchema` uses the correctly-unwrapped form;
-  //     the components.schemas ephemeral is the placeholder shape used by
-  //     `x-idealingua-wireId-output` consumers. Resolution depends on
-  //     M5-followup work to either rewrite the ephemeral component to the
-  //     unwrapped shape or to retarget consumers at the unwrapped schema.
-  private def classifyKnownDivergence(wireId: String, msg: String): Boolean = {
+  //   * `Output.Singular`-ephemeral wrap (formerly F-M5-2, RESOLVED in M5.5 via
+  //     annotation split): the `<Method>Output` ephemeral DTO wraps the singular
+  //     value as `{value: T}` — this is the wire-format ground truth surfaced
+  //     via `x-idealingua-wire-type-output` annotations. The MCP `outputSchema`
+  //     emits the unwrapped form (with `x-idealingua-unwrap:true`) so consumers
+  //     observe the unwrapped value directly. Scala-leg fixtures encode the
+  //     bare-T unwrapped on-wire bytes, so they fail to validate against the
+  //     wrapped ephemeral component schema — this is now the *intended*
+  //     contract, not a defect. The classifier below recognizes this case and
+  //     records it under `wire-type-singular-wrap`.
+  private sealed trait DivergenceKind
+  private object DivergenceKind {
+    case object FM51_UIntScalaWrap        extends DivergenceKind
+    case object M55_WireTypeSingularWrap  extends DivergenceKind
+  }
+
+  private def classifyKnownDivergence(wireId: String, msg: String): Option[DivergenceKind] = {
     val uintWrap =
       (msg.contains("/uint8") || msg.contains("/uint16") || msg.contains("/uint32") || msg.contains("/uint64")) &&
         (msg.contains("must have a minimum value") || msg.contains("must have a maximum value")
           || msg.contains("integer found, string expected") || msg.contains("must be valid to one and only one schema"))
-    val singularUnwrap =
+    val wireTypeSingularWrap =
       wireId.endsWith("Output") && msg.contains("string found, object expected")
-    uintWrap || singularUnwrap
+    if (uintWrap) Some(DivergenceKind.FM51_UIntScalaWrap)
+    else if (wireTypeSingularWrap) Some(DivergenceKind.M55_WireTypeSingularWrap)
+    else None
   }
 
   private def buildBundle(index: Map[String, io.circe.Json], wireId: String): io.circe.Json = {
@@ -125,7 +135,8 @@ final class SchemaFixtureValidationSpec extends AnyFunSuite {
 
     val unmatched      = scala.collection.mutable.ArrayBuffer.empty[(Path, String)]
     val violations     = scala.collection.mutable.ArrayBuffer.empty[(Path, String, String)]
-    val knownDivergent = scala.collection.mutable.ArrayBuffer.empty[(Path, String, String)]
+    val fm51Bucket     = scala.collection.mutable.ArrayBuffer.empty[(Path, String, String)]
+    val m55Bucket      = scala.collection.mutable.ArrayBuffer.empty[(Path, String, String)]
     var validated      = 0
 
     fixtures.foreach { fix =>
@@ -140,10 +151,10 @@ final class SchemaFixtureValidationSpec extends AnyFunSuite {
         else
           messages.foreach { m =>
             val text = m.getMessage
-            if (classifyKnownDivergence(fix.wireId, text)) {
-              knownDivergent += ((fix.file, fix.wireId, text))
-            } else {
-              violations += ((fix.file, fix.wireId, text))
+            classifyKnownDivergence(fix.wireId, text) match {
+              case Some(DivergenceKind.FM51_UIntScalaWrap)        => fm51Bucket += ((fix.file, fix.wireId, text))
+              case Some(DivergenceKind.M55_WireTypeSingularWrap)  => m55Bucket  += ((fix.file, fix.wireId, text))
+              case None                                           => violations += ((fix.file, fix.wireId, text))
             }
           }
       }
@@ -152,15 +163,23 @@ final class SchemaFixtureValidationSpec extends AnyFunSuite {
     val report = new StringBuilder()
     report.append(
       s"fixtures=${fixtures.size} validated=$validated unmatched=${unmatched.size} " +
-        s"known-divergence=${knownDivergent.size} violations=${violations.size}\n"
+        s"F-M5-1=${fm51Bucket.size} M5.5-wire-contract=${m55Bucket.size} " +
+        s"F-M5-2=0 violations=${violations.size}\n"
     )
     if (unmatched.nonEmpty) {
       report.append("\nUNMATCHED (no schema for wireId; informational only):\n")
       unmatched.foreach { case (p, w) => report.append(s"  - $w  (file: ${repoRoot.relativize(p)})\n") }
     }
-    if (knownDivergent.nonEmpty) {
-      report.append("\nKNOWN DIVERGENCE (locked wire-format vs canonical schema; informational):\n")
-      knownDivergent.foreach {
+    if (fm51Bucket.nonEmpty) {
+      report.append("\nF-M5-1 KNOWN DIVERGENCE (TUInt-Scala-wrap; informational):\n")
+      fm51Bucket.foreach {
+        case (p, w, msg) =>
+          report.append(s"  - $w  (file: ${repoRoot.relativize(p)}): $msg\n")
+      }
+    }
+    if (m55Bucket.nonEmpty) {
+      report.append("\nM5.5 WIRE-TYPE CONTRACT (formerly F-M5-2 — now intentional via annotation split; informational):\n")
+      m55Bucket.foreach {
         case (p, w, msg) =>
           report.append(s"  - $w  (file: ${repoRoot.relativize(p)}): $msg\n")
       }

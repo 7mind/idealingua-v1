@@ -6,23 +6,19 @@ import izumi.idealingua.model.il.ast.typed.{AdtMember, DefMethod, SimpleStructur
 /** Dispatches `DefMethod.Output` to a JSON Schema fragment for use as the
   * MCP `outputSchema` of a tool envelope.
   *
-  * Per plan §4 output-variants table:
-  *   - `Void`           → `{"type":"null"}`
-  *   - `Singular(T)`    → schema of `T` (D9 unwrap) + `x-idealingua-unwrap: true`
-  *   - `Struct(s)`      → flat object over `s.fields`
-  *   - `Algebraic(alt)` → §4 ADT-style `oneOf` of `{ "<discr>": <branchRef> }`
-  *   - `Alternative`    → `oneOf` over `Success` / `Failure` wrappers (suffixes
-  *     `goodAltBranchName`/`badAltBranchName` from `EphemeralSynthesizer`).
+  * Per plan §4 output-variants table + M5.5 wrap-everywhere decision (F-M5-3):
+  *   - `Void`           → wrapped `{"result":{"type":"null"}}`
+  *   - `Singular(T)`    → schema of `T` (D9 unwrap); wrapped if `T` is non-object
+  *   - `Struct(s)`      → flat object over `s.fields` (object — no wrap)
+  *   - `Algebraic(alt)` → §4 ADT-style `oneOf`; wrapped (top-level isn't `object`)
+  *   - `Alternative`    → `oneOf` over `Success` / `Failure`; wrapped
   *
-  * For the `Alternative` case we mirror the ephemeral-ADT shape that
-  * `EphemeralSynthesizer.synthesizeOutput` already produces: a 2-branch ADT
-  * with discriminators `Success` / `Failure`, whose inner shape derives from
-  * the corresponding `NonAlternativeOutput`. The branch reference is built
-  * inline (no `$ref`) because the success/failure branches are themselves
-  * non-trivial trees (e.g. `Output.Singular(list[SuccessData])` which has no
-  * separate component schema once Phase 7 stopped synthesizing wrapper DTOs
-  * for Builtin singular branches — see `EphemeralSynthesizer.synthesizeAltBranch`
-  * notes).
+  * MCP 2025-06-18 mandates `outputSchema.type == "object"`. Non-object dispatch
+  * results are wrapped in the canonical
+  * `{"type":"object","properties":{"result":<actual>},"required":["result"],
+  *   "additionalProperties":false,"x-idealingua-wrapped":true}`
+  * envelope so the emitted schema is strictly MCP-conformant. The bridge
+  * (M5.6) honours the wrap when serialising actual responses.
   */
 final class SchemaMethodOutput(resolver: SchemaTypeResolver) {
 
@@ -30,7 +26,13 @@ final class SchemaMethodOutput(resolver: SchemaTypeResolver) {
   private val goodAltBranchName = "Success"
   private val badAltBranchName  = "Failure"
 
-  def dispatch(out: DefMethod.Output): Json = out match {
+  /** MCP `outputSchema` for a method. Always returns a schema whose top-level
+    * `type == "object"` (M5.5 / F-M5-3). Non-object outputs are wrapped.
+    */
+  def dispatch(out: DefMethod.Output): Json = wrapIfNonObject(rawDispatch(out))
+
+  /** Pre-wrap dispatch — the "intrinsic" shape of the output as a schema. */
+  private def rawDispatch(out: DefMethod.Output): Json = out match {
     case _: DefMethod.Output.Void =>
       Json.obj("type" -> Json.fromString("null"))
 
@@ -54,6 +56,28 @@ final class SchemaMethodOutput(resolver: SchemaTypeResolver) {
         "oneOf"             -> Json.arr(successBranch, failureBranch),
         "x-idealingua-kind" -> Json.fromString("alternative"),
       )
+  }
+
+  /** Wrap a non-object schema in the MCP-conformant
+    * `{type:object, properties:{result:<schema>}, required:[result],
+    *  additionalProperties:false, x-idealingua-wrapped:true}` envelope.
+    *
+    * A schema counts as "object" iff its top-level `type` field is exactly
+    * the string `"object"`. `oneOf` schemas, primitive `type:"null"`, and
+    * anything else gets wrapped — even if every `oneOf` branch is itself
+    * an object (per the strict MCP 2025-06-18 reading: the *top-level*
+    * `outputSchema` must declare `type:"object"`).
+    */
+  def wrapIfNonObject(schema: Json): Json = {
+    val isObject = schema.asObject.flatMap(_.apply("type")).flatMap(_.asString).contains("object")
+    if (isObject) schema
+    else Json.obj(
+      "type"                  -> Json.fromString("object"),
+      "properties"            -> Json.obj("result" -> schema),
+      "required"              -> Json.arr(Json.fromString("result")),
+      "additionalProperties"  -> Json.False,
+      "x-idealingua-wrapped"  -> Json.True,
+    )
   }
 
   /** Flat-object schema from a `SimpleStructure` (input bag or struct output). */

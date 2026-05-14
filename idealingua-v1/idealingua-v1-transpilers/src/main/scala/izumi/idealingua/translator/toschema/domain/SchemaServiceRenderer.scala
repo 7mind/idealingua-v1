@@ -12,12 +12,20 @@ import izumi.idealingua.typer.ir.TypeDef
   * the `x-idealingua-*` advisory annotations. Tool name format per D22 is
   * `<package>.<ServiceName>.<methodName>` — the *raw* method name, NOT
   * capitalized (the ephemeral wireId, e.g. `...SimpleInput`, uses the
-  * capitalized form and is surfaced via `x-idealingua-wireId-{input,output}`).
+  * capitalized form and is surfaced via
+  * `x-idealingua-wire-type-{input,output}`).
   *
   * The ephemeral wireIds for input/output are reconstructed from the same
   * naming rule used by `EphemeralSynthesizer`:
   *   - input  wireId = `<svcWireId>.<methodCapitalized>Input`
   *   - output wireId = `<svcWireId>.<methodCapitalized>Output`
+  *
+  * M5.5 annotation split (F-M5-2): the wireId annotation is now named
+  * `x-idealingua-wire-type-{input,output}` — it conveys the ephemeral
+  * wire-format ground truth (what the bytes are shaped as on the wire),
+  * which is *distinct* from `outputSchema` (the post-unwrap shape that
+  * MCP consumers actually observe). The annotation is informational only;
+  * resolving it against `components.schemas` is the consumer's choice.
   *
   * Methods are emitted in **declaration order** (the IR contract — see
   * `TypeDef.Service` scaladoc). Within the file, byte-stability is preserved
@@ -53,8 +61,8 @@ final class SchemaServiceRenderer(
     fields += "description"                   -> Json.fromString(description)
     fields += "inputSchema"                   -> output.structSchema(m.signature.input)
     fields += "outputSchema"                  -> output.dispatch(m.signature.output)
-    fields += "x-idealingua-wireId-input"     -> Json.fromString(inputWireId)
-    fields += "x-idealingua-wireId-output"    -> Json.fromString(outputWireId)
+    fields += "x-idealingua-wire-type-input"  -> Json.fromString(inputWireId)
+    fields += "x-idealingua-wire-type-output" -> Json.fromString(outputWireId)
     fields += "x-idealingua-kind"             -> Json.fromString(kindRpc)
     Json.fromFields(fields.toList)
   }

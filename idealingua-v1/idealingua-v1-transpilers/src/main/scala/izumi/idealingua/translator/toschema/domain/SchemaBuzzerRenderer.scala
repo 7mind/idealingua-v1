@@ -7,14 +7,16 @@ import izumi.idealingua.typer.ir.TypeDef
 
 /** Emits an MCP `ListToolsResult` envelope for a buzzer.
   *
-  * Per D16 / plan §4: buzzers expose events as tools with
-  * `outputSchema: {"type":"null"}` (fire-and-forget) and
-  * `x-idealingua-kind: "buzzer"`. Tool name format per D22:
+  * Per D16 / plan §4 + M5.5 wrap-everywhere (F-M5-3): buzzers expose events as
+  * tools whose `outputSchema` is the MCP-conformant wrap
+  * `{"type":"object","properties":{"result":{"type":"null"}},"required":["result"],
+  *  "additionalProperties":false,"x-idealingua-wrapped":true}` — fire-and-forget
+  * semantics, but the schema declaration remains strictly MCP-2025-06-18
+  * conformant. `x-idealingua-kind: "buzzer"`. Tool name format per D22:
   * `<package>.<BuzzerName>.<eventName>`.
   *
-  * The ephemeral wireIds for input/output mirror the service form: the
-  * synthesizer reuses the same `DTOId(parent, ...)` overload (which targets
-  * any parent `TypeId` whose `path` resolves to `<domain>.<owner>`).
+  * The ephemeral wireIds for input/output mirror the service form and are
+  * surfaced via `x-idealingua-wire-type-{input,output}` (M5.5 rename).
   */
 final class SchemaBuzzerRenderer(
   domainId: DomainId,
@@ -45,9 +47,11 @@ final class SchemaBuzzerRenderer(
     fields += "name"                          -> Json.fromString(toolName)
     fields += "description"                   -> Json.fromString(description)
     fields += "inputSchema"                   -> output.structSchema(m.signature.input)
-    fields += "outputSchema"                  -> Json.obj("type" -> Json.fromString("null"))
-    fields += "x-idealingua-wireId-input"     -> Json.fromString(inputWireId)
-    fields += "x-idealingua-wireId-output"    -> Json.fromString(outputWireId)
+    fields += "outputSchema"                  -> output.wrapIfNonObject(
+      Json.obj("type" -> Json.fromString("null"))
+    )
+    fields += "x-idealingua-wire-type-input"  -> Json.fromString(inputWireId)
+    fields += "x-idealingua-wire-type-output" -> Json.fromString(outputWireId)
     fields += "x-idealingua-kind"             -> Json.fromString(kindBuzzer)
     Json.fromFields(fields.toList)
   }

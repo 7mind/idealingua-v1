@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
 import scala.jdk.CollectionConverters._
 
-/** PR-04 IMPL-MCP-M5 — Layer B validation.
+/** PR-04 IMPL-MCP-M5 / M5.5 — Layer B validation.
   *
   * Validates every emitted `<Service>.mcp.json` / `<Buzzer>.mcp.json`
   * against the snapshotted MCP `ListToolsResult` schema for spec 2025-06-18,
@@ -18,13 +18,13 @@ import scala.jdk.CollectionConverters._
   * transitive `Tool` / `ToolAnnotations` / `ToolSchema` shapes from the
   * upstream `modelcontextprotocol/schema/2025-06-18/schema.json` (draft-07).
   *
-  * The MCP spec mandates `inputSchema.type == "object"` and
-  * `outputSchema.type == "object"` when present. The idealingua emitter
-  * currently emits `outputSchema: {"type": "null"}` for buzzers / `Void`
-  * outputs (locked at plan D10/D16) — that combination is a known
-  * divergence from the MCP spec, recorded below; the test classifies
-  * those tools separately so the assertion fails only on UNEXPECTED
-  * violations.
+  * M5.5 (F-M5-3 RESOLVED): every emitted `outputSchema` now declares
+  * `type:"object"` per MCP 2025-06-18. Non-object outputs (Void / Buzzers /
+  * Algebraic / Alternative / primitive Singular) are wrapped via
+  * `SchemaMethodOutput.wrapIfNonObject` and annotated with
+  * `x-idealingua-wrapped:true`. The previous known-divergence classifier
+  * for `outputSchema.type` violations has been removed; the spec now
+  * asserts ZERO violations strictly.
   */
 final class MCPEnvelopeValidationSpec extends AnyFunSuite {
 
@@ -53,9 +53,8 @@ final class MCPEnvelopeValidationSpec extends AnyFunSuite {
     }
     assert(mcpModules.nonEmpty, "no *.mcp.json modules emitted")
 
-    val violations            = scala.collection.mutable.ArrayBuffer.empty[(String, String)]
-    val knownDivergence       = scala.collection.mutable.ArrayBuffer.empty[(String, String)]
-    var validated             = 0
+    val violations = scala.collection.mutable.ArrayBuffer.empty[(String, String)]
+    var validated  = 0
 
     mcpModules.foreach { m =>
       val moduleLabel = (m.id.path :+ m.id.name).mkString("/")
@@ -63,41 +62,21 @@ final class MCPEnvelopeValidationSpec extends AnyFunSuite {
       if (messages.isEmpty) validated += 1
       else
         messages.foreach { msg =>
-          val text = msg.getMessage
-          // Locked divergences from the MCP spec (recorded for post-M5
-          // follow-up; not gating M5 — see plan §11 R10 + tasks.md F-list):
-          //   * D10/D16 — buzzers + `Output.Void` emit
-          //     `outputSchema: {"type":"null"}` which violates the spec
-          //     requirement `outputSchema.type == "object"`.
-          //   * D7 — `Output.Algebraic` and `Output.Alternative` emit
-          //     `outputSchema: {"oneOf": [...]}` with no top-level `type`
-          //     key, also violating the spec requirement.
-          val isOutputTypeDivergence =
-            text.contains("outputSchema") && (
-              text.contains("must be the constant value 'object'") ||
-              text.contains("required property 'type' not found")
-            )
-          if (isOutputTypeDivergence) knownDivergence += ((moduleLabel, text))
-          else violations += ((moduleLabel, text))
+          violations += ((moduleLabel, msg.getMessage))
         }
     }
 
     val report = new StringBuilder()
     report.append(
-      s"mcp-modules=${mcpModules.size} validated=$validated " +
-        s"known-divergence=${knownDivergence.size} violations=${violations.size}\n"
+      s"mcp-modules=${mcpModules.size} validated=$validated violations=${violations.size}\n"
     )
-    if (knownDivergence.nonEmpty) {
-      report.append("\nKNOWN DIVERGENCE (D7/D10/D16 — outputSchema type:null for Void/Buzzers, or oneOf without top-level type for Algebraic/Alternative; informational):\n")
-      knownDivergence.take(10).foreach { case (mod, msg) => report.append(s"  - $mod: $msg\n") }
-      if (knownDivergence.size > 10) report.append(s"  … and ${knownDivergence.size - 10} more\n")
-    }
     if (violations.nonEmpty) {
-      report.append("\nUNEXPECTED VIOLATIONS:\n")
+      report.append("\nVIOLATIONS:\n")
       violations.foreach { case (mod, msg) => report.append(s"  - $mod: $msg\n") }
     }
     info(report.toString)
 
-    assert(violations.isEmpty, s"unexpected MCP envelope violations: ${violations.size}")
+    assert(violations.isEmpty, s"MCP envelope violations: ${violations.size}")
+    assert(validated == mcpModules.size, s"validated=$validated / ${mcpModules.size}")
   }
 }
