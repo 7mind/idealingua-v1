@@ -1,9 +1,13 @@
 package izumi.idealingua.typer
 
+import izumi.idealingua.model.common.TypeId
+import izumi.idealingua.model.common.TypeId.AliasId
 import izumi.idealingua.model.il.ast.IDLPretyper
 import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.typer.ir.{Diagnostics, Domain}
 import izumi.idealingua.typer.phase._
+
+import scala.annotation.tailrec
 
 /** Wires the new phase-based typer (`izumi.idealingua.typer.phase.*` Phases 0-12)
   * end-to-end from a `DomainMeshResolved` to a frozen `Domain`.
@@ -87,5 +91,40 @@ object NewTyperPipeline {
     } else {
       Right(domain)
     }
+  }
+
+  /** Family-level post-pass: enrich each Domain's `aliases` map with resolved
+    * alias targets from every other typed domain in the family.
+    *
+    * The per-domain `AliasDealiaser` only walks aliases declared inside the
+    * current domain. For a cross-domain alias chain (e.g. `data D { x: B#Foo }`
+    * where `Foo = i64` lives in domain `B`), the local map carries no entry
+    * for `AliasId(B, "Foo")` and downstream translator dealias sites either
+    * throw (`DomainAnyvalExtension.canBeAnyValField`) or treat the AliasId as
+    * itself (`domain.aliases.getOrElse(a, a)` callers), both of which diverge
+    * from legacy `TypespaceImpl.dealias` which walked `transitivelyReferenced`.
+    *
+    * This finalizer mirrors the legacy global-typespace lookup: aggregate
+    * every `Domain.aliases` into one Map[AliasId, TypeId], then re-chase any
+    * target that is still an AliasId (a local-only resolution that punted at
+    * a cross-domain boundary) through the aggregated map. The resulting map
+    * replaces each per-domain `aliases`.
+    */
+  def finalizeCrossDomainAliases(typed: Seq[Domain]): Seq[Domain] = {
+    val merged: Map[AliasId, TypeId] = typed.iterator.flatMap(_.aliases).toMap
+    val resolved: Map[AliasId, TypeId] = merged.map { case (a, target) =>
+      a -> chase(target, merged, Set(a))
+    }
+    typed.map(d => d.copy(aliases = resolved))
+  }
+
+  @tailrec
+  private def chase(target: TypeId, merged: Map[AliasId, TypeId], visited: Set[AliasId]): TypeId = target match {
+    case a: AliasId if !visited.contains(a) =>
+      merged.get(a) match {
+        case Some(next) => chase(next, merged, visited + a)
+        case None       => a // unresolved across the family — leave as-is
+      }
+    case other => other
   }
 }

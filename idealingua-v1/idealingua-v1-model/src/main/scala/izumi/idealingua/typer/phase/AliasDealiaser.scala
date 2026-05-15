@@ -42,7 +42,18 @@ object AliasDealiaser {
             case a: AliasId =>
               val _ = visited.add(a)
               aliases.get(a) match {
-                case Some(defn) => current = defn.target
+                case Some(defn) =>
+                  current = defn.target
+                case None if a.path.domain != resolved.id =>
+                  // Cross-domain alias: this domain's pipeline cannot see the
+                  // foreign target. Record the boundary AliasId as the resolved
+                  // value and let the family-level finalizer
+                  // (`NewTyperPipeline.finalizeCrossDomainAliases`) chase it
+                  // through every other domain's `aliases` map. No diagnostic —
+                  // a missing FOREIGN AliasId at this point would already have
+                  // surfaced as `UnknownTypeRef` in Phase 2.
+                  resolvedTargets.update(start, a)
+                  continue = false
                 case None =>
                   diagBuf += Diagnostic.AliasTargetUnresolved(a, resolved.userTypes.get(start).map(_.meta.pos).getOrElse(izumi.idealingua.model.il.ast.InputPosition.Undefined))
                   continue = false

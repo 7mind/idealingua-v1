@@ -27,9 +27,26 @@ class ModelResolver() {
     )
     val importResolver = new ExternalRefResolver(domains)
 
-    val typed = domains.domains.results
+    val typedRaw = domains.domains.results
       .map(importResolver.resolveReferences)
       .map(makeLoaded)
+
+    // Family-level post-pass: enrich each Domain's `aliases` map with
+    // cross-domain entries so translator dealias sites can resolve a foreign
+    // `AliasId` whose target was declared in an imported domain. The per-domain
+    // `AliasDealiaser` runs in isolation and never sees the foreign target;
+    // without this pass `domain.aliases.get(foreignAliasId)` returns None and
+    // dealias sites either throw or treat the AliasId as its own terminal
+    // (both diverge from the legacy `TypespaceImpl.dealias` semantics, which
+    // walked `transitivelyReferenced` for cross-domain lookups).
+    val successes      = typedRaw.collect { case s: LoadedDomain.Success => s }
+    val enrichedByFam  = NewTyperPipeline.finalizeCrossDomainAliases(successes.map(_.domain))
+    val successByDom   = successes.zip(enrichedByFam).map { case (ls, d) => ls.copy(domain = d) }
+    val replacements: Map[String, LoadedDomain.Success] = successByDom.map(s => s.parsed.id.toString -> s).toMap
+    val typed: Seq[LoadedDomain] = typedRaw.map {
+      case s: LoadedDomain.Success => replacements.getOrElse(s.parsed.id.toString, s)
+      case other                    => other
+    }
 
     val result = LoadedModels(typed, IDLDiagnostics.empty)
 
