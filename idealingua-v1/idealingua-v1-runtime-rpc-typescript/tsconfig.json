@@ -1,0 +1,18 @@
+{
+  "extends": "./src/npmjs/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "*": [
+        "src/main/resources/runtime/typescript/irt/*",
+        "src/npmjs/node_modules/*"
+      ]
+    },
+    "typeRoots": [
+      "src/npmjs/node_modules/@types"
+    ]
+  },
+  "include": [
+    "src/main/resources/runtime/typescript/**/*.ts"
+  ]
+}

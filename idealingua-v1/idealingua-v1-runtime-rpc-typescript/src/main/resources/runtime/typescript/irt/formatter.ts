@@ -1,78 +1,89 @@
-
-import * as moment from 'moment';
+import { Temporal } from "temporal-polyfill";
 
 export class Formatter {
-    public static readonly DATETIME_FORMATS = [
-        'YYYY-MM-DDTHH:mm:ssZ',
-        'YYYY-MM-DDTHH:mm:ss.SZ',
-        'YYYY-MM-DDTHH:mm:ss.SSZ',
-        'YYYY-MM-DDTHH:mm:ss.SSSZ',
-        'YYYY-MM-DDTHH:mm:ss.SSSSZ',
-        'YYYY-MM-DDTHH:mm:ss.SSSSSZ',
-        'YYYY-MM-DDTHH:mm:ss.SSSSSSZ',
-        'YYYY-MM-DDTHH:mm:ss.SSSSSSSZ',
-        'YYYY-MM-DDTHH:mm:ss.SSSSSSSSZ',
-        'YYYY-MM-DDTHH:mm:ss.SSSSSSSSSZ',
-        'YYYY-MM-DDTHH:mm:ss',
-        'YYYY-MM-DDTHH:mm:ss.S',
-        'YYYY-MM-DDTHH:mm:ss.SS',
-        'YYYY-MM-DDTHH:mm:ss.SSS',
-        'YYYY-MM-DDTHH:mm:ss.SSSS',
-        'YYYY-MM-DDTHH:mm:ss.SSSSS',
-        'YYYY-MM-DDTHH:mm:ss.SSSSSS',
-        'YYYY-MM-DDTHH:mm:ss.SSSSSSS',
-        'YYYY-MM-DDTHH:mm:ss.SSSSSSSS',
-        'YYYY-MM-DDTHH:mm:ss.SSSSSSSSS',
-    ];
+  public static readTime(value: string) {
+    const plainTime = Temporal.PlainTime.from(value);
+    const today = Temporal.Now.plainDateISO();
+    return new Date(
+      today
+        .toPlainDateTime(plainTime)
+        .toZonedDateTime(Temporal.Now.timeZoneId()).epochMilliseconds,
+    );
+  }
 
-    public static readTime(value: string): Date {
-        return moment(value, 'HH:mm:ss.SSS').toDate();
+  public static writeTime(value: Date) {
+    const zdt = Temporal.Instant.fromEpochMilliseconds(
+      value.getTime(),
+    ).toZonedDateTimeISO(Temporal.Now.timeZoneId());
+    return zdt.toPlainTime().toString({ fractionalSecondDigits: 3 });
+  }
+
+  public static readDate(value: string) {
+    const plainDate = Temporal.PlainDate.from(value);
+    return new Date(
+      plainDate
+        .toPlainDateTime({ hour: 0, minute: 0, second: 0 })
+        .toZonedDateTime(Temporal.Now.timeZoneId()).epochMilliseconds,
+    );
+  }
+
+  public static writeDate(value: Date) {
+    const zdt = Temporal.Instant.fromEpochMilliseconds(
+      value.getTime(),
+    ).toZonedDateTimeISO(Temporal.Now.timeZoneId());
+    return zdt.toPlainDate().toString();
+  }
+
+  public static readDateTime(value: string, utcMode: boolean = false) {
+    const regionIndex = value.indexOf("[");
+    if (regionIndex >= 0) {
+      // For the time being, we just ignore [Europe/Dublin] kind of regions
+      value = value.substring(0, regionIndex);
     }
 
-    public static writeTime(value: Date): string {
-        return moment(value).format('HH:mm:ss.SSS');
+    const timeZone = utcMode ? "UTC" : Temporal.Now.timeZoneId();
+    let epochMs: number;
+
+    if (value.includes("Z") || value.match(/[+-]\d{2}:\d{2}$/)) {
+      epochMs = Temporal.Instant.from(value).epochMilliseconds;
+    } else {
+      epochMs =
+        Temporal.PlainDateTime.from(value).toZonedDateTime(
+          timeZone,
+        ).epochMilliseconds;
     }
 
-    public static readDate(value: string): Date {
-        return moment(value, 'YYYY-MM-DD').toDate();
-    }
+    return new Date(epochMs);
+  }
 
-    public static writeDate(value: Date): string {
-        return moment(value).format('YYYY-MM-DD');
-    }
+  public static readZoneDateTime(value: string) {
+    return Formatter.readDateTime(value);
+  }
 
-    public static readDateTime(value: string, utc: boolean = false): Date {
-        const regionIndex = value.indexOf('[');
-        if (regionIndex >= 0) {
-            // For the time being, we just ignore [Europe/Dublin] kind of regions
-            value = value.substring(0, regionIndex);
-        }
+  public static writeZoneDateTime(value: Date) {
+    const zdt = Temporal.Instant.fromEpochMilliseconds(
+      value.getTime(),
+    ).toZonedDateTimeISO(Temporal.Now.timeZoneId());
+    return zdt.toString({ fractionalSecondDigits: 3, timeZoneName: "never" });
+  }
 
-        const res = moment(value, Formatter.DATETIME_FORMATS);
-        return utc ? res.utc().toDate() : res.toDate();
-    }
+  public static readLocalDateTime(value: string) {
+    return Formatter.readDateTime(value);
+  }
 
-    public static readZoneDateTime(value: string): Date {
-        return Formatter.readDateTime(value);
-    }
+  public static writeLocalDateTime(value: Date) {
+    const zdt = Temporal.Instant.fromEpochMilliseconds(
+      value.getTime(),
+    ).toZonedDateTimeISO(Temporal.Now.timeZoneId());
+    return zdt.toPlainDateTime().toString({ fractionalSecondDigits: 3 });
+  }
 
-    public static writeZoneDateTime(value: Date): string {
-        return moment(value).format('YYYY-MM-DDTHH:mm:ss.SSSZ');
-    }
+  public static readUTCDateTime(value: string) {
+    return Formatter.readDateTime(value, true);
+  }
 
-    public static readLocalDateTime(value: string): Date {
-        return Formatter.readDateTime(value);
-    }
-
-    public static writeLocalDateTime(value: Date): string {
-        return moment(value).format('YYYY-MM-DDTHH:mm:ss.SSS');
-    }
-
-    public static readUTCDateTime(value: string): Date {
-        return Formatter.readDateTime(value, true);
-    }
-
-    public static writeUTCDateTime(value: Date): string {
-        return moment(value).utc().format('YYYY-MM-DDTHH:mm:ss.SSSZ');
-    }
+  public static writeUTCDateTime(value: Date) {
+    const instant = Temporal.Instant.fromEpochMilliseconds(value.getTime());
+    return instant.toString({ fractionalSecondDigits: 3 });
+  }
 }
