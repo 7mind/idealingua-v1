@@ -11,8 +11,9 @@
     "strictNullChecks": false,
     "noImplicitAny": false,
     "noImplicitReturns": false,
-    "noEmit": true,
-    "rootDirs": ["."],
+    "outDir": "./out",
+    "rootDir": ".",
+    "sourceMap": false,
     "baseUrl": ".",
     "paths": {
       "*": ["./*", "node_modules/*"]
@@ -23,5 +24,9 @@
     "irt/**/*.ts",
     "idltest/**/*.ts",
     "**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "out"
   ]
 }

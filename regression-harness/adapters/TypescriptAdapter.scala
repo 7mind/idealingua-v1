@@ -95,10 +95,25 @@ final class TypescriptAdapter(repoRoot: Path) extends LangAdapter {
     val installRc = runCapturing(installCmd, workDir, rawOut.resolveSibling(rawOut.getFileName.toString + ".install"))
     if (installRc != 0) return Left(s"${installCmd.head} install exit=$installRc")
 
-    // 6. run the sample app
+    // 6. compile with tsc (esModuleInterop=false + module=CommonJS, per tsconfig
+    //    template). Avoids tsx/esbuild's `__toESM` interop helper, which wraps a
+    //    CJS `export = X` module in a non-callable namespace — historically this
+    //    broke `import * as moment from 'moment'` in v1.4.19's IRT
+    //    (`irt/formatter.ts:51 TypeError: moment is not a function`). Under
+    //    `tsc + node` the legacy import form binds the namespace directly to the
+    //    CJS exports object, so `moment(...)` stays callable for v1.4.19's
+    //    output AND HEAD's `import moment = require('moment')` continues to work.
+    //    Trade-off: tsc surfaces strict-mode type errors that `tsx` silently
+    //    accepted — those are translator defects to fix at source.
+    val tscBin = workDir.resolve("node_modules/.bin/tsc")
+    if (!Files.isExecutable(tscBin)) return Left(s"tsc not found at $tscBin (npm install should have placed it via the typescript devDependency)")
+    val tscRc = runCapturing(Seq(tscBin.toString, "-p", "tsconfig.json"), workDir, rawOut.resolveSibling(rawOut.getFileName.toString + ".tsc"))
+    if (tscRc != 0) return Left(s"tsc exit=$tscRc (log captured at ${rawOut}.tsc)")
+
+    // 7. run the compiled sample app under plain node — no CJS interop helper.
     val runCmd: Seq[String] = runner.name match {
-      case "bun" => Seq("bun", "run", "sample_app.ts")
-      case "npm" => Seq(workDir.resolve("node_modules/.bin/tsx").toString, "sample_app.ts")
+      case "bun" => Seq("node", "out/sample_app.js")
+      case "npm" => Seq("node", "out/sample_app.js")
       case other => return Left(s"unknown runner: $other")
     }
     Harness.say(s"+ ${runCmd.mkString(" ")} (cwd=$workDir)")
