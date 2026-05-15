@@ -24,9 +24,11 @@ import scala.collection.mutable
   *      `removedConcepts` must resolve to `DTOId` | `InterfaceId`. Replaces
   *      the throw at legacy `IDLTyper.scala:322`. Diagnostic:
   *      `Diagnostic.BadMixinTarget`.
-  *   3. **ADT branches** must be known user types (DTO / Identifier /
-  *      Interface) and must NOT be `AdtId` (no nesting). Replaces the throw at
-  *      legacy `IDLTyper.scala:267-268`. Diagnostic:
+  *   3. **ADT branches** must resolve to a known user type. AdtId branches
+  *      are permitted (legacy `IDLTyper.toMember` only rejects inline
+  *      `RawAdt.Member.NestedDefn`, never an ADT referenced by name — that
+  *      rejection lives in `NameResolver.fixAdt`). KindChecker only flags
+  *      structurally invalid branches via
   *      `Diagnostic.NestedAdtMemberUnsupported`.
   *
   * Per C8/L1, never throws on user-visible input errors.
@@ -46,12 +48,13 @@ object KindChecker {
       case adt: TypeDef.Adt =>
         adt.alternatives.foreach {
           alt =>
-            // Dealias the branch first so an alias-to-ADT still flags as nested.
+            // Dealias the branch first; an alias-to-ADT counts the same as a
+            // direct AdtId reference. Legacy `IDLTyper.toMember` accepts any
+            // resolved TypeId via the `TypeRef` arm and only rejects inline
+            // `NestedDefn` (handled in `NameResolver.fixAdt`).
             val effective = dealiasOnce(resolved, alt.typeId)
             effective match {
-              case _: AdtId =>
-                diagBuf += Diagnostic.NestedAdtMemberUnsupported(adt.id, alt.typeId, adt.meta.pos)
-              case _: DTOId | _: InterfaceId | _: IdentifierId =>
+              case _: DTOId | _: InterfaceId | _: IdentifierId | _: AdtId =>
                 ()
               case _: Primitive =>
                 () // permitted at this layer (legacy permits via aliases)

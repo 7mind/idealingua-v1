@@ -72,7 +72,11 @@ final class KindCheckerSpec extends AnyFunSpec with Matchers {
       r.diagnostics.issues.collect { case d: Diagnostic.BadMixinTarget => d } should not be empty
     }
 
-    it("emits NestedAdtMemberUnsupported when an ADT branch references another ADT") {
+    it("accepts an ADT whose branch is another ADT (legacy IDLTyper.toMember semantics)") {
+      // Legacy `IDLTyper.toMember` only rejects inline `RawAdt.Member.NestedDefn`,
+      // never an `AdtId` reached via `RawAdt.Member.TypeRef`. Real-world IDLs
+      // exercise this shape (e.g. `adt Outer { Inner as sr | ... }` where
+      // `Inner` is itself an `adt`).
       val nested = RawTypeDef.Adt(AdtId(TypePath(domA, Seq.empty), "Inner"), Nil, meta)
       val outer = RawTypeDef.Adt(
         AdtId(TypePath(domA, Seq.empty), "Outer"),
@@ -81,7 +85,7 @@ final class KindCheckerSpec extends AnyFunSpec with Matchers {
       )
       val (input, _) = fixture(List(nested, outer), Nil, Map.empty)
       val r          = KindChecker(AliasDealiaser(NameResolver(scopeFor(input))))
-      r.diagnostics.issues.collect { case d: Diagnostic.NestedAdtMemberUnsupported => d } should not be empty
+      r.diagnostics.issues.collect { case d: Diagnostic.NestedAdtMemberUnsupported => d } shouldBe empty
     }
   }
 }
