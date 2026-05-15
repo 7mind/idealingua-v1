@@ -82,10 +82,17 @@ jobs:
       - uses: 7mind/github-env@minimal
       # `7mind/github-env@minimal` calls `actions/checkout@v4` with default
       # depth=1 and no tags — `IdlcResolver` resolves `git:v1.4.19` and
-      # `git:ea697f5` into git worktrees and needs both refs locally, so we
-      # re-checkout with full history. `clean: false` keeps the env-action's
-      # working tree config (slug action, nix shell vars) intact; the second
-      # checkout updates only git internals.
+      # `git:impl9-baseline` into git worktrees and needs both refs locally,
+      # so we re-checkout with full history. `clean: false` keeps the env-
+      # action's working tree config (slug action, nix shell vars) intact;
+      # the second checkout updates only git internals.
+      #
+      # Note: `fetch-depth: 0` fetches the full history of the BRANCH being
+      # checked out (`develop`). It does NOT fetch arbitrary commit SHAs
+      # that aren't reachable from that branch — important for squash-merged
+      # feature branches. The IMPL-9 baseline is therefore pinned as a TAG
+      # (`impl9-baseline`); `fetch-tags: true` carries it regardless of
+      # which branch CI is on or how feature branches were merged.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -96,7 +103,7 @@ jobs:
           # Fail fast if the checkout didn't actually pull what we need —
           # better to error here than 8min later inside a worktree-add.
           git rev-parse --verify "v1.4.19^{commit}"
-          git rev-parse --verify "ea697f5c069217eff871178971b641bde6e5ec11^{commit}"
+          git rev-parse --verify "impl9-baseline^{commit}"
       - name: Cross-version regression harness
         run: nix develop --command mdl --github-actions --scala-version=2.13 :test-regression
 
