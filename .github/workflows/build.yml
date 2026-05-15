@@ -80,14 +80,23 @@ jobs:
     needs: [ 'checksecret' ]
     steps:
       - uses: 7mind/github-env@minimal
-      - name: Fetch refs for cross-version cells (v1.4.19 tag + ea697f5 IMPL-9 commit)
+      # `7mind/github-env@minimal` calls `actions/checkout@v4` with default
+      # depth=1 and no tags — `IdlcResolver` resolves `git:v1.4.19` and
+      # `git:ea697f5` into git worktrees and needs both refs locally, so we
+      # re-checkout with full history. `clean: false` keeps the env-action's
+      # working tree config (slug action, nix shell vars) intact; the second
+      # checkout updates only git internals.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          clean: false
+      - name: Verify cross-version refs are accessible
         run: |
-          # `git:v1.4.19` and `git:ea697f5` are resolved by IdlcResolver into git
-          # worktrees. The default GitHub checkout depth may not include either —
-          # unshallow + fetch tags so both refs are locally accessible.
-          git fetch --unshallow --tags origin || git fetch --tags origin || true
-          git fetch origin v1.4.19 || true
-          git fetch origin ea697f5c069217eff871178971b641bde6e5ec11 || true
+          # Fail fast if the checkout didn't actually pull what we need —
+          # better to error here than 8min later inside a worktree-add.
+          git rev-parse --verify "v1.4.19^{commit}"
+          git rev-parse --verify "ea697f5c069217eff871178971b641bde6e5ec11^{commit}"
       - name: Cross-version regression harness
         run: nix develop --command mdl --github-actions --scala-version=2.13 :test-regression
 
