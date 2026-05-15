@@ -211,14 +211,19 @@ final class DomainTSTypeConverter(domain: Domain) {
   }
 
   private def toGenericType(typeId: Generic, forSerialized: Boolean): String = {
+    // Wrap union types in parentheses before suffixing `[]`. TS precedence
+    // parses `A | B[]` as `A | (B[])` whereas we want `(A | B)[]` for
+    // `list[opt[T]]` / `set[opt[T]]`. Without the wrap, `set[opt[i32]]`
+    // emits `number | undefined[]` which `tsc` rejects with TS2339.
+    def parenIfUnion(s: String): String = if (s.contains(" | ")) s"($s)" else s
     typeId match {
-      case _: Generic.TSet => toNativeType(typeId.asInstanceOf[TSet].valueType, forSerialized) + "[]"
+      case _: Generic.TSet => parenIfUnion(toNativeType(typeId.asInstanceOf[TSet].valueType, forSerialized)) + "[]"
       case _: Generic.TMap =>
         "{[key: " + toNativeType(typeId.asInstanceOf[TMap].keyType, forSerialized, forMap = true) + "]: " + toNativeType(
           typeId.asInstanceOf[TMap].valueType,
           forSerialized,
         ) + "}"
-      case _: Generic.TList   => toNativeType(typeId.asInstanceOf[TList].valueType, forSerialized) + "[]"
+      case _: Generic.TList   => parenIfUnion(toNativeType(typeId.asInstanceOf[TList].valueType, forSerialized)) + "[]"
       case o: Generic.TOption => toNativeType(o.valueType, forSerialized) + " | undefined"
     }
   }
