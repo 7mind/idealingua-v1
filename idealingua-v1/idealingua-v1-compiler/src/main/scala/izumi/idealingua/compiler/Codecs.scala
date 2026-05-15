@@ -23,7 +23,18 @@ trait Codecs extends PlatformEnumCodecs {
 
   implicit def decSbtOptions: Decoder[SbtOptions] = deriveDecoder
 
-  implicit def decScalaBuildManifest: Decoder[ScalaBuildManifest] = deriveDecoder
+  // `deriveDecoder` from circe-generic semiauto does NOT honor case-class
+  // default values; without this manual decoder a `manifests/scala.json` that
+  // predates the `emitMcpBridge` field (introduced May 2026 by `0daf7a2`,
+  // commit message "Default off; backwards-compatible") fails to parse on HEAD.
+  implicit def decScalaBuildManifest: Decoder[ScalaBuildManifest] = Decoder.instance { c =>
+    for {
+      common        <- c.get[Common]("common")
+      layout        <- c.get[ScalaProjectLayout]("layout")
+      sbt           <- c.get[SbtOptions]("sbt")
+      emitMcpBridge <- c.getOrElse[Boolean]("emitMcpBridge")(false)
+    } yield ScalaBuildManifest(common, layout, sbt, emitMcpBridge)
+  }
 
   implicit def decTs: Decoder[TypeScriptBuildManifest] = deriveDecoder
 
