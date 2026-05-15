@@ -453,7 +453,22 @@ object StructuralFlattener {
     diagBuf: mutable.ArrayBuffer[Diagnostic],
   ): FlatStruct = {
     val all     = mutable.ListBuffer.empty[FlatField]
-    val removed = mutable.LinkedHashSet.empty[String]
+    // Removal is keyed by `(typeId, name)` so that a `- name: T1` clause
+    // strips only the inherited `name: T1` field, leaving a sibling
+    // `name: T2` declaration intact — matches legacy
+    // `FieldExtractor.filterFields` (`FieldExtractor.scala:75`,
+    // `removable.filterNot(removedFields.contains(_.field))` where
+    // `removedFields: Set[Field]` compares full Field identity). Removing by
+    // name alone breaks shapes like
+    // `data TeamRank { + Rank; - id: UserId; id: TeamId }` — the local
+    // redeclaration shares the name but the type differs.
+    val removed = mutable.LinkedHashSet.empty[(TypeId, String)]
+    // Removed concepts only carry NAMES (the legacy `extractRemoved` walk
+    // recurses into a removed concept and flattens its full field list, but
+    // we don't carry concept-level type info per name through that walk).
+    // Use name-only removal for this path — matches the legacy
+    // `extractRemoved` behaviour for `- ConceptId` clauses.
+    val removedByName = mutable.LinkedHashSet.empty[String]
     val visited = mutable.LinkedHashSet.empty[StructureId]
 
     // BFS layer-by-layer; distance increases with each layer.
@@ -465,7 +480,7 @@ object StructuralFlattener {
       if (visited.add(cur)) {
         views.get(cur) match {
           case Some(v) =>
-            v.removedFields.foreach(f => removed.add(f.name))
+            v.removedFields.foreach(f => removed.add((f.typeId, f.name)))
             // F-subtraction (PR-02 IMPL-7a.2-Fh): expand each removed concept
             // at this level to its transitively flattened field names so
             // `data X { + S; - Y }` strips every field that `Y` would have
@@ -473,7 +488,7 @@ object StructuralFlattener {
             // `FieldExtractor.extractRemoved` + `filterFields`,
             // `FieldExtractor.scala:78-91` + `:61-76`).
             v.removedConcepts.foreach { c =>
-              removedConceptFieldNames(c, views).foreach(removed.add)
+              removedConceptFieldNames(c, views).foreach(removedByName.add)
             }
             v.fields.foreach(f => all += FlatField(f, cur, distance))
             directSupers.getOrElse(cur, Nil).foreach(s => frontier.enqueue(s -> (distance + 1)))
@@ -482,7 +497,9 @@ object StructuralFlattener {
       }
     }
 
-    val filtered = all.toList.filterNot(ff => removed.contains(ff.field.name))
+    val filtered = all.toList.filterNot { ff =>
+      removed.contains((ff.field.typeId, ff.field.name)) || removedByName.contains(ff.field.name)
+    }
 
     // Group by field name to find conflicts, preserving first-encounter order.
     val byName = mutable.LinkedHashMap.empty[String, mutable.ListBuffer[FlatField]]
