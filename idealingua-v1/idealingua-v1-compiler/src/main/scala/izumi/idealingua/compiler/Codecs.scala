@@ -2,7 +2,6 @@ package izumi.idealingua.compiler
 
 import izumi.idealingua.model.publishing.BuildManifest.{Common, License, MFUrl, ManifestDependency}
 import izumi.idealingua.model.publishing.manifests._
-import izumi.idealingua.model.publishing.manifests.ProtobufBuildManifest.ProtobufRepositoryOptions
 import izumi.idealingua.model.publishing.{ProjectNamingRule, ProjectVersion, Publisher}
 
 trait Codecs extends PlatformEnumCodecs {
@@ -24,23 +23,28 @@ trait Codecs extends PlatformEnumCodecs {
 
   implicit def decSbtOptions: Decoder[SbtOptions] = deriveDecoder
 
-  implicit def decScalaBuildManifest: Decoder[ScalaBuildManifest] = deriveDecoder
+  // `deriveDecoder` from circe-generic semiauto does NOT honor case-class
+  // default values; without this manual decoder a `manifests/scala.json` that
+  // predates the `emitMcpBridge` field (introduced May 2026 by `0daf7a2`,
+  // commit message "Default off; backwards-compatible") fails to parse on HEAD.
+  implicit def decScalaBuildManifest: Decoder[ScalaBuildManifest] = Decoder.instance { c =>
+    for {
+      common        <- c.get[Common]("common")
+      layout        <- c.get[ScalaProjectLayout]("layout")
+      sbt           <- c.get[SbtOptions]("sbt")
+      emitMcpBridge <- c.getOrElse[Boolean]("emitMcpBridge")(false)
+    } yield ScalaBuildManifest(common, layout, sbt, emitMcpBridge)
+  }
 
   implicit def decTs: Decoder[TypeScriptBuildManifest] = deriveDecoder
 
   implicit def decYarnOptions: Decoder[YarnOptions] = deriveDecoder
 
-  implicit def decGo: Decoder[GoLangBuildManifest] = deriveDecoder
-
-  implicit def decGoRepositoryOptions: Decoder[GoRepositoryOptions] = deriveDecoder
-
   implicit def decCs: Decoder[CSharpBuildManifest] = deriveDecoder
 
-  implicit def decProtobufRepo: Decoder[ProtobufRepositoryOptions] = deriveDecoder
-
-  implicit def decProtobuf: Decoder[ProtobufBuildManifest] = deriveDecoder
-
   implicit def decNugetOptions: Decoder[NugetOptions] = deriveDecoder
+
+  implicit def decSchemaBuildManifest: Decoder[SchemaBuildManifest] = deriveDecoder
 
   implicit def encMFUrl: Encoder[MFUrl] = deriveEncoder
 
@@ -62,17 +66,11 @@ trait Codecs extends PlatformEnumCodecs {
 
   implicit def encYarnOptions: Encoder[YarnOptions] = deriveEncoder
 
-  implicit def encGo: Encoder[GoLangBuildManifest] = deriveEncoder
-
-  implicit def encGoRepositoryOptions: Encoder[GoRepositoryOptions] = deriveEncoder
-
   implicit def encCs: Encoder[CSharpBuildManifest] = deriveEncoder
 
   implicit def encNugetOptions: Encoder[NugetOptions] = deriveEncoder
 
-  implicit def encProtobufRepo: Encoder[ProtobufRepositoryOptions] = deriveEncoder
-
-  implicit def encProtobuf: Encoder[ProtobufBuildManifest] = deriveEncoder
+  implicit def encSchemaBuildManifest: Encoder[SchemaBuildManifest] = deriveEncoder
   //
 
   implicit def decProjectVersion: Decoder[ProjectVersion] = deriveDecoder

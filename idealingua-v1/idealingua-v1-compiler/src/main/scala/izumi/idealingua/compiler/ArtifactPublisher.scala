@@ -2,11 +2,9 @@ package izumi.idealingua.compiler
 
 import izumi.fundamentals.platform.files.IzFiles
 import izumi.idealingua.model.publishing.BuildManifest
-import izumi.idealingua.model.publishing.manifests.{GoLangBuildManifest, ProtobufBuildManifest}
 import izumi.idealingua.translator.IDLLanguage
 
 import java.nio.file.*
-import java.time.ZonedDateTime
 import scala.annotation.nowarn
 import scala.jdk.CollectionConverters.*
 import scala.sys.process.*
@@ -17,11 +15,9 @@ class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, 
   private val log: CompilerLog = CompilerLog.Default
 
   def publish(): Either[Throwable, Unit] = ((creds, lang, manifest): @unchecked) match {
-    case (c: ScalaCredentials, IDLLanguage.Scala, _)                              => publishScala(targetDir, c)
-    case (c: TypescriptCredentials, IDLLanguage.Typescript, _)                    => publishTypescript(targetDir, c)
-    case (c: GoCredentials, IDLLanguage.Go, m: GoLangBuildManifest)               => publishGo(targetDir, c, m)
-    case (c: CsharpCredentials, IDLLanguage.CSharp, _)                            => publishCsharp(targetDir, c)
-    case (c: ProtobufCredentials, IDLLanguage.Protobuf, m: ProtobufBuildManifest) => publishProtobuf(targetDir, c, m)
+    case (c: ScalaCredentials, IDLLanguage.Scala, _)         => publishScala(targetDir, c)
+    case (c: TypescriptCredentials, IDLLanguage.Typescript, _) => publishTypescript(targetDir, c)
+    case (c: CsharpCredentials, IDLLanguage.CSharp, _)       => publishCsharp(targetDir, c)
     case (c, l, _) if c.lang != l =>
       Left(
         new IllegalArgumentException(
@@ -166,210 +162,4 @@ class ArtifactPublisher(targetDir: Path, lang: IDLLanguage, creds: Credentials, 
     }
   }.toEither
 
-  private def publishGo(targetDir: Path, creds: GoCredentials, manifest: GoLangBuildManifest): Either[Throwable, Unit] = Try {
-    log.log("Prepare to package GoLang sources")
-
-    val env = Seq(
-      "GOPATH"      -> s"${targetDir.toAbsolutePath.toString}",
-      "GO111MODULE" -> "off",
-    )
-    IzFiles.recreateDir(targetDir.resolve("src"))
-
-    Files.move(targetDir.resolve("github.com"), targetDir.resolve("src/github.com"), StandardCopyOption.REPLACE_EXISTING)
-
-    Process(
-      "go get github.com/gorilla/websocket",
-      targetDir.toFile,
-      env*
-    ).lineStream.foreach(log.log)
-
-    if (manifest.enableTesting) {
-      log.log("Testing")
-      Process(
-        "go test ./...",
-        targetDir.resolve("src").toFile,
-        env*
-      ).lineStream.foreach(log.log)
-      log.log("Testing - OK")
-    } else {
-      log.log("Testing is disabled. Skipping.")
-    }
-
-    log.log("Publishing to github repo")
-
-    log.log("Seting up Git")
-    val pubKey = targetDir.resolve("go-key.pub")
-    Files.write(pubKey, Seq(creds.gitPubKey).asJava)
-
-    Process(Seq("git", "config", "--global", "--replace-all", "user.name", creds.gitUser)).lineStream.foreach(log.log)
-    Process(Seq("git", "config", "--global", "--replace-all", "user.email", creds.gitEmail)).lineStream.foreach(println)
-    Process(
-      Seq(
-        "git",
-        "config",
-        "--global",
-        "--replace-all",
-        "core.sshCommand",
-        s"ssh -i ${pubKey.toAbsolutePath.toString} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no",
-      )
-    ).lineStream.foreach(println)
-
-    Process(
-      "git config --global --list",
-      targetDir.toFile,
-    ).lineStream.foreach(log.log)
-
-    Process(
-      s"git clone ${creds.gitRepoUrl}",
-      targetDir.toFile,
-    ).lineStream.foreach(log.log)
-
-    Files
-      .list(targetDir.resolve(creds.gitRepoName)).iterator().asScala
-      .filter(_.getFileName.toString.charAt(0) != '.')
-      .foreach {
-        path =>
-          IzFiles.erase(path)
-      }
-
-    Files.list(targetDir.resolve("src").resolve(manifest.repository.repository)).iterator().asScala.foreach {
-      srcDir =>
-        Files.move(srcDir, targetDir.resolve(creds.gitRepoName).resolve(srcDir.getFileName.toString))
-    }
-
-    Files.write(
-      targetDir.resolve(creds.gitRepoName).resolve(".timestamp"),
-      Seq(
-        ZonedDateTime.now().toString
-      ).asJava,
-    )
-    Files.write(
-      targetDir.resolve(creds.gitRepoName).resolve("README.md"),
-      Seq(
-        s"# ${creds.gitRepoName}",
-        s"Auto-generated golang apis, ${manifest.common.version.toString}",
-      ).asJava,
-    )
-
-    Process(
-      "git add .",
-      targetDir.resolve(creds.gitRepoName).toFile,
-    ).lineStream.foreach(log.log)
-
-    log.log(s"Git commit: 'golang-api-update,version=${manifest.common.version}'")
-    Process(
-      s"""git commit --no-edit -am 'golang-api-update,version=${manifest.common.version}'""",
-      targetDir.resolve(creds.gitRepoName).toFile,
-    ).lineStream.foreach(log.log)
-
-    log.log(s"Setting git tag: v${manifest.common.version.toString}")
-    Process(
-      s"git tag -f v${manifest.common.version.toString}",
-      targetDir.resolve(creds.gitRepoName).toFile,
-    ).lineStream.foreach(log.log)
-
-    log.log("Git push")
-    Process(
-      "git push --all -f",
-      targetDir.resolve(creds.gitRepoName).toFile,
-    ).lineStream.foreach(log.log)
-    Process(
-      "git push --tags -f",
-      targetDir.resolve(creds.gitRepoName).toFile,
-    ).lineStream.foreach(log.log)
-  }.toEither
-
-  private def publishProtobuf(targetDir: Path, creds: ProtobufCredentials, manifest: ProtobufBuildManifest): Either[Throwable, Unit] = Try {
-    log.log("Publishing Protobuf sources to github repo")
-    // copy all files to tmp
-    val sources    = Files.list(targetDir).iterator().asScala.toList
-    val sourcesDir = targetDir.resolve("src_tmp")
-    val repoDir    = targetDir.resolve(creds.gitRepoName)
-
-    IzFiles.recreateDir(sourcesDir)
-    sources.foreach(src => Files.move(src, sourcesDir.resolve(src.getFileName)))
-
-    log.log("Seting up Git")
-    val pubKey = targetDir.resolve("protobuf-key.pub")
-    Files.write(pubKey, Seq(creds.gitPubKey).asJava)
-
-    Process(Seq("git", "config", "--global", "--replace-all", "user.name", creds.gitUser)).lineStream.foreach(log.log)
-    Process(Seq("git", "config", "--global", "--replace-all", "user.email", creds.gitEmail)).lineStream.foreach(println)
-    Process(
-      Seq(
-        "git",
-        "config",
-        "--global",
-        "--replace-all",
-        "core.sshCommand",
-        s"ssh -i ${pubKey.toAbsolutePath.toString} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no",
-      )
-    ).lineStream.foreach(println)
-
-    Process(
-      "git config --global --list",
-      targetDir.toFile,
-    ).lineStream.foreach(log.log)
-
-    // clone repo
-    Process(
-      s"git clone ${creds.gitRepoUrl}",
-      targetDir.toFile,
-    ).lineStream.foreach(log.log)
-
-    // cleanup repo
-    Files
-      .list(repoDir).iterator().asScala
-      .filter(_.getFileName.toString.charAt(0) != '.')
-      .foreach(path => IzFiles.erase(path))
-
-    // move everything from tmp to repo
-    Files.list(sourcesDir).iterator().asScala.foreach {
-      srcDir =>
-        Files.move(srcDir, repoDir.resolve(srcDir.getFileName.toString))
-    }
-
-    // add def files
-    Files.write(
-      repoDir.resolve(".timestamp"),
-      Seq(
-        ZonedDateTime.now().toString
-      ).asJava,
-    )
-    Files.write(
-      repoDir.resolve("README.md"),
-      Seq(
-        s"# ${creds.gitRepoName}",
-        s"Auto-generated protobuf sources, ${manifest.common.version.toString}",
-      ).asJava,
-    )
-
-    // commit repo
-    Process(
-      "git add .",
-      repoDir.toFile,
-    ).lineStream.foreach(log.log)
-
-    log.log(s"Git commit: 'protobuf-sources-update,version=${manifest.common.version}'")
-    Process(
-      s"""git commit --no-edit -am 'protobuf-sources-update,version=${manifest.common.version}'""",
-      repoDir.toFile,
-    ).lineStream.foreach(log.log)
-
-    log.log(s"Setting git tag: v${manifest.common.version.toString}")
-    Process(
-      s"git tag -f v${manifest.common.version.toString}",
-      repoDir.toFile,
-    ).lineStream.foreach(log.log)
-
-    log.log("Git push")
-    Process(
-      "git push --all -f",
-      repoDir.toFile,
-    ).lineStream.foreach(log.log)
-    Process(
-      "git push --tags -f",
-      repoDir.toFile,
-    ).lineStream.foreach(log.log)
-  }.toEither
 }

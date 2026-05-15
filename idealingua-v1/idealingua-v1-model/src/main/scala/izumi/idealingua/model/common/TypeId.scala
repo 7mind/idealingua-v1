@@ -75,11 +75,25 @@ object TypeId {
 
   final case class EnumId(path: TypePath, name: TypeName) extends ScalarId
 
-  final case class ServiceId(domain: DomainId, name: TypeName)
+  // F16/Option A1 (PR-02 IMPL-2): widen the sealed TypeId hierarchy to include
+  // service-family ids so the new IR (`ResolvedDomain.members`/`Member.User`)
+  // can key uniformly on TypeId without a parallel union type. The legacy
+  // typer never feeds these ids into the structural matches in IDLTyper.fixSimpleId
+  // / IDLTyper.transformSimpleId / InheritanceQueriesImpl (those sites have
+  // dedicated fixServiceId/fixBuzzerId/fixStreamsId paths and inheritance is
+  // not defined for service ids); catch-all arms at those four sites guard the
+  // exhaustiveness for the widened hierarchy.
+  final case class ServiceId(domain: DomainId, name: TypeName) extends TypeId {
+    override def path: TypePath = TypePath(domain, Seq.empty)
+  }
 
-  final case class BuzzerId(domain: DomainId, name: TypeName)
+  final case class BuzzerId(domain: DomainId, name: TypeName) extends TypeId {
+    override def path: TypePath = TypePath(domain, Seq.empty)
+  }
 
-  final case class StreamsId(domain: DomainId, name: TypeName)
+  final case class StreamsId(domain: DomainId, name: TypeName) extends TypeId {
+    override def path: TypePath = TypePath(domain, Seq.empty)
+  }
 
   final case class ConstId(domain: DomainId, name: TypeName)
 

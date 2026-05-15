@@ -2,12 +2,9 @@ package izumi.idealingua.translator.tocsharp
 
 import izumi.idealingua.model.publishing.BuildManifest
 import izumi.idealingua.model.publishing.manifests.CSharpBuildManifest
-import izumi.idealingua.model.typespace.Typespace
-import izumi.idealingua.model.typespace.verification.VerificationRule
-import izumi.idealingua.model.typespace.verification.rules.ReservedKeywordRule
 import izumi.idealingua.translator.CompilerOptions.CSharpTranslatorOptions
 import izumi.idealingua.translator._
-import izumi.idealingua.translator.tocsharp.extensions.NUnitExtension
+import izumi.idealingua.translator.tocsharp.domain.DomainCSharpTranslator
 import izumi.idealingua.translator.tocsharp.layout.CSharpLayouter
 
 object CSharpTranslatorDescriptor extends TranslatorDescriptor[CSharpTranslatorOptions] {
@@ -18,17 +15,11 @@ object CSharpTranslatorDescriptor extends TranslatorDescriptor[CSharpTranslatorO
 
   override def language: IDLLanguage = IDLLanguage.CSharp
 
-  override def defaultExtensions: Seq[TranslatorExtension] = CSharpTranslator.defaultExtensions
-
-  override def make(typespace: Typespace, options: UntypedCompilerOptions): Translator = {
-    val typed = typedOptions(options)
-    val withNUnit = if (typed.manifest.enableNUnit && !typed.extensions.contains(NUnitExtension)) typed.copy(extensions = typed.extensions :+ NUnitExtension) else typed
-    new CSharpTranslator(typespace, withNUnit)
-  }
-
-  override def rules: Seq[VerificationRule] = Seq(
-    ReservedKeywordRule.warning("c#", keywords)
-  )
+  override def makeDomain(
+    domain: izumi.idealingua.typer.ir.Domain,
+    parsed: izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved,
+    options: UntypedCompilerOptions,
+  ): Translator = new DomainCSharpTranslator(domain, parsed, typedOptions(options))
 
   override def makeHook(options: UntypedCompilerOptions): TranslationLayouter = new CSharpLayouter(typedOptions(options))
 

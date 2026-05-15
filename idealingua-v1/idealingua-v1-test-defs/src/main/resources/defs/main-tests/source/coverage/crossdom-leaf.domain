@@ -1,0 +1,16 @@
+domain coverage.crossdom.leaf
+
+// R2 coverage: leaf domain used as the import target for `crossdom-importer.domain`.
+
+data LeafDto {
+  v: str
+}
+
+mixin LeafMixin {
+  shared: i32
+}
+
+enum LeafEnum {
+  L1
+  L2
+}

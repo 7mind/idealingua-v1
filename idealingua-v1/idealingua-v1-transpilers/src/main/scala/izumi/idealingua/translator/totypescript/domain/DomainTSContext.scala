@@ -1,0 +1,48 @@
+package izumi.idealingua.translator.totypescript.domain
+
+import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
+import izumi.idealingua.translator.CompilerOptions.TypescriptTranslatorOptions
+import izumi.idealingua.translator.totypescript.domain.extensions.{DomainTSEnumHelpersExtension, DomainTSIntrospectionExtension}
+import izumi.idealingua.translator.totypescript.tools.ModuleTools
+import izumi.idealingua.typer.ir.Domain
+
+/** Minimal TSTContext for the Domain-consuming TypeScript translator port.
+  *
+  * IMPL-7b Phase B M1 — mirrors `DomainSTContext` (Scala port). Carries the
+  * new `Domain` IR, the original parsed AST (for declaration order recovery
+  * in later milestones), and the resolved translator options. Exposes the
+  * minimum surface the alias + enum renderers need (`conv`, `modules`,
+  * `manifest`).
+  *
+  * Subsequent milestones (M2+) will add structural renderers (identifier,
+  * DTO, interface), the service / buzzer family, and the extension chain
+  * until the production `DomainTypeScriptTranslator.translate()` body can
+  * consume `Domain` end-to-end (currently Phase A delegation to legacy
+  * `TypeScriptTranslator`).
+  */
+final class DomainTSContext(
+  val domain: Domain,
+  val parsed: DomainMeshResolved,
+  val options: TypescriptTranslatorOptions,
+) {
+  final val conv     = new DomainTSTypeConverter(domain)
+  final val modules  = new ModuleTools()
+  final val manifest = options.manifest
+
+  final val aliasRenderer     = new DomainTSAliasRenderer(this)
+  final val enumRenderer      = new DomainTSEnumRenderer(this)
+  final val idRenderer        = new DomainTSIdRenderer(this)
+  final val compositeRenderer = new DomainTSCompositeRenderer(this)
+  final val interfaceRenderer = new DomainTSInterfaceRenderer(this)
+  final val adtRenderer       = new DomainTSAdtRenderer(this)
+  final val serviceMethodProduct = new DomainTSServiceMethodProduct(this, adtRenderer)
+  final val serviceRenderer   = new DomainTSServiceRenderer(this, adtRenderer)
+
+  // IMPL-7b Phase B M4: default extensions ported to consume `Domain` directly.
+  // `DomainTSEnumHelpersExtension` + `DomainTSIntrospectionExtension` are the
+  // wire-format-bridging analogue of the Scala M5 Circe / Anyval / Cast
+  // family. M5/M6 wires these into the production translate() path; for now
+  // they are exercised only by the byte-parity specs.
+  final val enumHelpersExtension  = DomainTSEnumHelpersExtension
+  final val introspectionExtension = DomainTSIntrospectionExtension
+}

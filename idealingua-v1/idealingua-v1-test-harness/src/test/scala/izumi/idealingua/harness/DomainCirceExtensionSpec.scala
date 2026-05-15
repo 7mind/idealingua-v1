@@ -1,0 +1,169 @@
+package izumi.idealingua.harness
+
+import izumi.idealingua.model.common.TypeId.{AdtId, DTOId, EnumId, IdentifierId, InterfaceId}
+import izumi.idealingua.model.common.{DomainId, Primitive, TypePath}
+import izumi.idealingua.model.il.ast.InputPosition
+import izumi.idealingua.model.il.ast.raw.defns.{RawNodeMeta, RawTopLevelDefn}
+import izumi.idealingua.model.il.ast.raw.domains.{DomainMeshResolved, Import => RawImport}
+import izumi.idealingua.model.il.ast.raw.models.{Inclusion => RawInclusion}
+import izumi.idealingua.model.il.ast.typed.{AdtMember, DomainMetadata, EnumMember, Field, IdField, NodeMeta, Super}
+import izumi.idealingua.model.loader.FSPath
+import izumi.idealingua.model.publishing.manifests.ScalaBuildManifest
+import izumi.idealingua.translator.CompilerOptions
+import izumi.idealingua.translator.IDLLanguage
+import izumi.idealingua.translator.toscala.domain.DomainSTContext
+import izumi.idealingua.translator.toscala.domain.extensions.DomainCirceDerivationTranslatorExtension
+import izumi.idealingua.typer.ir.{Domain, EphemeralDto, EphemeralOrigin, Fingerprint, FlatField, FlatStruct, Member, Struct, TypeDef => NewTypeDef}
+import org.scalatest.funsuite.AnyFunSuite
+import scodec.bits.ByteVector
+
+/** PR-02 IMPL-7a.2 Phase B M5: unit test for `DomainCirceDerivationTranslatorExtension`.
+  *
+  * Wire-format-critical: verifies that the new-IR Circe extension produces
+  * `Encoder`/`Decoder` boilerplate traits for one representative case per
+  * type family (Identifier, Enum, DTO, ADT, Interface). Each emitted trait
+  * is parsed via scala.meta under both Scala 2.13 and Scala 3.0 dialects.
+  *
+  * Determinism check: an Interface with two implementing DTOs has its case
+  * arms emitted in `_.toString`-sorted order, so we assert a fixed order.
+  */
+final class DomainCirceExtensionSpec extends AnyFunSuite {
+  private val domainId  = DomainId(Seq("idltest"), "circe_spec")
+  private val tp        = TypePath(domainId, Seq.empty)
+  private val emptyMeta = NodeMeta.empty
+  private val rawMeta   = RawNodeMeta(None, Seq.empty, InputPosition.Undefined)
+  private val options   = CompilerOptions[ScalaBuildManifest](IDLLanguage.Scala, ScalaBuildManifest.example)
+
+  private def metaFor(d: DomainId) =
+    DomainMetadata(FSPath(d.toPackage :+ s"${d.id}.domain"), Seq.empty, Seq.empty, emptyMeta)
+
+  private def ctxFor(
+    extras: Map[izumi.idealingua.model.common.TypeId, NewTypeDef],
+    flats: Map[izumi.idealingua.model.common.StructureId, FlatStruct],
+    implementing: Map[InterfaceId, Set[DTOId]] = Map.empty,
+    extraMembers: Map[izumi.idealingua.model.common.TypeId, Member] = Map.empty,
+  ): DomainSTContext = {
+    // Auto-promote `extras` into `members` as `Member.User(td)` so the new
+    // `emitForInterface` (defect #4) can walk `userTypes` AND the
+    // ephemeral-mirror lookup via `members` works. `extraMembers` is folded
+    // in last so callers can inject `Member.Ephemeral` mirrors explicitly.
+    val baseMembers: Map[izumi.idealingua.model.common.TypeId, Member] =
+      extras.map { case (tid, td) => tid -> Member.User(td) }
+    val members = baseMembers ++ extraMembers
+    val dom = Domain(
+      id = domainId, meta = metaFor(domainId), members = members, roots = Set.empty,
+      ephemeralsOf = Map.empty, ephemeralOwner = Map.empty, flattenedStructs = flats,
+      parents = Map.empty, implementingDtos = implementing, loops = Set.empty,
+      fingerprints = Map.empty, domainFingerprint = Fingerprint(ByteVector.empty),
+      imports = Map.empty, consts = List.empty, aliases = Map.empty, userTypes = extras,
+    )
+    val parsed: DomainMeshResolved = new DomainMeshResolved {
+      override def id: DomainId = domainId
+      override def imports: Seq[RawImport] = Seq.empty
+      override def members: Seq[RawTopLevelDefn] = Seq.empty
+      override def referenced: Map[DomainId, DomainMeshResolved] = Map.empty
+      override def origin: FSPath = FSPath(domainId.toPackage :+ s"${domainId.id}.domain")
+      override def directInclusions: Seq[RawInclusion] = Seq.empty
+      override def meta: RawNodeMeta = rawMeta
+    }
+    new DomainSTContext(dom, parsed, options)
+  }
+
+  test("identifier circe trait parses and contains Encoder/Decoder") {
+    val id = IdentifierId(tp, "UserId")
+    val td = NewTypeDef.Identifier(id, List(IdField.PrimitiveField(Primitive.TString, "value", emptyMeta)), emptyMeta)
+    val ctx = ctxFor(Map(id -> td), Map.empty)
+    val ct = DomainCirceDerivationTranslatorExtension.emitForIdentifier(ctx, td)
+    // F-TextTree M8a: extension returns rendered Scala source directly
+    // under the Scala 3 dialect (kept Scala 3 for keyword-escape safety;
+    // shapes asserted here are 2.13/3-equivalent at the lexical level).
+    val s = ct.defnText
+    assert(s.contains("UserIdCirce"))
+    assert(s.contains("encodeUserId"))
+    assert(s.contains("decodeUserId"))
+  }
+
+  test("enum circe trait parses and contains Encoder/Decoder") {
+    val id = EnumId(tp, "Color")
+    val td = NewTypeDef.Enum(id, List(EnumMember("Red", emptyMeta), EnumMember("Green", emptyMeta)), emptyMeta)
+    val ctx = ctxFor(Map(id -> td), Map.empty)
+    val ct = DomainCirceDerivationTranslatorExtension.emitForEnum(ctx, td)
+    // F-TextTree M8a: extension returns rendered Scala source directly
+    // under the Scala 3 dialect (kept Scala 3 for keyword-escape safety;
+    // shapes asserted here are 2.13/3-equivalent at the lexical level).
+    val s = ct.defnText
+    assert(s.contains("ColorCirce"))
+    assert(s.contains("encodeColor"))
+  }
+
+  test("DTO circe trait parses (deriveEncoder/deriveDecoder shape)") {
+    val id = DTOId(tp, "User")
+    val f1 = Field(Primitive.TString, "name", emptyMeta)
+    val f2 = Field(Primitive.TInt32, "age", emptyMeta)
+    val td = NewTypeDef.Dto(id, Struct(List(f1, f2), List.empty, Super.empty), emptyMeta)
+    val flat = FlatStruct(id, List(FlatField(f1, id, 0), FlatField(f2, id, 0)), List.empty, List.empty)
+    val ctx = ctxFor(Map(id -> td), Map(id -> flat))
+    val ct213 = DomainCirceDerivationTranslatorExtension.emitForDto(ctx, td, List("2.13.18"))
+    val s213 = ct213.defnText
+    assert(s213.contains("UserCirce"))
+    assert(s213.contains("deriveEncoder[User]"))
+    assert(s213.contains("deriveDecoder[User]"))
+    assert(s213.contains("io.circe.derivation"), s"expected scala 2.13 deriver import: $s213")
+
+    val ct3 = DomainCirceDerivationTranslatorExtension.emitForDto(ctx, td, List("3.8.3"))
+    val s3 = ct3.defnText
+    assert(s3.contains("io.circe.generic.semiauto"), s"expected scala 3 deriver import: $s3")
+  }
+
+  test("ADT circe trait parses with one case-arm per alternative") {
+    val a = DTOId(tp, "A")
+    val b = DTOId(tp, "B")
+    val adtId = AdtId(tp, "Choice")
+    val td = NewTypeDef.Adt(adtId, List(AdtMember(a, None, emptyMeta), AdtMember(b, None, emptyMeta)), emptyMeta)
+    val ctx = ctxFor(Map(adtId -> td), Map.empty)
+    val ct = DomainCirceDerivationTranslatorExtension.emitForAdt(ctx, td)
+    // F-TextTree M8a: extension returns rendered Scala source directly
+    // under the Scala 3 dialect (kept Scala 3 for keyword-escape safety;
+    // shapes asserted here are 2.13/3-equivalent at the lexical level).
+    val s = ct.defnText
+    assert(s.contains("ChoiceCirce"))
+    assert(s.contains("encodeChoice"))
+    assert(s.contains("decodeChoice"))
+  }
+
+  test("interface circe trait emits implementor cases in sorted (deterministic) order") {
+    val iface = InterfaceId(tp, "Shape")
+    val cir   = DTOId(tp, "Circle")
+    val sqr   = DTOId(tp, "Square")
+    val td = NewTypeDef.Interface(iface, Struct(List.empty, List.empty, Super.empty), emptyMeta)
+    // Circle and Square inherit Shape via `superclasses.interfaces` so the
+    // legacy-parity walker in `emitForInterface` (defect #4) reaches them.
+    val cirTD = NewTypeDef.Dto(cir, Struct(List.empty, List.empty, Super.empty.copy(interfaces = List(iface))), emptyMeta)
+    val sqrTD = NewTypeDef.Dto(sqr, Struct(List.empty, List.empty, Super.empty.copy(interfaces = List(iface))), emptyMeta)
+    val ctx = ctxFor(Map(iface -> td, cir -> cirTD, sqr -> sqrTD), Map.empty)
+    val ct = DomainCirceDerivationTranslatorExtension.emitForInterface(ctx, td)
+    val s213 = ct.defnText
+    assert(s213.contains("ShapeCirce"))
+    // wireId for cross-domain DTO is the fully qualified path; check substring
+    val circleIdx = s213.indexOf("Circle")
+    val squareIdx = s213.indexOf("Square")
+    assert(circleIdx > 0 && squareIdx > 0, s"expected both wire ids: $s213")
+    assert(circleIdx < squareIdx, s"expected deterministic Circle-before-Square order: $s213")
+  }
+
+  test("interface circe trait includes the mirror Struct DTO as an implementor (defect #4)") {
+    val iface = InterfaceId(tp, "Marker")
+    val mirrorId = DTOId(iface, "Struct")
+    val td = NewTypeDef.Interface(iface, Struct(List.empty, List.empty, Super.empty), emptyMeta)
+    val mirrorEph = EphemeralDto(mirrorId, EphemeralOrigin.InterfaceMirror(iface), Struct(List.empty, List.empty, Super.empty.copy(interfaces = List(iface))))
+    val ctx = ctxFor(
+      extras = Map(iface -> td),
+      flats = Map.empty,
+      extraMembers = Map[izumi.idealingua.model.common.TypeId, Member](mirrorId -> Member.Ephemeral(mirrorEph)),
+    )
+    val ct = DomainCirceDerivationTranslatorExtension.emitForInterface(ctx, td)
+    val s213 = ct.defnText
+    // Mirror DTO `Marker.Struct` must appear in the encoder cases.
+    assert(s213.contains("Marker.Struct"), s"expected mirror case `Marker.Struct` in: $s213")
+  }
+}

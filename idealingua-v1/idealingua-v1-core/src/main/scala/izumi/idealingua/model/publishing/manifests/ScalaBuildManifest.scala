@@ -7,6 +7,7 @@ case class ScalaBuildManifest(
   common: Common,
   layout: ScalaProjectLayout,
   sbt: SbtOptions,
+  emitMcpBridge: Boolean = false,
 ) extends BuildManifest
 
 case class SbtOptions(

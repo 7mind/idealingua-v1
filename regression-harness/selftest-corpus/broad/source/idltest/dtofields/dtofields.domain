@@ -1,0 +1,11 @@
+domain idltest.dtofields
+
+mixin IntPair {
+  x: i32
+  y: i32
+}
+
+mixin WHPair {
+    w: i32
+    h: i32
+}

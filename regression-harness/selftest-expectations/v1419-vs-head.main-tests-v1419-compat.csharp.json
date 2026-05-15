@@ -1,0 +1,10 @@
+{
+  "comment": "X1 baseline for `idl-regress --old git:v1.4.19 --new self --lang csharp` against the v1.4.19-compatible subset (28 domains, coverage/ + blobtest excluded). F-DTO1-fieldorder (closed 2026-05-14): the DTO1 case-class / record field-order regression was diagnosed as accidental (Fe4 dedup rule mis-handling diamond inheritance) and fixed in DomainScalaStruct.fromFlat. v1.4.19's idlc compiles the corpus cleanly (269 .cs files); HEAD-with-fix now emits the same DTO1 field order. The hand-authored sample_app.cs under .idl-regression/ was simultaneously updated to use v1.4.19's positional argument order (`new DTO1(int, int, TVI, TVI, long, long, long, long)`), which now type-checks against both v1.4.19's and HEAD's emitted record. Expected outcome: zero divergences. Separate pre-existing C# adapter defect (`dotnet run` SYSLIB0014 stdout/stderr leak surfaced in R4) may surface if it has not been remediated upstream of this baseline — that defect is independent of F-DTO1-fieldorder and is tracked separately.",
+  "old": "git:v1.4.19",
+  "new": "self",
+  "lang": "csharp",
+  "corpus": "main-tests-v1419-compat",
+  "exit_kind": "zero-divergences",
+  "exit_code": 0,
+  "divergences": []
+}

@@ -1,0 +1,18 @@
+domain coverage.generics.mapkeys
+
+// R2 coverage: maps with non-string scalar key types (existing corpus uses only
+// `map[str, T]` and `map[string, T]`).
+
+enum MapKeyEnum {
+  Alpha
+  Beta
+  Gamma
+}
+
+data MapWithVariousKeys {
+  byInt32  : map[i32, str]
+  byInt64  : map[i64, str]
+  byUInt32 : map[u32, str]
+  byUuid   : map[uid, str]
+  byEnum   : map[MapKeyEnum, str]
+}

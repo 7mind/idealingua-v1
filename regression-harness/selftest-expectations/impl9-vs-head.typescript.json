@@ -1,0 +1,7 @@
+{
+  "comment": "Expected divergences for `idl-regress --old git:ea697f5 --new self --lang typescript` against the dtofields-only corpus. Empty per plan §9.2 — IMPL-9..IMPL-13 are typer modernization with an explicit byte-strict wire-format invariant. Any non-empty diff is a real audit signal that needs human evaluation.",
+  "old": "git:ea697f5",
+  "new": "self",
+  "lang": "typescript",
+  "divergences": []
+}

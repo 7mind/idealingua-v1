@@ -2,11 +2,9 @@ package izumi.idealingua.translator.totypescript
 
 import izumi.idealingua.model.publishing.BuildManifest
 import izumi.idealingua.model.publishing.manifests.TypeScriptBuildManifest
-import izumi.idealingua.model.typespace.Typespace
-import izumi.idealingua.model.typespace.verification.VerificationRule
-import izumi.idealingua.model.typespace.verification.rules.ReservedKeywordRule
 import izumi.idealingua.translator.CompilerOptions.TypescriptTranslatorOptions
 import izumi.idealingua.translator._
+import izumi.idealingua.translator.totypescript.domain.DomainTypeScriptTranslator
 import izumi.idealingua.translator.totypescript.layout.TypescriptLayouter
 
 object TypescriptTranslatorDescriptor extends TranslatorDescriptor[TypescriptTranslatorOptions] {
@@ -16,13 +14,11 @@ object TypescriptTranslatorDescriptor extends TranslatorDescriptor[TypescriptTra
 
   override def language: IDLLanguage = IDLLanguage.Typescript
 
-  override def defaultExtensions: Seq[TranslatorExtension] = TypeScriptTranslator.defaultExtensions
-
-  override def make(typespace: Typespace, options: UntypedCompilerOptions): Translator = new TypeScriptTranslator(typespace, typedOptions(options))
-
-  override def rules: Seq[VerificationRule] = Seq(
-    ReservedKeywordRule.warning("typescript", keywords)
-  )
+  override def makeDomain(
+    domain: izumi.idealingua.typer.ir.Domain,
+    parsed: izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved,
+    options: UntypedCompilerOptions,
+  ): Translator = new DomainTypeScriptTranslator(domain, parsed, typedOptions(options))
 
   override def makeHook(options: UntypedCompilerOptions): TranslationLayouter = new TypescriptLayouter(typedOptions(options))
 

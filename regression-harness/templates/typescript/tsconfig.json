@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2020",
+    "lib": ["es2020", "dom"],
+    "moduleResolution": "node",
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": false,
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "noImplicitReturns": false,
+    "outDir": "./out",
+    "rootDir": ".",
+    "sourceMap": false,
+    "baseUrl": ".",
+    "paths": {
+      "*": ["./*", "node_modules/*"]
+    }
+  },
+  "include": [
+    "sample_app.ts",
+    "irt/**/*.ts",
+    "idltest/**/*.ts",
+    "**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "out"
+  ]
+}

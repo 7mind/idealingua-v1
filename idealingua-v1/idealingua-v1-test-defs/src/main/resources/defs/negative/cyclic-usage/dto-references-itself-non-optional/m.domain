@@ -1,0 +1,5 @@
+domain test.cyclic.usage
+
+data Aa {
+  f: Aa
+}

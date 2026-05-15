@@ -81,24 +81,6 @@ function test_ts_plain_prj() {
   echo "IDL TEST DONE: $1"
 }
 
-function test_pb_prj() {
-  set -euo pipefail
-  echo "IDL TEST ABOUT TO START: $1"
-  testname="$(basename "$1")"
-  tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
-
-  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :protobuf"
-
-  pushd .
-  cd "$tmpdir/protobuf"
-
-  mkdir ./java-out
-  protoc --java_out=./java-out $(find ./ -iname '*.proto')
-
-  popd
-  echo "IDL TEST DONE: $1"
-}
-
 function test_cs_msbuild_prj() {
   set -euo pipefail
   echo "IDL TEST ABOUT TO START: $1"

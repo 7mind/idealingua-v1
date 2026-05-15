@@ -1,0 +1,12 @@
+domain coverage.usertypes.idsingle
+
+// R2 coverage: identifier with exactly one field (degenerate scalar id).
+// Existing fixtures all use 2+ field identifiers.
+
+id Singleton {
+  value: uid
+}
+
+data UsesId {
+  ref: Singleton
+}

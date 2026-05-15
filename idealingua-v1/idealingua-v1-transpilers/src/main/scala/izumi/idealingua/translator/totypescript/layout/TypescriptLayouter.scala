@@ -1,10 +1,8 @@
 package izumi.idealingua.translator.totypescript.layout
 
-import izumi.idealingua.model.common.TypeId.AliasId
 import izumi.idealingua.model.output.{Module, ModuleId}
 import izumi.idealingua.model.publishing.BuildManifest.ManifestDependency
 import izumi.idealingua.model.publishing.manifests.{TypeScriptBuildManifest, TypeScriptProjectLayout}
-import izumi.idealingua.model.typespace.Typespace
 import izumi.idealingua.translator.CompilerOptions.TypescriptTranslatorOptions
 import izumi.idealingua.translator._
 import io.circe.Json
@@ -34,12 +32,11 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
   }
 
   private def applyLayout(translated: Translated): Seq[ExtendedModule.DomainModule] = {
-    val ts = translated.typespace
     val modules = translated.modules ++ (
       if (options.manifest.layout == TypeScriptProjectLayout.YARN)
-        buildIndexModule(ts) :: buildPackageModule(ts).toList
+        buildPackageModule(translated).toList
       else
-        List(buildIndexModule(ts))
+        List.empty
     )
 
     val mm = if (options.manifest.layout == TypeScriptProjectLayout.YARN) {
@@ -50,7 +47,7 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
     } else {
       modules
     }
-    mm.map(m => ExtendedModule.DomainModule(translated.typespace.domain.id, m))
+    mm.map(m => ExtendedModule.DomainModule(translated.domainId, m))
   }
 
   private def buildRootModules(mf: TypeScriptBuildManifest): Seq[ExtendedModule.RuntimeModule] = {
@@ -158,13 +155,13 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
 
   private def esPostfix(name: String) = s"$name-es"
 
-  private def buildPackageModule(ts: Typespace): Seq[Module] = {
-    val allDeps = ts.domain.meta.directImports.map(i => ManifestDependency(naming.toScopedId(i.id.toPackage), mfVersion)) :+
+  private def buildPackageModule(translated: Translated): Seq[Module] = {
+    val allDeps = translated.meta.directImports.map(i => ManifestDependency(naming.toScopedId(i.id.toPackage), mfVersion)) :+
       ManifestDependency(naming.irtDependency, mfVersion)
-    val allDepsEs = ts.domain.meta.directImports.map(i => ManifestDependency(esPostfix(naming.toScopedId(i.id.toPackage)), mfVersion)) :+
+    val allDepsEs = translated.meta.directImports.map(i => ManifestDependency(esPostfix(naming.toScopedId(i.id.toPackage)), mfVersion)) :+
       ManifestDependency(esPostfix(naming.irtDependency), mfVersion)
 
-    val name   = naming.toScopedId(ts.domain.id.toPackage)
+    val name   = naming.toScopedId(translated.domainId.toPackage)
     val nameEs = esPostfix(name)
 
     val mf        = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDeps))
@@ -172,8 +169,8 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
     val content   = generatePackage(mf, Some("index"), name)
     val contentEs = generatePackage(mfEs, Some("index"), nameEs)
     Seq(
-      Module(ModuleId(ts.domain.id.toPackage, "package.json"), content.toString()),
-      Module(ModuleId(ts.domain.id.toPackage, "package.es.json"), contentEs.toString()),
+      Module(ModuleId(translated.domainId.toPackage, "package.json"), content.toString()),
+      Module(ModuleId(translated.domainId.toPackage, "package.es.json"), contentEs.toString()),
     )
   }
 
@@ -187,8 +184,8 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
   }
 
   private def buildBundlePackageModules(translated: Seq[Translated]): Seq[ExtendedModule.RuntimeModule] = {
-    val allDeps   = translated.map(ts => ManifestDependency(naming.toScopedId(ts.typespace.domain.id.toPackage), mfVersion))
-    val allDepsEs = translated.map(ts => ManifestDependency(esPostfix(naming.toScopedId(ts.typespace.domain.id.toPackage)), mfVersion))
+    val allDeps   = translated.map(t => ManifestDependency(naming.toScopedId(t.domainId.toPackage), mfVersion))
+    val allDepsEs = translated.map(t => ManifestDependency(esPostfix(naming.toScopedId(t.domainId.toPackage)), mfVersion))
 
     val mf        = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDeps))
     val mfEs      = options.manifest.copy(yarn = options.manifest.yarn.copy(dependencies = options.manifest.yarn.dependencies ++ allDepsEs))
@@ -203,18 +200,6 @@ class TypescriptLayouter(options: TypescriptTranslatorOptions) extends Translati
 
   private def mfVersion: String = {
     renderVersion(options.manifest.common.version)
-  }
-
-  private def buildIndexModule(ts: Typespace): Module = {
-    val content =
-      s"""// Auto-generated, any modifications may be overwritten in the future.
-         |// Exporting module for domain ${ts.domain.id.toPackage.mkString(".")}
-         |${ts.domain.types.filterNot(_.id.isInstanceOf[AliasId]).map(t => s"export * from './${t.id.name}';").mkString("\n")}
-         |${ts.domain.services.map(s => s"export * from './${s.id.name}';").mkString("\n")}
-         |${ts.domain.buzzers.map(s => s"export * from './${s.id.name}';").mkString("\n")}
-         """.stripMargin
-
-    Module(ModuleId(ts.domain.id.toPackage, "index.ts"), content)
   }
 
   private def generatePackage(manifest: TypeScriptBuildManifest, main: Option[String], name: String): Json = {

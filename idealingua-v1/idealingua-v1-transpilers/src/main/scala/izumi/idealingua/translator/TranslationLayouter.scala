@@ -24,7 +24,7 @@ case class Layouted(emodules: Seq[ExtendedModule]) {
 trait TranslationLayouter {
   def layout(outputs: Seq[Translated]): Layouted
 
-  protected def toRuntimeModules(options: CompilerOptions[?, ?]): Seq[ExtendedModule.RuntimeModule] = {
+  protected def toRuntimeModules(options: CompilerOptions[?]): Seq[ExtendedModule.RuntimeModule] = {
     for {
       rt <- options.providedRuntime.toSeq
       m  <- rt.modules
@@ -38,11 +38,11 @@ trait TranslationLayouter {
       g <- generated
       m <- g.modules
     } yield {
-      ExtendedModule.DomainModule(g.typespace.domain.id, m)
+      ExtendedModule.DomainModule(g.domainId, m)
     }
   }
 
-  protected def withRuntime(options: CompilerOptions[?, ?], generated: Seq[Translated]): Seq[ExtendedModule] = {
+  protected def withRuntime(options: CompilerOptions[?], generated: Seq[Translated]): Seq[ExtendedModule] = {
     toRuntimeModules(options) ++ toDomainModules(generated)
   }
 

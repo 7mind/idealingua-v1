@@ -1,0 +1,10 @@
+{
+  "comment": "X1 baseline for `idl-regress --old git:v1.4.19 --new self --lang scala` against the v1.4.19-compatible subset of `main-tests/source/`. The subset excludes (a) the 10 R2-added `coverage/*.domain` fixtures and (b) the F5-fix-added `idltest/blobtest.domain` (TBLOB → Array[Byte] mapping not implemented in v1.4.19's ScalaTypeConverter, raises `IDLException: No type->generic mappings implemented yet`). With those exclusions, v1.4.19's idlc compiles the corpus cleanly (29 → 28 domains, 214 .scala files emitted; matches HEAD's idlc on the same input). F-DTO1-fieldorder (closed 2026-05-14): the `izumi.test.domain02.DTO1` case-class field-order regression surfaced here under X1 was diagnosed as accidental — Fe4's `occurrences.maxBy(_.defn.distance)` dedup mis-handled diamond inheritance where the same-name field exists on a closer sibling AND a deeper recursive parent. The fix (DomainScalaStruct.fromFlat: legacy-DFS-position dedup) restores v1.4.19's emission order across the 4 affected wireIds (`DTO1`, `SomeResp.DTO1`, `TestAliasServ.OutTestADTIdImportedReturn.DTO1`, `TestAliasServ.OutTestADTIdReturn.DTO1`). The hand-authored sample_app.scala under .idl-regression/ was simultaneously updated to use v1.4.19's positional argument order (`new DTO1(i32, i32, TVI, TVI, i64, i64, i64, i64)`), which now type-checks against both v1.4.19's and HEAD's emitted case class. Expected outcome: zero divergences (wire-format-stable across v1.4.19 → HEAD-with-fix).",
+  "old": "git:v1.4.19",
+  "new": "self",
+  "lang": "scala",
+  "corpus": "main-tests-v1419-compat",
+  "exit_kind": "zero-divergences",
+  "exit_code": 0,
+  "divergences": []
+}

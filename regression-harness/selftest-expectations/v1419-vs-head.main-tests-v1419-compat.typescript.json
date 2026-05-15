@@ -1,0 +1,11 @@
+{
+  "comment": "X1 baseline for `idl-regress --old git:v1.4.19 --new self --lang typescript` against the v1.4.19-compatible subset (28 domains, coverage/ + blobtest excluded). **Zero divergences across 182 NDJSON lines** — TypeScript-emitted wire output is byte-stable across v1.4.19 → HEAD. Note: the Scala/C# legs of the same X1 baseline surface a DTO1 field-order regression in `izumi.test.domain02.DTO1`; TypeScript is INSENSITIVE to this regression because the TS sample-app uses object-literal construction `new DTO1({if1Field_overriden: 1, sameField: 2L, …})` rather than positional args. The TS-Serialized-interface field SET is identical between v1.4.19 and HEAD, so the same input object literal works against both, and `JSON.stringify(...serialize())` happens to emit fields in the same order on both sides (likely because both translators emit field-decl order in the `serialize()` method body the same way for this set of mixins). This is genuine wire-format-invariant evidence on the TS leg — DTO1's wire emission via TS is unchanged. Any future divergence here is a real signal worth investigating.",
+  "old": "git:v1.4.19",
+  "new": "self",
+  "lang": "typescript",
+  "corpus": "main-tests-v1419-compat",
+  "exit_kind": "zero-divergences",
+  "exit_code": 0,
+  "total_lines": 182,
+  "divergences": []
+}

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <RootNamespace>IdealinguaV1Harness.CSharpDriver</RootNamespace>
+    <AssemblyName>Driver</AssemblyName>
+    <NoWarn>CS0108;CS0114;CS0612;CS0618;CS8632;CS0162;CS0219</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- IRT runtime sources (skip Transport tree). -->
+    <Compile Include="../../../../idealingua-v1-runtime-rpc-csharp/src/main/resources/runtime/csharp/IRT/Marshaller/**/*.cs" />
+    <Compile Include="../../../../idealingua-v1-runtime-rpc-csharp/src/main/resources/runtime/csharp/IRT/Logger/**/*.cs" />
+    <Compile Include="../../../../idealingua-v1-runtime-rpc-csharp/src/main/resources/runtime/csharp/IRT/*.cs" />
+    <!-- Build-time generated C# sources (R1: replaces the retired
+         idealingua-v1-test-defs/golden/csharp/ tree). -->
+    <Compile Include="../../../target/generated-sources/test-harness/csharp/**/*.cs" />
+    <!-- Exclude service/buzzer sources that pull IRT.Transport.Client. -->
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Idltest/Services/TestService.cs" />
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Idltest/Events/TestBuzzer.cs" />
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Izumi/Test/Domain02/TestAliasServ.cs" />
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Izumi/Test/Domain02/NestedAdtsService.cs" />
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Izumi/Test/Domain02/ImportIdService.cs" />
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Izumi/Test/Domain01/OptionalService.cs" />
+    <!-- R2 coverage fixtures: same IRT.Transport.Client exclusion as the other services/buzzers. -->
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Coverage/Services/Alloutputs/AllOutputsService.cs" />
+    <Compile Remove="../../../target/generated-sources/test-harness/csharp/Coverage/Buzzers/Alloutputs/AllOutputsBuzzer.cs" />
+  </ItemGroup>
+</Project>

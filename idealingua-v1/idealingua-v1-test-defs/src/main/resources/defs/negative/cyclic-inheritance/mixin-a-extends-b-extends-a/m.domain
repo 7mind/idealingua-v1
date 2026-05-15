@@ -1,0 +1,9 @@
+domain test.cyclic.inheritance
+
+mixin Aa {
+  & Bb
+}
+
+mixin Bb {
+  & Aa
+}

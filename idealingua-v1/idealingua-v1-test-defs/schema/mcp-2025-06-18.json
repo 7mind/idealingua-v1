@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://modelcontextprotocol.io/schema/2025-06-18/ListToolsResult.json",
+  "title": "MCP ListToolsResult (spec 2025-06-18)",
+  "description": "Self-contained schema for the `tools/list` response envelope, extracted from https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/main/schema/2025-06-18/schema.json on 2026-05-14. The original schema declares many top-level definitions via $ref; this file inlines only the bits needed to validate the `ListToolsResult` envelope and per-`Tool` shape produced by idealingua-v1's schema emitter (PR-04 IMPL-MCP).",
+  "type": "object",
+  "required": ["tools"],
+  "properties": {
+    "_meta": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "nextCursor": { "type": "string" },
+    "tools": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Tool" }
+    }
+  },
+  "definitions": {
+    "Tool": {
+      "description": "Definition for a tool the client can call.",
+      "type": "object",
+      "required": ["name", "inputSchema"],
+      "properties": {
+        "_meta": { "type": "object", "additionalProperties": true },
+        "annotations": { "$ref": "#/definitions/ToolAnnotations" },
+        "description": { "type": "string" },
+        "inputSchema": { "$ref": "#/definitions/ToolSchema" },
+        "name": { "type": "string" },
+        "outputSchema": { "$ref": "#/definitions/ToolSchema" },
+        "title": { "type": "string" }
+      }
+    },
+    "ToolSchema": {
+      "description": "JSON-Schema-shaped object describing tool inputs/outputs. The MCP spec mandates `type: object` — see `#/definitions/Tool/properties/inputSchema` in the upstream schema.",
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "object" },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "ToolAnnotations": {
+      "type": "object",
+      "properties": {
+        "destructiveHint": { "type": "boolean" },
+        "idempotentHint":  { "type": "boolean" },
+        "openWorldHint":   { "type": "boolean" },
+        "readOnlyHint":    { "type": "boolean" },
+        "title":           { "type": "string" }
+      }
+    }
+  }
+}

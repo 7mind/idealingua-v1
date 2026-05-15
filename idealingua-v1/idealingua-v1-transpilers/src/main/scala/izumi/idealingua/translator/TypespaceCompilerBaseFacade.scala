@@ -2,9 +2,8 @@ package izumi.idealingua.translator
 
 import izumi.idealingua.model.loader.LoadedDomain
 import izumi.idealingua.translator.tocsharp.CSharpTranslatorDescriptor
-import izumi.idealingua.translator.togolang.GoTranslatorDescriptor
-import izumi.idealingua.translator.toprotobuf.ProtobufTranslatorDescriptor
 import izumi.idealingua.translator.toscala.ScalaTranslatorDescriptor
+import izumi.idealingua.translator.toschema.SchemaTranslatorDescriptor
 import izumi.idealingua.translator.totypescript.TypescriptTranslatorDescriptor
 
 class TypespaceCompilerBaseFacade(options: UntypedCompilerOptions) {
@@ -12,7 +11,11 @@ class TypespaceCompilerBaseFacade(options: UntypedCompilerOptions) {
     val descriptor = TypespaceCompilerBaseFacade.descriptor(options.language)
     val compiled = toCompile.map {
       loaded =>
-        descriptor.make(loaded.typespace, options).translate()
+        // PR-02 IMPL-13: the new-typer pipeline is run once per domain at
+        // load time inside `ModelResolver`; its result is materialised on
+        // `LoadedDomain.Success.domain`.  Translators read it directly — no
+        // lazy re-run, no IDLException throw-bridge.
+        descriptor.makeDomain(loaded.domain, loaded.parsed, options).translate()
     }
 
     val hook = descriptor.makeHook(options)
@@ -27,10 +30,9 @@ object TypespaceCompilerBaseFacade {
 
   val descriptors: Seq[TranslatorDescriptor[?]] = Seq(
     ScalaTranslatorDescriptor,
-    GoTranslatorDescriptor,
     TypescriptTranslatorDescriptor,
     CSharpTranslatorDescriptor,
-    ProtobufTranslatorDescriptor,
+    SchemaTranslatorDescriptor,
   )
 
   private def descriptorsMap: Map[IDLLanguage, TranslatorDescriptor[?]] = descriptors.map(d => d.language -> d).toMap

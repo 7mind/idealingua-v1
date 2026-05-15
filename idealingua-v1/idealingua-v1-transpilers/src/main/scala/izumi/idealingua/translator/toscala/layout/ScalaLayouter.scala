@@ -35,7 +35,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
       case ScalaProjectLayout.SBT =>
         val projectModules = outputs.flatMap {
           out =>
-            val did = out.typespace.domain.id
+            val did = out.domainId
 
             asSbtModule(out.modules, did)
               .map(m => ExtendedModule.DomainModule(did, m))
@@ -48,7 +48,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
         val projects = outputs.map {
           out =>
-            naming.projectId(out.typespace.domain.id) -> out
+            naming.projectId(out.domainId) -> out
         }.toMap
 
         val projIds = projects.keys.toList.sorted
@@ -74,7 +74,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
         val projDefs = projIds.map {
           id =>
             val d    = projects(id)
-            val deps = d.typespace.domain.meta.directImports.map(i => s"`${naming.projectId(i.id)}`")
+            val deps = d.meta.directImports.map(i => s"`${naming.projectId(i.id)}`")
 
             val depends = if (deps.nonEmpty) {
               deps.mkString("\n  .dependsOn(\n    ", ",\n    ", "\n  )")
@@ -191,7 +191,12 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
     out.map {
       m =>
         val pid = naming.projectId(did)
-        m.copy(id = m.id.copy(path = Seq(pid, "src", "main", "scala") ++ m.id.path))
+        // PR-04 MCP Mb1: modules tagged `meta("resource") == "true"` (e.g. the
+        // per-service `mcp/<Name>.mcp.json` companion the bridge code reads
+        // via `getResourceAsStream`) route to `src/main/resources/` so they
+        // land on the classpath as resources, not as Scala sources.
+        val srcDir = if (m.meta.get("resource").contains("true")) "resources" else "scala"
+        m.copy(id = m.id.copy(path = Seq(pid, "src", "main", srcDir) ++ m.id.path))
     }
   }
 
