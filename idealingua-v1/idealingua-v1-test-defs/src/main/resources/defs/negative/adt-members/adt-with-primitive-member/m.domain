@@ -1,0 +1,5 @@
+domain test.adt.members
+
+adt Aa {
+  i32
+}

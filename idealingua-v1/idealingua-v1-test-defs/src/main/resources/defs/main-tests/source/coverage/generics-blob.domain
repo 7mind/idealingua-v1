@@ -1,0 +1,12 @@
+domain coverage.generics.blob
+
+// R2 coverage: TBLOB inside every generic container.
+// Complements `idltest.blobtest.BlobHolder`, which only exercises a bare TBLOB field.
+
+data BlobContainers {
+  one      : blb
+  optional : opt[blb]
+  many     : list[blb]
+  unique   : set[blb]
+  labelled : map[str, blb]
+}

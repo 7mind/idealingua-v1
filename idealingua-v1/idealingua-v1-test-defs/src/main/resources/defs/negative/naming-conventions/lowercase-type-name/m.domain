@@ -1,0 +1,5 @@
+domain test.naming.conventions
+
+data lowercaseName {
+  ff: i32
+}

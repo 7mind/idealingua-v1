@@ -1,0 +1,5 @@
+domain test.id.nonscalar
+
+id Yy {
+  items: lst[i32]
+}

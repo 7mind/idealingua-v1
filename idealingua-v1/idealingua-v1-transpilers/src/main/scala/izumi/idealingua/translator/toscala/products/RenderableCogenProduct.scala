@@ -21,7 +21,13 @@ object RenderableCogenProduct {
 trait UnaryCogenProduct[T <: Defn] extends RenderableCogenProduct {
   def defn: T
 
-  override def render: List[Defn] = List(defn)
+  /** F-TextTree M8a: hook that lets subclasses splice String-typed base
+    * lists (e.g. AnyVal mixin) into the inner `Defn`'s template before
+    * the carrier emits it. Default is identity — preserves the legacy
+    * shape for `TraitProduct` and other non-extension carriers. */
+  def defnEffective: T = defn
+
+  override def render: List[Defn] = List(defnEffective)
 }
 
 trait MultipleCogenProduct[T <: Defn] extends UnaryCogenProduct[T] {
@@ -37,6 +43,10 @@ trait MultipleCogenProduct[T <: Defn] extends UnaryCogenProduct[T] {
 trait AccompaniedCogenProduct[T <: Defn] extends MultipleCogenProduct[T] {
   def companion: Defn.Object
 
+  /** F-TextTree M8a: hook for String-typed top-level sibling fragments
+    * (Circe trait, etc.). Parsed and spliced at carrier render time. */
+  def extraSiblings: List[Defn] = List.empty
+
   protected def filterEmptyClasses(defns: List[Defn.Class]): List[Defn.Class] = {
     defns.filterNot(p => isEmpty(p.templ))
   }
@@ -48,6 +58,6 @@ trait AccompaniedCogenProduct[T <: Defn] extends MultipleCogenProduct[T] {
   private def isEmpty(t: Template): Boolean = t.body.stats.isEmpty && t.inits.isEmpty
 
   override def render: List[Defn] = {
-    super.render ++ filterEmptyObjects(List(companion))
+    super.render ++ extraSiblings ++ filterEmptyObjects(List(companion))
   }
 }

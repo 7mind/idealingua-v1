@@ -1,0 +1,35 @@
+domain coverage.services.allsouts
+
+// R2 coverage: one service exercising every Output variant in a single file.
+// Existing `idltest.services.TestService` is sprawling and not all variants are
+// adjacent; this fixture keeps them next to each other for translator/MCP audit.
+
+data Greeting {
+  text: str
+}
+
+data ErrorPayload {
+  code: i32
+  message: str
+}
+
+service AllOutputsService {
+
+  // Output.Void
+  def void()
+
+  // Output.Singular(primitive)
+  def singularPrimitive(): str
+
+  // Output.Singular(DTO)
+  def singularDto(): Greeting
+
+  // Output.Struct (implicit, multi-field)
+  def implicitStruct() => (greeting: str, count: i32)
+
+  // Output.Algebraic (inline alternation)
+  def algebraic() => (Greeting | ErrorPayload)
+
+  // Output.Alternative (success !! failure)
+  def alternative() => Greeting !! ErrorPayload
+}

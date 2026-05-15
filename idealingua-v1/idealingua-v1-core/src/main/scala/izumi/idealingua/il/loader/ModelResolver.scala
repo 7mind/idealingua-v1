@@ -1,16 +1,25 @@
 package izumi.idealingua.il.loader
 
-import izumi.fundamentals.platform.exceptions.IzThrowable._
 import izumi.idealingua.il.loader.verification.DuplicateDomainsRule
-import izumi.idealingua.model.il.ast.IDLTyper
 import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.model.loader._
 import izumi.idealingua.model.problems.IDLDiagnostics
-import izumi.idealingua.model.problems.TypespaceError.VerificationException
-import izumi.idealingua.model.typespace.verification.{TypespaceVerifier, VerificationRule}
-import izumi.idealingua.model.typespace.{Typespace, TypespaceImpl}
+import izumi.idealingua.typer.NewTyperPipeline
 
-class ModelResolver(rules: Seq[VerificationRule]) {
+/** Loader-side wrapper that resolves cross-domain references, runs the new
+  * phase-based typer, and collects post-resolution diagnostics.
+  *
+  * PR-02 IMPL-10d collapsed the legacy two-phase typing/verification pipeline
+  * (`IDLTyper` + `TypespaceVerifier`): both are gone.
+  *
+  * PR-02 IMPL-13: typing moves from translate-time to load-time.  Each
+  * successfully-resolved mesh is fed to `NewTyperPipeline.run`; on `Left(diags)`
+  * the loader emits `LoadedDomain.VerificationFailed`, on `Right(domain)`
+  * `LoadedDomain.Success(path, parsed, domain, warnings = Vector.empty)`.
+  * Translators read `loaded.domain` directly — the pipeline is no longer
+  * re-invoked per translator.
+  */
+class ModelResolver() {
 
   def resolve(domains: UnresolvedDomains): LoadedModels = {
     val globalChecks = Seq(
@@ -18,9 +27,26 @@ class ModelResolver(rules: Seq[VerificationRule]) {
     )
     val importResolver = new ExternalRefResolver(domains)
 
-    val typed = domains.domains.results
+    val typedRaw = domains.domains.results
       .map(importResolver.resolveReferences)
-      .map(makeTyped)
+      .map(makeLoaded)
+
+    // Family-level post-pass: enrich each Domain's `aliases` map with
+    // cross-domain entries so translator dealias sites can resolve a foreign
+    // `AliasId` whose target was declared in an imported domain. The per-domain
+    // `AliasDealiaser` runs in isolation and never sees the foreign target;
+    // without this pass `domain.aliases.get(foreignAliasId)` returns None and
+    // dealias sites either throw or treat the AliasId as its own terminal
+    // (both diverge from the legacy `TypespaceImpl.dealias` semantics, which
+    // walked `transitivelyReferenced` for cross-domain lookups).
+    val successes      = typedRaw.collect { case s: LoadedDomain.Success => s }
+    val enrichedByFam  = NewTyperPipeline.finalizeCrossDomainAliases(successes.map(_.domain))
+    val successByDom   = successes.zip(enrichedByFam).map { case (ls, d) => ls.copy(domain = d) }
+    val replacements: Map[String, LoadedDomain.Success] = successByDom.map(s => s.parsed.id.toString -> s).toMap
+    val typed: Seq[LoadedDomain] = typedRaw.map {
+      case s: LoadedDomain.Success => replacements.getOrElse(s.parsed.id.toString, s)
+      case other                    => other
+    }
 
     val result = LoadedModels(typed, IDLDiagnostics.empty)
 
@@ -29,35 +55,16 @@ class ModelResolver(rules: Seq[VerificationRule]) {
     result.withDiagnostics(postDiag)
   }
 
-  private def makeTyped(f: Either[LoadedDomain.Failure, DomainMeshResolved]): LoadedDomain = {
-    (for {
-      d      <- f
-      ts     <- runTyper(d)
-      result <- runVerifier(ts)
-    } yield {
-      result
-    }).fold(identity, identity)
+  private def makeLoaded(f: Either[LoadedDomain.Failure, DomainMeshResolved]): LoadedDomain = {
+    f.fold(identity, runNewTyper)
   }
 
-  private def runVerifier(ts: Typespace): Either[LoadedDomain.VerificationFailed, LoadedDomain.Success] = {
-    try {
-      val issues = new TypespaceVerifier(ts, rules).verify()
-      if (issues.issues.isEmpty) {
-        Right(LoadedDomain.Success(ts.domain.meta.origin, ts, issues.warnings))
-      } else {
-        Left(LoadedDomain.VerificationFailed(ts.domain.meta.origin, ts.domain.id, issues))
-      }
-    } catch {
-      case t: Throwable =>
-        Left(LoadedDomain.VerificationFailed(ts.domain.meta.origin, ts.domain.id, IDLDiagnostics(Vector(VerificationException(t.stacktraceString)))))
+  private def runNewTyper(parsed: DomainMeshResolved): LoadedDomain = {
+    NewTyperPipeline.run(parsed) match {
+      case Right(domain) =>
+        LoadedDomain.Success(parsed.origin, parsed, domain, warnings = Vector.empty)
+      case Left(diagnostics) =>
+        LoadedDomain.VerificationFailed(parsed.origin, parsed.id, diagnostics, warnings = Vector.empty)
     }
-  }
-
-  private def runTyper(d: DomainMeshResolved): Either[LoadedDomain.TyperFailed, TypespaceImpl] = {
-    (for {
-      domain <- new IDLTyper(d).perform()
-    } yield {
-      new TypespaceImpl(domain)
-    }).fold(issues => Left(LoadedDomain.TyperFailed(d.origin, d.id, issues)), Right.apply)
   }
 }

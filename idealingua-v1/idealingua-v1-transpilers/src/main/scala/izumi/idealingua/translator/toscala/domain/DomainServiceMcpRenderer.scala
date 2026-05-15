@@ -1,0 +1,268 @@
+package izumi.idealingua.translator.toscala.domain
+
+import io.circe.{Json, Printer}
+import izumi.idealingua.model.il.ast.typed.DefMethod
+import izumi.idealingua.translator.toschema.domain.{SchemaMethodOutput, SchemaTypeResolver}
+import izumi.idealingua.typer.ir.{Domain, TypeDef}
+
+/** MCP / HTTP4s bridge codegen — emits a `<ServiceName>Mcp.scala` source
+  * file alongside the existing `<ServiceName>.scala` plus a classpath
+  * resource `mcp/<ServiceName>.mcp.json` carrying the MCP `ListToolsResult`
+  * envelope.
+  *
+  * Per plan §3.1, §6, §9 (D9). Gated by `ScalaBuildManifest.emitMcpBridge`
+  * (default `false`). Mb2 scope: all 5 `Output` variants (Void / Singular /
+  * Struct / Algebraic / Alternative) dispatch uniformly through
+  * `mux.invokeMethod` per plan D5; the per-method static `wrap` flag is
+  * derived from `OutputWrapPolicy.isWrapped` (§3.2).
+  *
+  * The bridge:
+  *   - Has zero per-method codec references — `IRTServerMultiplexor.invokeMethod`
+  *     does all codec work.
+  *   - Loads `tools/list` from classpath resource `mcp/<ServiceName>.mcp.json`
+  *     at first access (D8(b)).
+  *   - Routes via pattern-match on the tool `name`
+  *     (`<pkg>.<ServiceName>.<methodName>`, D10/D22).
+  *   - Wraps non-object responses in `{"result": <raw>}` per the static
+  *     compile-time `wrap` flag derived from `OutputWrapPolicy.isWrapped`.
+  *   - Emits MCP-spec error envelopes (`isError: true`) for in-band failures;
+  *     HTTP 4xx/5xx reserved for transport-layer failures.
+  *
+  * Buzzers are skipped per D11(b).
+  *
+  * @see docs/drafts/20260514-mcp-http4s-bridge-plan.md
+  */
+final class DomainServiceMcpRenderer(domain: Domain) {
+
+  private val schemaResolver = new SchemaTypeResolver(domain)
+  private val methodOutput   = new SchemaMethodOutput(schemaResolver)
+  private val jsonPrinter    = Printer.spaces2.copy(dropNullValues = false)
+
+  /** Render the bridge code + the per-service `*.mcp.json` resource for one
+    * service. Returns the pair `(scalaSource, resourceJson)`.
+    */
+  def render(service: TypeDef.Service): (String, String) = {
+    val pkg     = domain.id.toPackage.mkString(".")
+    val svcName = service.id.name
+    val rpcs    = service.methods.collect { case rpc: DefMethod.RPCMethod => rpc }
+    val scalaSrc = renderScalaSource(pkg, svcName, rpcs)
+    val json     = renderResource(service, rpcs)
+    (scalaSrc, json)
+  }
+
+  /** Re-emit the per-service `*.mcp.json` envelope verbatim from the schema
+    * renderer so wrap-policy comes from the same compiler pass (R6 mitigation).
+    */
+  private def renderResource(service: TypeDef.Service, rpcs: List[DefMethod.RPCMethod]): String = {
+    val tools = rpcs.map { m =>
+      val pkg          = domain.id.toPackage.mkString(".")
+      val svcName      = service.id.name
+      val methodCap    = m.name.capitalize
+      val toolName     = s"$pkg.$svcName.${m.name}"
+      val svcWireId    = service.id.wireId
+      val inputWireId  = s"$svcWireId.${methodCap}Input"
+      val outputWireId = s"$svcWireId.${methodCap}Output"
+      val description  = m.meta.doc.getOrElse("")
+      val fields       = scala.collection.mutable.LinkedHashMap.empty[String, Json]
+      fields += "name"                          -> Json.fromString(toolName)
+      fields += "description"                   -> Json.fromString(description)
+      fields += "inputSchema"                   -> methodOutput.structSchema(m.signature.input)
+      fields += "outputSchema"                  -> methodOutput.dispatch(m.signature.output)
+      fields += "x-idealingua-wire-type-input"  -> Json.fromString(inputWireId)
+      fields += "x-idealingua-wire-type-output" -> Json.fromString(outputWireId)
+      fields += "x-idealingua-kind"             -> Json.fromString("rpc")
+      Json.fromFields(fields.toList)
+    }
+    jsonPrinter.print(Json.obj("tools" -> Json.fromValues(tools))) + "\n"
+  }
+
+  private def renderScalaSource(pkg: String, svcName: String, rpcs: List[DefMethod.RPCMethod]): String = {
+    val pkgDecl = if (pkg.isEmpty) "" else s"package $pkg\n\n"
+
+    val perMethodConsts = rpcs.map(rpc => renderMethodConsts(pkg, svcName, rpc)).mkString("\n")
+
+    val matchArms = rpcs.map(renderMatchArm).mkString("\n")
+
+    val fallthroughPrefix = s""""$pkg.$svcName.""""
+
+    s"""${pkgDecl}import _root_.cats.effect.Async
+       |import _root_.io.circe.{Json, parser}
+       |import izumi.functional.bio.{Error2, Exit, IO2}
+       |import izumi.idealingua.runtime.rpc.{
+       |  IRTDecodingException,
+       |  IRTGenericFailure,
+       |  IRTLimitReachedException,
+       |  IRTMethodId,
+       |  IRTMethodName,
+       |  IRTMissingHandlerException,
+       |  IRTServerMultiplexor,
+       |  IRTServiceId,
+       |  IRTTypeMismatchException,
+       |  IRTUnathorizedRequestContextException,
+       |  IRTUnparseableDataException,
+       |}
+       |import org.http4s.{HttpRoutes, Request, Response}
+       |import org.http4s.circe._
+       |import org.http4s.dsl.Http4sDsl
+       |
+       |/** MCP / HTTP4s bridge for `$svcName`. Generated by
+       |  * `DomainServiceMcpRenderer` per plan §3.1. Mb2 scope: all 5
+       |  * `Output` variants (Void / Singular / Struct / Algebraic /
+       |  * Alternative) dispatch uniformly through `mux.invokeMethod` per
+       |  * plan D5; the static `wrap` flag is derived from
+       |  * `OutputWrapPolicy.isWrapped` (§3.2).
+       |  *
+       |  * Effect typeclasses: bifunctor `F[+_, +_]: IO2: Error2` is the
+       |  * user-facing surface (mirrors the IRT runtime + plan D3); http4s
+       |  * routes additionally need `cats.effect.Async[F[Throwable, _]]` at the
+       |  * edge for its DSL (`Ok(...)`, `req.as[Json]`, etc.) — same pattern
+       |  * `HttpServer.scala` uses.
+       |  */
+       |object ${svcName}McpRoutes {
+       |
+       |  /** tools/list envelope loaded from classpath resource at first access
+       |    * (D8(b)). The translator emits `mcp/$svcName.mcp.json` alongside
+       |    * this source file when `emitMcpBridge = true`.
+       |    */
+       |  private lazy val toolsListJson: Json = {
+       |    val stream = getClass.getClassLoader.getResourceAsStream("mcp/$svcName.mcp.json")
+       |    require(stream != null, "Missing classpath resource: mcp/$svcName.mcp.json")
+       |    try parser.parse(scala.io.Source.fromInputStream(stream, "UTF-8").mkString).toTry.get
+       |    finally stream.close()
+       |  }
+       |
+       |$perMethodConsts
+       |
+       |  def routes[F[+_, +_]: IO2: Error2, C](
+       |    mux: IRTServerMultiplexor[F, C],
+       |    extractCtx: Request[F[Throwable, _]] => F[Throwable, C],
+       |    dsl: Http4sDsl[F[Throwable, _]],
+       |  )(implicit AT: Async[F[Throwable, _]]
+       |  ): HttpRoutes[F[Throwable, _]] = {
+       |    import dsl._
+       |    HttpRoutes.of[F[Throwable, _]] {
+       |      case GET -> Root / "mcp" / "tools" / "list" =>
+       |        Ok(toolsListJson)
+       |
+       |      case req @ POST -> Root / "mcp" / "tools" / "call" =>
+       |        req.as[Json].flatMap { body =>
+       |          val nameOpt  = body.hcursor.downField("name").as[String].toOption
+       |          val argsJson = body.hcursor.downField("arguments").as[Json].getOrElse(Json.obj())
+       |          nameOpt match {
+       |$matchArms
+       |            case Some(other) if other.startsWith($fallthroughPrefix) =>
+       |              Ok(mcpError(-32601, s"Method not found: $$other"))
+       |            case _ =>
+       |              NotFound()
+       |          }
+       |        }
+       |    }
+       |  }
+       |
+       |  private def call[F[+_, +_]: IO2: Error2, C](
+       |    req: Request[F[Throwable, _]],
+       |    args: Json,
+       |    methodId: IRTMethodId,
+       |    wrap: Boolean,
+       |    extractCtx: Request[F[Throwable, _]] => F[Throwable, C],
+       |    mux: IRTServerMultiplexor[F, C],
+       |    dsl: Http4sDsl[F[Throwable, _]],
+       |  )(implicit AT: Async[F[Throwable, _]]
+       |  ): F[Throwable, Response[F[Throwable, _]]] = {
+       |    import dsl._
+       |    (for {
+       |      ctx <- extractCtx(req)
+       |      raw <- mux.invokeMethod(methodId)(ctx, args)
+       |    } yield {
+       |      val shaped = if (wrap) Json.obj("result" -> raw) else raw
+       |      Json.obj(
+       |        "content" -> Json.arr(Json.obj(
+       |          "type" -> Json.fromString("text"),
+       |          "text" -> Json.fromString(shaped.noSpaces),
+       |        )),
+       |        "structuredContent" -> shaped,
+       |        "isError"           -> Json.False,
+       |      )
+       |    }).sandboxExit.flatMap {
+       |      // Plan §9 mapping: IRT semantic failures surface in-band as MCP
+       |      // `isError:true` envelopes (HTTP 200). Out-of-band HTTP statuses
+       |      // are reserved for transport-layer failures (malformed body,
+       |      // route mismatch, unhandled middleware exception) — those are
+       |      // already produced by http4s before this `call` runs.
+       |      // Codes follow JSON-RPC 2.0 reserved range: -32700 parse,
+       |      // -32601 method-not-found, -32602 invalid-params, -32603 internal,
+       |      // -32000..-32099 server-defined (rate-limit, unauthorized).
+       |      // Diverges from `HttpServer.handleHttpResult` (HTTP 401, 429) per
+       |      // plan §9: MCP semantics treat auth + rate-limit as tool-level
+       |      // failures, not transport-level.
+       |      // Underlying `getMessage` is surfaced for decoding errors; we
+       |      // deliberately do NOT surface stack traces or causes (avoid
+       |      // leaking server internals).
+       |      case Exit.Success(j) => Ok(j)
+       |      case Exit.Error(_: IRTMissingHandlerException, _) =>
+       |        Ok(mcpError(-32601, s"Method not found: $${methodId.service.value}.$${methodId.methodId.value}"))
+       |      case Exit.Error(e: IRTUnparseableDataException, _) =>
+       |        Ok(mcpError(-32700, s"Parse error: $${safeMsg(e)}"))
+       |      case Exit.Error(e: IRTTypeMismatchException, _) =>
+       |        Ok(mcpError(-32602, s"Invalid arguments (type mismatch): $${safeMsg(e)}"))
+       |      case Exit.Error(e: IRTDecodingException, _) =>
+       |        Ok(mcpError(-32602, s"Invalid arguments: $${safeMsg(e)}"))
+       |      case Exit.Error(e: _root_.io.circe.Error, _) =>
+       |        Ok(mcpError(-32602, s"Invalid arguments: $${safeMsg(e)}"))
+       |      case Exit.Error(e: IRTLimitReachedException, _) =>
+       |        Ok(mcpError(-32000, s"Rate limit exceeded: $${safeMsg(e)}"))
+       |      case Exit.Error(_: IRTUnathorizedRequestContextException, _) =>
+       |        Ok(mcpError(-32001, "Unauthorized"))
+       |      case Exit.Error(_: IRTGenericFailure, _) =>
+       |        Ok(mcpError(-32603, "Internal error"))
+       |      case _ =>
+       |        Ok(mcpError(-32603, "Internal error"))
+       |    }
+       |  }
+       |
+       |  /** Surface the exception's own message only — never the cause chain
+       |    * or stack trace — and fall back to the class name if `getMessage`
+       |    * is `null`. Prevents leaking server internals (file paths,
+       |    * library-version strings, host names) into the MCP envelope.
+       |    */
+       |  private def safeMsg(t: Throwable): String = {
+       |    val m = t.getMessage
+       |    if (m == null) t.getClass.getSimpleName else m
+       |  }
+       |
+       |  private def mcpError(code: Int, msg: String): Json = Json.obj(
+       |    "content"           -> Json.arr(Json.obj(
+       |      "type" -> Json.fromString("text"),
+       |      "text" -> Json.fromString(msg),
+       |    )),
+       |    "structuredContent" -> Json.obj(
+       |      "error" -> Json.obj(
+       |        "code"    -> Json.fromInt(code),
+       |        "message" -> Json.fromString(msg),
+       |      )
+       |    ),
+       |    "isError"           -> Json.True,
+       |  )
+       |}
+       |""".stripMargin
+  }
+
+  private def renderMethodConsts(pkg: String, svcName: String, rpc: DefMethod.RPCMethod): String = {
+    val mName = rpc.name
+    s"""  private val toolName_$mName = "$pkg.$svcName.$mName"""" + "\n" +
+      s"""  private val methodId_$mName = IRTMethodId(IRTServiceId("$svcName"), IRTMethodName("$mName"))"""
+  }
+
+  /** Pattern-match arm. Mb2: all 5 `Output` variants dispatch uniformly
+    * through `call(...)` -> `mux.invokeMethod` (D5). The static `wrap` flag
+    * is derived from `OutputWrapPolicy.isWrapped` (D6 / §3.2) and determines
+    * whether the raw response gets envelope'd into `{"result": <raw>}`.
+    */
+  private def renderMatchArm(rpc: DefMethod.RPCMethod): String = {
+    val mName   = rpc.name
+    val wrap    = OutputWrapPolicy.isWrapped(rpc.signature.output)
+    val wrapLit = if (wrap) "true" else "false"
+    s"""            case Some(`toolName_$mName`) =>
+       |              call(req, argsJson, methodId_$mName, wrap = $wrapLit, extractCtx, mux, dsl)""".stripMargin
+  }
+}

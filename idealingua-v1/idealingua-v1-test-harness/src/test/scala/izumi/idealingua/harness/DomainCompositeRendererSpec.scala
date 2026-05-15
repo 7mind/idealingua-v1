@@ -1,0 +1,135 @@
+package izumi.idealingua.harness
+
+import izumi.idealingua.model.common.TypeId.DTOId
+import izumi.idealingua.model.common.{DomainId, Primitive, TypePath}
+import izumi.idealingua.model.il.ast.InputPosition
+import izumi.idealingua.model.il.ast.raw.defns.{RawNodeMeta, RawTopLevelDefn}
+import izumi.idealingua.model.il.ast.raw.domains.{DomainMeshResolved, Import => RawImport}
+import izumi.idealingua.model.il.ast.raw.models.{Inclusion => RawInclusion}
+import izumi.idealingua.model.il.ast.typed.{DomainMetadata, Field, NodeMeta, Super}
+import izumi.idealingua.model.loader.FSPath
+import izumi.idealingua.model.publishing.manifests.ScalaBuildManifest
+import izumi.idealingua.translator.CompilerOptions
+import izumi.idealingua.translator.IDLLanguage
+import izumi.idealingua.translator.toscala.domain.DomainSTContext
+import izumi.idealingua.typer.ir.{Domain, Fingerprint, FlatField, FlatStruct, Struct, TypeDef => NewTypeDef}
+import org.scalatest.funsuite.AnyFunSuite
+import scodec.bits.ByteVector
+
+/** PR-02 IMPL-7a.2 Phase B M3: structural-correctness unit test for
+  * `DomainCompositeRenderer`.
+  */
+final class DomainCompositeRendererSpec extends AnyFunSuite {
+
+  private val domainId   = DomainId(Seq("idltest"), "dto_render_spec")
+  private val typePath   = TypePath(domainId, Seq.empty)
+  private val emptyMeta  = NodeMeta.empty
+  private val rawMeta    = RawNodeMeta(None, Seq.empty, InputPosition.Undefined)
+  private val scalaBuild = ScalaBuildManifest.example
+  private val options    = CompilerOptions[ScalaBuildManifest](IDLLanguage.Scala, scalaBuild)
+
+  private def renderSyntax(tree: scala.meta.Tree, isScala3: Boolean): String = {
+    import scala.meta.*
+    val dialect = if (isScala3) scala.meta.dialects.Scala30 else scala.meta.dialects.Scala213
+    dialect(tree).syntax
+  }
+
+  private def metaFor(domainId: DomainId): DomainMetadata =
+    DomainMetadata(
+      origin           = FSPath(domainId.toPackage :+ s"${domainId.id}.domain"),
+      directInclusions = Seq.empty,
+      directImports    = Seq.empty,
+      meta             = emptyMeta,
+    )
+
+  private def newCtxFor(domainId: DomainId, dtoId: DTOId, fields: List[Field]): DomainSTContext = {
+    val flat = FlatStruct(
+      ownerId       = dtoId,
+      fields        = fields.map(f => FlatField(f, dtoId, 0)),
+      conflictsHard = List.empty,
+      conflictsSoft = List.empty,
+    )
+    val newDomain = Domain(
+      id                = domainId,
+      meta              = metaFor(domainId),
+      members           = Map.empty,
+      roots             = Set(dtoId: izumi.idealingua.model.common.TypeId),
+      ephemeralsOf      = Map.empty,
+      ephemeralOwner    = Map.empty,
+      flattenedStructs  = Map(dtoId -> flat),
+      parents           = Map.empty,
+      implementingDtos  = Map.empty,
+      loops             = Set.empty,
+      fingerprints      = Map.empty,
+      domainFingerprint = Fingerprint(ByteVector.empty),
+      imports           = Map.empty,
+      consts            = List.empty,
+      aliases           = Map.empty,
+      userTypes         = Map.empty,
+    )
+    val parsedStub: DomainMeshResolved = new DomainMeshResolved {
+      override def id: DomainId                                  = domainId
+      override def imports: Seq[RawImport]                       = Seq.empty
+      override def members: Seq[RawTopLevelDefn]                 = Seq.empty
+      override def referenced: Map[DomainId, DomainMeshResolved] = Map.empty
+      override def origin: FSPath                                = FSPath(domainId.toPackage :+ s"${domainId.id}.domain")
+      override def directInclusions: Seq[RawInclusion]           = Seq.empty
+      override def meta: RawNodeMeta                             = rawMeta
+    }
+    new DomainSTContext(newDomain, parsedStub, options)
+  }
+
+  test("DTO with single primitive field renders compilable case class") {
+    val dtoId  = DTOId(typePath, "User")
+    val fields = List(Field(Primitive.TString, "name", emptyMeta))
+    val ctx    = newCtxFor(domainId, dtoId, fields)
+    val dto = NewTypeDef.Dto(
+      id     = dtoId,
+      struct = Struct(fields = fields, removedFields = List.empty, superclasses = Super.empty),
+      meta   = emptyMeta,
+    )
+
+    val product = ctx.compositeRenderer.renderDto(dto)
+    val rendered = product.render
+    assert(rendered.nonEmpty)
+    val s213 = renderSyntax(rendered.head, isScala3 = false)
+    val s30  = renderSyntax(rendered.head, isScala3 = true)
+    assert(s213.contains("case class User"), s"expected case class header: $s213")
+    assert(s30.contains("case class User"))
+    assert(s213.contains("name: String") || s213.contains("name : String"), s"missing field: $s213")
+  }
+
+  test("DTO with multiple fields preserves declaration order") {
+    val dtoId = DTOId(typePath, "Pair")
+    val fields = List(
+      Field(Primitive.TString, "key", emptyMeta),
+      Field(Primitive.TInt32, "value", emptyMeta),
+    )
+    val ctx = newCtxFor(domainId, dtoId, fields)
+    val dto = NewTypeDef.Dto(
+      id     = dtoId,
+      struct = Struct(fields = fields, removedFields = List.empty, superclasses = Super.empty),
+      meta   = emptyMeta,
+    )
+    val product = ctx.compositeRenderer.renderDto(dto)
+    val s213 = renderSyntax(product.render.head, isScala3 = false)
+    val keyIdx   = s213.indexOf("key")
+    val valueIdx = s213.indexOf("value")
+    assert(keyIdx >= 0 && valueIdx >= 0 && keyIdx < valueIdx,
+      s"fields not in declaration order in: $s213")
+  }
+
+  test("empty DTO renders without throwing") {
+    val dtoId = DTOId(typePath, "Empty")
+    val ctx   = newCtxFor(domainId, dtoId, List.empty)
+    val dto = NewTypeDef.Dto(
+      id     = dtoId,
+      struct = Struct(fields = List.empty, removedFields = List.empty, superclasses = Super.empty),
+      meta   = emptyMeta,
+    )
+    val product = ctx.compositeRenderer.renderDto(dto)
+    assert(product.render.nonEmpty)
+    val s213 = renderSyntax(product.render.head, isScala3 = false)
+    assert(s213.contains("case class Empty"))
+  }
+}

@@ -1,0 +1,3 @@
+domain test.bad.token
+
+data Foo { @@bad: i32 }

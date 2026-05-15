@@ -1,0 +1,17 @@
+domain idltest.identifiers
+
+id CompanyId {
+  value: uid
+  iid: i64
+}
+
+id UserId {
+  value: uid
+  company: uid
+}
+
+id BucketID {
+    app: uid
+    user: uid
+    bucket: str
+}

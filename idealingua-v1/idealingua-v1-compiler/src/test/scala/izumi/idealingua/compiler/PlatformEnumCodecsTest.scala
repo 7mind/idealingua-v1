@@ -28,16 +28,6 @@ class PlatformEnumCodecsTest extends AnyWordSpec with Codecs {
       assert(decode[TypeScriptProjectLayout](""""PLAIN"""") == Right(TypeScriptProjectLayout.PLAIN))
     }
 
-    "encode GoProjectLayout as string" in {
-      assert((GoProjectLayout.REPOSITORY: GoProjectLayout).asJson.noSpaces == """"REPOSITORY"""")
-      assert((GoProjectLayout.PLAIN: GoProjectLayout).asJson.noSpaces == """"PLAIN"""")
-    }
-
-    "decode GoProjectLayout from string" in {
-      assert(decode[GoProjectLayout](""""REPOSITORY"""") == Right(GoProjectLayout.REPOSITORY))
-      assert(decode[GoProjectLayout](""""PLAIN"""") == Right(GoProjectLayout.PLAIN))
-    }
-
     "encode CSharpProjectLayout as string" in {
       assert((CSharpProjectLayout.NUGET: CSharpProjectLayout).asJson.noSpaces == """"NUGET"""")
       assert((CSharpProjectLayout.PLAIN: CSharpProjectLayout).asJson.noSpaces == """"PLAIN"""")
@@ -58,8 +48,6 @@ class PlatformEnumCodecsTest extends AnyWordSpec with Codecs {
       roundtrip[ScalaProjectLayout](ScalaProjectLayout.PLAIN)
       roundtrip[TypeScriptProjectLayout](TypeScriptProjectLayout.YARN)
       roundtrip[TypeScriptProjectLayout](TypeScriptProjectLayout.PLAIN)
-      roundtrip[GoProjectLayout](GoProjectLayout.REPOSITORY)
-      roundtrip[GoProjectLayout](GoProjectLayout.PLAIN)
       roundtrip[CSharpProjectLayout](CSharpProjectLayout.NUGET)
       roundtrip[CSharpProjectLayout](CSharpProjectLayout.PLAIN)
     }

@@ -1,0 +1,8 @@
+{
+  "comment": "Expected divergences for `idl-regress --old git:v1.4.19 --new self --lang scala` against the `broad` selftest corpus (DTO + Enum + Identifier coverage). Empty per the same wire-format-invariant policy as impl9-vs-head: v1.4.19 (the most recent published release) and HEAD on the wip/necromancy branch must produce byte-identical wire output. Any divergence is a real audit signal.",
+  "old": "git:v1.4.19",
+  "new": "self",
+  "lang": "scala",
+  "corpus": "broad",
+  "divergences": []
+}

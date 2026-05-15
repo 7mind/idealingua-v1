@@ -1,0 +1,16 @@
+{
+  "name": "idealingua-v1-harness-driver",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "driver": "tsx driver.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.0",
+    "typescript": "5.9.3",
+    "moment": "^2.29.4",
+    "websocket": "^1.0.34",
+    "@types/node": "^22.7.6",
+    "@types/websocket": "^1.0.10"
+  }
+}

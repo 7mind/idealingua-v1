@@ -4,11 +4,9 @@ import izumi.fundamentals.platform.build.MacroParameters
 import izumi.fundamentals.platform.files.IzFiles
 import izumi.idealingua.il.loader.*
 import izumi.idealingua.model.loader.LoadedDomain
-import izumi.idealingua.translator.*
 
 import java.io.File
 import java.nio.file.*
-import scala.util.Try
 
 final case class CompilerOutput(targetDir: Path, allFiles: Seq[Path]) {
   def absoluteTargetDir: Path = targetDir.toAbsolutePath
@@ -38,11 +36,8 @@ object IDLTestTools {
     context
   }
 
-  def makeResolver(base: String): ModelResolver = {
-    val last = base.split('/').last
-    val rules = Try(TypespaceCompilerBaseFacade.descriptor(IDLLanguage.parse(last)).rules)
-      .getOrElse(TypespaceCompilerBaseFacade.descriptors.flatMap(_.rules))
-    new ModelResolver(rules)
+  def makeResolver(@scala.annotation.unused base: String): ModelResolver = {
+    new ModelResolver()
   }
 
   def loadDefs(context: LocalModelLoaderContext, resolver: ModelResolver): Seq[LoadedDomain.Success] = {

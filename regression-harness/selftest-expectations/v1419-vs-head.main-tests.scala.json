@@ -1,0 +1,13 @@
+{
+  "comment": "R4 baseline for `idl-regress --old git:v1.4.19 --new self --lang scala` against the FULL main-tests corpus. v1.4.19's Scala backend (`ScalaTypeConverter.scala:80`) throws `IDLException: No type->generic mappings implemented yet` on the post-v1.4.19 corpus types (added by R2: `coverage/generics-*.domain` family — generics-blob, generics-map-keys, generics-nested — and likely also the recursive ADT shapes in `idltest/algebraics`, `idltest/ast`, `idltest/upcasts`). HEAD's Scala backend handles them cleanly under the new typer. The wire-format invariant is preserved against the `broad` corpus subset (see v1419-vs-head.broad.scala.json), but the FULL corpus exercises features added after v1.4.19 was cut. Action: future R4 reruns MUST observe the same build-failure-old-side mode (exit=2, same NotImplementedError stack) — any change is an explicit signal that the corpus or v1.4.19 idlc behaviour shifted and the operator must re-baseline.",
+  "old": "git:v1.4.19",
+  "new": "self",
+  "lang": "scala",
+  "corpus": "main-tests",
+  "exit_kind": "build-failure-old-side",
+  "exit_code": 2,
+  "failure_site": "izumi.idealingua.translator.toscala.types.ScalaTypeConverter.toScala(ScalaTypeConverter.scala:80)",
+  "failure_message": "IDLException: No type->generic mappings implemented yet",
+  "version_gap_class": "post-v1.4.19 corpus expansion (R2): generics-* family + recursive ADTs not back-portable to v1.4.19 idlc backends",
+  "divergences": []
+}

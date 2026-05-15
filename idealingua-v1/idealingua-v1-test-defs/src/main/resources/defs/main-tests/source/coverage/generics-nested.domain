@@ -1,0 +1,18 @@
+domain coverage.generics.nested
+
+// R2 coverage: deeply nested generic containers — list-of-list, map-of-list,
+// list-of-map, set-of-option, option-of-list-of-map.
+// Existing fixtures (`idltest.consts`) use nested generics only in constants,
+// not in DTO fields.
+
+data Leaf {
+  v: i32
+}
+
+data NestedGenerics {
+  matrix       : list[list[i32]]
+  byTag        : map[str, list[Leaf]]
+  histogram    : list[map[str, i64]]
+  options      : opt[list[map[str, Leaf]]]
+  setOfOpt     : set[opt[i32]]
+}

@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- idl-regress per-side C# driver. idealingua-v1 runtime version: {{RUNTIME_VERSION}} -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <RootNamespace>IdlRegress.CSharpDriver</RootNamespace>
+    <AssemblyName>Driver</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0108;CS0114;CS0612;CS0618;CS8632;CS0162;CS0219;CS0414;NU1701</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- IRT runtime: Marshaller + Logger trees + the small set of root files we need. -->
+    <Compile Include="csharp/IRT/Marshaller/**/*.cs" />
+    <Compile Include="csharp/IRT/Logger/**/*.cs" />
+    <Compile Include="csharp/IRT/Dispatcher.cs" />
+    <Compile Include="csharp/IRT/DispatcherException.cs" />
+    <Compile Include="csharp/IRT/Either.cs" />
+    <Compile Include="csharp/IRT/ILogger.cs" />
+    <Compile Include="csharp/IRT/IServiceDispatcher.cs" />
+    <Compile Include="csharp/IRT/RTTI.cs" />
+    <Compile Include="csharp/IRT/Void.cs" />
+    <!-- Transport interfaces + Authorization tree — the broad corpus' generated
+         service/buzzer Client classes reference IClientTransport, IClientTransportContext,
+         IClientSocketTransport, IClientTransportCallback, and ClientTransportCallback,
+         all defined under IRT/Transport/. Include the small set of files that don't
+         pull WebSocketSharp / HttpClient. WebSocket* and AsyncHttp/SyncHttp generic
+         implementations are excluded since they reference WebSocketSharp/HttpClient. -->
+    <Compile Include="csharp/IRT/Transport/Authorization/**/*.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/IClientTranport.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/IClientTransportCallback.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/IClientTransportContext.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/ClientTransportCallback.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/SyncHttpTransport.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/SyncHttpTransportGeneric.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/AsyncHttpTransport.cs" />
+    <Compile Include="csharp/IRT/Transport/Client/AsyncHttpTransportGeneric.cs" />
+    <Compile Include="csharp/IRT/Transport/TransportException.cs" />
+    <!-- Domain types: everything under csharp/ except IRT/ (the IRT subset above is
+         what we need; UrlEscaper.cs depends on System.Web which is not auto-referenced
+         in net9.0 — sample_app.cs supplies a shim namespace IRT.Transport.UrlEscaper). -->
+    <Compile Include="csharp/**/*.cs" Exclude="csharp/IRT/**/*.cs" />
+    <Compile Include="sample_app.cs" />
+  </ItemGroup>
+</Project>

@@ -62,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [ ':test-scala', ':test-cs', ':test-ts', ':test-pb' ]
+        test: [ ':test-scala', ':test-cs', ':test-ts' ]
         scala: [ '2.13' ]
     steps:
       - uses: 7mind/github-env@minimal
@@ -74,6 +74,31 @@ jobs:
           name: Test reports (${{ matrix.test }}, Scala ${{ matrix.scala }})
           path: '**/target/spec-reports/**/*.xml'
           reporter: java-junit
+
+  test-regression:
+    runs-on: ubuntu-latest
+    needs: [ 'checksecret' ]
+    steps:
+      - uses: 7mind/github-env@minimal
+      # `7mind/github-env@minimal` calls `actions/checkout@v4` with default
+      # depth=1 and no tags — `IdlcResolver` resolves `git:v1.4.19` and
+      # `git:ea697f5` into git worktrees and needs both refs locally, so we
+      # re-checkout with full history. `clean: false` keeps the env-action's
+      # working tree config (slug action, nix shell vars) intact; the second
+      # checkout updates only git internals.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          clean: false
+      - name: Verify cross-version refs are accessible
+        run: |
+          # Fail fast if the checkout didn't actually pull what we need —
+          # better to error here than 8min later inside a worktree-add.
+          git rev-parse --verify "v1.4.19^{commit}"
+          git rev-parse --verify "ea697f5c069217eff871178971b641bde6e5ec11^{commit}"
+      - name: Cross-version regression harness
+        run: nix develop --command mdl --github-actions --scala-version=2.13 :test-regression
 
   publish-npm:
     runs-on: ubuntu-latest
@@ -144,7 +169,7 @@ jobs:
   all-good:
     if: always()
     runs-on: ubuntu-latest
-    needs: [ 'build', 'test-compiler', 'test-flake' ]
+    needs: [ 'build', 'test-compiler', 'test-flake', 'test-regression' ]
     steps:
       - name: Decide whether the needed jobs succeeded or failed
         uses: re-actors/alls-green@release/v1

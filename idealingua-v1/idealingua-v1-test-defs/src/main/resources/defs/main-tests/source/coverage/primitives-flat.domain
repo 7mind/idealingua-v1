@@ -1,0 +1,27 @@
+domain coverage.primitives
+
+// R2 coverage: every Primitive subclass exercised as a bare DTO field
+// (non-recursive, no nested containers). Complements `izumi.test.domain01.AllTypes`,
+// which mixes primitives with self-referential containers.
+
+data AllPrimitivesFlat {
+  b_bool    : bool
+  s_str     : str
+  i8        : i08
+  i16       : i16
+  i32       : i32
+  i64       : i64
+  u8        : u08
+  u16       : u16
+  u32       : u32
+  u64       : u64
+  f_flt     : flt
+  d_dbl     : dbl
+  uuid      : uid
+  blob      : blb
+  ts_zoned  : tsz
+  ts_local  : tsl
+  ts_unix   : tsu
+  time_only : time
+  date_only : date
+}

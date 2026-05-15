@@ -1,0 +1,6 @@
+domain test.duplicate.dto
+
+enum DupEnum {
+  Foo
+  Foo
+}

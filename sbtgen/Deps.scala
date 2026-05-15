@@ -35,6 +35,8 @@ object Idealingua {
     val typesafe_config = Version.VExpr("V.typesafe_config")
 
     val scala_java_time = Version.VExpr("V.scala_java_time")
+    val scodec_bits     = Version.VExpr("V.scodec_bits")
+    val json_schema_validator = Version.VExpr("V.json_schema_validator")
   }
 
   object PV {
@@ -133,6 +135,13 @@ object Idealingua {
     val asynchttpclient = Library("org.asynchttpclient", "async-http-client", V.asynchttpclient, LibraryType.Invariant)
 
     val scala_java_time = Library("io.github.cquiroz", "scala-java-time", V.scala_java_time, LibraryType.Auto)
+    // scodec-bits: used by Fingerprint in izumi.idealingua.typer.ir (IMPL-1).
+    // Cross-builds on Scala 2.13 + 3.x (JVM + JS). See tasks.md F1.
+    val scodec_bits = Library("org.scodec", "scodec-bits", V.scodec_bits, LibraryType.Auto) in Scope.Compile.all
+    // json-schema-validator: used by the harness PR-04 IMPL-MCP-M5 validation specs
+    // (Layer A — fixtures vs emitted schemas; Layer B — *.mcp.json vs MCP ListToolsResult schema).
+    // 1.5.9 supports JSON Schema 2020-12. Test-scope only.
+    val json_schema_validator = Library("com.networknt", "json-schema-validator", V.json_schema_validator, LibraryType.Invariant) in Scope.Test.jvm
   }
 
   import Deps._
@@ -355,8 +364,8 @@ object Idealingua {
       final val runtimeRpcHttp4s     = ArtifactId("idealingua-v1-runtime-rpc-http4s")
       final val runtimeRpcTypescript = ArtifactId("idealingua-v1-runtime-rpc-typescript")
       final val runtimeRpcCSharp     = ArtifactId("idealingua-v1-runtime-rpc-csharp")
-      final val runtimeRpcGo         = ArtifactId("idealingua-v1-runtime-rpc-go")
       final val compiler             = ArtifactId("idealingua-v1-compiler")
+      final val testHarness          = ArtifactId("idealingua-v1-test-harness")
     }
 
     object docs {
@@ -378,7 +387,7 @@ object Idealingua {
     artifacts = Seq(
       Artifact(
         name    = Projects.idealingua.model,
-        libs    = Seq(scala_reflect) ++ Deps.fundamentals_basics.map(_ in Scope.Compile.all),
+        libs    = Seq(scala_reflect, Deps.scodec_bits) ++ Deps.fundamentals_basics.map(_ in Scope.Compile.all),
         depends = Seq.empty,
       ),
       Artifact(
@@ -419,7 +428,7 @@ object Idealingua {
           Projects.idealingua.core,
           Projects.idealingua.runtimeRpcScala,
         ).map(_ in Scope.Compile.all) ++
-          Seq(Projects.idealingua.testDefs, Projects.idealingua.runtimeRpcTypescript, Projects.idealingua.runtimeRpcGo, Projects.idealingua.runtimeRpcCSharp)
+          Seq(Projects.idealingua.testDefs, Projects.idealingua.runtimeRpcTypescript, Projects.idealingua.runtimeRpcCSharp)
             .map(_ in Scope.Test.jvm),
         settings  = forkTests,
         platforms = Targets.cross3,
@@ -437,12 +446,6 @@ object Idealingua {
         platforms = Targets.jvm3,
       ),
       Artifact(
-        name      = Projects.idealingua.runtimeRpcGo,
-        libs      = Seq.empty,
-        depends   = Seq.empty,
-        platforms = Targets.jvm3,
-      ),
-      Artifact(
         name      = Projects.idealingua.runtimeRpcCSharp,
         libs      = Seq.empty,
         depends   = Seq.empty,
@@ -455,14 +458,116 @@ object Idealingua {
           Projects.idealingua.transpilers,
           Projects.idealingua.runtimeRpcScala,
           Projects.idealingua.runtimeRpcTypescript,
-          Projects.idealingua.runtimeRpcGo,
           Projects.idealingua.runtimeRpcCSharp,
           Projects.idealingua.testDefs,
         ).map(_ in Scope.Compile.all),
         platforms = Targets.jvm3,
-        settings  = Seq.empty,
+        settings  = Seq(
+          // R1a added `testcodegen.TestCodegenMain` alongside the public
+          // `CommandlineIDLCompiler.main`. Without an explicit `mainClass`,
+          // sbt-native-packager's staged launcher prompts `-main <class>`
+          // instead of running the compiler directly — which breaks
+          // `regression-harness/idl-regress` (it invokes the launcher
+          // positionally with `--root=…`). Pin the entry point to the
+          // public compiler. (Was added to build.sbt directly in X2; moved
+          // into sbtgen here so `mdl :gen` doesn't regress it.)
+          "mainClass" in SettingScope.Compile := """Some("izumi.idealingua.compiler.CommandlineIDLCompiler")""".raw,
+        ),
         plugins = Plugins(
           Seq(Plugin("JavaAppPackaging"))
+        ),
+      ),
+      Artifact(
+        name      = Projects.idealingua.testHarness,
+        libs      = Seq(Deps.json_schema_validator),
+        depends   = Seq(
+          Projects.idealingua.transpilers,
+          Projects.idealingua.compiler,
+          Projects.idealingua.testDefs,
+        ).map(_ in Scope.Compile.all),
+        platforms = Targets.jvm3,
+        settings  = Seq(
+          // R1: test sources are generated at build time (under
+          // `<harnessTarget>/generated-sources/test-harness/`) by the
+          // `idealingua-v1-compiler` module's `TestCodegenMain` entrypoint.
+          // Generation is wired as a `Compile / sourceGenerators` task so
+          // sbt invokes it before `Compile / compile`. The MCP bridge
+          // classpath resources land under `scala-mcp-resources/` and are
+          // exposed via `unmanagedResourceDirectories`.
+          //
+          // The `scala/` subtree is the Scala-translator output and feeds
+          // compilation. `scala-mcp/` (per-service bridge sources) is NOT
+          // compiled — those modules depend on http4s symbols that aren't on
+          // this module's classpath; they exist as artefacts the
+          // `McpBridgeConsistencySpec` reads at test time. `scala-mcp-resources/`
+          // is wired below as a `Compile` resource directory.
+          "sourceGenerators" in SettingScope.Compile += """Def.task[Seq[File]] {
+                                   |  val log         = streams.value.log
+                                   |  val repoRoot    = (LocalRootProject / baseDirectory).value.toPath.toAbsolutePath
+                                   |  val genRoot     = (Compile / target).value.toPath.resolve("generated-sources/test-harness").toAbsolutePath
+                                   |  val codegenCp   = (`idealingua-v1-compiler` / Compile / fullClasspath).value.files
+                                   |  val codegenRun  = (`idealingua-v1-compiler` / Compile / runner).value
+                                   |  log.info(s"test-harness codegen: generating into $genRoot")
+                                   |  codegenRun.run(
+                                   |    "izumi.idealingua.compiler.testcodegen.TestCodegenMain",
+                                   |    codegenCp,
+                                   |    Seq(repoRoot.toString, genRoot.toString),
+                                   |    log,
+                                   |  ).failed.foreach(e => throw new MessageOnlyException(e.getMessage))
+                                   |  val scalaSubdir = genRoot.resolve("scala")
+                                   |  if (java.nio.file.Files.exists(scalaSubdir)) {
+                                   |    val s = java.nio.file.Files.walk(scalaSubdir)
+                                   |    try {
+                                   |      val it  = s.iterator()
+                                   |      val buf = scala.collection.mutable.ArrayBuffer.empty[java.io.File]
+                                   |      while (it.hasNext) {
+                                   |        val p = it.next()
+                                   |        if (java.nio.file.Files.isRegularFile(p) && p.getFileName.toString.endsWith(".scala")) buf += p.toFile
+                                   |      }
+                                   |      buf.toSeq
+                                   |    } finally s.close()
+                                   |  } else Seq.empty[java.io.File]
+                                   |}.taskValue""".stripMargin.raw,
+          "unmanagedResourceDirectories" in SettingScope.Compile += """(Compile / target).value / "generated-sources" / "test-harness" / "scala-mcp-resources"""".raw,
+          // The sourceGenerator above emits ~150 IDL-generated `.scala`
+          // files under `target/generated-sources/test-harness/scala/...`.
+          // scoverage instruments all `Compile / sources` (managed +
+          // unmanaged), then in `coverageReport` tries to match each
+          // instrumented file to a declared source root. Generated files
+          // live outside `src/main/scala`, so scoverage throws
+          // `RuntimeException: No source root found for .../generated-sources/.../<File>.scala`.
+          // Disabling instrumentation on the test-harness mirrors the
+          // policy already in place for the runtime/transpiler modules
+          // (test scaffolding is not the unit under measurement).
+          "coverageEnabled" := false,
+          "runWireFixtures" := """{
+                               |  val log      = streams.value.log
+                               |  val repoRoot = (LocalRootProject / baseDirectory).value.toPath
+                               |  log.info("runWireFixtures: starting")
+                               |  val cp = (Compile / fullClasspath).value.files
+                               |  val r  = (Compile / runner).value
+                               |  r.run("izumi.idealingua.harness.WireFixturesMain", cp, Seq(repoRoot.toString), log)
+                               |    .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
+                               |  def countJsons(p: java.nio.file.Path): Long = if (java.nio.file.Files.exists(p)) {
+                               |    val s = java.nio.file.Files.walk(p)
+                               |    try s.filter(x => java.nio.file.Files.isRegularFile(x) && x.toString.endsWith(".json")).count()
+                               |    finally s.close()
+                               |  } else 0L
+                               |  val sc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/scala"))
+                               |  val tc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/typescript"))
+                               |  val cc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/csharp"))
+                               |  log.info(s"runWireFixtures: all $sc Scala + $tc TypeScript + $cc CSharp fixtures match")
+                               |}""".stripMargin.raw,
+          "runCrossLangInterop" := """{
+                            |  val log      = streams.value.log
+                            |  val repoRoot = (LocalRootProject / baseDirectory).value.toPath
+                            |  log.info("runCrossLangInterop: starting cross-language matrix")
+                            |  val cp = (Compile / fullClasspath).value.files
+                            |  val r  = (Compile / runner).value
+                            |  r.run("izumi.idealingua.harness.CrossLangMain", cp, Seq(repoRoot.toString), log)
+                            |    .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
+                            |  log.info("runCrossLangInterop: matrix verified")
+                            |}""".stripMargin.raw,
         ),
       ),
     ),
@@ -484,7 +589,9 @@ object Idealingua {
       Import("sbtrelease.ReleaseStateTransformations._"),
       Import("""scala.sys.process._
                |
-               |lazy val refreshFlakeTask = taskKey[Unit]("Refresh flake.nix")
+               |lazy val refreshFlakeTask    = taskKey[Unit]("Refresh flake.nix")
+               |lazy val runWireFixtures     = taskKey[Unit]("Run Layer B wire-byte fixtures")
+               |lazy val runCrossLangInterop = taskKey[Unit]("Run Layer C cross-language interop")
                |""".stripMargin),
     ),
     globalLibs = Seq(

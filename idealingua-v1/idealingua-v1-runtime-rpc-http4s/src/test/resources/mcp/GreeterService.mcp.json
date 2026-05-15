@@ -1,0 +1,65 @@
+{
+  "tools" : [
+    {
+      "name" : "izumi.r2.idealingua.test.generated.GreeterService.greet",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "surname" : {
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "name",
+          "surname"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-kind" : "method"
+    },
+    {
+      "name" : "izumi.r2.idealingua.test.generated.GreeterService.alternative",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : { },
+        "required" : [ ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-kind" : "alternative"
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-kind" : "method"
+    }
+  ]
+}

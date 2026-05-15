@@ -1,0 +1,13 @@
+{
+  "comment": "R4 baseline for `idl-regress --old git:v1.4.19 --new self --lang typescript` against the FULL main-tests corpus. v1.4.19's TypeScript backend (`TypeScriptTypeConverter.scala:325 toFieldMember`) throws `scala.NotImplementedError` on post-v1.4.19 field types — same version-gap class as the Scala leg. HEAD handles them cleanly. Future R4 reruns must observe the same build-failure-old-side mode (exit=2, same NotImplementedError site) — any change is an explicit signal requiring operator re-baseline.",
+  "old": "git:v1.4.19",
+  "new": "self",
+  "lang": "typescript",
+  "corpus": "main-tests",
+  "exit_kind": "build-failure-old-side",
+  "exit_code": 2,
+  "failure_site": "izumi.idealingua.translator.totypescript.types.TypeScriptTypeConverter.toFieldMember(TypeScriptTypeConverter.scala:325)",
+  "failure_message": "scala.NotImplementedError: an implementation is missing",
+  "version_gap_class": "post-v1.4.19 corpus expansion (R2): TS backend missing toFieldMember branches for new field shapes",
+  "divergences": []
+}

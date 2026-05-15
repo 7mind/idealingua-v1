@@ -1,0 +1,13 @@
+{
+  "comment": "R4 baseline for `idl-regress --old git:v1.4.19 --new self --lang csharp` against the FULL main-tests corpus. v1.4.19's C# backend (`CSharpImports.scala:80 withImport`) throws `scala.NotImplementedError` on post-v1.4.19 type shapes — same version-gap class as the Scala and TS legs. HEAD handles them cleanly. Future R4 reruns must observe the same build-failure-old-side mode (exit=2, same NotImplementedError site) — any change is an explicit signal requiring operator re-baseline. Note: the C# adapter has a pre-existing canonicalize defect under `dotnet run` (SYSLIB0014 deprecation warnings leak onto stdout and confuse the NDJSON parser) which would surface even if the v1.4.19 build succeeded; tracked as F-followup-csharp-dotnet-stdout-stderr-split.",
+  "old": "git:v1.4.19",
+  "new": "self",
+  "lang": "csharp",
+  "corpus": "main-tests",
+  "exit_kind": "build-failure-old-side",
+  "exit_code": 2,
+  "failure_site": "izumi.idealingua.translator.tocsharp.CSharpImports$.withImport(CSharpImports.scala:80)",
+  "failure_message": "scala.NotImplementedError: an implementation is missing",
+  "version_gap_class": "post-v1.4.19 corpus expansion (R2): C# backend missing imports/fromTypes branches for new type shapes",
+  "divergences": []
+}

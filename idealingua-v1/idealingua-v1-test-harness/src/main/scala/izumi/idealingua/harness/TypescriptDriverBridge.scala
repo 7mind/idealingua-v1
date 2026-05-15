@@ -1,0 +1,174 @@
+package izumi.idealingua.harness
+
+import java.io.{BufferedWriter, ByteArrayOutputStream, InputStream, OutputStreamWriter}
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path}
+
+/** PR-03.3a — node/tsx subprocess + npm install lifecycle. T2 implementation. */
+private[harness] object TypescriptDriverBridge {
+
+  final case class DriverResult(
+    wireId: String,
+    scenario: String,
+    ok: Boolean,
+    kind: Option[String],
+    detail: Option[String],
+    reEncodedJson: Option[String],
+  )
+
+  /** Spawn the TS driver as a subprocess; pipe fixtures over stdin; collect stdout. */
+  def runDriver(harnessTsDir: Path, fixtures: Seq[WireFixtures.FixtureFile]): Either[String, Seq[DriverResult]] = {
+    ensureNpmInstall(harnessTsDir) match {
+      case Some(error) => return Left(error)
+      case None        => ()
+    }
+    ensureIrtSymlink(harnessTsDir) match {
+      case Some(error) => return Left(error)
+      case None        => ()
+    }
+
+    val batch = buildBatch(fixtures)
+
+    val pb = new java.lang.ProcessBuilder("npx", "tsx", "driver.ts")
+      .directory(harnessTsDir.toFile)
+      .redirectErrorStream(false)
+    val proc = pb.start()
+
+    val stdinWriter = new BufferedWriter(new OutputStreamWriter(proc.getOutputStream, StandardCharsets.UTF_8))
+    stdinWriter.write(batch)
+    stdinWriter.close()
+
+    val finished = proc.waitFor(60, java.util.concurrent.TimeUnit.SECONDS)
+    if (!finished) {
+      proc.destroyForcibly()
+      return Left("driver subprocess timed out after 60s")
+    }
+
+    val stderr = new String(readAllBytes(proc.getErrorStream), StandardCharsets.UTF_8)
+    if (proc.exitValue() != 0) {
+      return Left(s"driver subprocess exited ${proc.exitValue()}: $stderr")
+    }
+
+    val stdout = new String(readAllBytes(proc.getInputStream), StandardCharsets.UTF_8)
+    Right(parseDriverResults(stdout, fixtures))
+  }
+
+  /** Ensure `<harness-target>/generated-sources/test-harness/typescript/irt` →
+    * runtime IRT symlink exists.
+    *
+    * R1 (2026-05-14): the symlink now lives under the build-time-generated
+    * harness output, not the retired committed `golden/typescript/` tree.
+    * `TestSourceGenerator.generate` creates the same symlink on every
+    * `sourceGenerators` invocation; we re-create it here defensively so a
+    * stale TS driver run (e.g. directly invoking `runWireFixtures` after
+    * a manual `clean` that wiped `target/`) does not surface a broken `irt`
+    * resolution.
+    *
+    * Layout (relative to harnessTsDir = `.../idealingua-v1-test-harness/src/main/typescript`):
+    *   - go up 4 dirs → `.../idealingua-v1` (inner module root)
+    *   - IRT runtime target: `../idealingua-v1-runtime-rpc-typescript/src/main/resources/runtime/typescript/irt`
+    *   - Symlink location: `../idealingua-v1-test-harness/target/generated-sources/test-harness/typescript/irt`
+    */
+  private[harness] def ensureIrtSymlink(harnessTsDir: Path): Option[String] = {
+    // harnessTsDir = .../idealingua-v1/idealingua-v1-test-harness/src/main/typescript
+    // Up 4 levels: typescript → main → src → idealingua-v1-test-harness → idealingua-v1 (inner sub-root)
+    val subRoot = harnessTsDir.getParent.getParent.getParent.getParent
+    val irtTarget   = subRoot
+      .resolve("idealingua-v1-runtime-rpc-typescript/src/main/resources/runtime/typescript/irt")
+      .toAbsolutePath
+    val symlinkPath = subRoot
+      .resolve("idealingua-v1-test-harness/target/generated-sources/test-harness/typescript/irt")
+      .toAbsolutePath
+    if (Files.isSymbolicLink(symlinkPath)) {
+      None  // already exists
+    } else {
+      try {
+        Files.createDirectories(symlinkPath.getParent)
+        if (Files.exists(symlinkPath)) Files.delete(symlinkPath)
+        Files.createSymbolicLink(symlinkPath, irtTarget)
+        None
+      } catch {
+        case e: Exception =>
+          Some(s"failed to create irt symlink at $symlinkPath → $irtTarget: ${e.getMessage}")
+      }
+    }
+  }
+
+  private[harness] def ensureNpmInstall(dir: Path): Option[String] = {
+    val nodeModules = dir.resolve("node_modules")
+    if (Files.exists(nodeModules)) None
+    else {
+      val pb = new java.lang.ProcessBuilder("npm", "install", "--prefer-offline", "--no-audit", "--no-fund")
+        .directory(dir.toFile)
+        .redirectErrorStream(true)
+      val proc = pb.start()
+      val finished = proc.waitFor(180, java.util.concurrent.TimeUnit.SECONDS)
+      if (!finished) {
+        proc.destroyForcibly()
+        Some("npm install timed out after 180s")
+      } else if (proc.exitValue() != 0) {
+        val out = new String(readAllBytes(proc.getInputStream), StandardCharsets.UTF_8)
+        Some(s"npm install exited ${proc.exitValue()}: $out")
+      } else None
+    }
+  }
+
+  /** Drains an InputStream into a byte array. Compatible with Java 8 / `-release:8`. */
+  private def readAllBytes(is: InputStream): Array[Byte] = {
+    val buf = new ByteArrayOutputStream()
+    val chunk = new Array[Byte](8192)
+    var n = is.read(chunk)
+    while (n > 0) {
+      buf.write(chunk, 0, n)
+      n = is.read(chunk)
+    }
+    buf.toByteArray
+  }
+
+  private def buildBatch(fixtures: Seq[WireFixtures.FixtureFile]): String = {
+    import io.circe.Json
+    import io.circe.syntax._
+
+    val requestsJson: Seq[Json] = fixtures.map { f =>
+      Json.obj(
+        "wireId"      -> f.wireId.asJson,
+        "fixturePath" -> f.file.toString.asJson,
+        "fixtureJson" -> new String(f.bytes, StandardCharsets.UTF_8).asJson,
+      )
+    }
+    Json.obj("requests" -> Json.fromValues(requestsJson)).noSpaces
+  }
+
+  private def parseDriverResults(stdout: String, fixtures: Seq[WireFixtures.FixtureFile]): Seq[DriverResult] = {
+    import io.circe._
+    import io.circe.parser._
+
+    val pathToScenario: Map[String, String] = fixtures.map(f => f.file.toString -> f.scenario).toMap
+
+    val results: Seq[Json] = parse(stdout)
+      .toOption
+      .flatMap(_.hcursor.downField("results").as[Seq[Json]].toOption)
+      .getOrElse(Seq.empty)
+
+    results.map { j =>
+      val c = j.hcursor
+      val fixturePath = c.downField("fixturePath").as[String].getOrElse("")
+      val scenario    = pathToScenario.getOrElse(fixturePath, scenarioFromPath(fixturePath))
+      DriverResult(
+        wireId        = c.downField("wireId").as[String].getOrElse(""),
+        scenario      = scenario,
+        ok            = c.downField("ok").as[Boolean].getOrElse(false),
+        kind          = c.downField("kind").as[String].toOption,
+        detail        = c.downField("detail").as[String].toOption,
+        reEncodedJson = c.downField("reEncodedJson").as[String].toOption,
+      )
+    }
+  }
+
+  /** Extracts the scenario name from a fixture path like `.../wireId/scenario.json`. */
+  private def scenarioFromPath(path: String): String = {
+    val lastSlash = path.lastIndexOf('/')
+    val filename  = if (lastSlash >= 0) path.substring(lastSlash + 1) else path
+    if (filename.endsWith(".json")) filename.dropRight(5) else filename
+  }
+}

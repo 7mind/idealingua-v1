@@ -5,9 +5,18 @@ import izumi.fundamentals.platform.time.IzTime
 
 import java.time._
 import java.time.format.{DateTimeFormatter, DateTimeParseException}
+import java.util.Base64
 
 trait IRTTimeInstances {
   // Place impls in a single object to avoid massive duplication of codec objects for all inheritors of IRTTimeInstances
+
+  // PR-02 F5: TBLOB (Array[Byte]) is wire-encoded as base64 string per Q3 lock
+  // (standard alphabet, padded). Circe's default Encoder[Array[Byte]] would
+  // emit a JSON int-array; we override to produce a base64 string so the
+  // wire format matches the C# (Newtonsoft) and TS (string-passthrough) legs.
+  implicit final def decodeBytesBase64: Decoder[Array[Byte]] = IRTTimeInstances.decodeBytesBase64
+  implicit final def encodeBytesBase64: Encoder[Array[Byte]] = IRTTimeInstances.encodeBytesBase64
+
   implicit final def decodeInstant: Decoder[Instant] = IRTTimeInstances.decodeInstant
   implicit final def encodeInstant: Encoder[Instant] = IRTTimeInstances.encodeInstant
 
@@ -65,6 +74,22 @@ trait IRTTimeInstances {
 
 object IRTTimeInstances {
   import izumi.fundamentals.platform.time.IzTime.*
+
+  // PR-02 F5: TBLOB base64 codec (standard alphabet, padded).
+  implicit final val encodeBytesBase64: Encoder[Array[Byte]] =
+    Encoder.instance(bytes => Json.fromString(Base64.getEncoder.encodeToString(bytes)))
+
+  implicit final val decodeBytesBase64: Decoder[Array[Byte]] =
+    Decoder.instance {
+      c =>
+        c.as[String].flatMap {
+          s =>
+            try Right(Base64.getDecoder.decode(s))
+            catch {
+              case _: IllegalArgumentException => Left(DecodingFailure("Array[Byte] (base64)", c.history))
+            }
+        }
+    }
 
   implicit final val decodeInstant: Decoder[Instant] =
     Decoder.instance {
