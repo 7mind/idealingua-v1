@@ -1,4 +1,4 @@
-domain coverage.buzzers.alloutputs
+domain coverage.buzzers.allbouts
 
 // R2 coverage: one buzzer exercising every Output variant.
 // Existing `idltest.events.TestBuzzer` only covers Void and Singular(primitive)

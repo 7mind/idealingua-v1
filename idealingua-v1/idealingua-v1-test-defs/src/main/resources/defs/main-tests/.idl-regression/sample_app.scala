@@ -14,52 +14,52 @@ object SampleApp {
     val lines = scala.collection.mutable.ArrayBuffer.empty[String]
 
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventInput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventInput()
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventInput\tdefault\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventInput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventInput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventInput()
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventInput\tdefault\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventInput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventInput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventInput()
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventInput\tdefault\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventInput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventInput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventInput()
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventInput\tdefault\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventInput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.DtoEventInput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.DtoEventInput()
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.DtoEventInput\tdefault\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.DtoEventInput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.DtoEventInput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.DtoEventInput()
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.DtoEventInput\tdefault\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.DtoEventInput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.DtoEventOutput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.DtoEventOutput(new _root_.coverage.buzzers.alloutputs.BuzzerOk("s1"))
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.DtoEventOutput\tdefault\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.DtoEventOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.DtoEventOutput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.DtoEventOutput(new _root_.coverage.buzzers.allbouts.BuzzerOk("s1"))
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.DtoEventOutput\tdefault\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.DtoEventOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.PrimEventInput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.PrimEventInput()
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.PrimEventInput\tdefault\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.PrimEventInput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.PrimEventInput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.PrimEventInput()
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.PrimEventInput\tdefault\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.PrimEventInput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.PrimEventOutput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.PrimEventOutput("s1")
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.PrimEventOutput\tdefault\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.PrimEventOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.PrimEventOutput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.PrimEventOutput("s1")
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.PrimEventOutput\tdefault\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.PrimEventOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.StructEventInput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.StructEventInput()
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.StructEventInput\tdefault\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.StructEventInput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.StructEventInput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.StructEventInput()
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.StructEventInput\tdefault\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.StructEventInput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.StructEventOutput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.StructEventOutput("s1", 1)
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.StructEventOutput\tdefault\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.StructEventOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.StructEventOutput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.StructEventOutput("s1", 1)
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.StructEventOutput\tdefault\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.StructEventOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.VoidEventInput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.VoidEventInput()
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.VoidEventInput\tdefault\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.VoidEventInput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.VoidEventInput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.VoidEventInput()
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.VoidEventInput\tdefault\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.VoidEventInput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.VoidEventOutput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.VoidEventOutput()
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.VoidEventOutput\tdefault\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.VoidEventOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.VoidEventOutput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.VoidEventOutput()
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.VoidEventOutput\tdefault\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.VoidEventOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.BuzzerErr = new _root_.coverage.buzzers.alloutputs.BuzzerErr(1)
-      lines += s"coverage.buzzers.alloutputs.BuzzerErr\tdefault\t${(v: _root_.coverage.buzzers.alloutputs.BuzzerErr).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.BuzzerErr = new _root_.coverage.buzzers.allbouts.BuzzerErr(1)
+      lines += s"coverage.buzzers.allbouts.BuzzerErr\tdefault\t${(v: _root_.coverage.buzzers.allbouts.BuzzerErr).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.BuzzerOk = new _root_.coverage.buzzers.alloutputs.BuzzerOk("s1")
-      lines += s"coverage.buzzers.alloutputs.BuzzerOk\tdefault\t${(v: _root_.coverage.buzzers.alloutputs.BuzzerOk).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.BuzzerOk = new _root_.coverage.buzzers.allbouts.BuzzerOk("s1")
+      lines += s"coverage.buzzers.allbouts.BuzzerOk\tdefault\t${(v: _root_.coverage.buzzers.allbouts.BuzzerOk).asJson.printWith(P)}"
     }
     {
       val v: _root_.coverage.crossdom.importer.ExtendsForeignMixin = new _root_.coverage.crossdom.importer.ExtendsForeignMixin(1, "s1")
@@ -102,52 +102,52 @@ object SampleApp {
       lines += s"coverage.primitives.AllPrimitivesFlat\tdefault\t${(v: _root_.coverage.primitives.AllPrimitivesFlat).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.AlgebraicInput = new _root_.coverage.services.alloutputs.AllOutputsService.AlgebraicInput()
-      lines += s"coverage.services.alloutputs.AllOutputsService.AlgebraicInput\tdefault\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.AlgebraicInput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.AlgebraicInput = new _root_.coverage.services.allsouts.AllOutputsService.AlgebraicInput()
+      lines += s"coverage.services.allsouts.AllOutputsService.AlgebraicInput\tdefault\t${(v: _root_.coverage.services.allsouts.AllOutputsService.AlgebraicInput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.AlternativeInput = new _root_.coverage.services.alloutputs.AllOutputsService.AlternativeInput()
-      lines += s"coverage.services.alloutputs.AllOutputsService.AlternativeInput\tdefault\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.AlternativeInput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.AlternativeInput = new _root_.coverage.services.allsouts.AllOutputsService.AlternativeInput()
+      lines += s"coverage.services.allsouts.AllOutputsService.AlternativeInput\tdefault\t${(v: _root_.coverage.services.allsouts.AllOutputsService.AlternativeInput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.ImplicitStructInput = new _root_.coverage.services.alloutputs.AllOutputsService.ImplicitStructInput()
-      lines += s"coverage.services.alloutputs.AllOutputsService.ImplicitStructInput\tdefault\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.ImplicitStructInput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.ImplicitStructInput = new _root_.coverage.services.allsouts.AllOutputsService.ImplicitStructInput()
+      lines += s"coverage.services.allsouts.AllOutputsService.ImplicitStructInput\tdefault\t${(v: _root_.coverage.services.allsouts.AllOutputsService.ImplicitStructInput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.ImplicitStructOutput = new _root_.coverage.services.alloutputs.AllOutputsService.ImplicitStructOutput("s1", 1)
-      lines += s"coverage.services.alloutputs.AllOutputsService.ImplicitStructOutput\tdefault\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.ImplicitStructOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.ImplicitStructOutput = new _root_.coverage.services.allsouts.AllOutputsService.ImplicitStructOutput("s1", 1)
+      lines += s"coverage.services.allsouts.AllOutputsService.ImplicitStructOutput\tdefault\t${(v: _root_.coverage.services.allsouts.AllOutputsService.ImplicitStructOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.SingularDtoInput = new _root_.coverage.services.alloutputs.AllOutputsService.SingularDtoInput()
-      lines += s"coverage.services.alloutputs.AllOutputsService.SingularDtoInput\tdefault\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.SingularDtoInput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.SingularDtoInput = new _root_.coverage.services.allsouts.AllOutputsService.SingularDtoInput()
+      lines += s"coverage.services.allsouts.AllOutputsService.SingularDtoInput\tdefault\t${(v: _root_.coverage.services.allsouts.AllOutputsService.SingularDtoInput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.SingularDtoOutput = new _root_.coverage.services.alloutputs.AllOutputsService.SingularDtoOutput(new _root_.coverage.services.alloutputs.Greeting("s1"))
-      lines += s"coverage.services.alloutputs.AllOutputsService.SingularDtoOutput\tdefault\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.SingularDtoOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.SingularDtoOutput = new _root_.coverage.services.allsouts.AllOutputsService.SingularDtoOutput(new _root_.coverage.services.allsouts.Greeting("s1"))
+      lines += s"coverage.services.allsouts.AllOutputsService.SingularDtoOutput\tdefault\t${(v: _root_.coverage.services.allsouts.AllOutputsService.SingularDtoOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.SingularPrimitiveInput = new _root_.coverage.services.alloutputs.AllOutputsService.SingularPrimitiveInput()
-      lines += s"coverage.services.alloutputs.AllOutputsService.SingularPrimitiveInput\tdefault\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.SingularPrimitiveInput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.SingularPrimitiveInput = new _root_.coverage.services.allsouts.AllOutputsService.SingularPrimitiveInput()
+      lines += s"coverage.services.allsouts.AllOutputsService.SingularPrimitiveInput\tdefault\t${(v: _root_.coverage.services.allsouts.AllOutputsService.SingularPrimitiveInput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.SingularPrimitiveOutput = new _root_.coverage.services.alloutputs.AllOutputsService.SingularPrimitiveOutput("s1")
-      lines += s"coverage.services.alloutputs.AllOutputsService.SingularPrimitiveOutput\tdefault\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.SingularPrimitiveOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.SingularPrimitiveOutput = new _root_.coverage.services.allsouts.AllOutputsService.SingularPrimitiveOutput("s1")
+      lines += s"coverage.services.allsouts.AllOutputsService.SingularPrimitiveOutput\tdefault\t${(v: _root_.coverage.services.allsouts.AllOutputsService.SingularPrimitiveOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.VoidInput = new _root_.coverage.services.alloutputs.AllOutputsService.VoidInput()
-      lines += s"coverage.services.alloutputs.AllOutputsService.VoidInput\tdefault\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.VoidInput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.VoidInput = new _root_.coverage.services.allsouts.AllOutputsService.VoidInput()
+      lines += s"coverage.services.allsouts.AllOutputsService.VoidInput\tdefault\t${(v: _root_.coverage.services.allsouts.AllOutputsService.VoidInput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.VoidOutput = new _root_.coverage.services.alloutputs.AllOutputsService.VoidOutput()
-      lines += s"coverage.services.alloutputs.AllOutputsService.VoidOutput\tdefault\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.VoidOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.VoidOutput = new _root_.coverage.services.allsouts.AllOutputsService.VoidOutput()
+      lines += s"coverage.services.allsouts.AllOutputsService.VoidOutput\tdefault\t${(v: _root_.coverage.services.allsouts.AllOutputsService.VoidOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.ErrorPayload = new _root_.coverage.services.alloutputs.ErrorPayload(1, "s1")
-      lines += s"coverage.services.alloutputs.ErrorPayload\tdefault\t${(v: _root_.coverage.services.alloutputs.ErrorPayload).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.ErrorPayload = new _root_.coverage.services.allsouts.ErrorPayload(1, "s1")
+      lines += s"coverage.services.allsouts.ErrorPayload\tdefault\t${(v: _root_.coverage.services.allsouts.ErrorPayload).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.Greeting = new _root_.coverage.services.alloutputs.Greeting("s1")
-      lines += s"coverage.services.alloutputs.Greeting\tdefault\t${(v: _root_.coverage.services.alloutputs.Greeting).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.Greeting = new _root_.coverage.services.allsouts.Greeting("s1")
+      lines += s"coverage.services.allsouts.Greeting\tdefault\t${(v: _root_.coverage.services.allsouts.Greeting).asJson.printWith(P)}"
     }
     {
       val v: _root_.coverage.usertypes.enumsingle.UsesSingleton = new _root_.coverage.usertypes.enumsingle.UsesSingleton(coverage.usertypes.enumsingle.Singleton.Only)
@@ -1290,20 +1290,20 @@ object SampleApp {
       lines += s"izumi.test.domain02.AnEnum\tVALUE2\t${(v: _root_.izumi.test.domain02.AnEnum).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput.BuzzerOk(new _root_.coverage.buzzers.alloutputs.BuzzerOk("s1"))
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerOk\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput.BuzzerOk(new _root_.coverage.buzzers.allbouts.BuzzerOk("s1"))
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerOk\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput.BuzzerErr(new _root_.coverage.buzzers.alloutputs.BuzzerErr(1))
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerErr\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput.BuzzerErr(new _root_.coverage.buzzers.allbouts.BuzzerErr(1))
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerErr\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventOutput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventOutput.Success(new _root_.coverage.buzzers.alloutputs.BuzzerOk("s1"))
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventOutput\tSuccess\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventOutput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventOutput.Success(new _root_.coverage.buzzers.allbouts.BuzzerOk("s1"))
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventOutput\tSuccess\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventOutput = new _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventOutput.Failure(new _root_.coverage.buzzers.alloutputs.BuzzerErr(1))
-      lines += s"coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventOutput\tFailure\t${(v: _root_.coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventOutput = new _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventOutput.Failure(new _root_.coverage.buzzers.allbouts.BuzzerErr(1))
+      lines += s"coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventOutput\tFailure\t${(v: _root_.coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventOutput).asJson.printWith(P)}"
     }
     {
       val v: _root_.coverage.crossdom.importer.ForeignAdt = new _root_.coverage.crossdom.importer.ForeignAdt.ForeignLeaf(new _root_.coverage.crossdom.leaf.LeafDto("s1"))
@@ -1314,20 +1314,20 @@ object SampleApp {
       lines += s"coverage.crossdom.importer.ForeignAdt\tLocalBranch\t${(v: _root_.coverage.crossdom.importer.ForeignAdt).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.AlgebraicOutput = new _root_.coverage.services.alloutputs.AllOutputsService.AlgebraicOutput.Greeting(new _root_.coverage.services.alloutputs.Greeting("s1"))
-      lines += s"coverage.services.alloutputs.AllOutputsService.AlgebraicOutput\tGreeting\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.AlgebraicOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.AlgebraicOutput = new _root_.coverage.services.allsouts.AllOutputsService.AlgebraicOutput.Greeting(new _root_.coverage.services.allsouts.Greeting("s1"))
+      lines += s"coverage.services.allsouts.AllOutputsService.AlgebraicOutput\tGreeting\t${(v: _root_.coverage.services.allsouts.AllOutputsService.AlgebraicOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.AlgebraicOutput = new _root_.coverage.services.alloutputs.AllOutputsService.AlgebraicOutput.ErrorPayload(new _root_.coverage.services.alloutputs.ErrorPayload(1, "s1"))
-      lines += s"coverage.services.alloutputs.AllOutputsService.AlgebraicOutput\tErrorPayload\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.AlgebraicOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.AlgebraicOutput = new _root_.coverage.services.allsouts.AllOutputsService.AlgebraicOutput.ErrorPayload(new _root_.coverage.services.allsouts.ErrorPayload(1, "s1"))
+      lines += s"coverage.services.allsouts.AllOutputsService.AlgebraicOutput\tErrorPayload\t${(v: _root_.coverage.services.allsouts.AllOutputsService.AlgebraicOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.AlternativeOutput = new _root_.coverage.services.alloutputs.AllOutputsService.AlternativeOutput.Success(new _root_.coverage.services.alloutputs.Greeting("s1"))
-      lines += s"coverage.services.alloutputs.AllOutputsService.AlternativeOutput\tSuccess\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.AlternativeOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.AlternativeOutput = new _root_.coverage.services.allsouts.AllOutputsService.AlternativeOutput.Success(new _root_.coverage.services.allsouts.Greeting("s1"))
+      lines += s"coverage.services.allsouts.AllOutputsService.AlternativeOutput\tSuccess\t${(v: _root_.coverage.services.allsouts.AllOutputsService.AlternativeOutput).asJson.printWith(P)}"
     }
     {
-      val v: _root_.coverage.services.alloutputs.AllOutputsService.AlternativeOutput = new _root_.coverage.services.alloutputs.AllOutputsService.AlternativeOutput.Failure(new _root_.coverage.services.alloutputs.ErrorPayload(1, "s1"))
-      lines += s"coverage.services.alloutputs.AllOutputsService.AlternativeOutput\tFailure\t${(v: _root_.coverage.services.alloutputs.AllOutputsService.AlternativeOutput).asJson.printWith(P)}"
+      val v: _root_.coverage.services.allsouts.AllOutputsService.AlternativeOutput = new _root_.coverage.services.allsouts.AllOutputsService.AlternativeOutput.Failure(new _root_.coverage.services.allsouts.ErrorPayload(1, "s1"))
+      lines += s"coverage.services.allsouts.AllOutputsService.AlternativeOutput\tFailure\t${(v: _root_.coverage.services.allsouts.AllOutputsService.AlternativeOutput).asJson.printWith(P)}"
     }
     {
       val v: _root_.idltest.algebraics.AdtTester = new _root_.idltest.algebraics.AdtTester.ComplexAdt(new _root_.idltest.algebraics.ComplexAdt(new _root_.idltest.algebraics.AdtTestID("s1")))

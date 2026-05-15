@@ -1,4 +1,4 @@
-domain coverage.services.alloutputs
+domain coverage.services.allsouts
 
 // R2 coverage: one service exercising every Output variant in a single file.
 // Existing `idltest.services.TestService` is sprawling and not all variants are

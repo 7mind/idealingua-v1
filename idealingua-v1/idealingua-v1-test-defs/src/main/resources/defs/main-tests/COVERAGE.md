@@ -100,15 +100,15 @@ self-recursive through containers) this gives translators a "flat" reference.
 
 | Output variant | Service | Buzzer |
 |---|---|---|
-| `Void`                                       | Exists `services.unitToUnit`           | Exists `events.TestBuzzer.empty` + R2 `coverage.buzzers.alloutputs.voidEvent` |
-| `Singular(primitive)`                        | Exists `services.parameterless`        | Exists `events.TestBuzzer.hello` + R2 `coverage.buzzers.alloutputs.primEvent` |
-| `Singular(DTO)`                              | Exists `services.greetSingularOut` (str) — R2 added DTO via `coverage.services.alloutputs.singularDto` | R2 added `coverage.buzzers.alloutputs.dtoEvent` |
-| `Struct(fields)`                             | Exists `services.greetImplicitStructOut` | R2 added `coverage.buzzers.alloutputs.structEvent` |
-| `Algebraic(branches)`                        | Exists `services.greetAlgebraicOut`    | R2 added `coverage.buzzers.alloutputs.algebraicEvent` |
-| `Alternative(success, failure)`              | Exists `services.alternative`          | R2 added `coverage.buzzers.alloutputs.alternativeEvent` |
+| `Void`                                       | Exists `services.unitToUnit`           | Exists `events.TestBuzzer.empty` + R2 `coverage.buzzers.allbouts.voidEvent` |
+| `Singular(primitive)`                        | Exists `services.parameterless`        | Exists `events.TestBuzzer.hello` + R2 `coverage.buzzers.allbouts.primEvent` |
+| `Singular(DTO)`                              | Exists `services.greetSingularOut` (str) — R2 added DTO via `coverage.services.allsouts.singularDto` | R2 added `coverage.buzzers.allbouts.dtoEvent` |
+| `Struct(fields)`                             | Exists `services.greetImplicitStructOut` | R2 added `coverage.buzzers.allbouts.structEvent` |
+| `Algebraic(branches)`                        | Exists `services.greetAlgebraicOut`    | R2 added `coverage.buzzers.allbouts.algebraicEvent` |
+| `Alternative(success, failure)`              | Exists `services.alternative`          | R2 added `coverage.buzzers.allbouts.alternativeEvent` |
 | Empty input `()`                             | Exists `services.unitToUnit`           | Exists `events.TestBuzzer.empty` |
 | Foreign-domain input                         | Exists `domain02.ImportIdService.some` | — |
-| All-Output single-service witness            | R2 `coverage.services.alloutputs.AllOutputsService` | R2 `coverage.buzzers.alloutputs.AllOutputsBuzzer` |
+| All-Output single-service witness            | R2 `coverage.services.allsouts.AllOutputsService` | R2 `coverage.buzzers.allbouts.AllOutputsBuzzer` |
 
 ## Cross-domain
 
@@ -178,8 +178,8 @@ Under `source/coverage/`:
 | `generics-nested.domain`         | `coverage.generics.nested`         | Nested generics (list[list], map[str,list], opt[list[map]], set[opt]) |
 | `enum-single-member.domain`      | `coverage.usertypes.enumsingle`    | Single-member enum |
 | `identifier-single-field.domain` | `coverage.usertypes.idsingle`      | Single-field identifier |
-| `service-all-outputs.domain`     | `coverage.services.alloutputs`     | One service, every Output variant |
-| `buzzer-all-outputs.domain`      | `coverage.buzzers.alloutputs`      | One buzzer, every Output variant |
+| `service-all-outputs.domain`     | `coverage.services.allsouts`     | One service, every Output variant |
+| `buzzer-all-outputs.domain`      | `coverage.buzzers.allbouts`      | One buzzer, every Output variant |
 | `crossdom-leaf.domain`           | `coverage.crossdom.leaf`           | Leaf for cross-domain importer fixture |
 | `crossdom-importer.domain`       | `coverage.crossdom.importer`       | Cross-domain alias chain, field, mixin inheritance, ADT branch |
 

@@ -13,16 +13,16 @@
 // SKIPPED wireIds (service/buzzer method input/output ephemerals — not exported in the
 // generated TS tree; the marshaller dispatches input/output payloads directly and never
 // references these by wireId at runtime):
-//   # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventInput\tdefault  (service/buzzer ephemeral not exported in TS)
-//   # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerErr  (service/buzzer ephemeral not exported in TS)
-//   # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerOk  (service/buzzer ephemeral not exported in TS)
-//   # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventInput\tdefault  (service/buzzer ephemeral not exported in TS)
-//   # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventOutput\tFailure  (service/buzzer ephemeral not exported in TS)
+//   # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventInput\tdefault  (service/buzzer ephemeral not exported in TS)
+//   # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerErr  (service/buzzer ephemeral not exported in TS)
+//   # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerOk  (service/buzzer ephemeral not exported in TS)
+//   # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventInput\tdefault  (service/buzzer ephemeral not exported in TS)
+//   # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventOutput\tFailure  (service/buzzer ephemeral not exported in TS)
 //   # x-skip-positional  ... (full list at bottom)
 //
 
-import { BuzzerErr } from './coverage/buzzers/alloutputs/BuzzerErr';
-import { BuzzerOk } from './coverage/buzzers/alloutputs/BuzzerOk';
+import { BuzzerErr } from './coverage/buzzers/allbouts/BuzzerErr';
+import { BuzzerOk } from './coverage/buzzers/allbouts/BuzzerOk';
 import { ExtendsForeignMixin } from './coverage/crossdom/importer/ExtendsForeignMixin';
 import { LocalBranch } from './coverage/crossdom/importer/LocalBranch';
 import { UsesForeignField } from './coverage/crossdom/importer/UsesForeignField';
@@ -33,8 +33,8 @@ import { MapWithVariousKeys } from './coverage/generics/mapkeys/MapWithVariousKe
 import { Leaf } from './coverage/generics/nested/Leaf';
 import { NestedGenerics } from './coverage/generics/nested/NestedGenerics';
 import { AllPrimitivesFlat } from './coverage/primitives/AllPrimitivesFlat';
-import { ErrorPayload } from './coverage/services/alloutputs/ErrorPayload';
-import { Greeting } from './coverage/services/alloutputs/Greeting';
+import { ErrorPayload } from './coverage/services/allsouts/ErrorPayload';
+import { Greeting } from './coverage/services/allsouts/Greeting';
 import { UsesSingleton } from './coverage/usertypes/enumsingle/UsesSingleton';
 import { Singleton } from './coverage/usertypes/idsingle/Singleton';
 import { UsesId } from './coverage/usertypes/idsingle/UsesId';
@@ -199,8 +199,8 @@ function emit(wireId: string, scenario: string, json: string): void {
 
 const out: string[] = [];
 
-out.push("coverage.buzzers.alloutputs.BuzzerErr" + '\t' + "default" + '\t' + JSON.stringify(new BuzzerErr({ code: 1 }).serialize()));
-out.push("coverage.buzzers.alloutputs.BuzzerOk" + '\t' + "default" + '\t' + JSON.stringify(new BuzzerOk({ v: "s1" }).serialize()));
+out.push("coverage.buzzers.allbouts.BuzzerErr" + '\t' + "default" + '\t' + JSON.stringify(new BuzzerErr({ code: 1 }).serialize()));
+out.push("coverage.buzzers.allbouts.BuzzerOk" + '\t' + "default" + '\t' + JSON.stringify(new BuzzerOk({ v: "s1" }).serialize()));
 out.push("coverage.crossdom.importer.ExtendsForeignMixin" + '\t' + "default" + '\t' + JSON.stringify(new ExtendsForeignMixin({ shared: 1, own: "s1" }).serialize()));
 out.push("coverage.crossdom.importer.ForeignAdt" + '\t' + "ForeignLeaf" + '\t' + JSON.stringify(({ "ForeignLeaf": { v: "s1" } })));
 out.push("coverage.crossdom.importer.ForeignAdt" + '\t' + "LocalBranch" + '\t' + JSON.stringify(({ "LocalBranch": { marker: "s1" } })));
@@ -213,8 +213,8 @@ out.push("coverage.generics.mapkeys.MapWithVariousKeys" + '\t' + "default" + '\t
 out.push("coverage.generics.nested.Leaf" + '\t' + "default" + '\t' + JSON.stringify(new Leaf({ v: 1 }).serialize()));
 out.push("coverage.generics.nested.NestedGenerics" + '\t' + "default" + '\t' + JSON.stringify(new NestedGenerics({ matrix: [[1]], byTag: {   ["s1"]: [{ v: 1 }] }, histogram: [{   ["s1"]: 2 }], options: [{   ["s1"]: { v: 1 } }], setOfOpt: [1] }).serialize()));
 out.push("coverage.primitives.AllPrimitivesFlat" + '\t' + "default" + '\t' + JSON.stringify(new AllPrimitivesFlat({ b_bool: true, s_str: "s1", i8: 1, i16: 2, i32: 1, i64: 2, u8: 1, u16: 2, u32: 1, u64: 2, f_flt: 1.5, d_dbl: 2.5, uuid: "3a7f0c12-1234-5678-9abc-fedcba987654", blob: "aGkh", ts_zoned: "2025-01-15T10:30:45Z", ts_local: "2025-01-15T10:30:45", ts_unix: "2025-01-15T10:30:45Z", time_only: "10:30:45", date_only: "2025-01-15" }).serialize()));
-out.push("coverage.services.alloutputs.ErrorPayload" + '\t' + "default" + '\t' + JSON.stringify(new ErrorPayload({ code: 1, message: "s1" }).serialize()));
-out.push("coverage.services.alloutputs.Greeting" + '\t' + "default" + '\t' + JSON.stringify(new Greeting({ text: "s1" }).serialize()));
+out.push("coverage.services.allsouts.ErrorPayload" + '\t' + "default" + '\t' + JSON.stringify(new ErrorPayload({ code: 1, message: "s1" }).serialize()));
+out.push("coverage.services.allsouts.Greeting" + '\t' + "default" + '\t' + JSON.stringify(new Greeting({ text: "s1" }).serialize()));
 out.push("coverage.usertypes.enumsingle.UsesSingleton" + '\t' + "default" + '\t' + JSON.stringify(new UsesSingleton({ tag: "Only" }).serialize()));
 out.push("coverage.usertypes.idsingle.Singleton" + '\t' + "default" + '\t' + JSON.stringify(new Singleton("Singleton#3a7f0c12-1234-5678-9abc-fedcba987654").serialize()));
 out.push("coverage.usertypes.idsingle.UsesId" + '\t' + "default" + '\t' + JSON.stringify(new UsesId({ ref: "Singleton#3a7f0c12-1234-5678-9abc-fedcba987654" }).serialize()));
@@ -460,34 +460,34 @@ out.sort();
 for (const l of out) console.log(l);
 
 // ---- Skipped wireIds (service/buzzer ephemerals; not exported in TS) ----
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventInput\tdefault
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerErr
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerOk
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventInput\tdefault
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventOutput\tFailure
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventOutput\tSuccess
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.DtoEventInput\tdefault
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.DtoEventOutput\tdefault
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.PrimEventInput\tdefault
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.PrimEventOutput\tdefault
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.StructEventInput\tdefault
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.StructEventOutput\tdefault
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.VoidEventInput\tdefault
-// # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.VoidEventOutput\tdefault
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.AlgebraicInput\tdefault
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.AlgebraicOutput\tErrorPayload
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.AlgebraicOutput\tGreeting
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.AlternativeInput\tdefault
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.AlternativeOutput\tFailure
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.AlternativeOutput\tSuccess
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.ImplicitStructInput\tdefault
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.ImplicitStructOutput\tdefault
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.SingularDtoInput\tdefault
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.SingularDtoOutput\tdefault
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.SingularPrimitiveInput\tdefault
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.SingularPrimitiveOutput\tdefault
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.VoidInput\tdefault
-// # x-skip-positional  coverage.services.alloutputs.AllOutputsService.VoidOutput\tdefault
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventInput\tdefault
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerErr
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerOk
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventInput\tdefault
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventOutput\tFailure
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventOutput\tSuccess
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.DtoEventInput\tdefault
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.DtoEventOutput\tdefault
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.PrimEventInput\tdefault
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.PrimEventOutput\tdefault
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.StructEventInput\tdefault
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.StructEventOutput\tdefault
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.VoidEventInput\tdefault
+// # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.VoidEventOutput\tdefault
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.AlgebraicInput\tdefault
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.AlgebraicOutput\tErrorPayload
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.AlgebraicOutput\tGreeting
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.AlternativeInput\tdefault
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.AlternativeOutput\tFailure
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.AlternativeOutput\tSuccess
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.ImplicitStructInput\tdefault
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.ImplicitStructOutput\tdefault
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.SingularDtoInput\tdefault
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.SingularDtoOutput\tdefault
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.SingularPrimitiveInput\tdefault
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.SingularPrimitiveOutput\tdefault
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.VoidInput\tdefault
+// # x-skip-positional  coverage.services.allsouts.AllOutputsService.VoidOutput\tdefault
 // # x-skip-positional  idltest.anyvals.UserData.Struct\tdefault
 // # x-skip-positional  idltest.ast.AppNode.Struct\tdefault
 // # x-skip-positional  idltest.ast.IfNode.Struct\tdefault

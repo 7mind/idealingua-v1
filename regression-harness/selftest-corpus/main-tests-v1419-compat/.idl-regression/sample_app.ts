@@ -10,11 +10,11 @@
 // SKIPPED wireIds (service/buzzer method input/output ephemerals — not exported in the
 // generated TS tree; the marshaller dispatches input/output payloads directly and never
 // references these by wireId at runtime):
-//   # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventInput\tdefault  (service/buzzer ephemeral not exported in TS)
-//   # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerErr  (service/buzzer ephemeral not exported in TS)
-//   # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerOk  (service/buzzer ephemeral not exported in TS)
-//   # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventInput\tdefault  (service/buzzer ephemeral not exported in TS)
-//   # x-skip-positional  coverage.buzzers.alloutputs.AllOutputsBuzzer.AlternativeEventOutput\tFailure  (service/buzzer ephemeral not exported in TS)
+//   # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventInput\tdefault  (service/buzzer ephemeral not exported in TS)
+//   # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerErr  (service/buzzer ephemeral not exported in TS)
+//   # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlgebraicEventOutput\tBuzzerOk  (service/buzzer ephemeral not exported in TS)
+//   # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventInput\tdefault  (service/buzzer ephemeral not exported in TS)
+//   # x-skip-positional  coverage.buzzers.allbouts.AllOutputsBuzzer.AlternativeEventOutput\tFailure  (service/buzzer ephemeral not exported in TS)
 //   # x-skip-positional  ... (155 total skipped — full list at bottom)
 
 import { AFaceStruct } from './idltest/algebraics/AFace';
