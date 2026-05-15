@@ -370,7 +370,13 @@ final case class DomainServiceMethodProduct(
       case o: DefMethod.Output.Singular =>
         TextTree.value[ScalaRefHandle](ScalaRefHandle.TypeFull(o.typeId))
       case _ =>
-        val tpe = ctx.conv.toScala(wrappedTypespaceTypeId).within(negativeBranchTypeName).typeFull.toString
+        // Non-Singular failure (Void, Struct, Algebraic). The wrapped client's
+        // body strips `va.value` to the synthesized failure-DTO type, so the
+        // signature must use the synthesized DTO (`<Method><...>Failure`) and
+        // not the ADT branch wrapper — otherwise scala-cli reports a
+        // `type mismatch` against `Or[Wrapper, ...]`. Matches the legacy
+        // emission (`Or[<NegDTO>, ...]`).
+        val tpe = negativeType.typeFull.toString
         q"$tpe"
     }
 
@@ -378,7 +384,12 @@ final case class DomainServiceMethodProduct(
       case o: DefMethod.Output.Singular =>
         TextTree.value[ScalaRefHandle](ScalaRefHandle.TypeFull(o.typeId))
       case _ =>
-        val tpe = ctx.conv.toScala(wrappedTypespaceTypeId).within(positiveBranchTypeName).typeFull.toString
+        // Non-Singular success (Void, Struct, Algebraic). Same reasoning as
+        // `renderIdShimNeg`: the wrapped client emits `_F.pure(va.value)`,
+        // which yields the synthesized DTO type, so the signature uses the
+        // synthesized `<Method><...>Success` DTO instead of the ADT branch
+        // wrapper. Matches the legacy emission (`Or[..., <PosDTO>]`).
+        val tpe = positiveType.typeFull.toString
         q"$tpe"
     }
 
