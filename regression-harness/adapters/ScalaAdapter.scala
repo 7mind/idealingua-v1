@@ -82,9 +82,40 @@ final class ScalaAdapter(repoRoot: Path) extends LangAdapter {
     // directory heuristic never applies. `project.scala` (using-directives) is included by
     // the same walk and is honored by scala-cli regardless of position in the input list.
     val inputs = listScalaInputs(workDir).map(_.toString)
-    val cmd    = Seq("scala-cli", "run") ++ inputs
-    Harness.say(s"+ scala-cli run <${inputs.size} .scala files under $workDir>")
-    val proc = Process(cmd).run(logger)
+
+    // Two-step run:
+    //   1. `scala-cli --power compile --print-classpath …` resolves deps, compiles,
+    //       and prints the resulting `:`-separated classpath to stdout.
+    //   2. `java -cp <classpath> sample_app.SampleApp` runs the sample app.
+    // Avoids `scala-cli run`'s execve-based JVM launcher, whose native binding
+    // (`coursier.jvm.Execve` → `com.oracle.svm.core.posix.headers.LibC`) is
+    // unbundled in some scala-cli distributions (e.g. the GraalVM-based nixpkgs
+    // build trips `NoClassDefFoundError` on `Execve.java:29` for large
+    // generated projects). The compile-and-run-by-hand split is equivalent
+    // semantically (same classpath, same main class) and works uniformly.
+    val cpBuf = new StringBuilder
+    val cpLogger = ProcessLogger(
+      o => { cpBuf.append(o); cpBuf.append('\n') },
+      e => { stderrBuf.append(e); stderrBuf.append('\n') },
+    )
+    val compileCmd = Seq("scala-cli", "--power", "compile", "--print-classpath") ++ inputs
+    Harness.say(s"+ scala-cli --power compile --print-classpath <${inputs.size} .scala files under $workDir>")
+    val compileRc = Process(compileCmd).!(cpLogger)
+    if (compileRc != 0) {
+      Files.writeString(rawOut, stdoutBuf.toString)
+      Files.writeString(Path.of(rawOut.toString + ".stderr"), stderrBuf.toString)
+      return Left(s"scala-cli compile exit=$compileRc (stderr captured at ${rawOut}.stderr)")
+    }
+    val classpath = cpBuf.toString.trim.linesIterator.toList.lastOption.getOrElse("")
+    if (classpath.isEmpty) {
+      Files.writeString(rawOut, stdoutBuf.toString)
+      Files.writeString(Path.of(rawOut.toString + ".stderr"), stderrBuf.toString)
+      return Left(s"scala-cli compile produced empty classpath (stderr captured at ${rawOut}.stderr)")
+    }
+
+    val runCmd = Seq("java", "-cp", classpath, "sample_app.SampleApp")
+    Harness.say(s"+ java -cp <classpath:${classpath.length}B> sample_app.SampleApp")
+    val proc = Process(runCmd).run(logger)
 
     val deadline = System.nanoTime() + Timeout.toNanos
     while (proc.isAlive() && System.nanoTime() < deadline) {
@@ -95,13 +126,13 @@ final class ScalaAdapter(repoRoot: Path) extends LangAdapter {
         proc.destroy()
         Files.writeString(rawOut, stdoutBuf.toString)
         Files.writeString(Path.of(rawOut.toString + ".stderr"), stderrBuf.toString)
-        return Left(s"scala-cli timed out after $Timeout")
+        return Left(s"sample app timed out after $Timeout")
       } else proc.exitValue()
 
     Files.writeString(rawOut, stdoutBuf.toString)
     Files.writeString(Path.of(rawOut.toString + ".stderr"), stderrBuf.toString)
 
-    if (rc != 0) Left(s"scala-cli exit=$rc (stderr captured at ${rawOut}.stderr)")
+    if (rc != 0) Left(s"sample app exit=$rc (stderr captured at ${rawOut}.stderr)")
     else Right(())
   }
 
