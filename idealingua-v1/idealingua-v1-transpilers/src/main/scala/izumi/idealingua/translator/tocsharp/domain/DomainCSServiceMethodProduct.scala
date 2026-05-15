@@ -162,14 +162,42 @@ final class DomainCSServiceMethodProduct(ctx: DomainCSContext, adtRenderer: Doma
     implicit im: CSharpImports,
     domain: Domain,
   ): String = {
+    // Synthesize the JsonNet pre/post converter splices for an Algebraic
+    // success or failure side. Without these the abstract Out<Method><Side>
+    // ADT serializes via Newtonsoft's default sealed-subclass discriminator,
+    // which keys each branch on the literal `"Value"` instead of the branch
+    // name — diverging from the legacy emission (where every Algebraic ADT
+    // carries `[JsonConverter(typeof(<Name>_JsonNetConverter))]` + the
+    // accompanying converter class). Matches `renderMethodOutModelImpl`'s
+    // top-level `Algebraic` arm under `withExtensions=true`.
+    def algebraicSplices(adtName: String, alts: List[izumi.idealingua.model.il.ast.typed.AdtMember]): (String, String) = {
+      val syntheticAdt = NewTypeDef.Adt(
+        izumi.idealingua.model.common.TypeId.AdtId(
+          izumi.idealingua.model.common.TypePath(izumi.idealingua.model.common.DomainId.Undefined, Seq.empty),
+          adtName,
+        ),
+        alts,
+        izumi.idealingua.model.il.ast.typed.NodeMeta.empty,
+      )
+      val pre  = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.preAdt(syntheticAdt)
+      val post = izumi.idealingua.translator.tocsharp.domain.extensions.DomainCSJsonNetExtension.postAdt(syntheticAdt, im)
+      (pre, post)
+    }
+
     val left = alternative.failure match {
-      case al: Algebraic => adtRenderer.renderAdtImpl(renderServiceMethodAlternativeOutput(name, alternative, success = false), al.alternatives, renderUsings = false)
+      case al: Algebraic =>
+        val adtName     = renderServiceMethodAlternativeOutput(name, alternative, success = false)
+        val (pre, post) = algebraicSplices(adtName, al.alternatives)
+        adtRenderer.renderAdtImpl(adtName, al.alternatives, renderUsings = false, preSplice = pre, postSplice = post)
       case st: Struct    => renderServiceMethodInModel(DTOId(structId.path, structId.name + "Failure"), st.struct, withExtensions)
       case _             => ""
     }
 
     val right = alternative.success match {
-      case al: Algebraic => adtRenderer.renderAdtImpl(renderServiceMethodAlternativeOutput(name, alternative, success = true), al.alternatives, renderUsings = false)
+      case al: Algebraic =>
+        val adtName     = renderServiceMethodAlternativeOutput(name, alternative, success = true)
+        val (pre, post) = algebraicSplices(adtName, al.alternatives)
+        adtRenderer.renderAdtImpl(adtName, al.alternatives, renderUsings = false, preSplice = pre, postSplice = post)
       case st: Struct    => renderServiceMethodInModel(DTOId(structId.path, structId.name + "Success"), st.struct, withExtensions)
       case _             => ""
     }
