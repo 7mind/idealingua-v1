@@ -529,6 +529,17 @@ object Idealingua {
                                    |  } else Seq.empty[java.io.File]
                                    |}.taskValue""".stripMargin.raw,
           "unmanagedResourceDirectories" in SettingScope.Compile += """(Compile / target).value / "generated-sources" / "test-harness" / "scala-mcp-resources"""".raw,
+          // The sourceGenerator above emits ~150 IDL-generated `.scala`
+          // files under `target/generated-sources/test-harness/scala/...`.
+          // scoverage instruments all `Compile / sources` (managed +
+          // unmanaged), then in `coverageReport` tries to match each
+          // instrumented file to a declared source root. Generated files
+          // live outside `src/main/scala`, so scoverage throws
+          // `RuntimeException: No source root found for .../generated-sources/.../<File>.scala`.
+          // Disabling instrumentation on the test-harness mirrors the
+          // policy already in place for the runtime/transpiler modules
+          // (test scaffolding is not the unit under measurement).
+          "coverageEnabled" := false,
           "runWireFixtures" := """{
                                |  val log      = streams.value.log
                                |  val repoRoot = (LocalRootProject / baseDirectory).value.toPath

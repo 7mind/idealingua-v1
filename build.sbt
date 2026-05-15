@@ -1578,6 +1578,7 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
       } else Seq.empty[java.io.File]
     }.taskValue,
     Compile / unmanagedResourceDirectories += (Compile / target).value / "generated-sources" / "test-harness" / "scala-mcp-resources",
+    coverageEnabled := false,
     runWireFixtures := {
       val log      = streams.value.log
       val repoRoot = (LocalRootProject / baseDirectory).value.toPath
