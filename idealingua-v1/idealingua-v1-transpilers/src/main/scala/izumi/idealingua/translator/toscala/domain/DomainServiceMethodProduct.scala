@@ -253,7 +253,13 @@ final case class DomainServiceMethodProduct(
 
   // -------- Internal accessors -----------------------------------------
 
-  protected def name: String = method.name
+  // Backtick-escape Scala-3-reserved identifiers (e.g. an IDL method named
+  // `export` / `given` / `enum`) so the rendered text round-trips through
+  // `ScalaTextHelpers.parseClass` under the Scala 3 dialect. Used uniformly
+  // for both the def declaration (`def $name(...)`) and the per-method inner
+  // object (`object $name { ... }`) — both must agree so that
+  // `_M.$name.id` / `_M.$name.Input` references stay valid.
+  protected def name: String = ScalaTextHelpers.escapeIdent(method.name)
 
   // -------- Input rendering --------------------------------------------
   protected object Input {
