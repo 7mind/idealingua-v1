@@ -107,10 +107,16 @@ object ScopeBuilder {
       si =>
         val importedAs   = si.imported.importedAs
         val originalName = si.imported.name
-        // Resolve via the family index: no recursive re-typing of imported domains.
+        // Resolve via the family index, walking the imported domain's own
+        // imports transitively so a name re-exported through a hub domain is
+        // visible. Mirrors legacy IDLPostTyper's `getDomain(B).makeDefinite(X)`
+        // path (`mapping = local types ++ imports`). A hub-style domain `B`
+        // can import name `X` from domain `C` and a downstream domain `A` can
+        // then import `X` from `B`; without transitive walking, `A` never
+        // sees a resolved TypeId for `X`.
         family.domains.get(si.domain) match {
           case Some(importedDomain) =>
-            collectLocalNames(importedDomain, family).get(originalName) match {
+            collectVisibleNames(importedDomain, family, Set.empty).get(originalName) match {
               case Some(tid) => importedBuilder.update(importedAs, tid)
               case None      => () // surface later as UnknownTypeRef during Phase 2
             }
@@ -163,6 +169,29 @@ object ScopeBuilder {
       case d: RawTypeDef.WithId => d.id.name -> normalize(d.id, domain.id)
       case d: NewType           => d.id.name -> newtypeRegisteredId(d, domain.id, domain, family)
     }.toMap
+  }
+
+  /** Names visible inside `domain` for the purpose of resolving an import that
+    * targets `domain`: locally-declared types AND the names `domain` itself
+    * imports from other domains (transitively). Walks the family graph with a
+    * `visited` set so import cycles do not blow the stack.
+    *
+    * Local names shadow imports on collision, matching the legacy
+    * `IDLPostTyper.mapping` precedence and the in-domain
+    * `ImportNameClashesWithLocal` diagnostic emitted elsewhere.
+    */
+  private def collectVisibleNames(domain: DomainMeshLoaded, family: FamilyIndex, visited: Set[DomainId]): Map[String, TypeId] = {
+    if (visited.contains(domain.id)) Map.empty
+    else {
+      val next = visited + domain.id
+      val locals = collectLocalNames(domain, family)
+      val imports = domain.imports.iterator.flatMap { si =>
+        family.domains.get(si.domain).flatMap { src =>
+          collectVisibleNames(src, family, next).get(si.imported.name).map(si.imported.importedAs -> _)
+        }
+      }.toMap
+      imports ++ locals
+    }
   }
 
   /** Determine the registered TypeId for a NewType (with or without modifiers).

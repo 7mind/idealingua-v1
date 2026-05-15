@@ -90,6 +90,69 @@ final class ScopeBuilderSpec extends AnyFunSpec with Matchers {
       scoped.localNames.keySet shouldBe Set("A")
     }
 
+    it("resolves transitively re-exported imports (A imports X from B, B imports X from C)") {
+      // Mirrors the legacy IDLPostTyper.makeDefinite path that walks the
+      // imported domain's `mapping` (= local types ++ its own imports). Real
+      // codebases use hub-style domains that import a name from one place and
+      // re-export it to downstream domains; without transitive walking, the
+      // downstream domain never sees a resolved TypeId for the re-exported
+      // name.
+      val domC = DomainId(Seq("test"), "c")
+      val cDto = dto("X", domC)
+      val resolvedC = resolved(domC, List(cDto))
+
+      // Domain B has no local types — it just re-exports X via an import from C.
+      val bImports: Seq[SingleImport] = List(SingleImport(domC, ImportedId("X", None)))
+      val resolvedB = resolved(domB, Nil)
+
+      val (inputA, _) = fixture(
+        local      = List(dto("A")),
+        imports    = List(SingleImport(domB, ImportedId("X", None))),
+        referenced = Map.empty,
+      )
+
+      val stubB = DomainMeshLoaded(
+        id               = domB,
+        origin           = FSPath.Name("b.domain"),
+        directInclusions = Seq.empty,
+        originalImports  = Seq.empty,
+        meta             = meta,
+        types            = Nil,
+        services         = Seq.empty,
+        buzzers          = Seq.empty,
+        streams          = Seq.empty,
+        consts           = Seq.empty,
+        imports          = bImports,
+        defn             = resolvedB,
+      )
+      val stubC = DomainMeshLoaded(
+        id               = domC,
+        origin           = FSPath.Name("c.domain"),
+        directInclusions = Seq.empty,
+        originalImports  = Seq.empty,
+        meta             = meta,
+        types            = List(cDto),
+        services         = Seq.empty,
+        buzzers          = Seq.empty,
+        streams          = Seq.empty,
+        consts           = Seq.empty,
+        imports          = Seq.empty,
+        defn             = resolvedC,
+      )
+      val family = FamilyIndex(
+        domains     = Map(domA -> inputA, domB -> stubB, domC -> stubC),
+        importGraph = Map(domA -> Set(domB), domB -> Set(domC), domC -> Set.empty),
+        loadOrder   = List(domC, domB, domA),
+        diagnostics = Diagnostics.empty,
+      )
+
+      val scoped = ScopeBuilder(inputA.id, inputA, family)
+      scoped.importedNames.keySet shouldBe Set("X")
+      // The TypeId points to the original declaration site in domC, not domB.
+      scoped.importedNames("X") shouldBe DTOId(TypePath(domC, Seq.empty), "X")
+      scoped.diagnostics.isEmpty shouldBe true
+    }
+
     it("resolves imported type from family.domains (cross-domain family lookup)") {
       // Domain A imports type C from domain C.  C is not in A's defn.referenced
       // but IS in the family index — verifies that ScopeBuilder uses family, not
