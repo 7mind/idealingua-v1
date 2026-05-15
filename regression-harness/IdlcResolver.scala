@@ -428,35 +428,42 @@ final class IdlcResolver(
   }
 
   private def addWorktree(worktree: Path, sha: String): Unit = {
-    // Best-effort cleanup of any prior registration / leftover dir. Both
-    // `worktree remove` and `worktree prune` are tolerant of "not found" /
-    // "no stale entries" and exit 0.
-    Process(
-      Seq("git", "worktree", "remove", "--force", worktree.toAbsolutePath.toString),
-      repoRoot.toFile,
-    ).!(ProcessLogger(_ => (), _ => ()))
-    Process(Seq("git", "worktree", "prune"), repoRoot.toFile).!(ProcessLogger(_ => (), _ => ()))
+    // Use `git clone --local` rather than `git worktree add`. A `worktree add`
+    // creates a `.git` FILE in the target dir pointing at the main repo's
+    // `.git/worktrees/<name>/` — sbt-git's JGit version mis-detects this as
+    // a "bare repository" during build.sbt settings resolution and throws
+    // `NoWorkTreeException`, killing `sbt stage` before any task runs. A
+    // local clone produces a fully self-contained `.git/` directory which
+    // JGit handles correctly. `--local` reuses hardlinks for object packs
+    // so the disk cost is small.
     if (Files.exists(worktree)) deleteRecursively(worktree)
 
-    val rc = Process(
-      Seq("git", "worktree", "add", "--detach", worktree.toAbsolutePath.toString, sha),
+    val cloneRc = Process(
+      Seq("git", "clone", "--local", "--no-tags", "--shared", repoRoot.toAbsolutePath.toString, worktree.toAbsolutePath.toString),
       repoRoot.toFile,
     ).!
-    if (rc != 0) {
+    if (cloneRc != 0) {
       throw new RuntimeException(
-        s"git worktree add failed (exit=$rc). If a previous worktree is registered, run: " +
-        s"`git worktree remove --force $worktree` then retry."
+        s"git clone --local failed (exit=$cloneRc). Tried to populate worktree at $worktree from $repoRoot."
+      )
+    }
+
+    val checkoutRc = Process(
+      Seq("git", "-c", "advice.detachedHead=false", "checkout", "--detach", sha),
+      worktree.toFile,
+    ).!
+    if (checkoutRc != 0) {
+      throw new RuntimeException(
+        s"git checkout --detach $sha failed (exit=$checkoutRc) in clone at $worktree."
       )
     }
   }
 
   private def removeWorktree(worktree: Path): Unit = {
-    // `git worktree remove` first (clean record), then physical fallback.
-    Process(Seq("git", "worktree", "remove", "--force", worktree.toAbsolutePath.toString), repoRoot.toFile).!
+    // Self-contained clones — plain directory delete is sufficient.
     if (Files.exists(worktree)) {
       deleteRecursively(worktree)
     }
-    Process(Seq("git", "worktree", "prune"), repoRoot.toFile).!
   }
 
   private def copyTree(src: Path, dst: Path): Unit = {
