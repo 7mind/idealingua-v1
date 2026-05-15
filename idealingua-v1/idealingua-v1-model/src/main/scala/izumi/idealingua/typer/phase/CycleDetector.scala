@@ -57,7 +57,21 @@ object CycleDetector {
           val sccSet     = scc.toSet
           val backEdges  = scc.flatMap(n => graph.getOrElse(n, Nil).filter(e => sccSet.contains(e.to)).map(e => (n, e)))
           val allInherit = backEdges.nonEmpty && backEdges.forall(_._2.kind == EdgeKind.Inheritance)
-          val terminating = backEdges.nonEmpty && backEdges.forall(_._2.kind == EdgeKind.Container)
+          // A cycle is terminating iff every cyclic walk through the SCC traverses
+          // at least one Container edge. Equivalently, the subgraph induced by
+          // non-Container edges within the SCC is acyclic. The earlier "every
+          // back-edge is Container" check rejected legal shapes where the
+          // Container edge sits only on part of the cycle — e.g.
+          // `data A { b: B }; adt B = C; data C { a: opt[A] }` — well-founded
+          // via the `opt[A]` container indirection on `C → A`, even though
+          // `A → B` is Direct.
+          val terminating = backEdges.nonEmpty && {
+            val subgraph: Map[TypeId, List[Edge]] = sccSet.iterator.map { n =>
+              n -> graph.getOrElse(n, Nil).filter(e => sccSet.contains(e.to) && e.kind != EdgeKind.Container)
+            }.toMap
+            val subSccs = tarjan(subgraph)
+            subSccs.forall(s => s.size == 1 && !hasSelfLoop(s.head, subgraph))
+          }
 
           val cycle = Cycle(scc, terminating)
           val _     = loopsBuf.add(cycle)

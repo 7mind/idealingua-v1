@@ -156,6 +156,102 @@ final class CycleDetectorSpec extends AnyFunSpec with Matchers {
       rd.loops.exists(_.terminating) shouldBe true
     }
 
+    it("accepts DTO → ADT → DTO cycle when one back-edge is Container (mixed-kind cycle)") {
+      // data A { b: B }       — Direct edge A → B
+      // adt  B = C            — Container edge B → C (ADT alt)
+      // data C { a: opt[A] }  — Container edge C → A
+      // Subgraph of SCC {A, B, C} restricted to non-Container edges = { A → B }; acyclic ⇒ terminating.
+      val aId = DTOId(TypePath(domA, Seq.empty), "A")
+      val bId = AdtId(TypePath(domA, Seq.empty), "B")
+      val cId = DTOId(TypePath(domA, Seq.empty), "C")
+      val aDef = RawTypeDef.DTO(
+        aId,
+        RawStructure(Nil, Nil, Nil, List(RawField(IndefiniteId(Seq.empty, "B"), Some("b"), meta)), Nil),
+        meta,
+      )
+      val bDef = RawTypeDef.Adt(
+        bId,
+        List(RawAdt.Member.TypeRef(IndefiniteId(Seq.empty, "C"), None, meta)),
+        meta,
+      )
+      val cDef = RawTypeDef.DTO(
+        cId,
+        RawStructure(
+          Nil,
+          Nil,
+          Nil,
+          List(RawField(
+            izumi.idealingua.model.common.IndefiniteGeneric(Seq.empty, "opt", List(IndefiniteId(Seq.empty, "A"))),
+            Some("a"),
+            meta,
+          )),
+          Nil,
+        ),
+        meta,
+      )
+      val (input, _) = fixture(List(aDef, bDef, cDef), Nil, Map.empty)
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(input))))
+      val rd  = CycleDetector(rd0)
+
+      rd.diagnostics.issues.collect { case d: Diagnostic.CyclicUsage => d } shouldBe empty
+      rd.diagnostics.issues.collect { case d: Diagnostic.NonTerminatingCycle => d } shouldBe empty
+      rd.loops.exists(_.terminating) shouldBe true
+    }
+
+    it("accepts recursive ADT with multi-DTO direct fan-in to the ADT") {
+      // data F1 { tpe: A }       — Direct F1 → A
+      // data F2 { tpe: A }       — Direct F2 → A
+      // data F3 { items: list[A] } — Container F3 → A
+      // adt  A = F1 | F2 | F3    — Container A → {F1, F2, F3} (ADT alts)
+      // Subgraph of SCC restricted to non-Container = { F1 → A, F2 → A };
+      // acyclic (A has no outgoing non-Container edges) ⇒ terminating.
+      val f1Id = DTOId(TypePath(domA, Seq.empty), "F1")
+      val f2Id = DTOId(TypePath(domA, Seq.empty), "F2")
+      val f3Id = DTOId(TypePath(domA, Seq.empty), "F3")
+      val aId  = AdtId(TypePath(domA, Seq.empty), "A")
+      val f1 = RawTypeDef.DTO(
+        f1Id,
+        RawStructure(Nil, Nil, Nil, List(RawField(IndefiniteId(Seq.empty, "A"), Some("tpe"), meta)), Nil),
+        meta,
+      )
+      val f2 = RawTypeDef.DTO(
+        f2Id,
+        RawStructure(Nil, Nil, Nil, List(RawField(IndefiniteId(Seq.empty, "A"), Some("tpe"), meta)), Nil),
+        meta,
+      )
+      val f3 = RawTypeDef.DTO(
+        f3Id,
+        RawStructure(
+          Nil,
+          Nil,
+          Nil,
+          List(RawField(
+            izumi.idealingua.model.common.IndefiniteGeneric(Seq.empty, "list", List(IndefiniteId(Seq.empty, "A"))),
+            Some("items"),
+            meta,
+          )),
+          Nil,
+        ),
+        meta,
+      )
+      val aDef = RawTypeDef.Adt(
+        aId,
+        List(
+          RawAdt.Member.TypeRef(IndefiniteId(Seq.empty, "F1"), None, meta),
+          RawAdt.Member.TypeRef(IndefiniteId(Seq.empty, "F2"), None, meta),
+          RawAdt.Member.TypeRef(IndefiniteId(Seq.empty, "F3"), None, meta),
+        ),
+        meta,
+      )
+      val (input, _) = fixture(List(f1, f2, f3, aDef), Nil, Map.empty)
+      val rd0 = AliasDealiaser(KindChecker(NameResolver(scopeFor(input))))
+      val rd  = CycleDetector(rd0)
+
+      rd.diagnostics.issues.collect { case d: Diagnostic.CyclicUsage => d } shouldBe empty
+      rd.diagnostics.issues.collect { case d: Diagnostic.NonTerminatingCycle => d } shouldBe empty
+      rd.loops.exists(_.terminating) shouldBe true
+    }
+
     it("flags cyclic interface inheritance as CyclicInheritance") {
       // I1 extends I2; I2 extends I1
       val i1Id = InterfaceId(TypePath(domA, Seq.empty), "I1")
