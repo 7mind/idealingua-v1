@@ -56,7 +56,7 @@ class Field:
 
 @dataclass
 class TypeInfo:
-    fqn: str                # dotted, e.g. "net.playq.foo.Bar" (matches FullClassName)
+    fqn: str                # dotted, e.g. "idltest.foo.Bar" (matches FullClassName)
     kind: str               # "dto" | "id" | "enum" | "adt" | "struct" | "alias"
     file_path: str          # absolute path to declaring .ts file
     class_name: str         # exported class symbol (e.g. "Bar", "BarStruct")
@@ -373,7 +373,7 @@ def parse_ts_file(path: str) -> List[TypeInfo]:
 
 def build_table(root: str) -> Tuple[Dict[str, TypeInfo], Dict[str, str]]:
     """Walks the generated TS tree. Returns:
-       * `by_fqn`: TypeInfo keyed by FullClassName (`net.playq.foo.Bar`)
+       * `by_fqn`: TypeInfo keyed by FullClassName (`idltest.foo.Bar`)
        * `class_to_fqn`: simple-class-name → list-of-fqns (for ADT branch
          resolution, where the deserialize switch references the class symbol).
     """
