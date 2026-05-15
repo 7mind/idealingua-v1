@@ -675,13 +675,19 @@ final class DomainTSTypeConverter(domain: Domain) {
     */
   private def dealias(a: AliasId): TypeId = domain.aliases.getOrElse(a, a)
 
-  /** Mirrors legacy `ts(al).asInstanceOf[Alias].target`. Reads the new-IR
-    * `TypeDef.Alias.target` directly. Functionally equivalent to the legacy
-    * lookup because the new IR's `userTypes` map carries every alias as
-    * `TypeDef.Alias` keyed by `AliasId`.
+  /** Mirrors legacy `ts(al).asInstanceOf[Alias].target`. Prefer the
+    * family-aggregated `domain.aliases` map (populated by
+    * `NewTyperPipeline.finalizeCrossDomainAliases`), which carries
+    * cross-domain `AliasId`s referenced from this domain. Fall back to the
+    * local `userTypes` map when an alias is purely intra-domain. This
+    * matches legacy `TypespaceImpl.dealias`, which walked
+    * `transitivelyReferenced` across domain boundaries.
     */
   private def aliasTarget(a: AliasId): TypeId =
-    domain.userTypes(a).asInstanceOf[NewTypeDef.Alias].target
+    domain.aliases.get(a) match {
+      case Some(t) => t
+      case None    => domain.userTypes(a).asInstanceOf[NewTypeDef.Alias].target
+    }
 
   /** Mirrors legacy `ts.tools.implId(i)` — `DTOId(i, "Struct")`. Same naming
     * as `DomainTSStruct.implId` and `DomainTSImports.implIdName`.

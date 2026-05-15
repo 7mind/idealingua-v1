@@ -307,7 +307,9 @@ object Harness {
   private def detectRepoRoot(): Path = {
     val cwd = Paths.get("").toAbsolutePath
     var c   = cwd
-    while (c != null && !Files.isDirectory(c.resolve(".git"))) c = c.getParent
+    // `.git` is a directory in a normal checkout and a gitlink file inside a
+    // `git worktree` — both anchor the working tree root we care about.
+    while (c != null && !Files.exists(c.resolve(".git"))) c = c.getParent
     if (c == null) cwd else c
   }
 
