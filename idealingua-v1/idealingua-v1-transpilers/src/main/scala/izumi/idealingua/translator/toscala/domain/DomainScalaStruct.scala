@@ -57,6 +57,10 @@ object DomainScalaStruct {
     // contiguous run of same-origin entries in `flat.fields` — the
     // BFS-flattener emits fields in declaration order per layer, so this is
     // equivalent.
+    // `flat.fields` carries the BFS distance the flattener assigned. For the
+    // legacy sort key we instead need the DFS-first-visit depth — see
+    // `LegacyStructOrdering.legacyDfsDistance` for the why.
+    val dfsDistance: Map[(TypeId, String), Int] = LegacyStructOrdering.legacyDfsDistance(id, domain)
     val seenPerOrigin = scala.collection.mutable.LinkedHashMap.empty[TypeId, Int]
     val extendedRaw: List[ExtendedField] = flat.fields.map { ff =>
       val perOriginIdx = {
@@ -65,13 +69,14 @@ object DomainScalaStruct {
         n
       }
       val idx = LegacyStructOrdering.originIndex(domain, ff.origin, ff.field.name).getOrElse(perOriginIdx)
+      val dist = dfsDistance.getOrElse((ff.origin, ff.field.name), ff.distance)
       ExtendedField(
         field = ff.field,
         defn  = FieldDef(
           definedBy        = ff.origin,
           definedWithIndex = idx,
           usedBy           = id,
-          distance         = ff.distance,
+          distance         = dist,
         ),
       )
     }

@@ -75,6 +75,59 @@ object LegacyStructOrdering {
     buf.toMap
   }
 
+  /** Legacy DFS-depth assignment for each field, keyed by `(origin, fieldName)`.
+    *
+    * Mirrors `FieldExtractor.extractFields(t, depth)` (`FieldExtractor.scala:11`):
+    * the distance of a field reached at recursion depth `d` is `d` (= legacy
+    * `FieldDef.distance`), and the FIRST occurrence in DFS preorder wins
+    * (later visits to the same struct are pruned, mirroring legacy
+    * `FieldExtractor.compositeFields` + the `.distinct` call). The walk
+    * visits `interfaces` then `concepts` then `thisFields` at each level.
+    *
+    * Why this is necessary: `StructuralFlattener` flattens BFS, so a struct
+    * reached via two paths (e.g. `Notification` reached via the long
+    * `…→NotificationWithApp→Notification` path AND the short
+    * `…→NotificationWithEnvironment→Notification` path) gets the SHORTER
+    * distance. The legacy sort key `(distance, definedBy.toString, idx)`
+    * inverts depth ordering, so picking the shorter distance reshuffles
+    * Notification's fields next to the appID/env layer instead of the
+    * deeper user/blueprint layer — diverging from the legacy output.
+    *
+    * Callers (`DomainScalaStruct.fromFlat`, `DomainCSStruct.fromFlat`,
+    * `DomainTSStruct.fromFlat`) override the BFS distance with the value
+    * from this map before invoking `sortLegacyKey`.
+    */
+  def legacyDfsDistance(id: StructureId, domain: Domain): Map[(TypeId, String), Int] = {
+    val buf     = scala.collection.mutable.LinkedHashMap.empty[(TypeId, String), Int]
+    val visited = scala.collection.mutable.LinkedHashSet.empty[TypeId]
+    def fieldsOfStruct(tid: TypeId): Option[(List[Field], Super)] = {
+      domain.userTypes.get(tid) match {
+        case Some(d: NewTypeDef.Dto)       => Some((d.struct.fields, d.struct.superclasses))
+        case Some(i: NewTypeDef.Interface) => Some((i.struct.fields, i.struct.superclasses))
+        case _ =>
+          domain.members.get(tid) match {
+            case Some(Member.Ephemeral(eph)) => Some((eph.struct.fields, eph.struct.superclasses))
+            case _                           => None
+          }
+      }
+    }
+    def walk(tid: TypeId, depth: Int): Unit = {
+      if (!visited.add(tid)) return
+      fieldsOfStruct(tid) match {
+        case Some((thisFields, sup)) =>
+          sup.interfaces.foreach(s => walk(s, depth + 1))
+          sup.concepts.foreach(s => walk(s, depth + 1))
+          thisFields.foreach { f =>
+            val key = (tid, f.name)
+            if (!buf.contains(key)) buf.update(key, depth)
+          }
+        case None => ()
+      }
+    }
+    walk(id, 0)
+    buf.toMap
+  }
+
   /** Recover legacy `definedWithIndex` for a field defined on `origin`:
     * the index of the field within the originating type's declared
     * `Struct.fields` list. Mirrors `FieldExtractor.toExtendedFields`

@@ -30,6 +30,10 @@ object DomainTSStruct {
     * rationale (sort key, covariant duplicate-field dedup).
     */
   def fromFlat(id: StructureId, flat: FlatStruct, supers: Super, domain: Domain): izumi.idealingua.model.typespace.structures.Struct = {
+    // `flat.fields` carries the BFS distance the flattener assigned. For the
+    // legacy sort key we instead need the DFS-first-visit depth — see
+    // `LegacyStructOrdering.legacyDfsDistance` for the why.
+    val dfsDistance: Map[(TypeId, String), Int] = LegacyStructOrdering.legacyDfsDistance(id, domain)
     val seenPerOrigin = scala.collection.mutable.LinkedHashMap.empty[TypeId, Int]
     val extendedRaw: List[ExtendedField] = flat.fields.map { ff =>
       val perOriginIdx = {
@@ -38,13 +42,14 @@ object DomainTSStruct {
         n
       }
       val idx = LegacyStructOrdering.originIndex(domain, ff.origin, ff.field.name).getOrElse(perOriginIdx)
+      val dist = dfsDistance.getOrElse((ff.origin, ff.field.name), ff.distance)
       ExtendedField(
         field = ff.field,
         defn  = FieldDef(
           definedBy        = ff.origin,
           definedWithIndex = idx,
           usedBy           = id,
-          distance         = ff.distance,
+          distance         = dist,
         ),
       )
     }
