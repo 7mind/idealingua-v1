@@ -1,10 +1,22 @@
 
-// F13 fix: moment's TS d.ts declares `export = moment`, so `import * as moment from 'moment'`
-// produces a non-callable namespace object under modern CJS transformers (tsx/esbuild's __toESM
-// wraps the function in an Object.create(Function.prototype) that is itself not callable).
-// `import x = require(...)` is the TS-idiomatic form for `export =` modules and works with
-// both esModuleInterop=true and =false without depending on synthetic default imports.
-import moment = require('moment');
+// moment's TS .d.ts declares `export = moment`, which interacts poorly with
+// every TS import form when you need to compile against a matrix of (module,
+// esModuleInterop) settings:
+//
+//   - CJS, esModuleInterop=false:  `* as moment`  → namespace IS the function.
+//   - CJS, esModuleInterop=true:   `* as moment`  → `{default: fn}` (NOT callable).
+//   - ESM, esModuleInterop=false:  `* as moment`  → namespace; `moment(...)` rejects at runtime.
+//   - ESM, any interop:            `moment = require(...)` → TS1202 (CJS-only syntax).
+//
+// This module is consumed under at least three combos: the upstream IRT
+// publish (tsconfig.json — CJS+interop=false AND tsconfig.es.json — ESM+
+// interop=false), the regression-harness sample-app build (CJS+interop=false),
+// and downstream npm consumers (any combination). No single import form is
+// callable across all of them. Resolve at runtime: take the function from
+// either the namespace itself (interop=false case) or its `.default` (interop=
+// true case). The cast restores moment's static-typed call signature.
+import * as momentNs from 'moment';
+const moment = ((momentNs as any).default ?? momentNs) as typeof import('moment');
 
 export class Formatter {
     public static readonly DATETIME_FORMATS = [
