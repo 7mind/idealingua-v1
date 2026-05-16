@@ -180,6 +180,13 @@ object ShapesMcpRoutes {
         Ok(mcpError(-32001, "Unauthorized"))
       case Exit.Error(_: IRTGenericFailure, _) =>
         Ok(mcpError(-32603, "Internal error"))
+      case Exit.Error(t, _) =>
+        // Surface the exception class name only — never the message
+        // body or cause chain — so clients can distinguish e.g.
+        // ArithmeticException from NullPointerException without
+        // leaking server internals (paths, hostnames, library
+        // version strings often embedded in `getMessage`).
+        Ok(mcpError(-32603, s"Internal error (${t.getClass.getSimpleName})"))
       case _ =>
         Ok(mcpError(-32603, "Internal error"))
     }
@@ -189,10 +196,17 @@ object ShapesMcpRoutes {
     * or stack trace — and fall back to the class name if `getMessage`
     * is `null`. Prevents leaking server internals (file paths,
     * library-version strings, host names) into the MCP envelope.
+    *
+    * `IRTServerMethod.invoke` appends the BIO trace to its decoder
+    * exception message via `s"…\nTrace: $trace"` — strip that
+    * suffix here so the wire payload carries only the structured
+    * error (no stack frames).
     */
   private def safeMsg(t: Throwable): String = {
     val m = t.getMessage
-    if (m == null) t.getClass.getSimpleName else m
+    val raw = if (m == null) t.getClass.getSimpleName else m
+    val idx = raw.indexOf("\nTrace:")
+    if (idx >= 0) raw.substring(0, idx) else raw
   }
 
   private def mcpError(code: Int, msg: String): Json = Json.obj(
