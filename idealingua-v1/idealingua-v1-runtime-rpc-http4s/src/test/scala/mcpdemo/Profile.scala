@@ -5,7 +5,7 @@ package mcpdemo
 final case class Profile(name: String, age: Int, color: Color) extends Profile.Defn
 
 trait ProfileCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-  import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+  import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
   import _root_.io.circe.{Encoder, Decoder}
   implicit val encodeProfile: Encoder.AsObject[Profile] = deriveEncoder[Profile]
   implicit val decodeProfile: Decoder[Profile] = deriveDecoder[Profile]

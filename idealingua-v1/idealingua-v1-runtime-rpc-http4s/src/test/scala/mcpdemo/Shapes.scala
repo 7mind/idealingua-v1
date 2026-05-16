@@ -44,7 +44,7 @@ trait ShapesClient[Or[+_, +_]] {
 
 class ShapesWrappedClient[Or[+_, +_]: IRTIO2](_dispatcher: IRTDispatcher[Or]) extends ShapesClient[Or] {
   final val _F: IRTIO2[Or] = implicitly
-  import _root_.mcpdemo.{Shapes => _M}
+  import _root_.mcpdemo.Shapes as _M
   def ping(): Just[Shapes.ping.Output] = {
     _F.redeem(_dispatcher.dispatch(IRTMuxRequest(IRTReqBody(new _M.ping.Input()), _M.ping.id)))({
       err => _F.terminate(err)
@@ -264,7 +264,7 @@ class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) 
     Seq[IRTMethodWrapper[Or, C]](ping, upper, add, echo, divmod, reverse, invertMap, maybeUpper, nextColor, makeProfile, pay, divideSafe, noteValue).map(m => m.signature.id -> m).toMap
   }
   object ping extends IRTMethodWrapper[Or, C] {
-    import Shapes.ping._
+    import Shapes.ping.*
     val signature: Shapes.ping.type = Shapes.ping
     val marshaller: ShapesCodecs.ping.type = ShapesCodecs.ping
     def invoke(ctx: C, input: Input): Just[Output] = {
@@ -273,7 +273,7 @@ class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) 
     }
   }
   object upper extends IRTMethodWrapper[Or, C] {
-    import Shapes.upper._
+    import Shapes.upper.*
     val signature: Shapes.upper.type = Shapes.upper
     val marshaller: ShapesCodecs.upper.type = ShapesCodecs.upper
     def invoke(ctx: C, input: Input): Just[Output] = {
@@ -282,7 +282,7 @@ class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) 
     }
   }
   object add extends IRTMethodWrapper[Or, C] {
-    import Shapes.add._
+    import Shapes.add.*
     val signature: Shapes.add.type = Shapes.add
     val marshaller: ShapesCodecs.add.type = ShapesCodecs.add
     def invoke(ctx: C, input: Input): Just[Output] = {
@@ -291,7 +291,7 @@ class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) 
     }
   }
   object echo extends IRTMethodWrapper[Or, C] {
-    import Shapes.echo._
+    import Shapes.echo.*
     val signature: Shapes.echo.type = Shapes.echo
     val marshaller: ShapesCodecs.echo.type = ShapesCodecs.echo
     def invoke(ctx: C, input: Input): Just[Output] = {
@@ -300,7 +300,7 @@ class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) 
     }
   }
   object divmod extends IRTMethodWrapper[Or, C] {
-    import Shapes.divmod._
+    import Shapes.divmod.*
     val signature: Shapes.divmod.type = Shapes.divmod
     val marshaller: ShapesCodecs.divmod.type = ShapesCodecs.divmod
     def invoke(ctx: C, input: Input): Just[Output] = {
@@ -309,7 +309,7 @@ class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) 
     }
   }
   object reverse extends IRTMethodWrapper[Or, C] {
-    import Shapes.reverse._
+    import Shapes.reverse.*
     val signature: Shapes.reverse.type = Shapes.reverse
     val marshaller: ShapesCodecs.reverse.type = ShapesCodecs.reverse
     def invoke(ctx: C, input: Input): Just[Output] = {
@@ -318,7 +318,7 @@ class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) 
     }
   }
   object invertMap extends IRTMethodWrapper[Or, C] {
-    import Shapes.invertMap._
+    import Shapes.invertMap.*
     val signature: Shapes.invertMap.type = Shapes.invertMap
     val marshaller: ShapesCodecs.invertMap.type = ShapesCodecs.invertMap
     def invoke(ctx: C, input: Input): Just[Output] = {
@@ -327,7 +327,7 @@ class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) 
     }
   }
   object maybeUpper extends IRTMethodWrapper[Or, C] {
-    import Shapes.maybeUpper._
+    import Shapes.maybeUpper.*
     val signature: Shapes.maybeUpper.type = Shapes.maybeUpper
     val marshaller: ShapesCodecs.maybeUpper.type = ShapesCodecs.maybeUpper
     def invoke(ctx: C, input: Input): Just[Output] = {
@@ -336,7 +336,7 @@ class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) 
     }
   }
   object nextColor extends IRTMethodWrapper[Or, C] {
-    import Shapes.nextColor._
+    import Shapes.nextColor.*
     val signature: Shapes.nextColor.type = Shapes.nextColor
     val marshaller: ShapesCodecs.nextColor.type = ShapesCodecs.nextColor
     def invoke(ctx: C, input: Input): Just[Output] = {
@@ -345,7 +345,7 @@ class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) 
     }
   }
   object makeProfile extends IRTMethodWrapper[Or, C] {
-    import Shapes.makeProfile._
+    import Shapes.makeProfile.*
     val signature: Shapes.makeProfile.type = Shapes.makeProfile
     val marshaller: ShapesCodecs.makeProfile.type = ShapesCodecs.makeProfile
     def invoke(ctx: C, input: Input): Just[Output] = {
@@ -354,7 +354,7 @@ class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) 
     }
   }
   object pay extends IRTMethodWrapper[Or, C] {
-    import Shapes.pay._
+    import Shapes.pay.*
     val signature: Shapes.pay.type = Shapes.pay
     val marshaller: ShapesCodecs.pay.type = ShapesCodecs.pay
     def invoke(ctx: C, input: Input): Just[Output] = {
@@ -363,7 +363,7 @@ class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) 
     }
   }
   object divideSafe extends IRTMethodWrapper[Or, C] {
-    import Shapes.divideSafe._
+    import Shapes.divideSafe.*
     val signature: Shapes.divideSafe.type = Shapes.divideSafe
     val marshaller: ShapesCodecs.divideSafe.type = ShapesCodecs.divideSafe
     def invoke(ctx: C, input: Input): Just[Output] = {
@@ -371,7 +371,7 @@ class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) 
     }
   }
   object noteValue extends IRTMethodWrapper[Or, C] {
-    import Shapes.noteValue._
+    import Shapes.noteValue.*
     val signature: Shapes.noteValue.type = Shapes.noteValue
     val marshaller: ShapesCodecs.noteValue.type = ShapesCodecs.noteValue
     def invoke(ctx: C, input: Input): Just[Output] = {
@@ -451,7 +451,7 @@ object Shapes {
   }
   final case class PingInput() extends Shapes.PingInput.Defn
   trait PingInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+    import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
     implicit val encodePingInput: Encoder.AsObject[PingInput] = deriveEncoder[PingInput]
     implicit val decodePingInput: Decoder[PingInput] = deriveDecoder[PingInput]
@@ -484,7 +484,7 @@ object Shapes {
   }
   final case class PingOutput() extends Shapes.PingOutput.Defn
   trait PingOutputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+    import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
     implicit val encodePingOutput: Encoder.AsObject[PingOutput] = deriveEncoder[PingOutput]
     implicit val decodePingOutput: Decoder[PingOutput] = deriveDecoder[PingOutput]
@@ -517,10 +517,9 @@ object Shapes {
   }
   final case class UpperInput(s: String) extends AnyVal with Shapes.UpperInput.Defn
   trait UpperInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
-    implicit val encodeUpperInput: Encoder.AsObject[UpperInput] = deriveEncoder[UpperInput]
-    implicit val decodeUpperInput: Decoder[UpperInput] = deriveDecoder[UpperInput]
+    implicit val encodeUpperInput: Encoder.AsObject[UpperInput] = Encoder.forProduct1[UpperInput, String]("s")((v: UpperInput) => v.s)
+    implicit val decodeUpperInput: Decoder[UpperInput] = Decoder.forProduct1[UpperInput, String]("s")((d: String) => new UpperInput(d))
   }
   object UpperInput extends Shapes.UpperInputCirce {
     trait Defn extends Any with izumi.idealingua.runtime.model.IDLGeneratedType { def s: String }
@@ -541,8 +540,8 @@ object Shapes {
   }
   final case class UpperOutput(value: String) extends AnyVal with Shapes.UpperOutput.Defn
   trait UpperOutputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe._
-    import _root_.io.circe.syntax._
+    import _root_.io.circe.*
+    import _root_.io.circe.syntax.*
     implicit val encodeUnwrappedUpperOutput: Encoder[UpperOutput] = Encoder.instance {
       v => v.value.asJson
     }
@@ -569,7 +568,7 @@ object Shapes {
   }
   final case class AddInput(a: Long, b: Long) extends Shapes.AddInput.Defn
   trait AddInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+    import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
     implicit val encodeAddInput: Encoder.AsObject[AddInput] = deriveEncoder[AddInput]
     implicit val decodeAddInput: Decoder[AddInput] = deriveDecoder[AddInput]
@@ -608,8 +607,8 @@ object Shapes {
   }
   final case class AddOutput(value: Long) extends AnyVal with Shapes.AddOutput.Defn
   trait AddOutputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe._
-    import _root_.io.circe.syntax._
+    import _root_.io.circe.*
+    import _root_.io.circe.syntax.*
     implicit val encodeUnwrappedAddOutput: Encoder[AddOutput] = Encoder.instance {
       v => v.value.asJson
     }
@@ -636,10 +635,9 @@ object Shapes {
   }
   final case class EchoInput(req: EchoRequest) extends AnyVal with Shapes.EchoInput.Defn
   trait EchoInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
-    implicit val encodeEchoInput: Encoder.AsObject[EchoInput] = deriveEncoder[EchoInput]
-    implicit val decodeEchoInput: Decoder[EchoInput] = deriveDecoder[EchoInput]
+    implicit val encodeEchoInput: Encoder.AsObject[EchoInput] = Encoder.forProduct1[EchoInput, EchoRequest]("req")((v: EchoInput) => v.req)
+    implicit val decodeEchoInput: Decoder[EchoInput] = Decoder.forProduct1[EchoInput, EchoRequest]("req")((d: EchoRequest) => new EchoInput(d))
   }
   object EchoInput extends Shapes.EchoInputCirce {
     trait Defn extends Any with izumi.idealingua.runtime.model.IDLGeneratedType { def req: EchoRequest }
@@ -661,8 +659,8 @@ object Shapes {
   }
   final case class EchoOutput(value: EchoResponse) extends AnyVal with Shapes.EchoOutput.Defn
   trait EchoOutputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe._
-    import _root_.io.circe.syntax._
+    import _root_.io.circe.*
+    import _root_.io.circe.syntax.*
     implicit val encodeUnwrappedEchoOutput: Encoder.AsObject[EchoOutput] = Encoder.AsObject.instance {
       v => v.value.asJsonObject
     }
@@ -690,7 +688,7 @@ object Shapes {
   }
   final case class DivmodInput(a: Long, b: Long) extends Shapes.DivmodInput.Defn
   trait DivmodInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+    import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
     implicit val encodeDivmodInput: Encoder.AsObject[DivmodInput] = deriveEncoder[DivmodInput]
     implicit val decodeDivmodInput: Decoder[DivmodInput] = deriveDecoder[DivmodInput]
@@ -729,7 +727,7 @@ object Shapes {
   }
   final case class DivmodOutput(quotient: Long, remainder: Long) extends Shapes.DivmodOutput.Defn
   trait DivmodOutputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+    import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
     implicit val encodeDivmodOutput: Encoder.AsObject[DivmodOutput] = deriveEncoder[DivmodOutput]
     implicit val decodeDivmodOutput: Decoder[DivmodOutput] = deriveDecoder[DivmodOutput]
@@ -756,7 +754,7 @@ object Shapes {
   }
   final case class ReverseInput(items: List[String]) extends Shapes.ReverseInput.Defn
   trait ReverseInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+    import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
     implicit val encodeReverseInput: Encoder.AsObject[ReverseInput] = deriveEncoder[ReverseInput]
     implicit val decodeReverseInput: Decoder[ReverseInput] = deriveDecoder[ReverseInput]
@@ -780,8 +778,8 @@ object Shapes {
   }
   final case class ReverseOutput(value: List[String]) extends Shapes.ReverseOutput.Defn
   trait ReverseOutputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe._
-    import _root_.io.circe.syntax._
+    import _root_.io.circe.*
+    import _root_.io.circe.syntax.*
     implicit val encodeUnwrappedReverseOutput: Encoder[ReverseOutput] = Encoder.instance {
       v => v.value.asJson
     }
@@ -808,7 +806,7 @@ object Shapes {
   }
   final case class InvertMapInput(m: Map[String, String]) extends Shapes.InvertMapInput.Defn
   trait InvertMapInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+    import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
     implicit val encodeInvertMapInput: Encoder.AsObject[InvertMapInput] = deriveEncoder[InvertMapInput]
     implicit val decodeInvertMapInput: Decoder[InvertMapInput] = deriveDecoder[InvertMapInput]
@@ -832,8 +830,8 @@ object Shapes {
   }
   final case class InvertMapOutput(value: Map[String, String]) extends Shapes.InvertMapOutput.Defn
   trait InvertMapOutputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe._
-    import _root_.io.circe.syntax._
+    import _root_.io.circe.*
+    import _root_.io.circe.syntax.*
     implicit val encodeUnwrappedInvertMapOutput: Encoder.AsObject[InvertMapOutput] = Encoder.AsObject.instance {
       v => v.value.asJsonObject
     }
@@ -860,7 +858,7 @@ object Shapes {
   }
   final case class MaybeUpperInput(s: Option[String]) extends Shapes.MaybeUpperInput.Defn
   trait MaybeUpperInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+    import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
     implicit val encodeMaybeUpperInput: Encoder.AsObject[MaybeUpperInput] = deriveEncoder[MaybeUpperInput]
     implicit val decodeMaybeUpperInput: Decoder[MaybeUpperInput] = deriveDecoder[MaybeUpperInput]
@@ -884,8 +882,8 @@ object Shapes {
   }
   final case class MaybeUpperOutput(value: Option[String]) extends Shapes.MaybeUpperOutput.Defn
   trait MaybeUpperOutputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe._
-    import _root_.io.circe.syntax._
+    import _root_.io.circe.*
+    import _root_.io.circe.syntax.*
     implicit val encodeUnwrappedMaybeUpperOutput: Encoder[MaybeUpperOutput] = Encoder.instance {
       v => v.value.asJson
     }
@@ -912,10 +910,9 @@ object Shapes {
   }
   final case class NextColorInput(c: Color) extends AnyVal with Shapes.NextColorInput.Defn
   trait NextColorInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
-    implicit val encodeNextColorInput: Encoder.AsObject[NextColorInput] = deriveEncoder[NextColorInput]
-    implicit val decodeNextColorInput: Decoder[NextColorInput] = deriveDecoder[NextColorInput]
+    implicit val encodeNextColorInput: Encoder.AsObject[NextColorInput] = Encoder.forProduct1[NextColorInput, Color]("c")((v: NextColorInput) => v.c)
+    implicit val decodeNextColorInput: Decoder[NextColorInput] = Decoder.forProduct1[NextColorInput, Color]("c")((d: Color) => new NextColorInput(d))
   }
   object NextColorInput extends Shapes.NextColorInputCirce {
     trait Defn extends Any with izumi.idealingua.runtime.model.IDLGeneratedType { def c: Color }
@@ -937,8 +934,8 @@ object Shapes {
   }
   final case class NextColorOutput(value: ColorResult) extends Shapes.NextColorOutput.Defn
   trait NextColorOutputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe._
-    import _root_.io.circe.syntax._
+    import _root_.io.circe.*
+    import _root_.io.circe.syntax.*
     implicit val encodeUnwrappedNextColorOutput: Encoder.AsObject[NextColorOutput] = Encoder.AsObject.instance {
       v => v.value.asJsonObject
     }
@@ -966,7 +963,7 @@ object Shapes {
   }
   final case class MakeProfileInput(name: String, age: Int, color: Color) extends Shapes.MakeProfileInput.Defn
   trait MakeProfileInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+    import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
     implicit val encodeMakeProfileInput: Encoder.AsObject[MakeProfileInput] = deriveEncoder[MakeProfileInput]
     implicit val decodeMakeProfileInput: Decoder[MakeProfileInput] = deriveDecoder[MakeProfileInput]
@@ -1001,8 +998,8 @@ object Shapes {
   }
   final case class MakeProfileOutput(value: Profile) extends AnyVal with Shapes.MakeProfileOutput.Defn
   trait MakeProfileOutputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe._
-    import _root_.io.circe.syntax._
+    import _root_.io.circe.*
+    import _root_.io.circe.syntax.*
     implicit val encodeUnwrappedMakeProfileOutput: Encoder.AsObject[MakeProfileOutput] = Encoder.AsObject.instance {
       v => v.value.asJsonObject
     }
@@ -1030,10 +1027,9 @@ object Shapes {
   }
   final case class PayInput(amount: Long) extends AnyVal with Shapes.PayInput.Defn
   trait PayInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
-    implicit val encodePayInput: Encoder.AsObject[PayInput] = deriveEncoder[PayInput]
-    implicit val decodePayInput: Decoder[PayInput] = deriveDecoder[PayInput]
+    implicit val encodePayInput: Encoder.AsObject[PayInput] = Encoder.forProduct1[PayInput, Long]("amount")((v: PayInput) => v.amount)
+    implicit val decodePayInput: Decoder[PayInput] = Decoder.forProduct1[PayInput, Long]("amount")((d: Long) => new PayInput(d))
   }
   object PayInput extends Shapes.PayInputCirce {
     trait Defn extends Any with izumi.idealingua.runtime.model.IDLGeneratedType { def amount: Long }
@@ -1054,8 +1050,8 @@ object Shapes {
   }
   final case class PayOutput(value: PaymentResult) extends Shapes.PayOutput.Defn
   trait PayOutputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe._
-    import _root_.io.circe.syntax._
+    import _root_.io.circe.*
+    import _root_.io.circe.syntax.*
     implicit val encodeUnwrappedPayOutput: Encoder.AsObject[PayOutput] = Encoder.AsObject.instance {
       v => v.value.asJsonObject
     }
@@ -1083,7 +1079,7 @@ object Shapes {
   }
   final case class DivideSafeInput(a: Long, b: Long) extends Shapes.DivideSafeInput.Defn
   trait DivideSafeInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+    import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
     implicit val encodeDivideSafeInput: Encoder.AsObject[DivideSafeInput] = deriveEncoder[DivideSafeInput]
     implicit val decodeDivideSafeInput: Decoder[DivideSafeInput] = deriveDecoder[DivideSafeInput]
@@ -1122,7 +1118,7 @@ object Shapes {
   }
   sealed trait DivideSafeOutput extends izumi.idealingua.runtime.model.IDLAdtElement with scala.Product
   trait DivideSafeOutputCirce {
-    import _root_.io.circe.syntax._
+    import _root_.io.circe.syntax.*
     import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
     implicit val encodeDivideSafeOutput: Encoder.AsObject[Shapes.DivideSafeOutput] = Encoder.AsObject.instance {
       case v: Shapes.DivideSafeOutput.Success =>
@@ -1158,10 +1154,9 @@ object Shapes {
   }
   final case class NoteValueInput(v: Int) extends AnyVal with Shapes.NoteValueInput.Defn
   trait NoteValueInputCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
-    implicit val encodeNoteValueInput: Encoder.AsObject[NoteValueInput] = deriveEncoder[NoteValueInput]
-    implicit val decodeNoteValueInput: Decoder[NoteValueInput] = deriveDecoder[NoteValueInput]
+    implicit val encodeNoteValueInput: Encoder.AsObject[NoteValueInput] = Encoder.forProduct1[NoteValueInput, Int]("v")((v: NoteValueInput) => v.v)
+    implicit val decodeNoteValueInput: Decoder[NoteValueInput] = Decoder.forProduct1[NoteValueInput, Int]("v")((d: Int) => new NoteValueInput(d))
   }
   object NoteValueInput extends Shapes.NoteValueInputCirce {
     trait Defn extends Any with izumi.idealingua.runtime.model.IDLGeneratedType { def v: Int }
@@ -1182,7 +1177,7 @@ object Shapes {
   }
   sealed trait NoteValueOutput extends izumi.idealingua.runtime.model.IDLAdtElement with scala.Product
   trait NoteValueOutputCirce {
-    import _root_.io.circe.syntax._
+    import _root_.io.circe.syntax.*
     import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
     implicit val encodeNoteValueOutput: Encoder.AsObject[Shapes.NoteValueOutput] = Encoder.AsObject.instance {
       case v: Shapes.NoteValueOutput.Success =>
@@ -1218,7 +1213,7 @@ object Shapes {
   }
   final case class NoteValueSuccess() extends Shapes.NoteValueSuccess.Defn
   trait NoteValueSuccessCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+    import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
     implicit val encodeNoteValueSuccess: Encoder.AsObject[NoteValueSuccess] = deriveEncoder[NoteValueSuccess]
     implicit val decodeNoteValueSuccess: Decoder[NoteValueSuccess] = deriveDecoder[NoteValueSuccess]
@@ -1253,7 +1248,7 @@ object Shapes {
 
 object ShapesCodecs {
   object ping extends IRTCirceMarshaller {
-    import Shapes.ping._
+    import Shapes.ping.*
     def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
       case IRTReqBody(value: Input) =>
         value.asJson
@@ -1272,7 +1267,7 @@ object ShapesCodecs {
     }
   }
   object upper extends IRTCirceMarshaller {
-    import Shapes.upper._
+    import Shapes.upper.*
     def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
       case IRTReqBody(value: Input) =>
         value.asJson
@@ -1291,7 +1286,7 @@ object ShapesCodecs {
     }
   }
   object add extends IRTCirceMarshaller {
-    import Shapes.add._
+    import Shapes.add.*
     def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
       case IRTReqBody(value: Input) =>
         value.asJson
@@ -1310,7 +1305,7 @@ object ShapesCodecs {
     }
   }
   object echo extends IRTCirceMarshaller {
-    import Shapes.echo._
+    import Shapes.echo.*
     def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
       case IRTReqBody(value: Input) =>
         value.asJson
@@ -1329,7 +1324,7 @@ object ShapesCodecs {
     }
   }
   object divmod extends IRTCirceMarshaller {
-    import Shapes.divmod._
+    import Shapes.divmod.*
     def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
       case IRTReqBody(value: Input) =>
         value.asJson
@@ -1348,7 +1343,7 @@ object ShapesCodecs {
     }
   }
   object reverse extends IRTCirceMarshaller {
-    import Shapes.reverse._
+    import Shapes.reverse.*
     def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
       case IRTReqBody(value: Input) =>
         value.asJson
@@ -1367,7 +1362,7 @@ object ShapesCodecs {
     }
   }
   object invertMap extends IRTCirceMarshaller {
-    import Shapes.invertMap._
+    import Shapes.invertMap.*
     def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
       case IRTReqBody(value: Input) =>
         value.asJson
@@ -1386,7 +1381,7 @@ object ShapesCodecs {
     }
   }
   object maybeUpper extends IRTCirceMarshaller {
-    import Shapes.maybeUpper._
+    import Shapes.maybeUpper.*
     def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
       case IRTReqBody(value: Input) =>
         value.asJson
@@ -1405,7 +1400,7 @@ object ShapesCodecs {
     }
   }
   object nextColor extends IRTCirceMarshaller {
-    import Shapes.nextColor._
+    import Shapes.nextColor.*
     def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
       case IRTReqBody(value: Input) =>
         value.asJson
@@ -1424,7 +1419,7 @@ object ShapesCodecs {
     }
   }
   object makeProfile extends IRTCirceMarshaller {
-    import Shapes.makeProfile._
+    import Shapes.makeProfile.*
     def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
       case IRTReqBody(value: Input) =>
         value.asJson
@@ -1443,7 +1438,7 @@ object ShapesCodecs {
     }
   }
   object pay extends IRTCirceMarshaller {
-    import Shapes.pay._
+    import Shapes.pay.*
     def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
       case IRTReqBody(value: Input) =>
         value.asJson
@@ -1462,7 +1457,7 @@ object ShapesCodecs {
     }
   }
   object divideSafe extends IRTCirceMarshaller {
-    import Shapes.divideSafe._
+    import Shapes.divideSafe.*
     def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
       case IRTReqBody(value: Input) =>
         value.asJson
@@ -1481,7 +1476,7 @@ object ShapesCodecs {
     }
   }
   object noteValue extends IRTCirceMarshaller {
-    import Shapes.noteValue._
+    import Shapes.noteValue.*
     def encodeRequest: PartialFunction[IRTReqBody, IRTJson] = {
       case IRTReqBody(value: Input) =>
         value.asJson

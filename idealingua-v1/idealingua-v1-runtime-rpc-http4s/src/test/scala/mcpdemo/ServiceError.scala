@@ -5,7 +5,7 @@ package mcpdemo
 final case class ServiceError(code: Int, message: String) extends TimedFailure with ServiceError.Defn
 
 trait ServiceErrorCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-  import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+  import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
   import _root_.io.circe.{Encoder, Decoder}
   implicit val encodeServiceError: Encoder.AsObject[ServiceError] = deriveEncoder[ServiceError]
   implicit val decodeServiceError: Decoder[ServiceError] = deriveDecoder[ServiceError]

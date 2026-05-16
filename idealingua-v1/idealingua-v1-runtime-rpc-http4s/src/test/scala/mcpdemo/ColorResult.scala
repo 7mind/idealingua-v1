@@ -5,10 +5,9 @@ package mcpdemo
 final case class ColorResult(color: Color) extends AnyVal with ColorResult.Defn
 
 trait ColorResultCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-  import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
   import _root_.io.circe.{Encoder, Decoder}
-  implicit val encodeColorResult: Encoder.AsObject[ColorResult] = deriveEncoder[ColorResult]
-  implicit val decodeColorResult: Decoder[ColorResult] = deriveDecoder[ColorResult]
+  implicit val encodeColorResult: Encoder.AsObject[ColorResult] = Encoder.forProduct1[ColorResult, Color]("color")((v: ColorResult) => v.color)
+  implicit val decodeColorResult: Decoder[ColorResult] = Decoder.forProduct1[ColorResult, Color]("color")((d: Color) => new ColorResult(d))
 }
 
 object ColorResult extends ColorResultCirce {

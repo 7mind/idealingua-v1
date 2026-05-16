@@ -8,7 +8,7 @@ trait TimedFailure extends izumi.idealingua.runtime.model.IDLGeneratedType {
 }
 
 trait TimedFailureCirce {
-  import _root_.io.circe.syntax._
+  import _root_.io.circe.syntax.*
   import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
   implicit val encodeTimedFailure: Encoder.AsObject[TimedFailure] = Encoder.AsObject.instance {
     case v: ServiceError =>
@@ -35,7 +35,7 @@ object TimedFailure extends TimedFailureCirce {
   def apply(code: Int, message: String) = Struct(code, message)
   final case class Struct(code: Int, message: String) extends TimedFailure
   trait StructCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-    import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+    import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
     import _root_.io.circe.{Encoder, Decoder}
     implicit val encodeStruct: Encoder.AsObject[Struct] = deriveEncoder[Struct]
     implicit val decodeStruct: Decoder[Struct] = deriveDecoder[Struct]

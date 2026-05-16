@@ -5,7 +5,7 @@ package mcpdemo
 final case class EchoResponse(echo: String, count: Int) extends EchoResponse.Defn
 
 trait EchoResponseCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-  import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+  import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
   import _root_.io.circe.{Encoder, Decoder}
   implicit val encodeEchoResponse: Encoder.AsObject[EchoResponse] = deriveEncoder[EchoResponse]
   implicit val decodeEchoResponse: Decoder[EchoResponse] = deriveDecoder[EchoResponse]

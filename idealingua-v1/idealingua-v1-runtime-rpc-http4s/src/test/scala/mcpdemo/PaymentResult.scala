@@ -5,7 +5,7 @@ package mcpdemo
 sealed trait PaymentResult extends izumi.idealingua.runtime.model.IDLAdtElement with scala.Product
 
 trait PaymentResultCirce {
-  import _root_.io.circe.syntax._
+  import _root_.io.circe.syntax.*
   import _root_.io.circe.{Encoder, Decoder, DecodingFailure}
   implicit val encodePaymentResult: Encoder.AsObject[PaymentResult] = Encoder.AsObject.instance {
     case v: PaymentResult.PaymentOk =>
