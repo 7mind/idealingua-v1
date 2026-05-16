@@ -24,7 +24,7 @@
   "layout": "PLAIN",
   "sbt": {
     "enableScalaJs": false,
-    "scalaVersions": ["2.13.18"],
+    "scalaVersions": ["3.8.3", "2.13.18"],
     "sbtVersion": "1.11.7",
     "projectNaming": {
       "prefix": [],

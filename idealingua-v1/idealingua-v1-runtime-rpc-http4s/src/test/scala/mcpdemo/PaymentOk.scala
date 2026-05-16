@@ -5,7 +5,7 @@ package mcpdemo
 final case class PaymentOk(txId: String, amount: Long) extends PaymentOk.Defn
 
 trait PaymentOkCirce extends _root_.izumi.idealingua.runtime.circe.IRTTimeInstances {
-  import _root_.io.circe.derivation.{deriveDecoder, deriveEncoder}
+  import _root_.io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
   import _root_.io.circe.{Encoder, Decoder}
   implicit val encodePaymentOk: Encoder.AsObject[PaymentOk] = deriveEncoder[PaymentOk]
   implicit val decodePaymentOk: Decoder[PaymentOk] = deriveDecoder[PaymentOk]

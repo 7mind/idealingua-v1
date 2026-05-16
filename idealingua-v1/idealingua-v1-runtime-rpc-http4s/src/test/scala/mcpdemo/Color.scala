@@ -6,7 +6,7 @@ sealed trait Color extends izumi.idealingua.runtime.model.IDLEnumElement
 
 trait ColorCirce {
   import _root_.io.circe.{Encoder, Decoder, KeyEncoder, KeyDecoder}
-  import scala.util._
+  import scala.util.*
   implicit val encodeColor: Encoder[Color] = Encoder.encodeString.contramap(_.toString)
   implicit val decodeColor: Decoder[Color] = Decoder.decodeString.emapTry(v => Try(Color.parse(v)))
   implicit val encodeKeyColor: KeyEncoder[Color] = KeyEncoder.encodeKeyString.contramap(_.toString)
