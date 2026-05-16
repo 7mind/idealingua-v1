@@ -413,6 +413,14 @@ object Idealingua {
         name = Projects.idealingua.runtimeRpcHttp4s,
         libs = (http4s_all ++ Seq(asynchttpclient, Deps.logstage_core, Deps.logstage_adapter_slf4j)).map(_ in Scope.Compile.all),
         depends = Seq(Projects.idealingua.runtimeRpcScala).map(_ in Scope.Compile.all) ++
+          // `idealingua-v1-model` carries `izumi.idealingua.runtime.model.IDL*`
+          // base traits (`IDLGeneratedType`, `IDLEnumElement`, `IDLAdtElement`,
+          // ...). The runtimeRpcScala compile classpath transitively re-exports
+          // them in some builds but not all, and the test classpath here needs
+          // direct visibility for the freshly-generated `mcpdemo/*.scala`
+          // fixtures consumed by `McpBridgeRealServerSpec` (per-corpus codegen
+          // committed under `src/test/scala/mcpdemo/`).
+          Seq(Projects.idealingua.model).map(_ in Scope.Test.jvm) ++
           Seq(Projects.idealingua.testDefs).map(_ in Scope.Test.jvm),
         platforms = Targets.jvm3,
       ),
