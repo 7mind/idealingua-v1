@@ -1,0 +1,101 @@
+domain mcpdemo
+
+// ---------- Plain data types exercised by the methods below ----------
+
+enum Color {
+    Red
+    Green
+    Blue
+}
+
+data Profile {
+    name: str
+    age: i32
+    color: Color
+}
+
+// Wrapper around a bare enum so `nextColor` can return a Singular DTO instead
+// of a Singular enum (Singular-enum return is currently translator-buggy:
+// emits `Encoder.AsObject[Enum]` derivation which the auto-derived String
+// encoder doesn't satisfy — out of scope for this demo, IDL-level
+// workaround).
+data ColorResult {
+    color: Color
+}
+
+data EchoRequest {
+    msg: str
+    n: i32
+}
+
+data EchoResponse {
+    echo: str
+    count: i32
+}
+
+data PaymentOk {
+    txId: str
+    amount: i64
+}
+
+data PaymentRejected {
+    reason: str
+    code: i32
+}
+
+adt PaymentResult = PaymentOk | PaymentRejected
+
+mixin TimedFailure {
+    code: i32
+    message: str
+}
+
+data ServiceError {
+    & TimedFailure
+}
+
+// ---------- Service exercising every input/output shape ----------
+
+service Shapes {
+    // OUTPUT: Void.  INPUT: empty (no parameters).
+    def ping() => ()
+
+    // OUTPUT: Singular primitive.  INPUT: single primitive arg.
+    def upper(s: str) => str
+
+    // OUTPUT: Singular primitive.  INPUT: multiple primitive args.
+    def add(a: i64, b: i64) => i64
+
+    // OUTPUT: Singular DTO.  INPUT: DTO arg.
+    def echo(req: EchoRequest) => EchoResponse
+
+    // OUTPUT: Struct (anonymous record).  INPUT: multi-primitive.
+    def divmod(a: i64, b: i64) => {
+      quotient: i64
+      remainder: i64
+    }
+
+    // OUTPUT: list[T].  INPUT: list[T].
+    def reverse(items: lst[str]) => lst[str]
+
+    // OUTPUT: map[K, V].  INPUT: map[K, V].
+    def invertMap(m: map[str, str]) => map[str, str]
+
+    // OUTPUT: opt[T].  INPUT: opt[T].
+    def maybeUpper(s: opt[str]) => opt[str]
+
+    // OUTPUT: Singular DTO wrapping enum.  INPUT: enum.
+    def nextColor(c: Color) => ColorResult
+
+    // OUTPUT: Singular DTO via multi-arg input (nested DTO construction).
+    def makeProfile(name: str, age: i32, color: Color) => Profile
+
+    // OUTPUT: Algebraic (multi-branch ADT).  INPUT: i64.
+    def pay(amount: i64) => PaymentResult
+
+    // OUTPUT: Alternative (Singular success !! Singular failure).
+    def divideSafe(a: i64, b: i64) => i64 !! ServiceError
+
+    // OUTPUT: Alternative (Void success !! Singular failure).
+    def noteValue(v: i32) => () !! ServiceError
+}

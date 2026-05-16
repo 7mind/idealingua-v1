@@ -1,0 +1,36 @@
+{
+  "common": {
+    "izumiVersion": "0.6.34",
+    "version": {
+      "version": "",
+      "release": false,
+      "snapshotQualifier": ""
+    },
+    "name": "mcpdemo",
+    "group": "izumi.idealingua.mcpdemo",
+    "tags": [],
+    "description": "MCP-bridge demo IDL — every input/output shape one method, generated routes consumed by McpBridgeRealServerSpec.",
+    "releaseNotes": "",
+    "publisher": {
+      "name": "izumi",
+      "id": "io.7mind.izumi"
+    },
+    "licenses": [],
+    "website": {
+      "url": "https://github.com/7mind/idealingua-v1"
+    },
+    "copyright": ""
+  },
+  "layout": "PLAIN",
+  "sbt": {
+    "enableScalaJs": false,
+    "scalaVersions": ["2.13.18"],
+    "sbtVersion": "1.11.7",
+    "projectNaming": {
+      "prefix": [],
+      "dropFQNSegments": 0,
+      "postfix": []
+    }
+  },
+  "emitMcpBridge": true
+}

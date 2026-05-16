@@ -1,0 +1,570 @@
+{
+  "tools" : [
+    {
+      "name" : "mcpdemo.Shapes.ping",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          
+        },
+        "required" : [
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          
+        },
+        "required" : [
+        ],
+        "additionalProperties" : false
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Shapes.PingInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Shapes.PingOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Shapes.upper",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "s" : {
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "s"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Shapes.UpperInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Shapes.UpperOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Shapes.add",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          },
+          "b" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          }
+        },
+        "required" : [
+          "a",
+          "b"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Shapes.AddInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Shapes.AddOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Shapes.echo",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "req" : {
+            "$ref" : "#/components/schemas/mcpdemo.EchoRequest"
+          }
+        },
+        "required" : [
+          "req"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "$ref" : "#/components/schemas/mcpdemo.EchoResponse"
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Shapes.EchoInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Shapes.EchoOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Shapes.divmod",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          },
+          "b" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          }
+        },
+        "required" : [
+          "a",
+          "b"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "quotient" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          },
+          "remainder" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          }
+        },
+        "required" : [
+          "quotient",
+          "remainder"
+        ],
+        "additionalProperties" : false
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Shapes.DivmodInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Shapes.DivmodOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Shapes.reverse",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [
+          "items"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Shapes.ReverseInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Shapes.ReverseOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Shapes.invertMap",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "m" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [
+          "m"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Shapes.InvertMapInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Shapes.InvertMapOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Shapes.maybeUpper",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "s" : {
+            "oneOf" : [
+              {
+                "type" : "string"
+              },
+              {
+                "type" : "null"
+              }
+            ]
+          }
+        },
+        "required" : [
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "oneOf" : [
+              {
+                "type" : "string"
+              },
+              {
+                "type" : "null"
+              }
+            ]
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Shapes.MaybeUpperInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Shapes.MaybeUpperOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Shapes.nextColor",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "c" : {
+            "$ref" : "#/components/schemas/mcpdemo.Color"
+          }
+        },
+        "required" : [
+          "c"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "$ref" : "#/components/schemas/mcpdemo.ColorResult"
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Shapes.NextColorInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Shapes.NextColorOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Shapes.makeProfile",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "age" : {
+            "type" : "integer",
+            "minimum" : -2147483648,
+            "maximum" : 2147483647
+          },
+          "color" : {
+            "$ref" : "#/components/schemas/mcpdemo.Color"
+          }
+        },
+        "required" : [
+          "name",
+          "age",
+          "color"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "$ref" : "#/components/schemas/mcpdemo.Profile"
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Shapes.MakeProfileInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Shapes.MakeProfileOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Shapes.pay",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          }
+        },
+        "required" : [
+          "amount"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "$ref" : "#/components/schemas/mcpdemo.PaymentResult"
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Shapes.PayInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Shapes.PayOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Shapes.divideSafe",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          },
+          "b" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          }
+        },
+        "required" : [
+          "a",
+          "b"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "oneOf" : [
+              {
+                "type" : "object",
+                "properties" : {
+                  "Success" : {
+                    "type" : "integer",
+                    "minimum" : -9223372036854775808,
+                    "maximum" : 9223372036854775807
+                  }
+                },
+                "required" : [
+                  "Success"
+                ],
+                "additionalProperties" : false
+              },
+              {
+                "type" : "object",
+                "properties" : {
+                  "Failure" : {
+                    "$ref" : "#/components/schemas/mcpdemo.ServiceError"
+                  }
+                },
+                "required" : [
+                  "Failure"
+                ],
+                "additionalProperties" : false
+              }
+            ],
+            "x-idealingua-kind" : "alternative"
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Shapes.DivideSafeInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Shapes.DivideSafeOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Shapes.noteValue",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "v" : {
+            "type" : "integer",
+            "minimum" : -2147483648,
+            "maximum" : 2147483647
+          }
+        },
+        "required" : [
+          "v"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "oneOf" : [
+              {
+                "type" : "object",
+                "properties" : {
+                  "Success" : {
+                    "$schema" : "https://json-schema.org/draft/2020-12/schema",
+                    "type" : "object",
+                    "properties" : {
+                      
+                    },
+                    "required" : [
+                    ],
+                    "additionalProperties" : false
+                  }
+                },
+                "required" : [
+                  "Success"
+                ],
+                "additionalProperties" : false
+              },
+              {
+                "type" : "object",
+                "properties" : {
+                  "Failure" : {
+                    "$ref" : "#/components/schemas/mcpdemo.ServiceError"
+                  }
+                },
+                "required" : [
+                  "Failure"
+                ],
+                "additionalProperties" : false
+              }
+            ],
+            "x-idealingua-kind" : "alternative"
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Shapes.NoteValueInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Shapes.NoteValueOutput",
+      "x-idealingua-kind" : "rpc"
+    }
+  ]
+}
