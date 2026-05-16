@@ -1,9 +1,17 @@
 package izumi.idealingua.translator.toscala.domain
 
-import io.circe.{Json, Printer}
+import io.circe.{Json, JsonObject, Printer}
 import izumi.idealingua.model.il.ast.typed.DefMethod
-import izumi.idealingua.translator.toschema.domain.{SchemaMethodOutput, SchemaTypeResolver}
-import izumi.idealingua.typer.ir.{Domain, TypeDef}
+import izumi.idealingua.translator.toschema.domain.{
+  SchemaAdtRenderer,
+  SchemaDtoRenderer,
+  SchemaEnumRenderer,
+  SchemaIdentifierRenderer,
+  SchemaInterfaceRenderer,
+  SchemaMethodOutput,
+  SchemaTypeResolver,
+}
+import izumi.idealingua.typer.ir.{Domain, EphemeralOrigin, Member, TypeDef}
 
 /** MCP / HTTP4s bridge codegen — emits a `<ServiceName>Mcp.scala` source
   * file alongside the existing `<ServiceName>.scala` plus a classpath
@@ -36,7 +44,28 @@ final class DomainServiceMcpRenderer(domain: Domain) {
 
   private val schemaResolver = new SchemaTypeResolver(domain)
   private val methodOutput   = new SchemaMethodOutput(schemaResolver)
+  private val dtoRenderer    = new SchemaDtoRenderer(domain, schemaResolver)
+  private val enumRenderer   = new SchemaEnumRenderer
+  private val idRenderer     = new SchemaIdentifierRenderer(schemaResolver)
+  private val adtRenderer    = new SchemaAdtRenderer
+  private val ifcRenderer    = new SchemaInterfaceRenderer(domain)
   private val jsonPrinter    = Printer.spaces2.copy(dropNullValues = false)
+
+  // Resolver emits `#/components/schemas/<wireId>` (the OpenAPI convention
+  // used by the schema.json doc). MCP `tools/list` payloads are
+  // self-contained per JSON Schema 2020-12, so refs get rewritten to
+  // `#/$defs/<wireId>` and the transitive closure of referenced
+  // user-types is embedded under `$defs` of each tool's
+  // inputSchema/outputSchema (R-flag fix: $ref previously resolved to
+  // nowhere because `components` was absent from the MCP envelope).
+  private val ComponentRefPrefix = "#/components/schemas/"
+  private val DefsRefPrefix      = "#/$defs/"
+
+  /** Per-domain components table keyed by `wireId`. Built lazily — every
+    * service in the domain shares the same closure dataset, so we pay
+    * once even with multi-service domains.
+    */
+  private lazy val componentsByWireId: Map[String, Json] = buildComponentsTable()
 
   /** Render the bridge code + the per-service `*.mcp.json` resource for one
     * service. Returns the pair `(scalaSource, resourceJson)`.
@@ -66,14 +95,162 @@ final class DomainServiceMcpRenderer(domain: Domain) {
       val fields       = scala.collection.mutable.LinkedHashMap.empty[String, Json]
       fields += "name"                          -> Json.fromString(toolName)
       fields += "description"                   -> Json.fromString(description)
-      fields += "inputSchema"                   -> methodOutput.structSchema(m.signature.input)
-      fields += "outputSchema"                  -> methodOutput.dispatch(m.signature.output)
+      fields += "inputSchema"                   -> selfContain(methodOutput.structSchema(m.signature.input))
+      fields += "outputSchema"                  -> selfContain(methodOutput.dispatch(m.signature.output))
       fields += "x-idealingua-wire-type-input"  -> Json.fromString(inputWireId)
       fields += "x-idealingua-wire-type-output" -> Json.fromString(outputWireId)
       fields += "x-idealingua-kind"             -> Json.fromString("rpc")
       Json.fromFields(fields.toList)
     }
     jsonPrinter.print(Json.obj("tools" -> Json.fromValues(tools))) + "\n"
+  }
+
+  /** Walk the JSON tree of one tool's `inputSchema` / `outputSchema`,
+    * gather every `$ref` that points at `#/components/schemas/…`,
+    * compute the transitive closure across the per-domain components
+    * table, embed the closure as `$defs`, and rewrite every ref to the
+    * `#/$defs/…` form. Returns the original schema verbatim if no refs
+    * are present.
+    */
+  private def selfContain(schema: Json): Json = {
+    val roots = collectRefs(schema)
+    if (roots.isEmpty) {
+      schema
+    } else {
+      val closure = transitiveClosure(roots)
+      val rewritten = rewriteRefs(schema)
+      if (closure.isEmpty) {
+        rewritten
+      } else {
+        val defs = Json.fromFields(closure.toSeq.sortBy(_._1).map { case (k, v) => k -> rewriteRefs(v) })
+        rewritten.asObject match {
+          case Some(o) => Json.fromJsonObject(o.add("$defs", defs))
+          case None    => rewritten
+        }
+      }
+    }
+  }
+
+  /** Collect the wireIds referenced by all `$ref` strings appearing in
+    * `j`. Only `$ref`s pointing into `#/components/schemas/` are
+    * relevant — primitive schemas have no refs.
+    */
+  private def collectRefs(j: Json): Set[String] = {
+    val acc = scala.collection.mutable.LinkedHashSet.empty[String]
+    def walk(node: Json): Unit = {
+      node.asObject match {
+        case Some(o) =>
+          o.toIterable.foreach {
+            case ("$ref", v) =>
+              v.asString.foreach { s =>
+                if (s.startsWith(ComponentRefPrefix)) acc += s.stripPrefix(ComponentRefPrefix)
+              }
+            case (_, v) =>
+              walk(v)
+          }
+        case None =>
+          node.asArray.foreach(_.foreach(walk))
+      }
+    }
+    walk(j)
+    acc.toSet
+  }
+
+  /** Iterative fixed-point closure over the components table. Returns
+    * the map of `wireId -> schema` for every type reachable from
+    * `roots`. Cycles are handled via the `visited` set.
+    */
+  private def transitiveClosure(roots: Set[String]): Map[String, Json] = {
+    val visited = scala.collection.mutable.LinkedHashSet.empty[String]
+    val queue   = scala.collection.mutable.Queue.empty[String]
+    queue.enqueueAll(roots)
+    while (queue.nonEmpty) {
+      val wireId = queue.dequeue()
+      if (!visited.contains(wireId)) {
+        visited += wireId
+        componentsByWireId.get(wireId).foreach { schema =>
+          collectRefs(schema).foreach { ref =>
+            if (!visited.contains(ref)) queue.enqueue(ref)
+          }
+        }
+      }
+    }
+    visited.iterator.flatMap(w => componentsByWireId.get(w).map(w -> _)).toMap
+  }
+
+  /** Tree rewrite — only `"$ref"` strings whose value starts with the
+    * components prefix get rewritten; arbitrary string values are left
+    * alone, even when they happen to look like a path.
+    */
+  private def rewriteRefs(j: Json): Json = {
+    j.asObject match {
+      case Some(o) =>
+        val rewritten = JsonObject.fromIterable(o.toIterable.map {
+          case ("$ref", v) =>
+            v.asString match {
+              case Some(s) if s.startsWith(ComponentRefPrefix) =>
+                "$ref" -> Json.fromString(DefsRefPrefix + s.stripPrefix(ComponentRefPrefix))
+              case _ => "$ref" -> v
+            }
+          case (k, v) => k -> rewriteRefs(v)
+        })
+        Json.fromJsonObject(rewritten)
+      case None =>
+        j.asArray match {
+          case Some(arr) => Json.fromValues(arr.map(rewriteRefs))
+          case None      => j
+        }
+    }
+  }
+
+  /** Build the per-domain `wireId -> schema` table, mirroring
+    * `DomainSchemaTranslator`'s components emission (user-types +
+    * interface-mirror ephemerals + method-input/output ephemerals +
+    * ephemeral ADTs). Result is read-only and used only for the
+    * `$defs` closure walks above.
+    */
+  private def buildComponentsTable(): Map[String, Json] = {
+    val out = scala.collection.mutable.LinkedHashMap.empty[String, Json]
+
+    domain.userTypes.foreach {
+      case (_, td) => emitTypeDef(td, out)
+    }
+
+    val ifcMirrors = domain.members.collect {
+      case (_, Member.Ephemeral(eph)) if eph.origin.isInstanceOf[EphemeralOrigin.InterfaceMirror] => eph
+    }.toList
+    ifcMirrors.foreach { eph =>
+      val flatFields = domain.flattenedStructs.get(eph.id).map(_.fields).getOrElse(Nil)
+      val _          = out.put(eph.id.wireId, dtoRenderer.renderFromFlat(eph.id, flatFields, None))
+    }
+
+    val methodEph = domain.members.collect {
+      case (_, Member.Ephemeral(eph)) =>
+        eph.origin match {
+          case _: EphemeralOrigin.MethodInput  => Some(eph)
+          case _: EphemeralOrigin.MethodOutput => Some(eph)
+          case _                               => None
+        }
+    }.flatten.toList
+    methodEph.foreach { eph =>
+      val flatFields = domain.flattenedStructs.get(eph.id).map(_.fields).getOrElse(Nil)
+      val _          = out.put(eph.id.wireId, dtoRenderer.renderFromFlat(eph.id, flatFields, None))
+    }
+
+    out.toMap
+  }
+
+  private def emitTypeDef(
+    td: TypeDef,
+    out: scala.collection.mutable.LinkedHashMap[String, Json],
+  ): Unit = td match {
+    case _: TypeDef.Alias       => ()
+    case e: TypeDef.Enum        => val _ = out.put(e.id.wireId, enumRenderer.render(e))
+    case i: TypeDef.Identifier  => val _ = out.put(i.id.wireId, idRenderer.render(i))
+    case dto: TypeDef.Dto       => val _ = out.put(dto.id.wireId, dtoRenderer.render(dto))
+    case adt: TypeDef.Adt       => val _ = out.put(adt.id.wireId, adtRenderer.render(adt))
+    case ifc: TypeDef.Interface => val _ = out.put(ifc.id.wireId, ifcRenderer.render(ifc))
+    case _                      => ()
   }
 
   private def renderScalaSource(pkg: String, svcName: String, rpcs: List[DefMethod.RPCMethod]): String = {
@@ -215,6 +392,13 @@ final class DomainServiceMcpRenderer(domain: Domain) {
        |        Ok(mcpError(-32001, "Unauthorized"))
        |      case Exit.Error(_: IRTGenericFailure, _) =>
        |        Ok(mcpError(-32603, "Internal error"))
+       |      case Exit.Error(t, _) =>
+       |        // Surface the exception class name only — never the message
+       |        // body or cause chain — so clients can distinguish e.g.
+       |        // ArithmeticException from NullPointerException without
+       |        // leaking server internals (paths, hostnames, library
+       |        // version strings often embedded in `getMessage`).
+       |        Ok(mcpError(-32603, s"Internal error ($${t.getClass.getSimpleName})"))
        |      case _ =>
        |        Ok(mcpError(-32603, "Internal error"))
        |    }
@@ -224,10 +408,17 @@ final class DomainServiceMcpRenderer(domain: Domain) {
        |    * or stack trace — and fall back to the class name if `getMessage`
        |    * is `null`. Prevents leaking server internals (file paths,
        |    * library-version strings, host names) into the MCP envelope.
+       |    *
+       |    * `IRTServerMethod.invoke` appends the BIO trace to its decoder
+       |    * exception message via `s"…\\nTrace: $$trace"` — strip that
+       |    * suffix here so the wire payload carries only the structured
+       |    * error (no stack frames).
        |    */
        |  private def safeMsg(t: Throwable): String = {
        |    val m = t.getMessage
-       |    if (m == null) t.getClass.getSimpleName else m
+       |    val raw = if (m == null) t.getClass.getSimpleName else m
+       |    val idx = raw.indexOf("\\nTrace:")
+       |    if (idx >= 0) raw.substring(0, idx) else raw
        |  }
        |
        |  private def mcpError(code: Int, msg: String): Json = Json.obj(

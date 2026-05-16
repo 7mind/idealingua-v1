@@ -113,27 +113,69 @@
         "type" : "object",
         "properties" : {
           "req" : {
-            "$ref" : "#/components/schemas/mcpdemo.EchoRequest"
+            "$ref" : "#/$defs/mcpdemo.EchoRequest"
           }
         },
         "required" : [
           "req"
         ],
-        "additionalProperties" : false
+        "additionalProperties" : false,
+        "$defs" : {
+          "mcpdemo.EchoRequest" : {
+            "type" : "object",
+            "title" : "mcpdemo.EchoRequest",
+            "properties" : {
+              "msg" : {
+                "type" : "string"
+              },
+              "n" : {
+                "type" : "integer",
+                "minimum" : -2147483648,
+                "maximum" : 2147483647
+              }
+            },
+            "required" : [
+              "msg",
+              "n"
+            ],
+            "additionalProperties" : false
+          }
+        }
       },
       "outputSchema" : {
         "type" : "object",
         "properties" : {
           "result" : {
             "x-idealingua-unwrap" : true,
-            "$ref" : "#/components/schemas/mcpdemo.EchoResponse"
+            "$ref" : "#/$defs/mcpdemo.EchoResponse"
           }
         },
         "required" : [
           "result"
         ],
         "additionalProperties" : false,
-        "x-idealingua-wrapped" : true
+        "x-idealingua-wrapped" : true,
+        "$defs" : {
+          "mcpdemo.EchoResponse" : {
+            "type" : "object",
+            "title" : "mcpdemo.EchoResponse",
+            "properties" : {
+              "echo" : {
+                "type" : "string"
+              },
+              "count" : {
+                "type" : "integer",
+                "minimum" : -2147483648,
+                "maximum" : 2147483647
+              }
+            },
+            "required" : [
+              "echo",
+              "count"
+            ],
+            "additionalProperties" : false
+          }
+        }
       },
       "x-idealingua-wire-type-input" : "mcpdemo.Shapes.EchoInput",
       "x-idealingua-wire-type-output" : "mcpdemo.Shapes.EchoOutput",
@@ -323,27 +365,62 @@
         "type" : "object",
         "properties" : {
           "c" : {
-            "$ref" : "#/components/schemas/mcpdemo.Color"
+            "$ref" : "#/$defs/mcpdemo.Color"
           }
         },
         "required" : [
           "c"
         ],
-        "additionalProperties" : false
+        "additionalProperties" : false,
+        "$defs" : {
+          "mcpdemo.Color" : {
+            "type" : "string",
+            "title" : "mcpdemo.Color",
+            "enum" : [
+              "Red",
+              "Green",
+              "Blue"
+            ]
+          }
+        }
       },
       "outputSchema" : {
         "type" : "object",
         "properties" : {
           "result" : {
             "x-idealingua-unwrap" : true,
-            "$ref" : "#/components/schemas/mcpdemo.ColorResult"
+            "$ref" : "#/$defs/mcpdemo.ColorResult"
           }
         },
         "required" : [
           "result"
         ],
         "additionalProperties" : false,
-        "x-idealingua-wrapped" : true
+        "x-idealingua-wrapped" : true,
+        "$defs" : {
+          "mcpdemo.Color" : {
+            "type" : "string",
+            "title" : "mcpdemo.Color",
+            "enum" : [
+              "Red",
+              "Green",
+              "Blue"
+            ]
+          },
+          "mcpdemo.ColorResult" : {
+            "type" : "object",
+            "title" : "mcpdemo.ColorResult",
+            "properties" : {
+              "color" : {
+                "$ref" : "#/$defs/mcpdemo.Color"
+              }
+            },
+            "required" : [
+              "color"
+            ],
+            "additionalProperties" : false
+          }
+        }
       },
       "x-idealingua-wire-type-input" : "mcpdemo.Shapes.NextColorInput",
       "x-idealingua-wire-type-output" : "mcpdemo.Shapes.NextColorOutput",
@@ -365,7 +442,7 @@
             "maximum" : 2147483647
           },
           "color" : {
-            "$ref" : "#/components/schemas/mcpdemo.Color"
+            "$ref" : "#/$defs/mcpdemo.Color"
           }
         },
         "required" : [
@@ -373,21 +450,66 @@
           "age",
           "color"
         ],
-        "additionalProperties" : false
+        "additionalProperties" : false,
+        "$defs" : {
+          "mcpdemo.Color" : {
+            "type" : "string",
+            "title" : "mcpdemo.Color",
+            "enum" : [
+              "Red",
+              "Green",
+              "Blue"
+            ]
+          }
+        }
       },
       "outputSchema" : {
         "type" : "object",
         "properties" : {
           "result" : {
             "x-idealingua-unwrap" : true,
-            "$ref" : "#/components/schemas/mcpdemo.Profile"
+            "$ref" : "#/$defs/mcpdemo.Profile"
           }
         },
         "required" : [
           "result"
         ],
         "additionalProperties" : false,
-        "x-idealingua-wrapped" : true
+        "x-idealingua-wrapped" : true,
+        "$defs" : {
+          "mcpdemo.Color" : {
+            "type" : "string",
+            "title" : "mcpdemo.Color",
+            "enum" : [
+              "Red",
+              "Green",
+              "Blue"
+            ]
+          },
+          "mcpdemo.Profile" : {
+            "type" : "object",
+            "title" : "mcpdemo.Profile",
+            "properties" : {
+              "name" : {
+                "type" : "string"
+              },
+              "age" : {
+                "type" : "integer",
+                "minimum" : -2147483648,
+                "maximum" : 2147483647
+              },
+              "color" : {
+                "$ref" : "#/$defs/mcpdemo.Color"
+              }
+            },
+            "required" : [
+              "name",
+              "age",
+              "color"
+            ],
+            "additionalProperties" : false
+          }
+        }
       },
       "x-idealingua-wire-type-input" : "mcpdemo.Shapes.MakeProfileInput",
       "x-idealingua-wire-type-output" : "mcpdemo.Shapes.MakeProfileOutput",
@@ -416,14 +538,84 @@
         "properties" : {
           "result" : {
             "x-idealingua-unwrap" : true,
-            "$ref" : "#/components/schemas/mcpdemo.PaymentResult"
+            "$ref" : "#/$defs/mcpdemo.PaymentResult"
           }
         },
         "required" : [
           "result"
         ],
         "additionalProperties" : false,
-        "x-idealingua-wrapped" : true
+        "x-idealingua-wrapped" : true,
+        "$defs" : {
+          "mcpdemo.PaymentOk" : {
+            "type" : "object",
+            "title" : "mcpdemo.PaymentOk",
+            "properties" : {
+              "txId" : {
+                "type" : "string"
+              },
+              "amount" : {
+                "type" : "integer",
+                "minimum" : -9223372036854775808,
+                "maximum" : 9223372036854775807
+              }
+            },
+            "required" : [
+              "txId",
+              "amount"
+            ],
+            "additionalProperties" : false
+          },
+          "mcpdemo.PaymentRejected" : {
+            "type" : "object",
+            "title" : "mcpdemo.PaymentRejected",
+            "properties" : {
+              "reason" : {
+                "type" : "string"
+              },
+              "code" : {
+                "type" : "integer",
+                "minimum" : -2147483648,
+                "maximum" : 2147483647
+              }
+            },
+            "required" : [
+              "reason",
+              "code"
+            ],
+            "additionalProperties" : false
+          },
+          "mcpdemo.PaymentResult" : {
+            "title" : "mcpdemo.PaymentResult",
+            "oneOf" : [
+              {
+                "type" : "object",
+                "properties" : {
+                  "PaymentOk" : {
+                    "$ref" : "#/$defs/mcpdemo.PaymentOk"
+                  }
+                },
+                "required" : [
+                  "PaymentOk"
+                ],
+                "additionalProperties" : false
+              },
+              {
+                "type" : "object",
+                "properties" : {
+                  "PaymentRejected" : {
+                    "$ref" : "#/$defs/mcpdemo.PaymentRejected"
+                  }
+                },
+                "required" : [
+                  "PaymentRejected"
+                ],
+                "additionalProperties" : false
+              }
+            ],
+            "x-idealingua-kind" : "adt"
+          }
+        }
       },
       "x-idealingua-wire-type-input" : "mcpdemo.Shapes.PayInput",
       "x-idealingua-wire-type-output" : "mcpdemo.Shapes.PayOutput",
@@ -476,7 +668,7 @@
                 "type" : "object",
                 "properties" : {
                   "Failure" : {
-                    "$ref" : "#/components/schemas/mcpdemo.ServiceError"
+                    "$ref" : "#/$defs/mcpdemo.ServiceError"
                   }
                 },
                 "required" : [
@@ -492,7 +684,28 @@
           "result"
         ],
         "additionalProperties" : false,
-        "x-idealingua-wrapped" : true
+        "x-idealingua-wrapped" : true,
+        "$defs" : {
+          "mcpdemo.ServiceError" : {
+            "type" : "object",
+            "title" : "mcpdemo.ServiceError",
+            "properties" : {
+              "code" : {
+                "type" : "integer",
+                "minimum" : -2147483648,
+                "maximum" : 2147483647
+              },
+              "message" : {
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "code",
+              "message"
+            ],
+            "additionalProperties" : false
+          }
+        }
       },
       "x-idealingua-wire-type-input" : "mcpdemo.Shapes.DivideSafeInput",
       "x-idealingua-wire-type-output" : "mcpdemo.Shapes.DivideSafeOutput",
@@ -544,7 +757,7 @@
                 "type" : "object",
                 "properties" : {
                   "Failure" : {
-                    "$ref" : "#/components/schemas/mcpdemo.ServiceError"
+                    "$ref" : "#/$defs/mcpdemo.ServiceError"
                   }
                 },
                 "required" : [
@@ -560,7 +773,28 @@
           "result"
         ],
         "additionalProperties" : false,
-        "x-idealingua-wrapped" : true
+        "x-idealingua-wrapped" : true,
+        "$defs" : {
+          "mcpdemo.ServiceError" : {
+            "type" : "object",
+            "title" : "mcpdemo.ServiceError",
+            "properties" : {
+              "code" : {
+                "type" : "integer",
+                "minimum" : -2147483648,
+                "maximum" : 2147483647
+              },
+              "message" : {
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "code",
+              "message"
+            ],
+            "additionalProperties" : false
+          }
+        }
       },
       "x-idealingua-wire-type-input" : "mcpdemo.Shapes.NoteValueInput",
       "x-idealingua-wire-type-output" : "mcpdemo.Shapes.NoteValueOutput",
