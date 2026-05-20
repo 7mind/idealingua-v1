@@ -58,6 +58,8 @@ ret success:bool=true
 Run Scala coverage and unit tests for the selected Scala version.
 
 ```bash
+dep action.gen
+
 source ./.mdl/lib/env.sh
 prepare_build_env "${args.scala-version}"
 
@@ -163,6 +165,8 @@ ret success:bool=true
 Publish Scala artifacts to Sonatype. Releases trigger `sonaUpload`/`sonaRelease`, develop builds publish snapshots.
 
 ```bash
+dep action.gen
+
 source ./.mdl/lib/env.sh
 prepare_build_env "${args.scala-version}"
 

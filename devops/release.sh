@@ -2,8 +2,8 @@
 
 set -xe
 
-./sbtgen.sc
+./sbtgen.sc --js
 
 git add . || true
 
-sbt "++2.13" "release"
+sbt "++2.13" "release with-defaults"
