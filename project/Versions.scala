@@ -5,6 +5,7 @@ object V {
 
   val http4s       = "0.23.34"
   val http4s_ember = "0.23.34"
+  val http4s_blaze = "0.23.17"
 
   val scalameta = "4.16.1"
   val fastparse = "3.1.1" // 3.0.0 is available for Scala 3

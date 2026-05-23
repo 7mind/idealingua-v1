@@ -2,16 +2,15 @@ package mcpdemo
 
 import scala.io.Source
 
-import com.comcast.ip4s.{Host, Port}
 import io.circe.{Json, parser}
 import izumi.functional.bio.Exit
 import izumi.idealingua.runtime.rpc.{IRTOutputMiddleware, IRTServerMultiplexor}
 import izumi.idealingua.runtime.rpc.http4s.{Http4sTransportTest, McpJsonRpcRoutes}
 import org.http4s.{HttpRoutes, Request}
+import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.dsl.Http4sDsl
-import org.http4s.ember.server.EmberServerBuilder
 
-/** Standalone runner for the MCP demo. Boots Ember on a fixed port,
+/** Standalone runner for the MCP demo. Boots Blaze on a fixed port,
   * mounts the JSON-RPC adapter at `/mcp`, and the legacy REST routes at
   * their canonical paths (so both transports are reachable for ad-hoc
   * curl probes).
@@ -72,12 +71,10 @@ object McpDemoMain {
     import cats.implicits._
     val combined: HttpRoutes[BIO[Throwable, *]] = jsonRpc.routes <+> restRoutes
 
-    val resource = EmberServerBuilder
-      .default[BIO[Throwable, *]]
-      .withHost(Host.fromString("127.0.0.1").get)
-      .withPort(Port.fromInt(port).get)
+    val resource = BlazeServerBuilder[BIO[Throwable, *]]
+      .bindHttp(port, "127.0.0.1")
       .withHttpApp(combined.orNotFound)
-      .build
+      .resource
 
     val run: BIO[Throwable, Unit] = resource.use { srv =>
       val msg = s"mcpdemo-shapes MCP server listening on http://127.0.0.1:${srv.address.getPort}/mcp (POST JSON-RPC) + legacy REST"

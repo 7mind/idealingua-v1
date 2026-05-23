@@ -521,7 +521,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
       "org.scalatest" %% "scalatest" % V.scalatest % Test,
       "org.http4s" %% "http4s-dsl" % V.http4s,
       "org.http4s" %% "http4s-circe" % V.http4s,
-      "org.http4s" %% "http4s-ember-server" % V.http4s_ember,
+      "org.http4s" %% "http4s-blaze-server" % V.http4s_blaze,
       "org.http4s" %% "http4s-ember-client" % V.http4s_ember,
       "org.asynchttpclient" % "async-http-client" % V.asynchttpclient,
       "io.7mind.izumi" %% "logstage-core" % Izumi.version,

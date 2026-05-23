@@ -3,21 +3,20 @@ package izumi.idealingua.runtime.rpc.http4s
 import scala.annotation.nowarn
 import scala.concurrent.duration._
 
-import com.comcast.ip4s.{Host, Port}
 import io.circe.Json
 import izumi.functional.bio.Exit
 import izumi.idealingua.runtime.rpc.{IRTOutputMiddleware, IRTServerMultiplexor}
 import mcpdemo.{ShapesMcpRoutes, ShapesServer, ShapesServerImpl, ShapesWrappedServer}
 import org.http4s.{EntityDecoder, EntityEncoder, Method, Request, Status, Uri}
+import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.circe._
 import org.http4s.dsl.Http4sDsl
 import org.http4s.ember.client.EmberClientBuilder
-import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Server
 import org.scalatest.wordspec.AnyWordSpec
 
 /** Mb4-B integration spec: every `Shapes` MCP tool reached over a real HTTP
-  * socket via `EmberServerBuilder` + `EmberClientBuilder`, exercising every
+  * socket via `BlazeServerBuilder` + `EmberClientBuilder`, exercising every
   * `DefMethod.Output` shape (Void / Singular primitive / Singular DTO /
   * Struct / Algebraic / Alternative-Singular / Alternative-Void) and a
   * range of input shapes (empty / primitive / multi-primitive / DTO /
@@ -65,12 +64,10 @@ final class McpBridgeRealServerSpec extends AnyWordSpec {
 
   private def withServer[A](body: Uri => A): A = {
     val resource: cats.effect.Resource[BIO[Throwable, *], Server] =
-      EmberServerBuilder
-        .default[BIO[Throwable, *]]
-        .withHost(Host.fromString("127.0.0.1").get)
-        .withPort(Port.fromInt(0).get)
+      BlazeServerBuilder[BIO[Throwable, *]]
+        .bindHttp(0, "127.0.0.1")
         .withHttpApp(routes.orNotFound)
-        .build
+        .resource
     runUnsafe(resource.use { srv =>
       val base = Uri.unsafeFromString(s"http://127.0.0.1:${srv.address.getPort}")
       izumi.functional.bio.F.syncThrowable(body(base))
@@ -118,7 +115,7 @@ final class McpBridgeRealServerSpec extends AnyWordSpec {
 
   private val tool = "mcpdemo.Shapes."
 
-  "MCP bridge over real Ember socket" should {
+  "MCP bridge over real Blaze socket" should {
     "tools/list returns all 13 tools" in withServer { base =>
       val (status, body) = get(base / "mcp" / "tools" / "list")
       assert(status == Status.Ok)
