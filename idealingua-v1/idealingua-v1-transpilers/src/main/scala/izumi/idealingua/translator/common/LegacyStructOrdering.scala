@@ -84,14 +84,19 @@ object LegacyStructOrdering {
     * `FieldExtractor.compositeFields` + the `.distinct` call). The walk
     * visits `interfaces` then `concepts` then `thisFields` at each level.
     *
-    * Why this is necessary: `StructuralFlattener` flattens BFS, so a struct
-    * reached via two paths (e.g. `Notification` reached via the long
-    * `…→NotificationWithApp→Notification` path AND the short
-    * `…→NotificationWithEnvironment→Notification` path) gets the SHORTER
-    * distance. The legacy sort key `(distance, definedBy.toString, idx)`
-    * inverts depth ordering, so picking the shorter distance reshuffles
-    * Notification's fields next to the appID/env layer instead of the
-    * deeper user/blueprint layer — diverging from the legacy output.
+    * Why this is necessary: `StructuralFlattener` flattens BFS, so a
+    * struct reached via two paths of different length always gets the
+    * SHORTER distance. Legacy `FieldExtractor` was DFS, so the same
+    * struct's recorded distance was its FIRST DFS-preorder depth —
+    * which depends on the declaration order of a DTO's direct supers
+    * and can exceed the BFS shortest. The legacy sort key
+    * `(distance, definedBy.toString, idx)` inverts depth ordering, so
+    * feeding it BFS distance can place a diamond apex's fields next to
+    * a shallower-distance layer than the legacy renderer would. See
+    * the `idltest.diamondapply` fixture (`data Event { &WithAlpha;
+    * &Contract }`, where `Contract` is the depth-asymmetry wrapper
+    * around `WithBeta`) for a worked diamond shape exercised by the
+    * regression suite.
     *
     * Callers (`DomainScalaStruct.fromFlat`, `DomainCSStruct.fromFlat`,
     * `DomainTSStruct.fromFlat`) override the BFS distance with the value

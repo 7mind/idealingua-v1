@@ -1,0 +1,74 @@
+domain idltest.diamondapply
+
+// Regression fixture for the 1.5.0 Scala-output `apply`-signature
+// regression. The "diamond apex" mixin pattern: a base mixin `Base`
+// reached from a DTO through two distinct branches that each ultimately
+// inherit `Base`.
+//
+// Pre-1.5.0 the legacy `FieldExtractor` (DFS) + `findConflicts` flagged
+// the apex fields as ambiguous and the Scala renderer emitted them as
+// scalar parameters at the tail of `apply(...)`. The 1.5.0 (post-#610)
+// typer's BFS flattener visits each ancestor exactly once, never
+// flagging diamond-apex fields as ambiguous, so the renderer grouped
+// them under a single synthesized apex mixin parameter inserted mid-
+// signature. That reordering broke source compatibility with code
+// written against pre-1.5.0 generated apply helpers.
+//
+// Two DTOs live here:
+//
+//   - `Event` — asymmetric diamond. `Event → WithAlpha → Base` has
+//     depth 2, `Event → Contract → WithBeta → Base` has depth 3.
+//     Different depths trip the legacy `FieldExtractor` + `.distinct`
+//     quirk; the post-#610 renderer must scalar-ize the `Base`-owned
+//     fields at the tail of `apply(...)`.
+//
+//   - `SymmetricEvent` — symmetric diamond. Both `SymmetricEvent →
+//     WithAlpha → Base` and `SymmetricEvent → WithBeta → Base` are
+//     depth 2. Pre-1.5.0 the equal-depth records collapsed under
+//     `.distinct` and the renderer emitted `Base` as an ordinary
+//     mixin parameter — the diamond apex is NOT scalar-ized in this
+//     case. Provides negative coverage so future widening of the
+//     detector can't quietly turn symmetric diamonds into scalars.
+
+enum Kind {
+    Created
+    Updated
+    Deleted
+}
+
+mixin Base {
+    kind: Kind
+    at: tsz
+    note: opt[str]
+}
+
+mixin WithAlpha {
+    &Base
+
+    alphaId: i64
+    alphaName: opt[str]
+}
+
+mixin WithBeta {
+    &Base
+
+    betaId: i64
+    betaName: opt[str]
+}
+
+// Empty wrapper around `WithBeta`. Adds no fields; exists only to
+// extend the path from `Event` to `Base` on the WithBeta side by one
+// hop, producing the depth asymmetry.
+mixin Contract {
+    &WithBeta
+}
+
+data Event {
+    &WithAlpha
+    &Contract
+}
+
+data SymmetricEvent {
+    &WithAlpha
+    &WithBeta
+}
