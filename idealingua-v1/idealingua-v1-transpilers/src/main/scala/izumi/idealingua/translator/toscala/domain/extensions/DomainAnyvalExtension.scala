@@ -1,7 +1,7 @@
 package izumi.idealingua.translator.toscala.domain.extensions
 
-import izumi.idealingua.model.common.TypeId.{AdtId, AliasId, EnumId, IdentifierId, InterfaceId, DTOId}
-import izumi.idealingua.model.common.{Builtin, Generic, TypeId}
+import izumi.idealingua.model.common.TypeId.{AdtId, AliasId, EnumId, IdentifierId}
+import izumi.idealingua.model.common.{Builtin, Generic, StructureId, TypeId}
 import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.translator.toscala.domain.DomainSTContext
 import izumi.idealingua.translator.toscala.types.ScalaStruct
@@ -116,7 +116,7 @@ object DomainAnyvalExtension {
     * type); the legacy `Struct.all` and the emitted case-class parameter list
     * deduplicate them. AnyVal predicates and forProduct1 codec paths must
     * count the deduped set, not the raw flat. */
-  private def dedupByName(
+  private[domain] def dedupByName(
     fields: List[izumi.idealingua.typer.ir.FlatField]
   ): List[izumi.idealingua.typer.ir.FlatField] =
     fields.groupBy(_.field.name).values.map(_.head).toList
@@ -130,7 +130,7 @@ object DomainAnyvalExtension {
     else List.empty
   }
 
-  private def canBeAnyValField(ctx: DomainSTContext, typeId: TypeId): Boolean =
+  private[domain] def canBeAnyValField(ctx: DomainSTContext, typeId: TypeId): Boolean =
     canBeAnyValField(ctx, typeId, HashSet.empty)
 
   // After F16/Option A1 widening, Service/Buzzer/Streams IDs extend `TypeId` —
@@ -138,7 +138,7 @@ object DomainAnyvalExtension {
   // semantically exhaustive (only the compiler's checker needs a hint).
   @nowarn("msg=match may not be exhaustive")
   @tailrec
-  private def canBeAnyValField(ctx: DomainSTContext, typeId: TypeId, seen: HashSet[TypeId]): Boolean = {
+  private[domain] def canBeAnyValField(ctx: DomainSTContext, typeId: TypeId, seen: HashSet[TypeId]): Boolean = {
     typeId match {
       case _: Generic =>
         false // https://github.com/scala/bug/issues/11170
@@ -155,20 +155,18 @@ object DomainAnyvalExtension {
           case None =>
             throw new IDLException(s"DomainAnyvalExtension: unresolved alias $a")
         }
-      case d: DTOId =>
-        // legacy: "struct.isComposite" — composites cannot be AnyVal-wrapped.
-        // For an interface-impl DTO mirror this is always true.
-        val flat = ctx.domain.flattenedStructs.get(d)
-        flat.exists(_.fields.size > 1)
-      case i: InterfaceId =>
-        val flat = ctx.domain.flattenedStructs.get(i)
-        flat.exists(_.fields.size > 1)
+      case s: StructureId =>
+        // Structural composite (DTO or Interface): `findFlatStruct` checks
+        // local `flattenedStructs` then `crossDomainFlattenedStructs`; no
+        // manual OR needed at the call site.
+        ctx.domain.findFlatStruct(s).exists(_.fields.size > 1)
       case t: IdentifierId =>
-        // legacy: `struct.all.size > 1`. New IR exposes Identifier.fields directly
-        // via `userTypes`; lookup, fall back to `false` when absent.
-        ctx.domain.userTypes.get(t) match {
+        // `findUserType` checks local `userTypes` then `crossDomainUserTypes`;
+        // foreign identifiers referenced from local field positions are reached
+        // without a manual fallback at the call site.
+        ctx.domain.findUserType(t) match {
           case Some(NewTypeDef.Identifier(_, fields, _)) => fields.size > 1
-          case _                                          => false
+          case _ => false
         }
     }
   }

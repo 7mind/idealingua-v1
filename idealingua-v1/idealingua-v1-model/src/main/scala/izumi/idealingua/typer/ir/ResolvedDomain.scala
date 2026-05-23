@@ -61,6 +61,12 @@ import scodec.bits.ByteVector
   *                            populates.
   * @param typedConsts         Type-checked constants in declaration order.
   *                            Phase 8 populates.
+  * @param crossDomainUserTypes
+  *                            Every foreign `TypeDef` reachable through any
+  *                            foreign domain this domain transitively touches
+  *                            (super-driven + field-driven harvest). Prefer
+  *                            `findUserType` / `findFlatStruct` accessors on
+  *                            `Domain` rather than reading this map directly.
   * @param diagnostics         Accumulated diagnostics from Phases 1-10.
   */
 final case class ResolvedDomain(
@@ -74,6 +80,7 @@ final case class ResolvedDomain(
   loops: Set[Cycle[TypeId]] = Set.empty,
   flattenedStructs: Map[StructureId, FlatStruct] = Map.empty,
   crossDomainFlattenedStructs: Map[StructureId, FlatStruct] = Map.empty,
+  crossDomainUserTypes: Map[TypeId, TypeDef] = Map.empty,
   parents: Map[TypeId, Set[InterfaceId]] = Map.empty,
   implementingDtos: Map[InterfaceId, Set[DTOId]] = Map.empty,
   ephemeralsOf: Map[TypeId, Set[TypeId]] = Map.empty,

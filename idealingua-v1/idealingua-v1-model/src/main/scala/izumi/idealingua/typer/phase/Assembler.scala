@@ -22,6 +22,7 @@ object Assembler {
     ephemeralOwner    = rd.ephemeralOwner,
     flattenedStructs  = rd.flattenedStructs,
     crossDomainFlattenedStructs = rd.crossDomainFlattenedStructs,
+    crossDomainUserTypes        = rd.crossDomainUserTypes,
     parents           = rd.parents,
     implementingDtos  = rd.implementingDtos,
     loops             = rd.loops,

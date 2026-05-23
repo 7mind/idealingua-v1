@@ -429,7 +429,7 @@ trait DomainCirceTranslatorExtensionBase {
     val dedupedFields: List[izumi.idealingua.typer.ir.FlatField] =
       flatFields.groupBy(_.field.name).values.map(_.head).toList
     val anyvalCase: Boolean = {
-      dedupedFields.size == 1 && dedupedFields.forall(ff => isAnyValField(ctx, ff.field.typeId))
+      dedupedFields.size == 1 && dedupedFields.forall(ff => DomainAnyvalExtension.canBeAnyValField(ctx, ff.field.typeId))
     }
 
     val traitNm = typeName(s"${name}Circe")
@@ -459,32 +459,6 @@ trait DomainCirceTranslatorExtensionBase {
            |}""".stripMargin
       mkCirceTrait(ctx, s"${name}Circe", traitSrc, id)
     }
-  }
-
-  /** Mirrors `DomainAnyvalExtension.canBeAnyValField` — duplicated locally
-    * because that helper is `private` and we need to gate the impl-DTO
-    * AnyVal path here too.
-    */
-  private def isAnyValField(ctx: DomainSTContext, typeId: TypeId): Boolean = typeId match {
-    case _: izumi.idealingua.model.common.Generic       => false
-    case _: izumi.idealingua.model.common.Builtin       => true
-    case _: TypeId.EnumId                                => true
-    case _: TypeId.AdtId                                 => false
-    case a: TypeId.AliasId                               =>
-      ctx.domain.aliases.get(a) match {
-        case Some(target) => isAnyValField(ctx, target)
-        case None         => throw new IDLException(s"unresolved alias $a")
-      }
-    case d: TypeId.DTOId =>
-      ctx.domain.flattenedStructs.get(d).exists(_.fields.size > 1)
-    case i: TypeId.InterfaceId =>
-      ctx.domain.flattenedStructs.get(i).exists(_.fields.size > 1)
-    case t: TypeId.IdentifierId =>
-      ctx.domain.userTypes.get(t) match {
-        case Some(NewTypeDef.Identifier(_, fields, _)) => fields.size > 1
-        case _                                          => false
-      }
-    case _ => false
   }
 
   /** Returns true iff `target` is reachable from `from` by walking only the

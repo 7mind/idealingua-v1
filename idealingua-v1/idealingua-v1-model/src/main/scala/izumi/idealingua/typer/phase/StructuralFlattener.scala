@@ -169,8 +169,15 @@ object StructuralFlattener {
     // supertypes so the BFS walker eventually reaches every transitive
     // ancestor. Foreign diagnostics are dropped — the foreign domain owns
     // its own pipeline run and surfaces its own diagnostics there.
+    //
+    // Full TypeDef for every foreign user type reachable through field references
+    // (not just supers). Populated below alongside the super-driven harvest;
+    // consumed by renderer-side AnyVal predicates and other consumers that need
+    // to classify cross-domain types (e.g. `DomainAnyvalExtension.canBeAnyValField`).
+    val foreignUserTypesBuf = mutable.LinkedHashMap.empty[TypeId, TypeDef]
     family.foreach { fam =>
-      val foreignResolved = mutable.HashMap.empty[DomainId, Option[ResolvedDomain]]
+      val foreignResolved  = mutable.HashMap.empty[DomainId, Option[ResolvedDomain]]
+      val indexedDomains   = mutable.HashSet.empty[DomainId]
 
       def resolveForeign(d: DomainId): Option[ResolvedDomain] =
         foreignResolved.getOrElseUpdate(
@@ -184,9 +191,41 @@ object StructuralFlattener {
           },
         )
 
+      // Once a foreign domain is resolved, store the full TypeDef for every
+      // foreign user type. Consumers query this map to classify cross-domain
+      // types that appear in local field positions (e.g.
+      // `data D { val: foreign.X#ItemID }`). Widened from Identifier-only to
+      // all TypeDef categories so enums, ADTs, DTOs, aliases, etc. are also
+      // available for free.
+      // D08: memoised via `indexedDomains` — each domain is walked at most once.
+      def indexForeignUserTypes(d: DomainId): Unit = {
+        if (!indexedDomains.add(d)) return
+        resolveForeign(d).foreach { resolved =>
+          resolved.userTypes.foreach {
+            case (id, td) if id.path.domain != rd.id => foreignUserTypesBuf.update(id, td)
+            case _ => ()
+          }
+        }
+      }
+
+      // Helper shared by DTO and Interface branches of harvest: for each field
+      // of a freshly-harvested foreign struct, index the field's domain and
+      // recursively harvest any foreign StructureId referenced — so third-domain
+      // (and deeper) types are reached transitively (D06).
+      def harvestFieldTypes(fields: List[Field]): Unit = fields.foreach { f =>
+        val tid = f.typeId
+        val d   = tid.path.domain
+        if (d != rd.id) indexForeignUserTypes(d)
+        tid match {
+          case sid: StructureId if sid.path.domain != rd.id => harvest(sid)
+          case _                                             => ()
+        }
+      }
+
       def harvest(id: StructureId): Unit = {
         if (views.contains(id)) return
         val resolved = resolveForeign(id.path.domain).getOrElse(return)
+        indexForeignUserTypes(id.path.domain)
         resolved.userTypes.get(id) match {
           case Some(dto: TypeDef.Dto) =>
             views.update(
@@ -202,6 +241,7 @@ object StructuralFlattener {
             directInterfaces.update(id, dto.struct.superclasses.interfaces)
             directConcepts.update(id, dto.struct.superclasses.concepts)
             (dto.struct.superclasses.interfaces ++ dto.struct.superclasses.concepts).foreach(harvest)
+            harvestFieldTypes(dto.struct.fields)
           case Some(ifc: TypeDef.Interface) =>
             views.update(
               id,
@@ -216,6 +256,7 @@ object StructuralFlattener {
             directInterfaces.update(id, ifc.struct.superclasses.interfaces)
             directConcepts.update(id, ifc.struct.superclasses.concepts)
             (ifc.struct.superclasses.interfaces ++ ifc.struct.superclasses.concepts).foreach(harvest)
+            harvestFieldTypes(ifc.struct.fields)
           case _ => ()
         }
       }
@@ -225,6 +266,43 @@ object StructuralFlattener {
       seedSupers.foreach { sup =>
         if (sup.path.domain != rd.id) harvest(sup)
       }
+
+      // Seed foreign user-type harvest and DTO/Interface struct harvest from
+      // first-hop field-type references. With the new transitive harvest in
+      // `harvest` itself (D06), this seed only needs to find the *first-hop*
+      // foreign references — `harvest` follows deeper hops automatically.
+      val foreignFieldDomains = mutable.LinkedHashSet.empty[DomainId]
+      // Collect foreign StructureId (DTOId / InterfaceId) references seen in
+      // field positions. `harvest(sid)` populates `crossDomainFlattenedStructs`
+      // for those structs, which `canBeAnyValField` consults when classifying
+      // a local DTO that carries a single foreign DTO/Interface field. The
+      // super-driven harvest only follows mixin parents, so a foreign struct
+      // referenced purely as a field type (not as a mixin) would otherwise
+      // remain absent from `crossDomainFlattenedStructs` and the predicate
+      // would return `false`, breaking AnyVal emission for those shapes.
+      val foreignFieldStructs = mutable.LinkedHashSet.empty[StructureId]
+      def collectDomain(tid: TypeId): Unit = {
+        val d = tid.path.domain
+        if (d != rd.id) {
+          val _ = foreignFieldDomains.add(d)
+          tid match {
+            case sid: StructureId => val _ = foreignFieldStructs.add(sid)
+            case _                => ()
+          }
+        }
+      }
+      views.values.foreach(_.fields.foreach(f => collectDomain(f.typeId)))
+      rd.userTypes.values.foreach {
+        case TypeDef.Identifier(_, fields, _) => fields.foreach(f => collectDomain(f.typeId))
+        case TypeDef.Alias(_, target, _)      => collectDomain(target)
+        case _                                => ()
+      }
+      foreignFieldDomains.foreach(indexForeignUserTypes)
+      // Second pass: harvest foreign DTO/Interface structs referenced in field
+      // positions so `crossDomainFlattenedStructs` is populated for them.
+      // `harvest` calls `indexForeignUserTypes` internally, so the full foreign
+      // user-type set for any newly-visited domain is indexed for free.
+      foreignFieldStructs.foreach(harvest)
     }
 
     /** Walk only `interfaces` edges; recurses transitively. Returns the
@@ -386,6 +464,7 @@ object StructuralFlattener {
       implementingDtos            = implementingDtos,
       flattenedStructs            = flatBuf.toMap,
       crossDomainFlattenedStructs = foreignFlatBuf.toMap,
+      crossDomainUserTypes        = foreignUserTypesBuf.toMap,
       diagnostics                 = rd.diagnostics ++ Diagnostics(diagBuf.toVector),
     )
   }
