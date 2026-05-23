@@ -172,8 +172,7 @@ object DomainTSStruct {
     * (it only reads `Struct.all`).
     */
   def structureOf(domain: Domain, i: InterfaceId): izumi.idealingua.model.typespace.structures.Struct = {
-    val flat = domain.flattenedStructs.get(i)
-      .orElse(domain.crossDomainFlattenedStructs.get(i))
+    val flat = domain.findFlatStruct(i)
       .getOrElse(FlatStruct(i, List.empty, List.empty, List.empty))
     val supers = domain.userTypes.get(i) match {
       case Some(iface: NewTypeDef.Interface) => iface.struct.superclasses

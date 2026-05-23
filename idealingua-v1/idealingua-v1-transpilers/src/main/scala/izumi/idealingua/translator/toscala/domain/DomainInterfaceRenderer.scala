@@ -100,7 +100,7 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
     // Name.Anonymous(), Nil).syntax` output.
     val implAnyvalBases: List[String] = {
       val all = implFields.all.map(_.field.field)
-      val canBeAnyVal = all.size == 1 && all.forall(f => structFieldQualifiesForAnyVal(f.typeId))
+      val canBeAnyVal = all.size == 1 && all.forall(f => DomainAnyvalExtension.canBeAnyValField(ctx, f.typeId))
       if (canBeAnyVal) List("AnyVal")
       else List.empty
     }
@@ -154,30 +154,6 @@ final class DomainInterfaceRenderer(ctx: DomainSTContext) {
       companionBaseText = companionTree.mapRender(resolver.resolve),
       toolsText         = toolsTree.mapRender(resolver.resolve),
     )
-  }
-
-  /** AnyVal-field check mirroring `DomainAnyvalExtension.canBeAnyValField`,
-    * inlined because that helper is package-private. */
-  private def structFieldQualifiesForAnyVal(typeId: izumi.idealingua.model.common.TypeId): Boolean = typeId match {
-    case _: izumi.idealingua.model.common.Generic                          => false
-    case _: izumi.idealingua.model.common.Builtin                          => true
-    case _: izumi.idealingua.model.common.TypeId.EnumId                    => true
-    case _: izumi.idealingua.model.common.TypeId.AdtId                     => false
-    case a: izumi.idealingua.model.common.TypeId.AliasId =>
-      ctx.domain.aliases.get(a) match {
-        case Some(target) => structFieldQualifiesForAnyVal(target)
-        case None         => false
-      }
-    case d: izumi.idealingua.model.common.TypeId.DTOId =>
-      ctx.domain.flattenedStructs.get(d).exists(_.fields.size > 1)
-    case i: izumi.idealingua.model.common.TypeId.InterfaceId =>
-      ctx.domain.flattenedStructs.get(i).exists(_.fields.size > 1)
-    case t: izumi.idealingua.model.common.TypeId.IdentifierId =>
-      ctx.domain.userTypes.get(t) match {
-        case Some(izumi.idealingua.typer.ir.TypeDef.Identifier(_, fields, _)) => fields.size > 1
-        case _                                                                 => false
-      }
-    case _ => false
   }
 
   /** Build the trait source string for an interface — exposed so the

@@ -1,9 +1,11 @@
 package izumi.idealingua.typer.phase
 
 import izumi.idealingua.model.common.TypeId._
-import izumi.idealingua.model.common.{IndefiniteId, TypePath}
+import izumi.idealingua.model.common.{DomainId, IndefiniteId, TypePath}
 import izumi.idealingua.model.il.ast.raw.defns._
-import izumi.idealingua.typer.ir.Diagnostic
+import izumi.idealingua.model.il.ast.raw.domains.{DomainMeshLoaded, ImportedId, SingleImport}
+import izumi.idealingua.model.loader.FSPath
+import izumi.idealingua.typer.ir.{Diagnostic, Diagnostics, FamilyIndex}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -226,6 +228,113 @@ final class StructuralFlattenerSpec extends AnyFunSpec with Matchers {
       dtoFlat.conflictsSoft.head.fields.head.field.typeId shouldBe covAId
 
       rd.diagnostics.issues.collect { case d: Diagnostic.FieldNameConflict => d } shouldBe empty
+    }
+
+    // ---- PR-01-D07: write-side harvest test ----
+    //
+    // Verifies that `StructuralFlattener.apply(local, family)` populates
+    // `crossDomainUserTypes` and `crossDomainFlattenedStructs` when the
+    // local domain references foreign types only through field positions
+    // (not as mixin supers).  This exercises the write-side of the harvest
+    // so a regression that leaves those maps empty is caught at the unit
+    // level rather than only through full-pipeline IDL fixtures.
+
+    it("populates crossDomainUserTypes and crossDomainFlattenedStructs from field-type references") {
+      // --- foreign domain: idltest.foreign_ids ---
+      //   identifier ItemID { f1: str; f2: str }
+      //   data MultiFieldDto { x: str; y: str }
+      val domForeign  = DomainId(Seq("idltest"), "foreign_ids")
+      val itemIdId    = IdentifierId(TypePath(domForeign, Seq.empty), "ItemID")
+      val foreignDtoId = DTOId(TypePath(domForeign, Seq.empty), "MultiFieldDto")
+
+      val foreignIdentDef = RawTypeDef.Identifier(
+        itemIdId,
+        List(
+          RawField(IndefiniteId(Seq.empty, "str"), Some("f1"), meta),
+          RawField(IndefiniteId(Seq.empty, "str"), Some("f2"), meta),
+        ),
+        meta,
+      )
+      val foreignDtoDef = RawTypeDef.DTO(
+        foreignDtoId,
+        RawStructure(Nil, Nil, Nil, List(
+          RawField(IndefiniteId(Seq.empty, "str"), Some("x"), meta),
+          RawField(IndefiniteId(Seq.empty, "str"), Some("y"), meta),
+        ), Nil),
+        meta,
+      )
+
+      val foreignDefn  = resolved(domForeign, List(foreignIdentDef, foreignDtoDef))
+      val foreignMesh = DomainMeshLoaded(
+        id               = domForeign,
+        origin           = FSPath.Name("foreign_ids.domain"),
+        directInclusions = Seq.empty,
+        originalImports  = Seq.empty,
+        meta             = meta,
+        types            = List(foreignIdentDef, foreignDtoDef),
+        services         = Seq.empty,
+        buzzers          = Seq.empty,
+        streams          = Seq.empty,
+        consts           = Seq.empty,
+        imports          = Seq.empty,
+        defn             = foreignDefn,
+      )
+
+      // --- local domain: idltest.a (= domA) ---
+      //   imports ItemID and MultiFieldDto from domForeign
+      //   data D    { val: ItemID      }
+      //   data D2   { val: MultiFieldDto }
+      val localImports = List(
+        SingleImport(domForeign, ImportedId("ItemID",       None)),
+        SingleImport(domForeign, ImportedId("MultiFieldDto", None)),
+      )
+      val dDef = RawTypeDef.DTO(
+        DTOId(TypePath(domA, Seq.empty), "D"),
+        RawStructure(Nil, Nil, Nil, List(RawField(IndefiniteId(Seq.empty, "ItemID"),       Some("val"), meta)), Nil),
+        meta,
+      )
+      val d2Def = RawTypeDef.DTO(
+        DTOId(TypePath(domA, Seq.empty), "D2"),
+        RawStructure(Nil, Nil, Nil, List(RawField(IndefiniteId(Seq.empty, "MultiFieldDto"), Some("val"), meta)), Nil),
+        meta,
+      )
+
+      val (localMesh, _) = fixture(
+        local      = List(dDef, d2Def),
+        imports    = localImports,
+        referenced = Map(domForeign -> foreignDefn),
+      )
+
+      // Build a FamilyIndex containing both domains so StructuralFlattener can
+      // resolve the foreign mesh when it follows field-type references.
+      val family = FamilyIndex(
+        domains     = Map(domA -> localMesh, domForeign -> foreignMesh),
+        importGraph = Map(domA -> Set(domForeign), domForeign -> Set.empty[DomainId]),
+        loadOrder   = List(domForeign, domA),
+        diagnostics = Diagnostics.empty,
+      )
+
+      // Run local domain through the typer pipeline up to (but not including)
+      // StructuralFlattener, then apply StructuralFlattener with the family.
+      val localRd0 = AliasDealiaser(KindChecker(NameResolver(ScopeBuilder(domA, localMesh, family), family)))
+      val localRd  = StructuralFlattener(CycleDetector(localRd0), family)
+
+      // Write-side assertions: the harvest must have populated the maps.
+      import izumi.idealingua.typer.ir.TypeDef
+      localRd.crossDomainUserTypes.get(itemIdId) match {
+        case Some(td: TypeDef.Identifier) => td.fields.size shouldBe 2
+        case other                        => fail(s"expected TypeDef.Identifier, got $other")
+      }
+
+      localRd.crossDomainFlattenedStructs should contain key foreignDtoId
+      localRd.crossDomainFlattenedStructs(foreignDtoId).fields.size shouldBe 2
+
+      // PR-02-D02: the widening to all TypeDef categories means the foreign DTO
+      // must also appear in crossDomainUserTypes as a TypeDef.Dto.
+      localRd.crossDomainUserTypes.get(foreignDtoId) match {
+        case Some(_: TypeDef.Dto) => // expected
+        case other                => fail(s"expected TypeDef.Dto for foreignDtoId, got $other")
+      }
     }
   }
 }
