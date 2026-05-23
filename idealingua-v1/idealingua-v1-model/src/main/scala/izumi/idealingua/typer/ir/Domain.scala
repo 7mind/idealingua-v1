@@ -50,6 +50,15 @@ import izumi.idealingua.model.il.ast.typed.DomainMetadata
   *                            local structs (e.g. cast-similar peer
   *                            detection, anyval candidate scan) do not
   *                            accidentally surface foreign entries.
+  * @param crossDomainUserTypes
+  *                            Every foreign `TypeDef` reachable through any
+  *                            foreign domain this domain transitively touches
+  *                            (super-driven + field-driven harvest). Used by
+  *                            Scala-renderer AnyVal predicates so single-scalar
+  *                            DTOs carrying foreign identifiers extend `AnyVal`
+  *                            with legacy parity. Look up via `findUserType` /
+  *                            `findFlatStruct` accessors rather than reading
+  *                            the cross-domain maps directly.
   * @param parents             Maps each structural `TypeId` to the set of
   *                            `InterfaceId`s it directly or transitively
   *                            extends.
@@ -75,6 +84,7 @@ final case class Domain(
   ephemeralOwner: Map[TypeId, TypeId],
   flattenedStructs: Map[StructureId, FlatStruct],
   crossDomainFlattenedStructs: Map[StructureId, FlatStruct] = Map.empty,
+  crossDomainUserTypes: Map[TypeId, TypeDef] = Map.empty,
   parents: Map[TypeId, Set[InterfaceId]],
   implementingDtos: Map[InterfaceId, Set[DTOId]],
   loops: Set[Cycle[TypeId]],
@@ -84,4 +94,15 @@ final case class Domain(
   consts: List[Const],
   aliases: Map[AliasId, TypeId],
   userTypes: Map[TypeId, TypeDef],
-)
+) {
+
+  /** Look up a user type that may be local or cross-domain; consults
+    * `userTypes` first, then `crossDomainUserTypes` as fallback. */
+  def findUserType(t: TypeId): Option[TypeDef] =
+    userTypes.get(t).orElse(crossDomainUserTypes.get(t))
+
+  /** Look up a flattened struct that may be local or cross-domain; consults
+    * `flattenedStructs` first, then `crossDomainFlattenedStructs` as fallback. */
+  def findFlatStruct(s: StructureId): Option[FlatStruct] =
+    flattenedStructs.get(s).orElse(crossDomainFlattenedStructs.get(s))
+}
