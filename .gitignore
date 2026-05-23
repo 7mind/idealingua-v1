@@ -18,7 +18,7 @@
 #project/plugins.sbt
 #project/build.properties
 
-
+worktrees
 secrets.tar
 build/project
 .DS_Store

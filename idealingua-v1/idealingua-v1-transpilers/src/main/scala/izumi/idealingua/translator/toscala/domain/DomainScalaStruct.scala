@@ -3,7 +3,7 @@ package izumi.idealingua.translator.toscala.domain
 import izumi.idealingua.model.common.TypeId.InterfaceId
 import izumi.idealingua.model.common.{ExtendedField, FieldDef, StructureId, TypeId}
 import izumi.idealingua.model.il.ast.typed.{Field, Super}
-import izumi.idealingua.translator.common.LegacyStructOrdering
+import izumi.idealingua.translator.common.{LegacyMapKeyOrder, LegacyStructOrdering}
 import izumi.idealingua.translator.toscala.tools.ScalaTextHelpers
 import izumi.idealingua.translator.toscala.types.{ScalaField, ScalaStruct, ScalaTypeConverter}
 import izumi.idealingua.typer.ir.{Domain, FlatStruct, Struct, TypeDef => NewTypeDef}
@@ -61,24 +61,25 @@ object DomainScalaStruct {
     // legacy sort key we instead need the DFS-first-visit depth — see
     // `LegacyStructOrdering.legacyDfsDistance` for the why.
     val dfsDistance: Map[(TypeId, String), Int] = LegacyStructOrdering.legacyDfsDistance(id, domain)
-    val seenPerOrigin = scala.collection.mutable.LinkedHashMap.empty[TypeId, Int]
-    val extendedRaw: List[ExtendedField] = flat.fields.map { ff =>
-      val perOriginIdx = {
-        val n = seenPerOrigin.getOrElse(ff.origin, 0)
-        seenPerOrigin.update(ff.origin, n + 1)
-        n
-      }
-      val idx = LegacyStructOrdering.originIndex(domain, ff.origin, ff.field.name).getOrElse(perOriginIdx)
-      val dist = dfsDistance.getOrElse((ff.origin, ff.field.name), ff.distance)
-      ExtendedField(
-        field = ff.field,
-        defn  = FieldDef(
-          definedBy        = ff.origin,
-          definedWithIndex = idx,
-          usedBy           = id,
-          distance         = dist,
-        ),
-      )
+    val seenPerOrigin                           = scala.collection.mutable.LinkedHashMap.empty[TypeId, Int]
+    val extendedRaw: List[ExtendedField] = flat.fields.map {
+      ff =>
+        val perOriginIdx = {
+          val n = seenPerOrigin.getOrElse(ff.origin, 0)
+          seenPerOrigin.update(ff.origin, n + 1)
+          n
+        }
+        val idx  = LegacyStructOrdering.originIndex(domain, ff.origin, ff.field.name).getOrElse(perOriginIdx)
+        val dist = dfsDistance.getOrElse((ff.origin, ff.field.name), ff.distance)
+        ExtendedField(
+          field = ff.field,
+          defn = FieldDef(
+            definedBy        = ff.origin,
+            definedWithIndex = idx,
+            usedBy           = id,
+            distance         = dist,
+          ),
+        )
     }
 
     // Defect #7 / IMPL-7a.2-Fe4 (revised, F-DTO1-fieldorder): field-name
@@ -114,26 +115,119 @@ object DomainScalaStruct {
     def posOf(ef: ExtendedField): Int =
       dfsPos.getOrElse((ef.defn.definedBy, ef.field.name), Int.MaxValue)
     val deduped: List[ExtendedField] = {
-      val byName  = scala.collection.mutable.LinkedHashMap.empty[String, scala.collection.mutable.ListBuffer[ExtendedField]]
-      extendedRaw.foreach { f =>
-        val buf = byName.getOrElseUpdate(f.field.name, scala.collection.mutable.ListBuffer.empty)
-        buf += f
+      val byName = scala.collection.mutable.LinkedHashMap.empty[String, scala.collection.mutable.ListBuffer[ExtendedField]]
+      extendedRaw.foreach {
+        f =>
+          val buf = byName.getOrElseUpdate(f.field.name, scala.collection.mutable.ListBuffer.empty)
+          buf += f
       }
-      byName.values.map { occurrences =>
-        val typesEqual = occurrences.map(_.field).toSet.size == 1
-        if (typesEqual) occurrences.minBy(posOf)
-        else occurrences.minBy(_.defn.distance)
+      byName.values.map {
+        occurrences =>
+          val typesEqual = occurrences.map(_.field).toSet.size == 1
+          if (typesEqual) occurrences.minBy(posOf)
+          else occurrences.minBy(_.defn.distance)
       }.toList
     }
 
     // Defect #5: apply the legacy sort key.
     val sorted: List[ExtendedField] = LegacyStructOrdering.sortLegacyKey(deduped)
 
+    // Diamond-apex regression (F-1.5.0-apply-args): pre-1.5.0 the legacy
+    // `FieldExtractor` was a DFS that stamped each field with
+    // `FieldDef.distance = depth-of-discovery`. For an ancestor `A`
+    // reachable from `id` via two paths of EQUAL depth the two extracted
+    // `ExtendedField`s were structurally identical, so `.distinct`
+    // collapsed them and `findConflicts` saw `size=1` → unambigious → `A`
+    // emitted as a mixin parameter. For paths of DIFFERENT depths the
+    // entries differed in `distance`, `.distinct` kept both and
+    // `findConflicts` flagged a soft conflict → ambigious → fields
+    // emitted as scalars at the tail of `apply(...)`.
+    //
+    // The post-#610 BFS flattener visits each ancestor exactly once at
+    // its shortest distance, so the asymmetry never surfaces. Replicate
+    // the legacy quirk explicitly: an ancestor is a diamond apex iff it
+    // is reachable from `id` at two or more distinct depths through
+    // `superclasses.{interfaces, concepts}` edges. Routing its fields
+    // through `ambiguousNames` makes the emitter use its existing scalar-
+    // parameter branch.
+    //
+    // Only `defn.definedBy` values that actually appear among the
+    // inherited fields can become mixin parameters, so we only have to
+    // classify those.
+    val contributingAncestors: Set[TypeId] = {
+      val b = scala.collection.mutable.LinkedHashSet.empty[TypeId]
+      extendedRaw.foreach(ef => b += ef.defn.definedBy)
+      b.toSet
+    }
+
+    // Rebuilt per `fromFlat` call. Cheap at current corpus scale; if
+    // codegen ever becomes a bottleneck, lift to a domain-keyed cache.
+    def directSupersOf(tid: TypeId): List[TypeId] = {
+      def fromSuper(s: Super): List[TypeId] = s.interfaces ++ s.concepts
+      domain.userTypes.get(tid) match {
+        case Some(d: NewTypeDef.Dto)       => fromSuper(d.struct.superclasses)
+        case Some(i: NewTypeDef.Interface) => fromSuper(i.struct.superclasses)
+        case _ =>
+          domain.members.get(tid) match {
+            case Some(izumi.idealingua.typer.ir.Member.Ephemeral(eph)) => fromSuper(eph.struct.superclasses)
+            case _                                                     => Nil
+          }
+      }
+    }
+
+    val diamondApexes: Set[TypeId] = {
+      // Visited keyed by `(node, depth)` so distinct depths are
+      // enumerated. Safe because cyclic inheritance is rejected earlier
+      // in the typer pipeline; with a cycle this loop would not
+      // terminate.
+      val depthsOf = scala.collection.mutable.Map.empty[TypeId, scala.collection.mutable.Set[Int]]
+      val visited  = scala.collection.mutable.LinkedHashSet.empty[(TypeId, Int)]
+      val queue    = scala.collection.mutable.Queue.empty[(TypeId, Int)]
+      queue.enqueue(id -> 0)
+      while (queue.nonEmpty) {
+        val (cur, depth) = queue.dequeue()
+        if (visited.add(cur -> depth)) {
+          depthsOf.getOrElseUpdate(cur, scala.collection.mutable.Set.empty[Int]) += depth
+          directSupersOf(cur).foreach(p => queue.enqueue(p -> (depth + 1)))
+        }
+      }
+      contributingAncestors.filter(a => depthsOf.get(a).exists(_.size >= 2))
+    }
+
+    val diamondApexFieldNames: Set[String] =
+      if (diamondApexes.isEmpty) Set.empty
+      else
+        extendedRaw.iterator.collect {
+          case ef if diamondApexes.contains(ef.defn.definedBy) => ef.field.name
+        }.toSet
+
     val ambiguousNames: Set[String] =
-      (flat.conflictsSoft.map(_.name) ++ flat.conflictsHard.map(_.name)).toSet
+      (flat.conflictsSoft.map(_.name) ++ flat.conflictsHard.map(_.name)).toSet ++ diamondApexFieldNames
 
     val unambigious = sorted.filterNot(f => ambiguousNames.contains(f.field.name))
-    val ambigious   = sorted.filter(f => ambiguousNames.contains(f.field.name))
+
+    // `ambigious` parameter order: the legacy `findConflicts` populated a
+    // `LinkedHashMap` by iterating `all.groupBy(_.field.name)`, and the
+    // apply emitter consumed those values in insertion order. The Scala
+    // stdlib's `immutable.Map` is size-specialised: `Map1`–`Map4`
+    // preserve insertion order, `HashMap` (size ≥ 5) uses a CHAMP
+    // hash-trie traversal. We could delegate to `Map[String, _]` and
+    // get the same ordering for free, but the iteration order is a
+    // stdlib implementation detail — a future Scala release that, say,
+    // sorts every `Map` by `hashCode` (or switches to a different trie)
+    // would silently shift our emitted parameter order on a routine
+    // dependency bump. Replicate Scala 2.13's algorithm explicitly so
+    // the order is locked to our code, not theirs.
+    val ambigious: List[ExtendedField] = {
+      val perName: Map[String, ExtendedField] =
+        sorted.iterator.map(f => f.field.name -> f).toMap
+      val distinctNames: List[String] =
+        extendedRaw.iterator.map(_.field.name).distinct.toList
+      LegacyMapKeyOrder
+        .apply(distinctNames)
+        .filter(ambiguousNames.contains)
+        .flatMap(perName.get)
+    }
 
     new izumi.idealingua.model.typespace.structures.Struct(
       id           = id,
