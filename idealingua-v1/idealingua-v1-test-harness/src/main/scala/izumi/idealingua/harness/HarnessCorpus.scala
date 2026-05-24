@@ -11,6 +11,17 @@ object HarnessCorpus {
   def corpusRoot(repoRoot: Path): Path =
     repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs/main-tests/source")
 
+  /** Standalone corpus holding only the diamond-apex `apply`-signature
+    * regression fixture (`idltest.diamondapply`). Kept outside the
+    * `main-tests` corpus so the regression-harness sanity matrix
+    * (`sanity-{scala,typescript,csharp}-full`) does not require a
+    * matching hand-authored `sample_app.*` entry whenever a new DTO is
+    * added to the diamond-apex spec. Loaded directly by
+    * `DiamondApplySignatureSpec`.
+    */
+  def diamondApplyCorpusRoot(repoRoot: Path): Path =
+    repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs/diamondapply/source")
+
   /** Build-time generated tree root (R1).
     *
     * Layout under `<repoRoot>/idealingua-v1/idealingua-v1-test-harness/target/generated-sources/test-harness/`:
