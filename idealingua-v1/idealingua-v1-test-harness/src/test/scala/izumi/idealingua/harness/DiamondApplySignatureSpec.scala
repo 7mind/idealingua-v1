@@ -37,7 +37,7 @@ final class DiamondApplySignatureSpec extends AnyFunSuite {
 
   private def renderDto(dtoName: String): String = {
     val repoRoot   = HarnessCorpus.repoRootForTests()
-    val corpusRoot = HarnessCorpus.corpusRoot(repoRoot)
+    val corpusRoot = HarnessCorpus.diamondApplyCorpusRoot(repoRoot)
     val loaded     = HarnessCorpus.loadCorpus(corpusRoot)
     val options    = HarnessOptions.optionsFor(IDLLanguage.Scala)
     val layouted   = new TypespaceCompilerBaseFacade(options).compile(loaded)
