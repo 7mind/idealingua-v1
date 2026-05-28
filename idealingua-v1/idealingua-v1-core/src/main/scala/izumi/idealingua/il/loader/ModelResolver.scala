@@ -5,6 +5,7 @@ import izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved
 import izumi.idealingua.model.loader._
 import izumi.idealingua.model.problems.IDLDiagnostics
 import izumi.idealingua.typer.NewTyperPipeline
+import izumi.idealingua.util.Parallel
 
 /** Loader-side wrapper that resolves cross-domain references, runs the new
   * phase-based typer, and collects post-resolution diagnostics.
@@ -19,7 +20,7 @@ import izumi.idealingua.typer.NewTyperPipeline
   * Translators read `loaded.domain` directly — the pipeline is no longer
   * re-invoked per translator.
   */
-class ModelResolver() {
+class ModelResolver(parallel: Parallel = Parallel.Default) {
 
   def resolve(domains: UnresolvedDomains): LoadedModels = {
     val globalChecks = Seq(
@@ -27,9 +28,13 @@ class ModelResolver() {
     )
     val importResolver = new ExternalRefResolver(domains)
 
-    val typedRaw = domains.domains.results
-      .map(importResolver.resolveReferences)
-      .map(makeLoaded)
+    // Both passes are per-domain pure: `ExternalRefResolver.resolveReferences`
+    // constructs a fresh `ExternalRefResolverPass` per call (so the `processed`
+    // cache is request-scoped, not shared), and `NewTyperPipeline.run` is a
+    // pure function of a single `DomainMeshResolved`.
+    val typedRaw = parallel.parMap(domains.domains.results) { parsed =>
+      makeLoaded(importResolver.resolveReferences(parsed))
+    }
 
     // Family-level post-pass: enrich each Domain's `aliases` map with
     // cross-domain entries so translator dealias sites can resolve a foreign

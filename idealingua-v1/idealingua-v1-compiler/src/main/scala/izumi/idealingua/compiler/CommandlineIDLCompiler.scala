@@ -15,6 +15,7 @@ import izumi.idealingua.il.loader.{LocalModelLoaderContext, ModelResolver}
 import izumi.idealingua.model.loader.UnresolvedDomains
 import izumi.idealingua.model.publishing.{BuildManifest, ProjectVersion}
 import izumi.idealingua.translator.*
+import izumi.idealingua.util.Parallel
 
 import java.nio.file.*
 import java.time.{ZoneId, ZonedDateTime}
@@ -35,9 +36,13 @@ object CommandlineIDLCompiler {
 
     val conf = parseArgs(args)
 
+    val parallelism = conf.parallelism.getOrElse(Runtime.getRuntime.availableProcessors())
+    val parallel    = Parallel(parallelism)
+    log.log(s"Parallelism: $parallelism")
+
     val results = Seq(
       initDir(conf),
-      runCompilations(izumiVersion, conf),
+      runCompilations(izumiVersion, conf, parallel),
       runPublish(conf),
     )
 
@@ -107,7 +112,7 @@ object CommandlineIDLCompiler {
     }
   }
 
-  private def runCompilations(izumiVersion: String, conf: IDLCArgs): Boolean = {
+  private def runCompilations(izumiVersion: String, conf: IDLCArgs, parallel: Parallel): Boolean = {
     if (conf.languages.nonEmpty) {
       log.log("Reading manifests...")
       val toRun = conf.languages.map(toOptions(conf, Map("common.izumiVersion" -> izumiVersion)))
@@ -123,7 +128,7 @@ object CommandlineIDLCompiler {
 
       val loaded = Timed {
         if (path.toFile.exists() && path.toFile.isDirectory) {
-          val context = new LocalModelLoaderContext(Seq(path, conf.overlay.toAbsolutePath), Seq.empty)
+          val context = new LocalModelLoaderContext(Seq(path, conf.overlay.toAbsolutePath), Seq.empty, parallel)
           context.loader.load()
         } else {
           shutdown.shutdown(s"Not exists or not a directory: $path")
@@ -132,9 +137,9 @@ object CommandlineIDLCompiler {
       log.log(s"Done: ${loaded.value.domains.results.size} in ${loaded.duration.toMillis}ms")
       log.log("")
 
-      toRun.foreach {
+      parallel.parForeach(toRun) {
         option =>
-          runCompiler(target, loaded, option)
+          runCompiler(target, loaded, option, parallel)
       }
       true
     } else {
@@ -142,12 +147,12 @@ object CommandlineIDLCompiler {
     }
   }
 
-  private def runCompiler(target: Path, loaded: Timed[UnresolvedDomains], option: UntypedCompilerOptions): Unit = {
+  private def runCompiler(target: Path, loaded: Timed[UnresolvedDomains], option: UntypedCompilerOptions, parallel: Parallel): Unit = {
     val langId  = option.language.toString
     val itarget = option.target.getOrElse(target.resolve(langId))
     log.log(s"Preparing typespace for $langId")
     val toCompile = Timed {
-      new ModelResolver()
+      new ModelResolver(parallel)
         .resolve(loaded.value)
         .ifWarnings {
           message =>
@@ -162,7 +167,7 @@ object CommandlineIDLCompiler {
     log.log(s"Finished in ${toCompile.duration.toMillis}ms")
 
     val out = Timed {
-      new TypespaceCompilerFSFacade(toCompile)
+      new TypespaceCompilerFSFacade(toCompile, parallel)
         .compile(itarget, option)
     }
 

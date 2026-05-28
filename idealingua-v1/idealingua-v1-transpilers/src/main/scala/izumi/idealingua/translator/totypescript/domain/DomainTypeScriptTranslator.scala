@@ -9,6 +9,7 @@ import izumi.idealingua.translator.totypescript.domain.extensions.{DomainTSEnumH
 import izumi.idealingua.translator.totypescript.products.RenderableCogenProduct
 import izumi.idealingua.translator.{Translated, Translator}
 import izumi.idealingua.typer.ir.{Domain => NewDomain, TypeDef => NewTypeDef}
+import izumi.idealingua.util.Parallel
 
 /** TypeScript translator surface that consumes the new-typer `Domain` IR
   * under the `--typer=new` path.
@@ -55,6 +56,7 @@ final class DomainTypeScriptTranslator(
   domain: NewDomain,
   parsed: DomainMeshResolved,
   options: TypescriptTranslatorOptions,
+  parallel: Parallel = Parallel.Default,
 ) extends Translator {
 
   private val ctx = new DomainTSContext(domain, parsed, options)
@@ -63,31 +65,31 @@ final class DomainTypeScriptTranslator(
     val typesByName: Map[String, NewTypeDef] =
       domain.userTypes.toSeq.map { case (id, td) => id.name -> td }.toMap
 
-    val modules = scala.collection.mutable.ArrayBuffer.empty[Module]
-
-    parsed.members.foreach {
+    // Per-member rendering fanned out via `parallel.parMap`; results
+    // concatenated in declaration order, then `index.ts` appended last.
+    val modules = parallel.parMap(parsed.members) {
       case RawTopLevelDefn.TLDBaseType(raw) =>
-        typesByName.get(raw.id.name).foreach(td => modules ++= emitTypeDef(td))
+        typesByName.get(raw.id.name).fold[Seq[Module]](Seq.empty)(emitTypeDef)
       case RawTopLevelDefn.TLDNewtype(raw) =>
-        typesByName.get(raw.id.name).foreach(td => modules ++= emitTypeDef(td))
+        typesByName.get(raw.id.name).fold[Seq[Module]](Seq.empty)(emitTypeDef)
       case RawTopLevelDefn.TLDService(raw) =>
-        typesByName.get(raw.id.name).foreach {
-          case svc: NewTypeDef.Service =>
+        typesByName.get(raw.id.name) match {
+          case Some(svc: NewTypeDef.Service) =>
             val product = ctx.serviceRenderer.renderService(svc)
-            modules ++= ctx.modules.toSource(svc.id.domain, ctx.modules.toModuleId(svc.id), product)
-          case _ => ()
+            ctx.modules.toSource(svc.id.domain, ctx.modules.toModuleId(svc.id), product)
+          case _ => Seq.empty
         }
       case RawTopLevelDefn.TLDBuzzer(raw) =>
-        typesByName.get(raw.id.name).foreach {
-          case bz: NewTypeDef.Buzzer =>
+        typesByName.get(raw.id.name) match {
+          case Some(bz: NewTypeDef.Buzzer) =>
             val product = ctx.serviceRenderer.renderBuzzer(bz)
-            modules ++= ctx.modules.toSource(bz.id.domain, ctx.modules.toModuleId(bz.id), product)
-          case _ => ()
+            ctx.modules.toSource(bz.id.domain, ctx.modules.toModuleId(bz.id), product)
+          case _ => Seq.empty
         }
-      case _ => ()
-    }
+      case _ => Seq.empty
+    }.flatten
 
-    Translated(domain.id, domain.meta, modules.toSeq :+ buildIndexModule())
+    Translated(domain.id, domain.meta, modules :+ buildIndexModule())
   }
 
   private def emitTypeDef(td: NewTypeDef): Seq[Module] = {

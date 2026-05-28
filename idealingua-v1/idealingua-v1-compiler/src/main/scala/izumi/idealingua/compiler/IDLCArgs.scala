@@ -26,6 +26,7 @@ case class IDLCArgs(
   versionOverlay: Option[Path],
   overrides: Map[String, String],
   publish: Boolean = false,
+  parallelism: Option[Int] = None,
 )
 
 object IDLCArgs {
@@ -48,6 +49,7 @@ object IDLCArgs {
     final val overlayVersionFile = arg("overlay-version", "v", "version file", "<path>")
     final val define             = arg("define", "d", "define value", "const.name=value")
     final val publish            = flag("publish", "p", "build and publish generated code")
+    final val parallelism        = arg("parallelism", "j", "parallelism for parsing/translation/emission (default: availableProcessors)", "<int>")
   }
 
   object LP extends ParserDef {
@@ -100,8 +102,9 @@ object IDLCArgs {
     assert(src.toFile.getCanonicalPath != target.toFile.getCanonicalPath)
     val overlay        = parameters.findValue(P.overlayDir).asPath.getOrElse(root.resolve("overlay"))
     val overlayVersion = parameters.findValue(P.overlayVersionFile).asPath
-    val publish = parameters.hasFlag(P.publish)
-    val defines = parseDefs(parameters, P.define)
+    val publish     = parameters.hasFlag(P.publish)
+    val parallelism = parameters.findValue(P.parallelism).map(_.value.toInt)
+    val defines     = parseDefs(parameters, P.define)
 
     val internalRoles = Seq("init", "help")
 
@@ -136,6 +139,7 @@ object IDLCArgs {
       overlayVersion,
       defines,
       publish,
+      parallelism,
     )
   }
 

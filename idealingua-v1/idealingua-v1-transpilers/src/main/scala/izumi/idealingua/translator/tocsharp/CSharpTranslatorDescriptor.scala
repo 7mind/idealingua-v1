@@ -6,6 +6,7 @@ import izumi.idealingua.translator.CompilerOptions.CSharpTranslatorOptions
 import izumi.idealingua.translator._
 import izumi.idealingua.translator.tocsharp.domain.DomainCSharpTranslator
 import izumi.idealingua.translator.tocsharp.layout.CSharpLayouter
+import izumi.idealingua.util.Parallel
 
 object CSharpTranslatorDescriptor extends TranslatorDescriptor[CSharpTranslatorOptions] {
 
@@ -19,7 +20,8 @@ object CSharpTranslatorDescriptor extends TranslatorDescriptor[CSharpTranslatorO
     domain: izumi.idealingua.typer.ir.Domain,
     parsed: izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved,
     options: UntypedCompilerOptions,
-  ): Translator = new DomainCSharpTranslator(domain, parsed, typedOptions(options))
+    parallel: Parallel = Parallel.Default,
+  ): Translator = new DomainCSharpTranslator(domain, parsed, typedOptions(options), parallel)
 
   override def makeHook(options: UntypedCompilerOptions): TranslationLayouter = new CSharpLayouter(typedOptions(options))
 

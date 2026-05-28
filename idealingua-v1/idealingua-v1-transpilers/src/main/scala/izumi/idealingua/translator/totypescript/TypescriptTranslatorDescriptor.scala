@@ -6,6 +6,7 @@ import izumi.idealingua.translator.CompilerOptions.TypescriptTranslatorOptions
 import izumi.idealingua.translator._
 import izumi.idealingua.translator.totypescript.domain.DomainTypeScriptTranslator
 import izumi.idealingua.translator.totypescript.layout.TypescriptLayouter
+import izumi.idealingua.util.Parallel
 
 object TypescriptTranslatorDescriptor extends TranslatorDescriptor[TypescriptTranslatorOptions] {
   override def defaultManifest: BuildManifest = TypeScriptBuildManifest.example
@@ -18,7 +19,8 @@ object TypescriptTranslatorDescriptor extends TranslatorDescriptor[TypescriptTra
     domain: izumi.idealingua.typer.ir.Domain,
     parsed: izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved,
     options: UntypedCompilerOptions,
-  ): Translator = new DomainTypeScriptTranslator(domain, parsed, typedOptions(options))
+    parallel: Parallel = Parallel.Default,
+  ): Translator = new DomainTypeScriptTranslator(domain, parsed, typedOptions(options), parallel)
 
   override def makeHook(options: UntypedCompilerOptions): TranslationLayouter = new TypescriptLayouter(typedOptions(options))
 

@@ -15,6 +15,7 @@ import izumi.idealingua.translator.toscala.domain.extensions.{
 import izumi.idealingua.translator.toscala.products.CogenProduct
 import izumi.idealingua.translator.{Translated, Translator}
 import izumi.idealingua.typer.ir.{Domain => NewDomain, TypeDef => NewTypeDef}
+import izumi.idealingua.util.Parallel
 
 /** PR-02 IMPL-7a.2 Phase B M6: production-path swap.
   *
@@ -67,6 +68,7 @@ final class DomainScalaTranslator(
   domain: NewDomain,
   parsed: DomainMeshResolved,
   options: ScalaTranslatorOptions,
+  parallel: Parallel = Parallel.Default,
 ) extends Translator {
 
   private val ctx = new DomainSTContext(domain, parsed, options)
@@ -91,30 +93,36 @@ final class DomainScalaTranslator(
     // emits rendered Scala source via `TextTree[ScalaRefHandle]` and no
     // longer round-trips through the legacy printer. The downstream join below
     // concatenates these strings into the `package object` body directly.
-    val aliasEntries = scala.collection.mutable.ArrayBuffer.empty[(ModuleId, Seq[String])]
-    val typeModules  = scala.collection.mutable.ArrayBuffer.empty[Module]
+    //
+    // Per-member rendering is fanned out via `parallel.parMap`; the result
+    // preserves declaration order so the downstream package-object grouping
+    // (alias join within a `ModuleId` group, stable-sort by `_._1.toString`)
+    // matches the previous foreach output byte-for-byte.
+    val perMember: Seq[(Seq[(ModuleId, Seq[String])], Seq[Module])] =
+      parallel.parMap(parsed.members) {
+        case RawTopLevelDefn.TLDBaseType(raw) =>
+          typesByName.get(raw.id.name).map(emitTypeDef).getOrElse((Seq.empty, Seq.empty))
+        case RawTopLevelDefn.TLDNewtype(raw) =>
+          typesByName.get(raw.id.name).map(emitTypeDef).getOrElse((Seq.empty, Seq.empty))
+        case RawTopLevelDefn.TLDService(raw) =>
+          typesByName.get(raw.id.name) match {
+            case Some(svc: NewTypeDef.Service) => (Seq.empty, emitService(svc))
+            case _                             => (Seq.empty, Seq.empty)
+          }
+        case RawTopLevelDefn.TLDBuzzer(raw) =>
+          typesByName.get(raw.id.name) match {
+            case Some(bz: NewTypeDef.Buzzer) => (Seq.empty, emitBuzzer(bz))
+            case _                           => (Seq.empty, Seq.empty)
+          }
+        case _ => (Seq.empty, Seq.empty)
+      }
 
-    parsed.members.foreach {
-      case RawTopLevelDefn.TLDBaseType(raw) =>
-        typesByName.get(raw.id.name).foreach(emitTypeDef(_, aliasEntries, typeModules))
-      case RawTopLevelDefn.TLDNewtype(raw) =>
-        typesByName.get(raw.id.name).foreach(emitTypeDef(_, aliasEntries, typeModules))
-      case RawTopLevelDefn.TLDService(raw) =>
-        typesByName.get(raw.id.name).foreach {
-          case svc: NewTypeDef.Service => typeModules ++= emitService(svc)
-          case _                       => ()
-        }
-      case RawTopLevelDefn.TLDBuzzer(raw) =>
-        typesByName.get(raw.id.name).foreach {
-          case bz: NewTypeDef.Buzzer => typeModules ++= emitBuzzer(bz)
-          case _                     => ()
-        }
-      case _ => ()
-    }
+    val aliasEntries = perMember.flatMap(_._1)
+    val typeModules  = perMember.flatMap(_._2)
 
     // Aliases assembled into a per-package package-object.scala — same
     // grouping and stable-sort shape as legacy `ScalaTranslator.translate()`.
-    val packageObjects = aliasEntries.toSeq
+    val packageObjects = aliasEntries
       .groupBy(_._1)
       .toSeq.sortBy(_._1.toString)
       .map { case (id, pairs) =>
@@ -129,35 +137,22 @@ final class DomainScalaTranslator(
         Module(id.copy(name = "package-object.scala"), ctx.modules.withPackage(id.path.init, code))
       }
 
-    Translated(domain.id, domain.meta, typeModules.toSeq ++ packageObjects)
+    Translated(domain.id, domain.meta, typeModules ++ packageObjects)
   }
 
-  private def emitTypeDef(
-    td: NewTypeDef,
-    aliasEntries: scala.collection.mutable.ArrayBuffer[(ModuleId, Seq[String])],
-    typeModules: scala.collection.mutable.ArrayBuffer[Module],
-  ): Unit = td match {
+  private def emitTypeDef(td: NewTypeDef): (Seq[(ModuleId, Seq[String])], Seq[Module]) = td match {
     case a: NewTypeDef.Alias =>
       val rendered = ctx.aliasRenderer.renderAlias(a)
       val mid      = aliasModuleId(a.id)
-      aliasEntries += ((mid, rendered))
+      (Seq((mid, rendered)), Seq.empty)
 
-    case e: NewTypeDef.Enum =>
-      typeModules ++= emitEnum(e)
+    case e: NewTypeDef.Enum       => (Seq.empty, emitEnum(e))
+    case id: NewTypeDef.Identifier => (Seq.empty, emitIdentifier(id))
+    case dto: NewTypeDef.Dto      => (Seq.empty, emitDto(dto))
+    case ifc: NewTypeDef.Interface => (Seq.empty, emitInterface(ifc))
+    case adt: NewTypeDef.Adt      => (Seq.empty, emitAdt(adt))
 
-    case id: NewTypeDef.Identifier =>
-      typeModules ++= emitIdentifier(id)
-
-    case dto: NewTypeDef.Dto =>
-      typeModules ++= emitDto(dto)
-
-    case ifc: NewTypeDef.Interface =>
-      typeModules ++= emitInterface(ifc)
-
-    case adt: NewTypeDef.Adt =>
-      typeModules ++= emitAdt(adt)
-
-    case _ => ()
+    case _ => (Seq.empty, Seq.empty)
   }
 
   private def aliasModuleId(id: TypeId): ModuleId =
