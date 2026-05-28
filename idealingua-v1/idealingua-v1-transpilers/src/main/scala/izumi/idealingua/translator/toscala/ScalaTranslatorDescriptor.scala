@@ -6,6 +6,7 @@ import izumi.idealingua.translator.CompilerOptions.ScalaTranslatorOptions
 import izumi.idealingua.translator._
 import izumi.idealingua.translator.toscala.domain.DomainScalaTranslator
 import izumi.idealingua.translator.toscala.layout.ScalaLayouter
+import izumi.idealingua.util.Parallel
 
 object ScalaTranslatorDescriptor extends TranslatorDescriptor[ScalaTranslatorOptions] {
   override def defaultManifest: BuildManifest = ScalaBuildManifest.example
@@ -18,7 +19,8 @@ object ScalaTranslatorDescriptor extends TranslatorDescriptor[ScalaTranslatorOpt
     domain: izumi.idealingua.typer.ir.Domain,
     parsed: izumi.idealingua.model.il.ast.raw.domains.DomainMeshResolved,
     options: UntypedCompilerOptions,
-  ): Translator = new DomainScalaTranslator(domain, parsed, typedOptions(options))
+    parallel: Parallel = Parallel.Default,
+  ): Translator = new DomainScalaTranslator(domain, parsed, typedOptions(options), parallel)
 
   override def makeHook(options: UntypedCompilerOptions): TranslationLayouter = new ScalaLayouter(typedOptions(options))
 

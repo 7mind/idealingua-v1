@@ -9,8 +9,9 @@ import izumi.fundamentals.platform.strings.IzString._
 import izumi.idealingua.model.loader.LoadedDomain
 import izumi.idealingua.model.output.{Module, ModuleId}
 import izumi.idealingua.model.problems.IDLException
+import izumi.idealingua.util.Parallel
 
-class TypespaceCompilerFSFacade(toCompile: Seq[LoadedDomain.Success]) {
+class TypespaceCompilerFSFacade(toCompile: Seq[LoadedDomain.Success], parallel: Parallel = Parallel.Default) {
 
   import TypespaceCompilerFSFacade._
 
@@ -26,9 +27,9 @@ class TypespaceCompilerFSFacade(toCompile: Seq[LoadedDomain.Success]) {
 
     val withRt = options.copy(providedRuntime = fullRt)
 
-    val finalized = new TypespaceCompilerBaseFacade(withRt).compile(toCompile)
+    val finalized = new TypespaceCompilerBaseFacade(withRt, parallel).compile(toCompile)
 
-    val files = finalized.emodules.map {
+    val files = parallel.parMap(finalized.emodules) {
       emodule =>
         val module     = emodule.module
         val parts      = module.id.path :+ module.id.name

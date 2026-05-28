@@ -8,6 +8,7 @@ import izumi.idealingua.translator.tocsharp.CSharpImports
 import izumi.idealingua.translator.tocsharp.domain.extensions.{DomainCSJsonNetExtension, DomainCSNUnitExtension}
 import izumi.idealingua.translator.{Translated, Translator}
 import izumi.idealingua.typer.ir.{Domain => NewDomain, TypeDef => NewTypeDef}
+import izumi.idealingua.util.Parallel
 
 /** C# translator surface that consumes the new-typer `Domain` IR.
   *
@@ -22,6 +23,7 @@ final class DomainCSharpTranslator(
   domain: NewDomain,
   parsed: DomainMeshResolved,
   options: CSharpTranslatorOptions,
+  parallel: Parallel = Parallel.Default,
 ) extends Translator {
 
   private val ctx = new DomainCSContext(domain, parsed, options)
@@ -30,27 +32,27 @@ final class DomainCSharpTranslator(
     val typesByName: Map[String, NewTypeDef] =
       domain.userTypes.toSeq.map { case (id, td) => id.name -> td }.toMap
 
-    val modules = scala.collection.mutable.ArrayBuffer.empty[Module]
-
-    parsed.members.foreach {
+    // Per-member rendering fanned out via `parallel.parMap`; results
+    // concatenated in declaration order.
+    val modules = parallel.parMap(parsed.members) {
       case RawTopLevelDefn.TLDBaseType(raw) =>
-        typesByName.get(raw.id.name).foreach(td => modules ++= emitTypeDef(td))
+        typesByName.get(raw.id.name).fold[Seq[Module]](Seq.empty)(emitTypeDef)
       case RawTopLevelDefn.TLDNewtype(raw) =>
-        typesByName.get(raw.id.name).foreach(td => modules ++= emitTypeDef(td))
+        typesByName.get(raw.id.name).fold[Seq[Module]](Seq.empty)(emitTypeDef)
       case RawTopLevelDefn.TLDService(raw) =>
-        typesByName.get(raw.id.name).foreach {
-          case svc: NewTypeDef.Service => modules ++= emitService(svc)
-          case _                       => ()
+        typesByName.get(raw.id.name) match {
+          case Some(svc: NewTypeDef.Service) => emitService(svc)
+          case _                             => Seq.empty
         }
       case RawTopLevelDefn.TLDBuzzer(raw) =>
-        typesByName.get(raw.id.name).foreach {
-          case bz: NewTypeDef.Buzzer => modules ++= emitBuzzer(bz)
-          case _                     => ()
+        typesByName.get(raw.id.name) match {
+          case Some(bz: NewTypeDef.Buzzer) => emitBuzzer(bz)
+          case _                           => Seq.empty
         }
-      case _ => ()
-    }
+      case _ => Seq.empty
+    }.flatten
 
-    Translated(domain.id, domain.meta, modules.toSeq)
+    Translated(domain.id, domain.meta, modules)
   }
 
   private def emitTypeDef(td: NewTypeDef): Seq[Module] = td match {

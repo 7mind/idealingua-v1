@@ -2,33 +2,31 @@ package izumi.idealingua.il.loader
 
 import izumi.idealingua.il.parser.{IDLParser, IDLParserContext}
 import izumi.idealingua.model.loader._
+import izumi.idealingua.util.Parallel
 import fastparse._
 
-class ModelParserImpl() extends ModelParser {
+class ModelParserImpl(parallel: Parallel = Parallel.Default) extends ModelParser {
   def parseModels(files: Map[FSPath, String]): ParsedModels = ParsedModels {
-    files.map {
+    parallel.parMap(files.toSeq) {
       case (file, content) =>
-        file -> new IDLParser(IDLParserContext(file)).parseModel(content)
-    }.toSeq.map {
-      case (p, Parsed.Success(value, _)) =>
-        ModelParsingResult.Success(p, value)
-
-      case (p, f: Parsed.Failure) =>
-        ModelParsingResult.Failure(p, s"Failed to parse model $p: ${f.msg}")
-
+        new IDLParser(IDLParserContext(file)).parseModel(content) match {
+          case Parsed.Success(value, _) =>
+            ModelParsingResult.Success(file, value)
+          case f: Parsed.Failure =>
+            ModelParsingResult.Failure(file, s"Failed to parse model $file: ${f.msg}")
+        }
     }
   }
 
   def parseDomains(files: Map[FSPath, String]): ParsedDomains = ParsedDomains {
-    files.map {
+    parallel.parMap(files.toSeq) {
       case (file, content) =>
-        file -> new IDLParser(IDLParserContext(file)).parseDomain(content)
-    }.toSeq.map {
-      case (p, Parsed.Success(value, _)) =>
-        DomainParsingResult.Success(p, value)
-
-      case (p, f: Parsed.Failure) =>
-        DomainParsingResult.Failure(p, s"Failed to parse domain $p: ${f.trace().msg}")
+        new IDLParser(IDLParserContext(file)).parseDomain(content) match {
+          case Parsed.Success(value, _) =>
+            DomainParsingResult.Success(file, value)
+          case f: Parsed.Failure =>
+            DomainParsingResult.Failure(file, s"Failed to parse domain $file: ${f.trace().msg}")
+        }
     }
   }
 }

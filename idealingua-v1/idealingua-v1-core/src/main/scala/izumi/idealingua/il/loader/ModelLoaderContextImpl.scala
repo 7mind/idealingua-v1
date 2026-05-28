@@ -1,13 +1,18 @@
 package izumi.idealingua.il.loader
 
-class ModelLoaderContextImpl(makeEnumerator: BaseModelLoadContext => FilesystemEnumerator) extends ModelLoaderContext {
+import izumi.idealingua.util.Parallel
+
+class ModelLoaderContextImpl(
+  makeEnumerator: BaseModelLoadContext => FilesystemEnumerator,
+  parallel: Parallel = Parallel.Default,
+) extends ModelLoaderContext {
   val domainExt: String = ".domain"
 
   val modelExt: String = ".model"
 
   val overlayExt: String = ".overlay"
 
-  val parser: ModelParser = new ModelParserImpl()
+  val parser: ModelParser = new ModelParserImpl(parallel)
 
   val enumerator: FilesystemEnumerator = makeEnumerator(this)
 
