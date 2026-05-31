@@ -8,32 +8,32 @@ import scala.jdk.CollectionConverters.*
 import scala.sys.process.*
 
 /** scala-cli driven adapter.
- *
- *  Materializes a tiny scala-cli project:
- *
- *    <workDir>/
- *      project.scala         — using-directives (rendered from template)
- *      generated/            — copy of `genDir`
- *      sample_app.scala      — copy of the LLM-rendered driver
- *
- *  Run: `scala-cli run <workDir>`. Captures combined stdout+stderr.
- *  Stdout is treated as the canonical NDJSON stream; stderr goes to a sibling
- *  `.stderr` file for diagnostics.
- *
- *  scala-cli MUST be on PATH. We do not bring our own — the nix shell provides
- *  it (`flake.nix` pulls scala-cli ~1.10 from nixpkgs 25.11). If absent, the
- *  adapter fails fast with a clear message.
- */
+  *
+  *  Materializes a tiny scala-cli project:
+  *
+  *    <workDir>/
+  *      project.scala         — using-directives (rendered from template)
+  *      generated/            — copy of `genDir`
+  *      sample_app.scala      — copy of the LLM-rendered driver
+  *
+  *  Run: `scala-cli run <workDir>`. Captures combined stdout+stderr.
+  *  Stdout is treated as the canonical NDJSON stream; stderr goes to a sibling
+  *  `.stderr` file for diagnostics.
+  *
+  *  scala-cli MUST be on PATH. We do not bring our own — the nix shell provides
+  *  it (`flake.nix` pulls scala-cli ~1.10 from nixpkgs 25.11). If absent, the
+  *  adapter fails fast with a clear message.
+  */
 final class ScalaAdapter(repoRoot: Path) extends LangAdapter {
 
   private val Timeout = 5.minutes
 
   override def buildAndRun(
-    workDir:    Path,
-    genDir:     Path,
-    sampleApp:  Path,
+    workDir: Path,
+    genDir: Path,
+    sampleApp: Path,
     resolution: IdlcResolution,
-    rawOut:     Path,
+    rawOut: Path,
   ): Either[String, Unit] = {
     if (whichScalaCli().isEmpty) {
       return Left(
@@ -49,9 +49,9 @@ final class ScalaAdapter(repoRoot: Path) extends LangAdapter {
       return Left(s"missing template: $template")
     }
     val rendered = new String(Files.readAllBytes(template), StandardCharsets.UTF_8)
-      .replace("{{RUNTIME_VERSION}}",    resolution.runtimeVersion)
+      .replace("{{RUNTIME_VERSION}}", resolution.runtimeVersion)
       .replace("{{RUNTIME_REPOSITORY}}", resolution.runtimeRepoUri)
-      .replace("{{CIRCE_VERSION}}",      CirceVersion)
+      .replace("{{CIRCE_VERSION}}", CirceVersion)
     Files.write(workDir.resolve("project.scala"), rendered.getBytes(StandardCharsets.UTF_8))
 
     // 2. generated sources — copy tree, filtering to *.scala only (idlc emits a
@@ -104,13 +104,13 @@ final class ScalaAdapter(repoRoot: Path) extends LangAdapter {
     if (compileRc != 0) {
       Files.writeString(rawOut, stdoutBuf.toString)
       Files.writeString(Path.of(rawOut.toString + ".stderr"), stderrBuf.toString)
-      return Left(s"scala-cli compile exit=$compileRc (stderr captured at ${rawOut}.stderr)")
+      return Left(s"scala-cli compile exit=$compileRc (stderr captured at $rawOut.stderr)")
     }
     val classpath = cpBuf.toString.trim.linesIterator.toList.lastOption.getOrElse("")
     if (classpath.isEmpty) {
       Files.writeString(rawOut, stdoutBuf.toString)
       Files.writeString(Path.of(rawOut.toString + ".stderr"), stderrBuf.toString)
-      return Left(s"scala-cli compile produced empty classpath (stderr captured at ${rawOut}.stderr)")
+      return Left(s"scala-cli compile produced empty classpath (stderr captured at $rawOut.stderr)")
     }
 
     val runCmd = Seq("java", "-cp", classpath, "sample_app.SampleApp")
@@ -132,48 +132,51 @@ final class ScalaAdapter(repoRoot: Path) extends LangAdapter {
     Files.writeString(rawOut, stdoutBuf.toString)
     Files.writeString(Path.of(rawOut.toString + ".stderr"), stderrBuf.toString)
 
-    if (rc != 0) Left(s"sample app exit=$rc (stderr captured at ${rawOut}.stderr)")
+    if (rc != 0) Left(s"sample app exit=$rc (stderr captured at $rawOut.stderr)")
     else Right(())
   }
 
   private def whichScalaCli(): Option[Path] = {
     val pathEnv = Option(System.getenv("PATH")).getOrElse("")
-    pathEnv.split(java.io.File.pathSeparatorChar).iterator
+    pathEnv
+      .split(java.io.File.pathSeparatorChar).iterator
       .map(p => Path.of(p, "scala-cli"))
       .find(Files.isExecutable)
   }
 
   /** Enumerate every `.scala` file under `root` as an absolute path list. Stable order
-   *  (lexicographic) for reproducibility of the invocation; ordering does not affect
-   *  scala-cli compilation semantics. Used to bypass scala-cli's directory-based source
-   *  scanner (which skips `test/` subdirs); when files are passed individually they are
-   *  always accepted.
-   */
+    *  (lexicographic) for reproducibility of the invocation; ordering does not affect
+    *  scala-cli compilation semantics. Used to bypass scala-cli's directory-based source
+    *  scanner (which skips `test/` subdirs); when files are passed individually they are
+    *  always accepted.
+    */
   private def listScalaInputs(root: Path): Seq[Path] = {
     if (!Files.isDirectory(root)) return Seq.empty
     val buf = scala.collection.mutable.ArrayBuffer.empty[Path]
-    Files.walk(root).iterator().asScala.foreach { p =>
-      if (Files.isRegularFile(p) && p.getFileName.toString.endsWith(".scala")) buf += p
+    Files.walk(root).iterator().asScala.foreach {
+      p =>
+        if (Files.isRegularFile(p) && p.getFileName.toString.endsWith(".scala")) buf += p
     }
     buf.sortBy(_.toString).toSeq
   }
 
   private def copyScalaSources(src: Path, dst: Path): Unit = {
     if (!Files.isDirectory(src)) return
-    Files.walk(src).iterator().asScala.foreach { p =>
-      if (Files.isRegularFile(p) && p.getFileName.toString.endsWith(".scala")) {
-        val rel    = src.relativize(p)
-        val target = dst.resolve(rel.toString)
-        Files.createDirectories(target.getParent)
-        Files.copy(p, target, StandardCopyOption.REPLACE_EXISTING)
-      }
+    Files.walk(src).iterator().asScala.foreach {
+      p =>
+        if (Files.isRegularFile(p) && p.getFileName.toString.endsWith(".scala")) {
+          val rel    = src.relativize(p)
+          val target = dst.resolve(rel.toString)
+          Files.createDirectories(target.getParent)
+          Files.copy(p, target, StandardCopyOption.REPLACE_EXISTING)
+        }
     }
   }
 
   /** Circe version: derived from the central izumi `fundamentals-json-circe`
-   *  dep that the runtime-rpc-scala module pulls in (see `build.sbt` line ~346).
-   *  For M2 we hard-code the version known to be in the coursier cache; a future
-   *  milestone should read it from a generated version manifest emitted by sbt.
-   */
-  private val CirceVersion = "0.14.14"
+    *  dep that the runtime-rpc-scala module pulls in (see `build.sbt` line ~346).
+    *  For M2 we hard-code the version known to be in the coursier cache; a future
+    *  milestone should read it from a generated version manifest emitted by sbt.
+    */
+  private val CirceVersion = "0.14.15"
 }
