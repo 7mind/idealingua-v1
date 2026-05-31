@@ -14,7 +14,7 @@ object V {
   val kind_projector = "0.13.4"
 
   val circe_derivation     = "0.13.0-M5"
-  val circe_generic_extras = "0.14.5-RC1"  // 0.14.4 has no Scala 3 artifact
+  val circe_generic_extras = "0.14.5-RC1" // 0.14.4 has no Scala 3 artifact
 
   val scala_java_time = "2.6.0"
 
@@ -28,5 +28,5 @@ object V {
   val scodec_bits = "1.1.38"
 
   // PR-04 IMPL-MCP-M5: JSON Schema 2020-12 validator (test-scope only).
-  val json_schema_validator = "1.5.9"
+  val json_schema_validator = "3.0.3"
 }
