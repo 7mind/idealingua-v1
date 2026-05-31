@@ -23,7 +23,7 @@ object V {
   val asynchttpclient = "3.0.7"
 
   val slf4j           = "1.7.30"
-  val typesafe_config = "1.4.6"
+  val typesafe_config = "1.4.8"
 
   val scodec_bits = "1.1.38"
 
