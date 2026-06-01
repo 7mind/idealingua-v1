@@ -8,14 +8,13 @@ import izumi.fundamentals.platform.language.Quirks.Discarder
 import izumi.idealingua.runtime.rpc.http4s.HttpExecutionContext
 import izumi.idealingua.runtime.rpc.{IRTClientMultiplexor, IRTMethodId, IRTMuxRequest, IRTMuxResponse}
 import logstage.LogIO2
-import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.client.Client
+import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.{Header, Headers, Request, Uri}
 import org.typelevel.ci.CIString
 
 class HttpRpcDispatcherFactory[F[+_, +_]: IO2](
   codec: IRTClientMultiplexor[F],
-  executionContext: HttpExecutionContext,
   printer: circe.Printer,
   logger: LogIO2[F],
 )(implicit AT: Async[F[Throwable, _]]
@@ -27,7 +26,7 @@ class HttpRpcDispatcherFactory[F[+_, +_]: IO2](
     tweakRequest: Request[F[Throwable, _]] => Request[F[Throwable, _]] = (req: Request[F[Throwable, _]]) => req,
     resourceCheck: F[Throwable, Unit]                                  = F.unit,
   ): Lifecycle[F[Throwable, _], HttpRpcDispatcher[F]] = {
-    blazeClient.map {
+    emberClient.map {
       new HttpRpcDispatcher[F](_, uri, codec, printer, dispatcherLogger(uri, logger)) {
         override def dispatch(input: IRTMuxRequest): F[Throwable, IRTMuxResponse] = {
           resourceCheck *> super.dispatch(input)
@@ -62,16 +61,15 @@ class HttpRpcDispatcherFactory[F[+_, +_]: IO2](
     logger
   }
 
-  protected def blazeClient: Lifecycle[F[Throwable, _], Client[F[Throwable, _]]] = {
+  protected def emberClient: Lifecycle[F[Throwable, _], Client[F[Throwable, _]]] = {
     Lifecycle.fromCats {
-      blazeClientBuilder {
-        BlazeClientBuilder[F[Throwable, _]]
-          .withExecutionContext(executionContext.clientExecutionContext)
-      }.resource
+      emberClientBuilder {
+        EmberClientBuilder.default[F[Throwable, _]]
+      }.build
     }
   }
 
-  protected def blazeClientBuilder(defaultBuilder: BlazeClientBuilder[F[Throwable, _]]): BlazeClientBuilder[F[Throwable, _]] = {
+  protected def emberClientBuilder(defaultBuilder: EmberClientBuilder[F[Throwable, _]]): EmberClientBuilder[F[Throwable, _]] = {
     defaultBuilder
   }
 
