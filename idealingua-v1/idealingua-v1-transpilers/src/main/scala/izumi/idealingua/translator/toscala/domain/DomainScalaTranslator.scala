@@ -262,8 +262,11 @@ final class DomainScalaTranslator(
     val pkg              = domain.id.toPackage
     val scalaModuleId    = ModuleId(pkg, s"${svc.id.name}Mcp.scala")
     val resourceModuleId = ModuleId(Seq("mcp"), s"${svc.id.name}.mcp.json")
-    val scalaModule      = Module(scalaModuleId, scalaSrc)
-    val resourceModule   = Module(resourceModuleId, json, meta = Map("resource" -> "true"))
+    // The bridge depends on http4s (JVM-only); tag both the source and its
+    // companion resource `platform=jvm` so the SBT layouter routes them to the
+    // crossproject's `.jvm` sourceset and the Scala.js build skips them.
+    val scalaModule      = Module(scalaModuleId, scalaSrc, meta = Map("platform" -> "jvm"))
+    val resourceModule   = Module(resourceModuleId, json, meta = Map("resource" -> "true", "platform" -> "jvm"))
     Seq(scalaModule, resourceModule)
   }
 

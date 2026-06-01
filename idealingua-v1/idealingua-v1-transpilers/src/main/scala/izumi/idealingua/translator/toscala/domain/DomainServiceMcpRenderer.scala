@@ -216,6 +216,14 @@ final class DomainServiceMcpRenderer(domain: Domain) {
       case (_, td) => emitTypeDef(td, out)
     }
 
+    // Types imported from other domains are referenced by method signatures
+    // but are NOT in `userTypes`. Without them the `$defs` closure resolves to
+    // nothing for cross-domain `$ref`s and object-typed tool parameters arrive as
+    // opaque strings. `crossDomainUserTypes` carries the transitive import set.
+    domain.crossDomainUserTypes.foreach {
+      case (_, td) => emitTypeDef(td, out)
+    }
+
     val ifcMirrors = domain.members.collect {
       case (_, Member.Ephemeral(eph)) if eph.origin.isInstanceOf[EphemeralOrigin.InterfaceMirror] => eph
     }.toList

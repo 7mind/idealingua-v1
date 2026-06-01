@@ -1062,172 +1062,172 @@
       "sha256": "10vsl4jc57hyqb39i6vg930qpqbzrgjgq9j6jy5pr2frg9z0ai1f"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_2.13/1.3.0-M1/fundamentals-basics_2.13-1.3.0-M1.jar",
-      "sha256": "19vas18z9i8badrv9fllxb3lv7xrxmnrl30ybm8f9rnw3vrphmd8"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_2.13/1.3.0-M2/fundamentals-basics_2.13-1.3.0-M2.jar",
+      "sha256": "14r6zqlhagl909v26h30kdiarbl902nm5gr4n85rl68crnsxmvqy"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_2.13/1.3.0-M1/fundamentals-basics_2.13-1.3.0-M1.pom",
-      "sha256": "0wvs81s1khyl75i5p04a2qn27xagvb4i2c76ccfxwb535n04df2f"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_2.13/1.3.0-M2/fundamentals-basics_2.13-1.3.0-M2.pom",
+      "sha256": "1b5r3a3mw20s1k1817qccaa2ai4mmv87ziy7cn83a4sz06hp7jhh"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_3/1.3.0-M1/fundamentals-basics_3-1.3.0-M1.jar",
-      "sha256": "13vlxirl7iibf840vlkpvqjj04v7r59blw4gnha26ffmgzlxf5ri"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_3/1.3.0-M2/fundamentals-basics_3-1.3.0-M2.jar",
+      "sha256": "10r09h3vh9kkp5slq49v01i7nxrhmx6kmnn3fqkpb60bndvxh4s7"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_3/1.3.0-M1/fundamentals-basics_3-1.3.0-M1.pom",
-      "sha256": "15iwg2m6hiq8hmliv59bsvdqbd0hsy93raxsc6m0235pj6hz076p"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-basics_3/1.3.0-M2/fundamentals-basics_3-1.3.0-M2.pom",
+      "sha256": "03f1ci94dmccg7bzf71sym93dsajxzmlz4gk5xfwivip7794j9i9"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_2.13/1.3.0-M1/fundamentals-bio_2.13-1.3.0-M1.jar",
-      "sha256": "0c82rnjgwh5bgwyp78kb8nbjjjrml03m8ripbrq2idzyq4y7lyck"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_2.13/1.3.0-M2/fundamentals-bio_2.13-1.3.0-M2.jar",
+      "sha256": "079g8jaz2hkrjji764fs161ljgy0lqd5ai7za8n5aaxh2ivamcif"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_2.13/1.3.0-M1/fundamentals-bio_2.13-1.3.0-M1.pom",
-      "sha256": "1jbk0ya2hcs80mv4rsg242hv00l5lba4nv1zcz0vln6biza9pyn0"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_2.13/1.3.0-M2/fundamentals-bio_2.13-1.3.0-M2.pom",
+      "sha256": "16dfl1yawn92cpry9lymdzmhv9lgjl0p099992qs5xwxbwbmbrf6"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_3/1.3.0-M1/fundamentals-bio_3-1.3.0-M1.jar",
-      "sha256": "0s7p86sw275h8i0mcyz7h9b2fmjvc2y8qwwq97w55pkvchd9g4r1"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_3/1.3.0-M2/fundamentals-bio_3-1.3.0-M2.jar",
+      "sha256": "0risqq6gfqfii7fljipcrs11xm3lj4ymyb7jn75nws1xx0rcngbr"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_3/1.3.0-M1/fundamentals-bio_3-1.3.0-M1.pom",
-      "sha256": "0yc494c3f63a4qbsy3nki7kjkjy30psgc05pgqhy21rsaz37r34b"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-bio_3/1.3.0-M2/fundamentals-bio_3-1.3.0-M2.pom",
+      "sha256": "10744qdpjfc20fr01pyilvdyzad4h9w9hc5h1xfcap65gnmpr79c"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_2.13/1.3.0-M1/fundamentals-collections_2.13-1.3.0-M1.jar",
-      "sha256": "09gs70whk7d456s8s8payg06yvkpjx8hn4bjqk474qsd2pn2kxfd"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_2.13/1.3.0-M2/fundamentals-collections_2.13-1.3.0-M2.jar",
+      "sha256": "1jq6sbin316zsvh4i09l4gj2ychjsrabsbizkb5f262hbvdv18wg"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_2.13/1.3.0-M1/fundamentals-collections_2.13-1.3.0-M1.pom",
-      "sha256": "05xqi0nqbhxi7dqzqfmwzpaaf53wsaaqivc6p2p9i6f6sd2mcp9n"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_2.13/1.3.0-M2/fundamentals-collections_2.13-1.3.0-M2.pom",
+      "sha256": "0n5vbwwql82ni2l7fd7qbhvmiv1sn2gj91mm2kd9w8mgjsry100z"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_3/1.3.0-M1/fundamentals-collections_3-1.3.0-M1.jar",
-      "sha256": "06zvxhxrz2y85f3343mdj9rmiw5q9iqdkfixis8whlm57irzscda"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_3/1.3.0-M2/fundamentals-collections_3-1.3.0-M2.jar",
+      "sha256": "110yr4yk5ivj4j1krdvwlxif7zlkabg4cza1xvdpqvi39kjf7jpy"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_3/1.3.0-M1/fundamentals-collections_3-1.3.0-M1.pom",
-      "sha256": "1kidn3hx64nighwsr21hqldx46l3k8qlwbvl7bi22mgjr7kd11c3"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-collections_3/1.3.0-M2/fundamentals-collections_3-1.3.0-M2.pom",
+      "sha256": "0w03j6xaqy4gqvx7107y16zixnch9dyjsqmg29mlic1x3k422mif"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_2.13/1.3.0-M1/fundamentals-functional_2.13-1.3.0-M1.jar",
-      "sha256": "1y98dzycj09ajhlgaxx71nwncsd6qx8wkpl2m6hn33qa87didz1w"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_2.13/1.3.0-M2/fundamentals-functional_2.13-1.3.0-M2.jar",
+      "sha256": "1y6976qzzdrb02936z8c2h3z8s0v9pchpg6w2f2jbk7cfaj6hq40"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_2.13/1.3.0-M1/fundamentals-functional_2.13-1.3.0-M1.pom",
-      "sha256": "12ykxnl50cl3a97dmq9hld6fs83yrmfjlmknx4h4z216b99rj1s4"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_2.13/1.3.0-M2/fundamentals-functional_2.13-1.3.0-M2.pom",
+      "sha256": "14798pymanabd8v7wp01bnln4z8h15lyds7gd17l8wnwzx4j9ilw"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_3/1.3.0-M1/fundamentals-functional_3-1.3.0-M1.jar",
-      "sha256": "0klw6mnq40vbp8v1f9mkn823v147mrqc0rf5lb0bvx3cpvfv7f7r"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_3/1.3.0-M2/fundamentals-functional_3-1.3.0-M2.jar",
+      "sha256": "0vdz311ik6ar2mclj20y488424pywaa1sjfid4lyvwgmzj7jlrq4"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_3/1.3.0-M1/fundamentals-functional_3-1.3.0-M1.pom",
-      "sha256": "08dnf998zlab0ydj6m1bk74ffbg6gxmb3rjdjbhf0q07vz1cwy3f"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-functional_3/1.3.0-M2/fundamentals-functional_3-1.3.0-M2.pom",
+      "sha256": "12mddh4x9nl2ybhkqhampqbqr7pry17lfh69an8cn17jpvqcibv8"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_2.13/1.3.0-M1/fundamentals-language_2.13-1.3.0-M1.jar",
-      "sha256": "0jpihzpzqf06g6xwb55l5ilhwpv7s37wnl69sncxrd31hr6ddvak"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_2.13/1.3.0-M2/fundamentals-language_2.13-1.3.0-M2.jar",
+      "sha256": "0w5n66ywr3f6yqa9s0blwf83dqp23j563z9x4rwgimw71mqa0l9n"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_2.13/1.3.0-M1/fundamentals-language_2.13-1.3.0-M1.pom",
-      "sha256": "0wxj4f0kpbnd50yli8a75mkjb6badzfdz5jz9103qy6ag9fj1ng2"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_2.13/1.3.0-M2/fundamentals-language_2.13-1.3.0-M2.pom",
+      "sha256": "0y2aknv85qmdn1sjs0p3l4cxdndgarp0fp40ganwym2jllw13fj7"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_3/1.3.0-M1/fundamentals-language_3-1.3.0-M1.jar",
-      "sha256": "093hbqvk8gyj8q0dzlsbql743gb639mq9h0ivvnci2anhmvdmw0r"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_3/1.3.0-M2/fundamentals-language_3-1.3.0-M2.jar",
+      "sha256": "0z7yjq9kwsz1aa6yyfdmm43zdfshd75kzm4lm8p4slcgisfsaw79"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_3/1.3.0-M1/fundamentals-language_3-1.3.0-M1.pom",
-      "sha256": "0xzp23vgyfaijqkzqb8k6a4slvlaxvdi0nlfwxakszb1p05by6lb"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-language_3/1.3.0-M2/fundamentals-language_3-1.3.0-M2.pom",
+      "sha256": "0c98gc5myvzhd41ng9c9xhmwld5g4rc99rmz25q74d6hzy575cv7"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_2.13/1.3.0-M1/fundamentals-literals_2.13-1.3.0-M1.jar",
-      "sha256": "125qzsvdgy4zfw1zjjyj2slln9a2vv8cvnnzm8yczpys3hiyf5jb"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_2.13/1.3.0-M2/fundamentals-literals_2.13-1.3.0-M2.jar",
+      "sha256": "1sx1jdd15i7g80jwgjs3wcwsk8815fx81gvcg1xhh9vag9sw6fkk"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_2.13/1.3.0-M1/fundamentals-literals_2.13-1.3.0-M1.pom",
-      "sha256": "05ady3sfc0ngymavgni4agmr3npq7pzjczriydnhcfvqvsn150sr"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_2.13/1.3.0-M2/fundamentals-literals_2.13-1.3.0-M2.pom",
+      "sha256": "19bmirxh1md1vb7sa88swzcwpqb1xj38v06zgh09wzsa6zgsrnkn"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_3/1.3.0-M1/fundamentals-literals_3-1.3.0-M1.jar",
-      "sha256": "0ffbjgdv01mzzwmx73wa0sv5gh09fx8hrr9fq3r656px2lahzxv7"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_3/1.3.0-M2/fundamentals-literals_3-1.3.0-M2.jar",
+      "sha256": "00bi4x37v6zcydywya6q9i0qdkmbgjbv6nlp284qffwcdzp23z0l"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_3/1.3.0-M1/fundamentals-literals_3-1.3.0-M1.pom",
-      "sha256": "1r4ivfdgf1masx74a4rnpd3ybs6sw7ir7q8sk7g954j5aq407rhm"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-literals_3/1.3.0-M2/fundamentals-literals_3-1.3.0-M2.pom",
+      "sha256": "1k081228i6y81x2vwg7dmzfy97b4y5awp7ip6m46hhjymh1xw7mg"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_2.13/1.3.0-M1/fundamentals-orphans_2.13-1.3.0-M1.jar",
-      "sha256": "1lwpcjra0jqa7q36ww07lm8aa2cxz0iml5qjhd9bapkjf9pg73is"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_2.13/1.3.0-M2/fundamentals-orphans_2.13-1.3.0-M2.jar",
+      "sha256": "0gbxpdfw54nr1zwii3hi2jb3mjziki2lryhvkg65qwlnwn8hbp2b"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_2.13/1.3.0-M1/fundamentals-orphans_2.13-1.3.0-M1.pom",
-      "sha256": "12nn3vwivkhwx1qcvdhr57r0nab3ki7gpsx4xr2hzsi6kxv1dq5c"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_2.13/1.3.0-M2/fundamentals-orphans_2.13-1.3.0-M2.pom",
+      "sha256": "11d4pmd4wn2nib8akmi5vcgy93iq7njzlblyldxnfwwjwb5v0b5v"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_3/1.3.0-M1/fundamentals-orphans_3-1.3.0-M1.jar",
-      "sha256": "17qab8izksms0b6x5i17nl826gcazy9545by30gsc58ydj1cqn0j"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_3/1.3.0-M2/fundamentals-orphans_3-1.3.0-M2.jar",
+      "sha256": "12a8nvljgspmhlbp4mfhwhqafgajxxyj4lkjji91b62b2m5pl8b7"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_3/1.3.0-M1/fundamentals-orphans_3-1.3.0-M1.pom",
-      "sha256": "17p4pjqdkv07agdhx17d5j6q93p4izxp66m4pmri8z0g8gwvjm2m"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-orphans_3/1.3.0-M2/fundamentals-orphans_3-1.3.0-M2.pom",
+      "sha256": "0dxbvmflrrzplnyjp4rj74ax36rp7qvd8g0r67fhh6q936c09xc0"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_2.13/1.3.0-M1/fundamentals-platform_2.13-1.3.0-M1.jar",
-      "sha256": "173gkxnyd2nmjhmaj5dcighjv25i5xyarxavjr1qhv95vkdvhjkm"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_2.13/1.3.0-M2/fundamentals-platform_2.13-1.3.0-M2.jar",
+      "sha256": "0ii3pzmlqhxgy6q66aixlva8b0mshv75sg9qdifmsfhj3v5715q3"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_2.13/1.3.0-M1/fundamentals-platform_2.13-1.3.0-M1.pom",
-      "sha256": "1xk4dc2z8a8pw1lp8r208mbwhlpdd41nfkg9rhfrv0k1qvl9zcb4"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_2.13/1.3.0-M2/fundamentals-platform_2.13-1.3.0-M2.pom",
+      "sha256": "1h1hwlgi1h7hjxiii068dw1sc90cvgh9p64865jpmnd2z9x60zas"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_3/1.3.0-M1/fundamentals-platform_3-1.3.0-M1.jar",
-      "sha256": "1qg62p3gk2llszw9w7gv50dnkjc2wv323hjg52aclhx4br9n2kd3"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_3/1.3.0-M2/fundamentals-platform_3-1.3.0-M2.jar",
+      "sha256": "0f44qplyhwsq86zmsrcj34c8vmcxhcyn6pjd69647pl4y75m1yhj"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_3/1.3.0-M1/fundamentals-platform_3-1.3.0-M1.pom",
-      "sha256": "0i6lzl0j25mqdyy0lqif631gz2x584zn0853g3704b18nqy06dgn"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/fundamentals-platform_3/1.3.0-M2/fundamentals-platform_3-1.3.0-M2.pom",
+      "sha256": "1zbbc4zxmvp7il9vbzfcvpfvg9r7xn9j4j2yyi0m3xx745nm8x90"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_2.13/1.3.0-M1/logstage-adapter-slf4j_2.13-1.3.0-M1.jar",
-      "sha256": "19cddqgzb8pz64kw4brjgv7y5qz2pjjsjwlcbq75vjgq1zzfkd6s"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_2.13/1.3.0-M2/logstage-adapter-slf4j_2.13-1.3.0-M2.jar",
+      "sha256": "125b4lpmncx48qd3alnk65z8qqxgxlmz4v1iab2n58ja37qn586n"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_2.13/1.3.0-M1/logstage-adapter-slf4j_2.13-1.3.0-M1.pom",
-      "sha256": "1w93wbinzd6xzjzr888ycqa7isn2l4k5qi3d7fr4r3g3d5f46dzw"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_2.13/1.3.0-M2/logstage-adapter-slf4j_2.13-1.3.0-M2.pom",
+      "sha256": "1nn31f1wvyp2f1zwgjwk519iw6p82waq3jc5g102xg0nqq650hqy"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_3/1.3.0-M1/logstage-adapter-slf4j_3-1.3.0-M1.jar",
-      "sha256": "1rpb4dqn7rp22qbd7ww15cd3n1z5k957wms3xs5gwppnk03sw87k"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_3/1.3.0-M2/logstage-adapter-slf4j_3-1.3.0-M2.jar",
+      "sha256": "10glyi3bhav09r61byjb9hd9xx2jl5v1pww9qgwjy68xbjii18a4"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_3/1.3.0-M1/logstage-adapter-slf4j_3-1.3.0-M1.pom",
-      "sha256": "0rchgmk775l5abk9shhgv0b59l7bvyjpwwp22pwzfcykr2phjqmf"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-adapter-slf4j_3/1.3.0-M2/logstage-adapter-slf4j_3-1.3.0-M2.pom",
+      "sha256": "1vn9z6glmn6g81laa7ahav1j7g6bg8q6an4khpfbyy03d8irinrv"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_2.13/1.3.0-M1/logstage-core_2.13-1.3.0-M1.jar",
-      "sha256": "1wkfys6vd91i8c2r55a2yx655j5fhmxrmn9a6qgpd2i0yycsxjj4"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_2.13/1.3.0-M2/logstage-core_2.13-1.3.0-M2.jar",
+      "sha256": "0m0cg7cpmdmn1fxvmrvhlqqz94vi7ra4psqmfha5vgrawk5slkjk"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_2.13/1.3.0-M1/logstage-core_2.13-1.3.0-M1.pom",
-      "sha256": "05zmswr3i0z80b185f1gxm6d0dlybpassv9sz3d74mcv4n2vxmmj"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_2.13/1.3.0-M2/logstage-core_2.13-1.3.0-M2.pom",
+      "sha256": "1ks1isdysnwlhq4gh1lamkgl2f7qrw59g9qxq3dnzk0bxx5jq0xs"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_3/1.3.0-M1/logstage-core_3-1.3.0-M1.jar",
-      "sha256": "106ap5hb65ddrdn0dz0g7j16h6xh603546s25kzaz79djfdnn7yd"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_3/1.3.0-M2/logstage-core_3-1.3.0-M2.jar",
+      "sha256": "1j1rwig9gavfj37wl1zq4akyfbbl8fvhj90zi49qlnww6a8zg6dy"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_3/1.3.0-M1/logstage-core_3-1.3.0-M1.pom",
-      "sha256": "0nbn04bpfnpvlsrvwk68x5ra95pr3m1qzr1xxvn1w8gckzj3y0rn"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/logstage-core_3/1.3.0-M2/logstage-core_3-1.3.0-M2.pom",
+      "sha256": "04ypjcgby1rj2k1w4ncw7al207gkwb8ifn7k7ln4v4g327wmvcn3"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt-izumi-deps_2.12_1.0/1.3.0-M1/sbt-izumi-deps_2.12_1.0-1.3.0-M1.jar",
-      "sha256": "0llnmcwzxxf766r4d76y66991y0kczhgrp5jic9qy0b6av7nqjg2"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt-izumi-deps_2.12_1.0/1.3.0-M2/sbt-izumi-deps_2.12_1.0-1.3.0-M2.jar",
+      "sha256": "0s5gqpj9j4ic50yp189qbr2lnqyyx2wfrliq4fchmc049p5pn6sq"
     },
     {
-      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt-izumi-deps_2.12_1.0/1.3.0-M1/sbt-izumi-deps_2.12_1.0-1.3.0-M1.pom",
-      "sha256": "09hln8whkhs6mqcgqb2kbcy4p7dbmr447a4fk4rhcg3fnr4sa227"
+      "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt-izumi-deps_2.12_1.0/1.3.0-M2/sbt-izumi-deps_2.12_1.0-1.3.0-M2.pom",
+      "sha256": "0128j4pydy0adkp1bxjxvzqpalf94bp4i8nq84nd2ijgl3197a8k"
     },
     {
       "url": "https://repo1.maven.org/maven2/io/7mind/izumi/sbt/sbt-izumi_2.12_1.0/0.0.118/sbt-izumi_2.12_1.0-0.0.118.jar",

@@ -24,7 +24,11 @@ import izumi.idealingua.typer.ir.{Domain, FlatField, TypeDef}
 final class SchemaDtoRenderer(domain: Domain, resolver: SchemaTypeResolver) {
 
   def render(dto: TypeDef.Dto): Json = {
-    val fields = domain.flattenedStructs.get(dto.id).map(_.fields).getOrElse(Nil)
+    // `findFlatStruct` falls back to cross-domain flattened structs, so DTOs
+    // imported from other domains (e.g. types pulled into an MCP `$defs` closure)
+    // render their fields instead of an empty object. Identical to
+    // `flattenedStructs.get` for local DTOs.
+    val fields = domain.findFlatStruct(dto.id).map(_.fields).getOrElse(Nil)
     renderFromFlat(dto.id, fields, dto.meta.doc)
   }
 

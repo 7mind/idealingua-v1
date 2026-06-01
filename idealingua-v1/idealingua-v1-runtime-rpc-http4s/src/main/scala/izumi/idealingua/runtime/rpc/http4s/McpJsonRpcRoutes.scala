@@ -3,9 +3,10 @@ package izumi.idealingua.runtime.rpc.http4s
 import cats.effect.Async
 import io.circe.{Json, JsonObject}
 import izumi.functional.bio.{Error2, IO2}
-import org.http4s.{EntityDecoder, HttpRoutes, Method, Request, Uri}
+import org.http4s.{EntityDecoder, Headers, HttpRoutes, Method, Request, Uri}
 import org.http4s.circe._
 import org.http4s.dsl.Http4sDsl
+import org.typelevel.ci.CIString
 
 /** MCP-spec-compliant JSON-RPC 2.0 transport adapter wrapping the
   * `<ServiceName>McpRoutes` emitted by `DomainServiceMcpRenderer`.
@@ -58,7 +59,11 @@ final class McpJsonRpcRoutes[F[+_, +_]: IO2: Error2, C](
     */
   def routes: HttpRoutes[F[Throwable, *]] = HttpRoutes.of[F[Throwable, *]] {
     case req @ POST -> path if path.renderString == mountPath =>
-      req.as[Json].flatMap(body => dispatch(body))
+      // Carry the inbound request headers (Authorization, X-Forwarded-For, …)
+      // into the synthesized inner REST call so the inner routes' context
+      // extractor / authenticator can still see the bearer token. Without
+      // this the JSON-RPC transport silently strips all auth.
+      req.as[Json].flatMap(body => dispatch(body, req.headers))
   }
 
   private val initializeResult: Json = Json.obj(
@@ -72,7 +77,7 @@ final class McpJsonRpcRoutes[F[+_, +_]: IO2: Error2, C](
     ),
   )
 
-  private def dispatch(body: Json): F[Throwable, org.http4s.Response[F[Throwable, *]]] = {
+  private def dispatch(body: Json, headers: Headers): F[Throwable, org.http4s.Response[F[Throwable, *]]] = {
     val c               = body.hcursor
     val method          = c.get[String]("method").toOption
     val id              = c.downField("id").focus
@@ -98,7 +103,7 @@ final class McpJsonRpcRoutes[F[+_, +_]: IO2: Error2, C](
         val args = params.hcursor.downField("arguments").focus.getOrElse(Json.obj())
         // Synthesize a REST POST /mcp/tools/call to the inner routes and
         // unwrap whatever they return as the JSON-RPC `result`.
-        forwardToInnerRest(name, args, id)
+        forwardToInnerRest(name, args, id, headers)
 
       case Some(other) =>
         Ok(jsonRpcError(id, -32601, s"Method not found: $other"))
@@ -108,13 +113,20 @@ final class McpJsonRpcRoutes[F[+_, +_]: IO2: Error2, C](
     }
   }
 
-  private def forwardToInnerRest(toolName: String, args: Json, id: Option[Json]): F[Throwable, org.http4s.Response[F[Throwable, *]]] = {
+  private def forwardToInnerRest(toolName: String, args: Json, id: Option[Json], headers: Headers): F[Throwable, org.http4s.Response[F[Throwable, *]]] = {
     val callBody = Json.obj(
       "name"      -> Json.fromString(toolName),
       "arguments" -> args,
     )
     implicit val je: org.http4s.EntityEncoder[F[Throwable, *], Json] = jsonEncoderOf[F[Throwable, *], Json]
-    val innerReq = Request[F[Throwable, *]](Method.POST, Uri.unsafeFromString("/mcp/tools/call")).withEntity(callBody)
+    // Drop entity headers describing the *original* JSON-RPC body —
+    // `withEntity` recomputes Content-Type/Content-Length for `callBody`.
+    // Everything else (Authorization, X-Forwarded-For, …) is forwarded so
+    // the inner routes can authenticate.
+    val forwardedHeaders = headers.transform(_.filterNot { h =>
+      h.name == CIString("Content-Type") || h.name == CIString("Content-Length")
+    })
+    val innerReq = Request[F[Throwable, *]](Method.POST, Uri.unsafeFromString("/mcp/tools/call"), headers = forwardedHeaders).withEntity(callBody)
     innerRoutes.run(innerReq).value.flatMap {
       case Some(resp) =>
         resp.as[Json].flatMap(payload => Ok(jsonRpcSuccess(id, payload)))

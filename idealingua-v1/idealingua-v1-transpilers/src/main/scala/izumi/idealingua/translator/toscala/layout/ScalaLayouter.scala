@@ -82,7 +82,13 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
               ""
             }
 
-            s"""lazy val `$id` = ${crossProject(id)}$depends$moduleSettings"""
+            // A project carrying an emitMcpBridge http4s bridge (tagged
+            // `platform=jvm`) needs http4s on the classpath + kind-projector,
+            // and — in the JVM-only layout — its `.jvm` sources wired in.
+            val hasMcpBridge   = d.modules.exists(_.meta.get("platform").contains("jvm"))
+            val bridgeSettings = if (hasMcpBridge) mcpBridgeSettings(idlVersion) else ""
+
+            s"""lazy val `$id` = ${crossProject(id)}$depends$moduleSettings$bridgeSettings"""
         }
 
         val bundleId = naming.bundleId
@@ -196,7 +202,12 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
         // via `getResourceAsStream`) route to `src/main/resources/` so they
         // land on the classpath as resources, not as Scala sources.
         val srcDir = if (m.meta.get("resource").contains("true")) "resources" else "scala"
-        m.copy(id = m.id.copy(path = Seq(pid, "src", "main", srcDir) ++ m.id.path))
+        // PR-04 MCP Mb1: modules tagged `meta("platform") == "jvm"` (the http4s
+        // bridge source + its resource) route to the crossproject's `.jvm`
+        // sourceset so the Scala.js build skips them; everything else stays in
+        // the shared sourceset and cross-compiles as before.
+        val platformPrefix = if (m.meta.get("platform").contains("jvm")) Seq(".jvm") else Seq.empty[String]
+        m.copy(id = m.id.copy(path = Seq(pid) ++ platformPrefix ++ Seq("src", "main", srcDir) ++ m.id.path))
     }
   }
 
@@ -240,5 +251,38 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
     s"""scalacOptions ++= { scalaVersion.value match {
        |$perScalaVersionOptions
        |  }}""".stripMargin
+  }
+
+  /** Extra `.settings(...)` appended to a project that carries an `emitMcpBridge`
+    * http4s bridge. The bridge source is emitted under `.jvm/src/main/scala`
+    * (see `DomainScalaTranslator.emitMcpBridgeModules` + `asSbtModule`):
+    *   - a `crossProject(CrossType.Pure)` (ScalaJS) build compiles `.jvm` via the
+    *     JVM variant's base, so only the http4s dep + kind-projector are added —
+    *     but JVM-only dependency scoping for ScalaJS is not handled yet, so it is
+    *     intentionally skipped here;
+    *   - a regular JVM-only project does NOT pick up `.jvm` automatically, so its
+    *     `.jvm` source/resource dirs are wired in explicitly.
+    * The bridge uses bifunctor underscore type-lambdas (`F[Throwable, _]`), hence
+    * kind-projector with underscore placeholders, matching the runtime modules.
+    */
+  private def mcpBridgeSettings(idlVersion: String): String = {
+    if (options.manifest.sbt.enableScalaJs) {
+      "" // TODO: ScalaJS bridge support needs JVM-only dep scoping (.jvmSettings)
+    } else {
+      s"""
+         |  .settings(
+         |    Compile / unmanagedSourceDirectories += baseDirectory.value / ".jvm" / "src" / "main" / "scala",
+         |    Compile / unmanagedResourceDirectories += baseDirectory.value / ".jvm" / "src" / "main" / "resources",
+         |    libraryDependencies += "$idlcGroupId" %% "idealingua-v1-runtime-rpc-http4s" % "$idlVersion",
+         |    libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+         |      case Some((2, _)) => Seq(compilerPlugin("org.typelevel" % "kind-projector" % "0.13.4" cross CrossVersion.full))
+         |      case _            => Seq.empty
+         |    }),
+         |    scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+         |      case Some((2, _)) => Seq("-P:kind-projector:underscore-placeholders")
+         |      case _            => Seq("-Xkind-projector:underscores")
+         |    })
+         |  )""".stripMargin
+    }
   }
 }
