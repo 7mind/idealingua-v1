@@ -8,15 +8,15 @@ import izumi.functional.bio.Exit
 import izumi.idealingua.runtime.rpc.{IRTOutputMiddleware, IRTServerMultiplexor}
 import mcpdemo.{ShapesMcpRoutes, ShapesServer, ShapesServerImpl, ShapesWrappedServer}
 import org.http4s.{EntityDecoder, EntityEncoder, Method, Request, Status, Uri}
-import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.circe._
 import org.http4s.dsl.Http4sDsl
+import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.server.Server
 import org.scalatest.wordspec.AnyWordSpec
 
 /** Mb4-B integration spec: every `Shapes` MCP tool reached over a real HTTP
-  * socket via `BlazeServerBuilder` + `BlazeClientBuilder`, exercising every
+  * socket via `BlazeServerBuilder` + `EmberClientBuilder`, exercising every
   * `DefMethod.Output` shape (Void / Singular primitive / Singular DTO /
   * Struct / Algebraic / Alternative-Singular / Alternative-Void) and a
   * range of input shapes (empty / primitive / multi-primitive / DTO /
@@ -76,9 +76,10 @@ final class McpBridgeRealServerSpec extends AnyWordSpec {
 
   private def client[A](body: org.http4s.client.Client[BIO[Throwable, *]] => BIO[Throwable, A]): A =
     runUnsafe {
-      BlazeClientBuilder[BIO[Throwable, *]]
-        .withRequestTimeout(5.seconds)
-        .resource
+      EmberClientBuilder
+        .default[BIO[Throwable, *]]
+        .withTimeout(5.seconds)
+        .build
         .use(body)
     }
 

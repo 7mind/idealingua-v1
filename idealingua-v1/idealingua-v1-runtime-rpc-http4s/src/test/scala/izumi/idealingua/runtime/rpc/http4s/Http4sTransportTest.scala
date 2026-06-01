@@ -123,7 +123,7 @@ object Http4sTransportTest {
   )(implicit asyncThrowable: Async[F[Throwable, _]]
   ) {
     val httpClientFactory: HttpRpcDispatcherFactory[F] = {
-      new HttpRpcDispatcherFactory[F](testServices.Client.codec, execCtx, printer, logger)
+      new HttpRpcDispatcherFactory[F](testServices.Client.codec, printer, logger)
     }
     def httpRpcClientDispatcher(headers: Headers): Lifecycle[F[Throwable, _], HttpRpcDispatcher.IRTDispatcherRaw[F]] = {
       httpClientFactory.dispatcher(baseUri, headers)

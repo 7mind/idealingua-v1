@@ -25,6 +25,7 @@ object Idealingua {
     val izumi_reflect        = Version.VExpr("Izumi.Deps.fundamentals_bioJVM.dev_zio_izumi_reflect_version")
 
     val http4s          = Version.VExpr("V.http4s")
+    val http4s_ember    = Version.VExpr("V.http4s_ember")
     val http4s_blaze    = Version.VExpr("V.http4s_blaze")
     val scalameta       = Version.VExpr("V.scalameta")
     val fastparse       = Version.VExpr("V.fastparse")
@@ -121,7 +122,7 @@ object Idealingua {
     final val fastparse = Library("com.lihaoyi", "fastparse", V.fastparse, LibraryType.Auto) in Scope.Compile.all
 
     final val http4s_client = Seq(
-      Library("org.http4s", "http4s-blaze-client", V.http4s_blaze, LibraryType.Auto)
+      Library("org.http4s", "http4s-ember-client", V.http4s_ember, LibraryType.Auto),
     )
 
     val http4s_server = Seq(
