@@ -2,74 +2,70 @@ package izumi.idealingua.runtime.rpc.http4s
 
 import cats.effect.Async
 import io.circe.{Json, JsonObject}
-import izumi.functional.bio.{Error2, IO2}
-import org.http4s.{EntityDecoder, Headers, HttpRoutes, Method, Request, Uri}
-import org.http4s.circe._
+import izumi.functional.bio.{Exit, IO2}
+import izumi.idealingua.runtime.rpc.{IRTDecodingException, IRTGenericFailure, IRTLimitReachedException, IRTMethodId, IRTMissingHandlerException, IRTServerMultiplexor, IRTTypeMismatchException, IRTUnathorizedRequestContextException, IRTUnparseableDataException}
+import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
-import org.typelevel.ci.CIString
+import org.http4s.{EntityDecoder, HttpRoutes, Request}
 
-/** MCP-spec-compliant JSON-RPC 2.0 transport adapter wrapping the
-  * `<ServiceName>McpRoutes` emitted by `DomainServiceMcpRenderer`.
+/** MCP-spec-compliant JSON-RPC 2.0 transport interpreter over a combined
+  * [[IRTServerMultiplexor]].
   *
-  * The generator's per-service routes expose an MCP-shaped REST API
-  * (`GET /mcp/tools/list`, `POST /mcp/tools/call`) but not the MCP
-  * **transport** (JSON-RPC 2.0 envelope, capability handshake, request
-  * id correlation). Real MCP clients — Claude Desktop, Claude Code,
-  * `mcp-python` — speak JSON-RPC over HTTP+SSE or stdio with an
-  * `initialize` handshake, so they cannot connect to the bare REST
-  * dialect.
+  * This is a multi-service, data-driven interpreter: it owns a single
+  * JSON-RPC endpoint (`POST <mountPath>`) and dispatches `tools/call`
+  * DIRECTLY against the multiplexor. All services are folded
+  * into one mux (`IRTServerMultiplexor.FromServices` over a
+  * `Set[IRTWrappedService]`, or `.combine`), one UNION `tools/list`
+  * envelope, and one dispatch map from fully-qualified MCP tool name to the
+  * target `(IRTMethodId, wrap)`.
   *
-  * This adapter:
-  *   - Listens on a single POST endpoint (configurable via `mountPath`).
-  *   - Parses incoming JSON-RPC 2.0 requests + notifications.
-  *   - Handles core methods directly (`initialize`, `tools/list`,
-  *     `ping`, `notifications/initialized`).
-  *   - Forwards `tools/call` to the inner REST routes by synthesising
-  *     the equivalent REST POST body, then re-wraps the REST response
-  *     payload as the JSON-RPC `result` (the body shape — `content`,
-  *     `structuredContent`, `isError` — is already
-  *     spec-compliant `CallToolResult`).
+  * Request handling:
+  *   - `initialize`              → capability handshake.
+  *   - `tools/list`              → the union `tools/list` envelope verbatim.
+  *   - `tools/call`              → resolve the FQ tool name in the dispatch
+  *     map, extract the context, call `mux.invokeMethod(methodId)(ctx, args)`,
+  *     and shape the MCP `CallToolResult` envelope
+  *     (`content` / `structuredContent` / `isError`) applying the per-tool
+  *     static `wrap` flag.
+  *   - `ping`                    → empty result.
+  *   - `notifications/initialized` → no response (JSON-RPC notification).
   *
   * Streamable HTTP (single endpoint, request/response over POST) is the
-  * supported transport per MCP 2025-06-18; SSE upgrade for server-
-  * initiated messages is NOT implemented (the bridge has no
-  * notifications to send, so it's unnecessary).
+  * supported transport per MCP 2025-06-18; SSE upgrade for server-initiated
+  * messages is NOT implemented (the bridge has no notifications to send).
   *
-  * Re-use across services: pass the inner routes + the
-  * `tools/list` JSON envelope (loaded from
-  * `mcp/<ServiceName>.mcp.json` resource by the per-service routes
-  * already). Service-prefix routing is delegated to the inner routes
-  * — they own the per-method match arms.
+  * @param mux         combined multiplexor holding every service's methods.
+  * @param toolsListJson the UNION `tools/list` envelope (assembled from all
+  *                    services' `McpServiceMeta` deltas by the builder).
+  * @param dispatch    fully-qualified MCP tool name → (target method, wrap flag).
+  * @param extractCtx  derives the request context `C` (e.g. authenticated principal).
   */
-final class McpJsonRpcRoutes[F[+_, +_]: IO2: Error2, C](
-  innerRoutes: HttpRoutes[F[Throwable, *]],
+final class McpJsonRpcRoutes[F[+_, +_]: IO2, C](
+  mux: IRTServerMultiplexor[F, C],
   toolsListJson: Json,
+  dispatch: Map[String, (IRTMethodId, Boolean)],
+  extractCtx: Request[F[Throwable, _]] => F[Throwable, C],
   serverName: String,
   serverVersion: String,
   protocolVersion: String,
   mountPath: String,
-  dsl: Http4sDsl[F[Throwable, *]],
-)(implicit AT: Async[F[Throwable, *]]) {
+  dsl: Http4sDsl[F[Throwable, _]],
+)(implicit AT: Async[F[Throwable, _]]
+) {
 
-  import dsl._
-  private implicit val jd: EntityDecoder[F[Throwable, *], Json] = jsonDecoder[F[Throwable, *]]
+  import dsl.*
+  private implicit val jd: EntityDecoder[F[Throwable, _], Json] = jsonDecoder[F[Throwable, _]]
 
-  /** The single JSON-RPC endpoint. Compose with the inner REST routes
-    * if you also want the legacy REST surface exposed: `(jsonRpc <+> innerRoutes)`.
-    */
-  def routes: HttpRoutes[F[Throwable, *]] = HttpRoutes.of[F[Throwable, *]] {
+  /** The single JSON-RPC endpoint. */
+  def routes: HttpRoutes[F[Throwable, _]] = HttpRoutes.of[F[Throwable, _]] {
     case req @ POST -> path if path.renderString == mountPath =>
-      // Carry the inbound request headers (Authorization, X-Forwarded-For, …)
-      // into the synthesized inner REST call so the inner routes' context
-      // extractor / authenticator can still see the bearer token. Without
-      // this the JSON-RPC transport silently strips all auth.
-      req.as[Json].flatMap(body => dispatch(body, req.headers))
+      req.as[Json].flatMap(body => dispatchRpc(req, body))
   }
 
   private val initializeResult: Json = Json.obj(
     "protocolVersion" -> Json.fromString(protocolVersion),
     "capabilities" -> Json.obj(
-      "tools" -> Json.obj("listChanged" -> Json.False),
+      "tools" -> Json.obj("listChanged" -> Json.False)
     ),
     "serverInfo" -> Json.obj(
       "name"    -> Json.fromString(serverName),
@@ -77,12 +73,12 @@ final class McpJsonRpcRoutes[F[+_, +_]: IO2: Error2, C](
     ),
   )
 
-  private def dispatch(body: Json, headers: Headers): F[Throwable, org.http4s.Response[F[Throwable, *]]] = {
-    val c               = body.hcursor
-    val method          = c.get[String]("method").toOption
-    val id              = c.downField("id").focus
-    val params          = c.downField("params").focus.getOrElse(Json.obj())
-    val isNotification  = id.isEmpty
+  private def dispatchRpc(req: Request[F[Throwable, _]], body: Json): F[Throwable, org.http4s.Response[F[Throwable, _]]] = {
+    val c              = body.hcursor
+    val method         = c.get[String]("method").toOption
+    val id             = c.downField("id").focus
+    val params         = c.downField("params").focus.getOrElse(Json.obj())
+    val isNotification = id.isEmpty
 
     method match {
       case Some("initialize") =>
@@ -101,9 +97,12 @@ final class McpJsonRpcRoutes[F[+_, +_]: IO2: Error2, C](
       case Some("tools/call") =>
         val name = params.hcursor.get[String]("name").toOption.getOrElse("")
         val args = params.hcursor.downField("arguments").focus.getOrElse(Json.obj())
-        // Synthesize a REST POST /mcp/tools/call to the inner routes and
-        // unwrap whatever they return as the JSON-RPC `result`.
-        forwardToInnerRest(name, args, id, headers)
+        dispatch.get(name) match {
+          case Some((methodId, wrap)) =>
+            invokeTool(req, methodId, wrap, args, id)
+          case None =>
+            Ok(jsonRpcError(id, -32601, s"Method not found: $name"))
+        }
 
       case Some(other) =>
         Ok(jsonRpcError(id, -32601, s"Method not found: $other"))
@@ -113,27 +112,81 @@ final class McpJsonRpcRoutes[F[+_, +_]: IO2: Error2, C](
     }
   }
 
-  private def forwardToInnerRest(toolName: String, args: Json, id: Option[Json], headers: Headers): F[Throwable, org.http4s.Response[F[Throwable, *]]] = {
-    val callBody = Json.obj(
-      "name"      -> Json.fromString(toolName),
-      "arguments" -> args,
-    )
-    implicit val je: org.http4s.EntityEncoder[F[Throwable, *], Json] = jsonEncoderOf[F[Throwable, *], Json]
-    // Drop entity headers describing the *original* JSON-RPC body —
-    // `withEntity` recomputes Content-Type/Content-Length for `callBody`.
-    // Everything else (Authorization, X-Forwarded-For, …) is forwarded so
-    // the inner routes can authenticate.
-    val forwardedHeaders = headers.transform(_.filterNot { h =>
-      h.name == CIString("Content-Type") || h.name == CIString("Content-Length")
-    })
-    val innerReq = Request[F[Throwable, *]](Method.POST, Uri.unsafeFromString("/mcp/tools/call"), headers = forwardedHeaders).withEntity(callBody)
-    innerRoutes.run(innerReq).value.flatMap {
-      case Some(resp) =>
-        resp.as[Json].flatMap(payload => Ok(jsonRpcSuccess(id, payload)))
-      case None =>
-        Ok(jsonRpcError(id, -32601, s"Method not found: $toolName"))
+  /** Dispatch a `tools/call` DIRECTLY against the multiplexor and shape the
+    * MCP `CallToolResult` envelope. The wrap flag is the per-tool static
+    * policy carried in the dispatch map: when set, the raw mux output is
+    * wrapped under `{"result": <raw>}`; otherwise it is used verbatim.
+    */
+  private def invokeTool(
+    req: Request[F[Throwable, _]],
+    methodId: IRTMethodId,
+    wrap: Boolean,
+    args: Json,
+    id: Option[Json],
+  ): F[Throwable, org.http4s.Response[F[Throwable, _]]] = {
+    (for {
+      ctx <- extractCtx(req)
+      raw <- mux.invokeMethod(methodId)(ctx, args)
+    } yield {
+      val shaped = if (wrap) Json.obj("result" -> raw) else raw
+      Json.obj(
+        "content" -> Json.arr(
+          Json.obj(
+            "type" -> Json.fromString("text"),
+            "text" -> Json.fromString(shaped.noSpaces),
+          )
+        ),
+        "structuredContent" -> shaped,
+        "isError"           -> Json.False,
+      )
+    }).sandboxExit.flatMap {
+      case Exit.Success(result) =>
+        Ok(jsonRpcSuccess(id, result))
+      case Exit.Error(_: IRTMissingHandlerException, _) =>
+        Ok(jsonRpcSuccess(id, mcpError(-32601, s"Method not found: ${methodId.service.value}.${methodId.methodId.value}")))
+      case Exit.Error(e: IRTUnparseableDataException, _) =>
+        Ok(jsonRpcSuccess(id, mcpError(-32700, s"Parse error: ${safeMsg(e)}")))
+      case Exit.Error(e: IRTTypeMismatchException, _) =>
+        Ok(jsonRpcSuccess(id, mcpError(-32602, s"Invalid arguments (type mismatch): ${safeMsg(e)}")))
+      case Exit.Error(e: IRTDecodingException, _) =>
+        Ok(jsonRpcSuccess(id, mcpError(-32602, s"Invalid arguments: ${safeMsg(e)}")))
+      case Exit.Error(e: _root_.io.circe.Error, _) =>
+        Ok(jsonRpcSuccess(id, mcpError(-32602, s"Invalid arguments: ${safeMsg(e)}")))
+      case Exit.Error(e: IRTLimitReachedException, _) =>
+        Ok(jsonRpcSuccess(id, mcpError(-32000, s"Rate limit exceeded: ${safeMsg(e)}")))
+      case Exit.Error(_: IRTUnathorizedRequestContextException, _) =>
+        Ok(jsonRpcSuccess(id, mcpError(-32001, "Unauthorized")))
+      case Exit.Error(_: IRTGenericFailure, _) =>
+        Ok(jsonRpcSuccess(id, mcpError(-32603, "Internal error")))
+      case _ =>
+        Ok(jsonRpcSuccess(id, mcpError(-32603, "Internal error")))
     }
   }
+
+  private def safeMsg(t: Throwable): String = {
+    val m = t.getMessage
+    if (m == null) t.getClass.getSimpleName else m
+  }
+
+  /** In-band MCP `CallToolResult` error envelope (`isError = true`). MCP tool
+    * errors are carried inside a successful JSON-RPC `result`, not as a
+    * JSON-RPC transport error — clients inspect `isError`/`structuredContent`.
+    */
+  private def mcpError(code: Int, msg: String): Json = Json.obj(
+    "content" -> Json.arr(
+      Json.obj(
+        "type" -> Json.fromString("text"),
+        "text" -> Json.fromString(msg),
+      )
+    ),
+    "structuredContent" -> Json.obj(
+      "error" -> Json.obj(
+        "code"    -> Json.fromInt(code),
+        "message" -> Json.fromString(msg),
+      )
+    ),
+    "isError" -> Json.True,
+  )
 
   // ---- JSON-RPC envelope helpers --------------------------------------
 
@@ -151,7 +204,7 @@ final class McpJsonRpcRoutes[F[+_, +_]: IO2: Error2, C](
       "message" -> Json.fromString(message),
     )
     val errWithData = data.fold(err)(d => err.add("data", d))
-    val fields = scala.collection.mutable.LinkedHashMap.empty[String, Json]
+    val fields      = scala.collection.mutable.LinkedHashMap.empty[String, Json]
     fields += "jsonrpc" -> Json.fromString("2.0")
     fields += "id"      -> id.getOrElse(Json.Null)
     fields += "error"   -> Json.fromJsonObject(errWithData)
@@ -161,6 +214,7 @@ final class McpJsonRpcRoutes[F[+_, +_]: IO2: Error2, C](
 
 object McpJsonRpcRoutes {
   /** Default MCP protocol version we advertise — matches the schema
-    * pinned at `idealingua-v1-test-defs/schema/mcp-2025-06-18.json`. */
+    * pinned at `idealingua-v1-test-defs/schema/mcp-2025-06-18.json`.
+    */
   val DefaultProtocolVersion: String = "2025-06-18"
 }

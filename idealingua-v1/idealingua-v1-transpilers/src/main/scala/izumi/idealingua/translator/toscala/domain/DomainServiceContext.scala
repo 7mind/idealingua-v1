@@ -33,6 +33,11 @@ final case class DomainServiceContext(
   serviceId: ServiceId,
   methods: List[DefMethod],
   meta: NodeMeta,
+  // True only for `Service` defns — `DomainScalaTranslator.emitService` emits a
+  // companion `<Name>Mcp` pointer object under `emitMcpBridge`, but `emitBuzzer`
+  // does not. The `*WrappedServer.mcpResource` override may therefore reference
+  // `<Name>Mcp.resource` only when this is true (else the term won't resolve).
+  emitsMcpBridge: Boolean,
 ) {
 
   object IO2 {
@@ -82,12 +87,14 @@ final case class DomainServiceContext(
 
 object DomainServiceContext {
   def forService(ctx: DomainSTContext, svc: NewTypeDef.Service): DomainServiceContext =
-    DomainServiceContext(ctx, svc.id, svc.methods, svc.meta)
+    DomainServiceContext(ctx, svc.id, svc.methods, svc.meta, emitsMcpBridge = true)
 
-  /** Buzzer → Service-shaped projection (mirror of legacy `Buzzer.asService`). */
+  /** Buzzer → Service-shaped projection (mirror of legacy `Buzzer.asService`).
+    * No MCP pointer object is emitted for buzzers (see `DomainScalaTranslator.emitBuzzer`),
+    * so the wrapped-server `mcpResource` override must NOT be emitted for them. */
   def forBuzzer(ctx: DomainSTContext, bz: NewTypeDef.Buzzer): DomainServiceContext = {
     val asServiceId = mkServiceIdFromBuzzer(bz.id)
-    DomainServiceContext(ctx, asServiceId, bz.events, bz.meta)
+    DomainServiceContext(ctx, asServiceId, bz.events, bz.meta, emitsMcpBridge = false)
   }
 
   private def mkServiceIdFromBuzzer(b: BuzzerId): ServiceId =

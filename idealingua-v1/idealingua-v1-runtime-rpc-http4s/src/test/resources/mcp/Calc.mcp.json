@@ -1,0 +1,136 @@
+{
+  "tools" : [
+    {
+      "name" : "mcpdemo.Calc.add",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          },
+          "b" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          }
+        },
+        "required" : [
+          "a",
+          "b"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Calc.AddInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Calc.AddOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Calc.sub",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          },
+          "b" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          }
+        },
+        "required" : [
+          "a",
+          "b"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Calc.SubInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Calc.SubOutput",
+      "x-idealingua-kind" : "rpc"
+    },
+    {
+      "name" : "mcpdemo.Calc.mul",
+      "description" : "",
+      "inputSchema" : {
+        "$schema" : "https://json-schema.org/draft/2020-12/schema",
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          },
+          "b" : {
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          }
+        },
+        "required" : [
+          "a",
+          "b"
+        ],
+        "additionalProperties" : false
+      },
+      "outputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "x-idealingua-unwrap" : true,
+            "type" : "integer",
+            "minimum" : -9223372036854775808,
+            "maximum" : 9223372036854775807
+          }
+        },
+        "required" : [
+          "result"
+        ],
+        "additionalProperties" : false,
+        "x-idealingua-wrapped" : true
+      },
+      "x-idealingua-wire-type-input" : "mcpdemo.Calc.MulInput",
+      "x-idealingua-wire-type-output" : "mcpdemo.Calc.MulOutput",
+      "x-idealingua-kind" : "rpc"
+    }
+  ]
+}

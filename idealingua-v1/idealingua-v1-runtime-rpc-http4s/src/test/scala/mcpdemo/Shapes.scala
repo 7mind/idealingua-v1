@@ -260,6 +260,7 @@ object ShapesWrappedClient extends IRTWrappedClient {
 class ShapesWrappedServer[Or[+_, +_]: IRTIO2, C](_service: ShapesServer[Or, C]) extends IRTWrappedService[Or, C] {
   final val _F: IRTIO2[Or] = implicitly
   final val serviceId: IRTServiceId = Shapes.serviceId
+  override def mcpResource: Option[McpServiceResource] = Some(ShapesMcp.resource)
   val allMethods: Map[IRTMethodId, IRTMethodWrapper[Or, C]] = {
     Seq[IRTMethodWrapper[Or, C]](ping, upper, add, echo, divmod, reverse, invertMap, maybeUpper, nextColor, makeProfile, pay, divideSafe, noteValue).map(m => m.signature.id -> m).toMap
   }

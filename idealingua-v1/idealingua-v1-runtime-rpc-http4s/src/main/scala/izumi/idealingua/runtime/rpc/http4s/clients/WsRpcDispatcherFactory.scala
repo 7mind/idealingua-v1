@@ -251,7 +251,7 @@ object WsRpcDispatcherFactory {
   private def fromNettyFuture[F[+_, +_]: Async2, A](mkNettyFuture: => io.netty.util.concurrent.Future[A]): F[Throwable, A] = {
     F.syncThrowable(mkNettyFuture).flatMap {
       nettyFuture =>
-        F.asyncCancelable {
+        F.asyncWithOnInterrupt {
           callback =>
             nettyFuture.addListener {
               (completedFuture: io.netty.util.concurrent.Future[A]) =>

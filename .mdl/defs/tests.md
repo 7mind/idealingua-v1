@@ -19,6 +19,27 @@ shellspec --format documentation --jobs "${NUMCPU}" -o junit --reportdir ./targe
 ret success:bool=true
 ```
 
+# action: test-scala-mcp
+
+MCP bridge compile-regression: for a domain with emitMcpBridge=true, assert the
+emitted platform-neutral `<Svc>Mcp` pointer object + `mcp/<Svc>.mcp.json` land in
+the SHARED sourceset and compile in BOTH manifest modes — JVM-only
+(enableScalaJs=false) and cross JVM+JS (enableScalaJs=true). Exactly two
+examples; there is no JS-only mode.
+
+```bash
+dep action.gen
+
+source ./.mdl/lib/env.sh
+prepare_build_env "${args.scala-version}"
+ensure_numcpu
+
+mkdir -p ./target/spec-reports/scala-mcp
+shellspec --format documentation --jobs "${NUMCPU}" -o junit --reportdir ./target/spec-reports/scala-mcp ./.mdl/spec/mcp_spec.sh
+
+ret success:bool=true
+```
+
 # action: test-ts
 
 TypeScript transpiler integration tests for Yarn and plain layouts.
@@ -124,6 +145,7 @@ Run the full integration test suite.
 
 ```bash
 dep action.test-scala
+dep action.test-scala-mcp
 dep action.test-ts
 dep action.test-cs
 

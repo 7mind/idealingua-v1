@@ -151,4 +151,98 @@ final class DomainServiceRendererSpec extends AnyFunSuite {
     assert(joined.contains("trait NotifServer"), s"expected NotifServer: $joined")
     assert(joined.contains("trait NotifClient"))
   }
+
+  test("WrappedServer overrides mcpResource when emitMcpBridge is enabled") {
+    val svcId   = ServiceId(domainId, "Ping")
+    val svcPath = TypePath(domainId, Seq("Ping"))
+    val xField  = Field(Primitive.TInt32, "x", emptyMeta)
+    val method = RPCMethod(
+      name      = "ping",
+      signature = Signature(
+        input  = SimpleStructure(concepts = List.empty, fields = List(xField)),
+        output = Output.Singular(Primitive.TString),
+      ),
+      meta = emptyMeta,
+    )
+    val svc        = NewTypeDef.Service(svcId, List(method), emptyMeta)
+    val inputDtoId  = DTOId(svcPath, "PingInput")
+    val outputDtoId = DTOId(svcPath, "PingOutput")
+    val flats = Map[izumi.idealingua.model.common.StructureId, FlatStruct](
+      inputDtoId  -> FlatStruct(inputDtoId, List(FlatField(xField, inputDtoId, 0)), List.empty, List.empty),
+      outputDtoId -> FlatStruct(outputDtoId, List(FlatField(Field(Primitive.TString, "value", emptyMeta), outputDtoId, 0)), List.empty, List.empty),
+    )
+
+    val ctx     = newMcpCtx(flats)
+    val product = ctx.serviceRenderer.renderService(svc)
+    val joined  = product.render.map(renderSyntax).mkString("\n\n")
+    assert(
+      joined.contains("override def mcpResource") && joined.contains("Some(PingMcp.resource)"),
+      s"expected mcpResource override referencing PingMcp.resource: $joined",
+    )
+  }
+
+  // Regression guard: buzzers get NO `<Name>Mcp` pointer object (only services
+  // do, via `DomainScalaTranslator.emitService`), so the wrapped-server
+  // `mcpResource` override must NOT be emitted for a buzzer even under
+  // `emitMcpBridge = true` — otherwise the reference fails to resolve at compile.
+  test("buzzer WrappedServer omits mcpResource override even when emitMcpBridge is enabled") {
+    val bzId   = izumi.idealingua.model.common.TypeId.BuzzerId(domainId, "Notif")
+    val bzPath = TypePath(domainId, Seq("Notif"))
+    val payloadField = Field(Primitive.TString, "payload", emptyMeta)
+    val event = RPCMethod(
+      name      = "fire",
+      signature = Signature(
+        input  = SimpleStructure(concepts = List.empty, fields = List(payloadField)),
+        output = Output.Void(),
+      ),
+      meta = emptyMeta,
+    )
+    val bz = NewTypeDef.Buzzer(bzId, List(event), emptyMeta)
+    val inputDtoId  = DTOId(bzPath, "FireInput")
+    val outputDtoId = DTOId(bzPath, "FireOutput")
+    val flats = Map[izumi.idealingua.model.common.StructureId, FlatStruct](
+      inputDtoId  -> FlatStruct(inputDtoId, List(FlatField(payloadField, inputDtoId, 0)), List.empty, List.empty),
+      outputDtoId -> FlatStruct(outputDtoId, List.empty, List.empty, List.empty),
+    )
+    val ctx     = newMcpCtx(flats)
+    val product = ctx.serviceRenderer.renderBuzzer(bz)
+    val joined  = product.render.map(renderSyntax).mkString("\n\n")
+    assert(
+      !joined.contains("mcpResource"),
+      s"buzzer wrapped server must NOT emit a mcpResource override: $joined",
+    )
+  }
+
+  private def newMcpCtx(flats: Map[izumi.idealingua.model.common.StructureId, FlatStruct]): DomainSTContext = {
+    val mcpBuild   = scalaBuild.copy(emitMcpBridge = true)
+    val mcpOptions = CompilerOptions[ScalaBuildManifest](IDLLanguage.Scala, mcpBuild)
+    val newDomain = Domain(
+      id                = domainId,
+      meta              = metaFor(domainId),
+      members           = Map.empty,
+      roots             = Set.empty,
+      ephemeralsOf      = Map.empty,
+      ephemeralOwner    = Map.empty,
+      flattenedStructs  = flats,
+      parents           = Map.empty,
+      implementingDtos  = Map.empty,
+      loops             = Set.empty,
+      fingerprints      = Map.empty,
+      domainFingerprint = Fingerprint(ByteVector.empty),
+      imports           = Map.empty,
+      consts            = List.empty,
+      aliases           = Map.empty,
+      userTypes         = Map.empty,
+    )
+    val parsedStub: DomainMeshResolved = new DomainMeshResolved {
+      override def id: DomainId                                  = domainId
+      override def imports: Seq[RawImport]                       = Seq.empty
+      override def members: Seq[RawTopLevelDefn]                 = Seq.empty
+      override def referenced: Map[DomainId, DomainMeshResolved] = Map.empty
+      override def origin: FSPath                                = FSPath(domainId.toPackage :+ s"${domainId.id}.domain")
+      override def directInclusions: Seq[RawInclusion]           = Seq.empty
+      override def meta: RawNodeMeta                             = rawMeta
+    }
+    new DomainSTContext(newDomain, parsedStub, mcpOptions)
+  }
 }

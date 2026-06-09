@@ -1,5 +1,6 @@
 package izumi.idealingua.harness
 
+import io.circe.parser.parse
 import izumi.idealingua.model.il.ast.typed.DefMethod
 import izumi.idealingua.translator.toscala.domain.OutputWrapPolicy
 import izumi.idealingua.typer.ir.TypeDef
@@ -8,129 +9,76 @@ import org.scalatest.funsuite.AnyFunSuite
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
 import scala.collection.mutable
-import scala.meta.*
 
-/** Mb4-B: Layer C consistency property — for every `(service, method)` pair in
-  * the corpus, the `wrap = true|false` literal baked into the generated
-  * `<Service>McpRoutes` `call(...)` invocation must equal
+/** Consistency property — for every `(service, method)` pair in the corpus, the
+  * per-tool wrap flag baked into the generated `mcp/<Svc>.mcp.json` must equal
   * `OutputWrapPolicy.isWrapped(method.signature.output)`.
   *
-  * Why this test is non-tautological:
+  * The generated `<Svc>Mcp.scala` is now just an `McpServiceResource` pointer;
+  * the wrap decision lives in the `.mcp.json` envelope, where the runtime reads
+  * it: `McpServiceLoader` derives `McpToolMeta.wrap` from each tool's
+  * `outputSchema."x-idealingua-wrapped"` (absent ⇒ false). This spec reads the
+  * SAME field, so it guards the end-to-end path the runtime depends on
+  * (renderer → `.mcp.json` → loader) against `OutputWrapPolicy`.
   *
-  * The generator (`DomainServiceMcpRenderer.renderMatchArm`) invokes
-  * `OutputWrapPolicy.isWrapped` directly when emitting the wrap literal — so
-  * a fresh emission is consistent by construction. The value of this spec is
-  * **drift detection across the renderer / wrap-policy pair**: the test
-  * recompiles the corpus through both the bridge renderer (via the
-  * build-time-generated `<harness-target>/generated-sources/test-harness/scala-mcp/`
-  * sources) AND `OutputWrapPolicy.isWrapped`, and asserts they agree
-  * per-method. R1 (2026-05-14): the read path now points at the
-  * build-time-generated tree instead of the retired committed
-  * `idealingua-v1-test-defs/golden/scala-mcp/` tree — semantically the same
-  * drift check, only the source-of-truth moved from commit-time to
-  * build-time.
+  * Why it is non-tautological: the emit side encodes the wrap decision as a
+  * schema annotation while building the envelope; this spec recompiles the
+  * corpus and re-derives the decision straight from the IR via
+  * `OutputWrapPolicy.isWrapped`, then asserts the two agree per method. Drift on
+  * either side (a renderer change, a policy change) is caught.
   *
-  * Mechanics:
-  *   1. Parse each `<Service>Mcp.scala` build-time-generated source via
-  *      scala.meta. Extract every `(methodName, wrapFlag)` pair from
-  *      `call(req, argsJson, methodId_<m>, wrap = <bool>, ...)` invocations.
-  *   2. Compile the corpus IDL. Walk every `TypeDef.Service`, then every
-  *      `DefMethod.RPCMethod`. Apply `OutputWrapPolicy.isWrapped` to the
-  *      output.
-  *   3. Assert: for every `(serviceName, methodName)` key, the parsed
-  *      parsed flag equals the computed flag.
-  *
-  * Hand-written services in `idealingua-v1-test-defs/src/main/scala/...`
-  * (e.g. `GreeterService`) are NOT covered — they have no IDL definition, so
-  * `OutputWrapPolicy.isWrapped` has nothing to apply to. They appear only as
-  * test fixtures, not as IDL-driven generator output.
+  * Hand-written services in `idealingua-v1-test-defs` (e.g. `GreeterService`)
+  * are not covered: they have no IDL definition for `OutputWrapPolicy` to apply
+  * to, and the harness emits no bridge envelope for them.
   */
 final class McpBridgeConsistencySpec extends AnyFunSuite {
 
-  test("bridge wrap-flag literals match OutputWrapPolicy.isWrapped for every method") {
+  test("bridge wrap flags in generated .mcp.json match OutputWrapPolicy.isWrapped for every method") {
     val repoRoot   = HarnessCorpus.repoRootForTests()
     val corpusRoot = HarnessCorpus.corpusRoot(repoRoot)
     val loaded     = HarnessCorpus.loadCorpus(corpusRoot)
 
-    val mcpRoot = HarnessCorpus.harnessGenRoot(repoRoot).resolve("scala-mcp")
-    assert(Files.isDirectory(mcpRoot), s"generated MCP-bridge tree missing: $mcpRoot")
+    val mcpResourceRoot = HarnessCorpus.harnessGenRoot(repoRoot).resolve("scala-mcp-resources").resolve("mcp")
+    assert(Files.isDirectory(mcpResourceRoot), s"generated MCP-bridge resources missing: $mcpResourceRoot")
 
-    val generatedSources: Seq[Path] = {
+    val envelopes: Seq[Path] = {
       val buf = mutable.ArrayBuffer.empty[Path]
-      val it  = Files.walk(mcpRoot).iterator()
+      val it  = Files.walk(mcpResourceRoot).iterator()
       try while (it.hasNext) {
         val p = it.next()
-        if (Files.isRegularFile(p) && p.getFileName.toString.endsWith("Mcp.scala")) buf += p
+        if (Files.isRegularFile(p) && p.getFileName.toString.endsWith(".mcp.json")) buf += p
       } finally ()
       buf.toSeq.sortBy(_.toString)
     }
-    assert(generatedSources.nonEmpty, s"no <Service>Mcp.scala sources under $mcpRoot")
+    assert(envelopes.nonEmpty, s"no <Service>.mcp.json envelopes under $mcpResourceRoot")
 
-    // Parsed: map from serviceName -> map[methodName -> wrapFlag-from-generated-source].
-    val parsedFlags: Map[String, Map[String, Boolean]] = generatedSources.iterator.map { p =>
-      val text   = new String(Files.readAllBytes(p), StandardCharsets.UTF_8)
-      val source = dialects.Scala213(text).parse[Source] match {
-        case parsers.Parsed.Success(tree) => tree
-        case parsers.Parsed.Error(_, msg, _) =>
-          fail(s"failed to parse generated source $p: $msg")
+    // Parsed: serviceName -> (methodName -> wrap), read from the generated
+    // envelopes. The wrap flag is read exactly as `McpServiceLoader` reads it —
+    // `tools[].outputSchema."x-idealingua-wrapped"`, absent ⇒ false — and the
+    // `(service, method)` key is recovered from the fully-qualified tool name
+    // `<pkg>.<Svc>.<method>` the renderer emits.
+    val parsedFlags: Map[String, Map[String, Boolean]] = {
+      val perService = mutable.LinkedHashMap.empty[String, mutable.LinkedHashMap[String, Boolean]]
+      envelopes.foreach { p =>
+        val text  = new String(Files.readAllBytes(p), StandardCharsets.UTF_8)
+        val json  = parse(text).fold(e => fail(s"failed to parse $p: ${e.message}"), identity)
+        val tools = json.hcursor.downField("tools").focus.flatMap(_.asArray).getOrElse(Vector.empty)
+        assert(tools.nonEmpty, s"$p: envelope has no tools[]")
+        tools.foreach { t =>
+          val c        = t.hcursor
+          val toolName = c.get[String]("name").toOption.getOrElse(fail(s"$p: tool with no name"))
+          val segs     = toolName.split('.')
+          assert(segs.length >= 2, s"$p: tool name not fully-qualified: $toolName")
+          val svc    = segs(segs.length - 2)
+          val method = segs(segs.length - 1)
+          val wrap   = c.downField("outputSchema").get[Boolean]("x-idealingua-wrapped").toOption.getOrElse(false)
+          val m      = perService.getOrElseUpdate(svc, mutable.LinkedHashMap.empty)
+          assert(!m.contains(method), s"$p: duplicate tool for $svc.$method")
+          m(method) = wrap
+        }
       }
-
-      // Service name lives in `object <Name>McpRoutes` — strip the trailing
-      // `McpRoutes` to recover the bare service name.
-      //
-      // Use a manual depth-first walk via `Tree.children` rather than the
-      // scala.meta `Tree.collect`/`Tree.traverse` extension methods, which
-      // pre-4.16 are 2.13-only (the `transversers` package on Scala 3 is not
-      // wired through the same XtensionStringInterpolators path). Recursion
-      // depth across the corpus stays well below JVM stack limits.
-      def walk(t: Tree, visit: Tree => Unit): Unit = {
-        visit(t)
-        t.children.foreach(walk(_, visit))
-      }
-
-      var svcNameOpt: Option[String] = None
-      walk(
-        source,
-        {
-          case Defn.Object(_, name, _) if name.value.endsWith("McpRoutes") && svcNameOpt.isEmpty =>
-            svcNameOpt = Some(name.value.stripSuffix("McpRoutes"))
-          case _ => ()
-        },
-      )
-      val svcName = svcNameOpt.getOrElse(fail(s"$p: no McpRoutes object found"))
-
-      // Walk every `call(req, argsJson, methodId_<m>, wrap = <bool>, ...)`
-      // invocation. The generator's structure (see
-      // `DomainServiceMcpRenderer.renderMatchArm`) guarantees the literal
-      // `wrap = true|false` form, so we pattern-match it directly. The
-      // `methodId_<m>` prefix gates out the `call` private-method signature
-      // itself.
-      val pairs = mutable.ArrayBuffer.empty[(String, Boolean)]
-      walk(
-        source,
-        {
-          case Term.Apply.After_4_6_0(Term.Name("call"), Term.ArgClause(args, _)) =>
-            val methodNameOpt = args.collectFirst {
-              case Term.Name(n) if n.startsWith("methodId_") => n.stripPrefix("methodId_")
-            }
-            val wrapValueOpt = args.collectFirst {
-              case Term.Assign(Term.Name("wrap"), Lit.Boolean(b)) => b
-            }
-            (methodNameOpt, wrapValueOpt) match {
-              case (Some(m), Some(w)) => pairs += ((m, w))
-              case _                  => ()
-            }
-          case _ => ()
-        },
-      )
-      assert(pairs.nonEmpty, s"$p: no `call(..., methodId_<m>, wrap = <bool>, ...)` invocations found")
-      // No duplicate method arms per service.
-      val grouped = pairs.groupBy(_._1)
-      grouped.foreach { case (m, ms) =>
-        assert(ms.size == 1, s"$p: method $m has ${ms.size} match arms (expected 1)")
-      }
-      svcName -> pairs.iterator.toMap
-    }.toMap
+      perService.iterator.map { case (k, v) => k -> v.toMap }.toMap
+    }
 
     // Computed: walk every compiled service in the corpus, apply
     // `OutputWrapPolicy.isWrapped` per method.
@@ -141,8 +89,8 @@ final class McpBridgeConsistencySpec extends AnyFunSuite {
           case s: TypeDef.Service =>
             val rpcs = s.methods.collect { case rpc: DefMethod.RPCMethod => rpc }
             val map  = rpcs.map(m => m.name -> OutputWrapPolicy.isWrapped(m.signature.output)).toMap
-            // The corpus has no duplicate service names across domains, but
-            // be defensive — last write would silently mask drift.
+            // The corpus has no duplicate service names across domains, but be
+            // defensive — last write would silently mask drift.
             assert(!perService.contains(s.id.name), s"duplicate service name across domains: ${s.id.name}")
             perService(s.id.name) = map
           case _ => ()
@@ -157,11 +105,11 @@ final class McpBridgeConsistencySpec extends AnyFunSuite {
     val computedSvcs = computedFlags.keySet
     assert(
       parsedSvcs.subsetOf(computedSvcs),
-      s"generated sources reference services not in the compiled corpus: ${parsedSvcs &~ computedSvcs}",
+      s"generated envelopes reference services not in the compiled corpus: ${parsedSvcs &~ computedSvcs}",
     )
     assert(
       computedSvcs.subsetOf(parsedSvcs),
-      s"corpus has services with no generated bridge source: ${computedSvcs &~ parsedSvcs}",
+      s"corpus has services with no generated bridge envelope: ${computedSvcs &~ parsedSvcs}",
     )
 
     // Pair-wise compare. Collect ALL divergences then report — surfacing the
@@ -170,17 +118,16 @@ final class McpBridgeConsistencySpec extends AnyFunSuite {
     var pairCount   = 0
     parsedFlags.foreach { case (svc, parsedMethods) =>
       val computedMethods = computedFlags(svc)
-      val allMethods      = parsedMethods.keySet ++ computedMethods.keySet
-      allMethods.foreach { m =>
+      (parsedMethods.keySet ++ computedMethods.keySet).foreach { m =>
         pairCount += 1
         (parsedMethods.get(m), computedMethods.get(m)) match {
           case (Some(p), Some(c)) if p == c => ()
           case (Some(p), Some(c)) =>
             divergences += s"$svc.$m: generated wrap=$p, computed wrap=$c"
           case (Some(_), None) =>
-            divergences += s"$svc.$m: present in generated source, missing from corpus method list"
+            divergences += s"$svc.$m: present in generated envelope, missing from corpus method list"
           case (None, Some(_)) =>
-            divergences += s"$svc.$m: present in corpus, missing match arm in generated source"
+            divergences += s"$svc.$m: present in corpus, missing from generated envelope"
           case (None, None) => ()
         }
       }
@@ -188,6 +135,6 @@ final class McpBridgeConsistencySpec extends AnyFunSuite {
 
     assert(divergences.isEmpty, s"wrap-flag drift:\n${divergences.mkString("\n")}")
     // Loud success signal so a future zero-method corpus regression is visible.
-    info(s"Mb4-B: validated $pairCount (service, method) pairs across ${parsedFlags.size} services")
+    info(s"validated $pairCount (service, method) pairs across ${parsedFlags.size} services")
   }
 }

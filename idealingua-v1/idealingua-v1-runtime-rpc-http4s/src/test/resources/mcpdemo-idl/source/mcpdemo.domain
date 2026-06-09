@@ -99,3 +99,11 @@ service Shapes {
     // OUTPUT: Alternative (Void success !! Singular failure).
     def noteValue(v: i32) => () !! ServiceError
 }
+
+// ---------- Small arithmetic service for the multi-service fixture ----------
+
+service Calc {
+    def add(a: i64, b: i64) => i64
+    def sub(a: i64, b: i64) => i64
+    def mul(a: i64, b: i64) => i64
+}

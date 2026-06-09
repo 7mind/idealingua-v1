@@ -129,6 +129,17 @@ final class DomainServiceRenderer(ctx: DomainSTContext) {
          |  }
          |}""".stripMargin
 
+    // MCP discovery: when the build emits the per-service `<Svc>Mcp` pointer
+    // object (same gate as `DomainScalaTranslator.emitService`), the
+    // `*WrappedServer` overrides `IRTWrappedService.mcpResource` to point at
+    // `<Svc>Mcp.resource`. The reference resolves because the Mcp object is
+    // emitted in the same package under the SAME condition. When the flag is
+    // off, no override is emitted and the trait's default `None` applies.
+    val mcpResourceOverride: TextTree[ScalaRefHandle] =
+      if (ctx.options.manifest.emitMcpBridge && c.emitsMcpBridge)
+        q"""override def mcpResource: Option[McpServiceResource] = Some(${c.typeName}Mcp.resource)"""
+      else q""""""
+
     val serverWrappedTree: TextTree[ScalaRefHandle] =
       q"""class $svcWrappedServer[$ft[+_, +_]: IRTIO2, $ctxP](_service: $svcServer[$ft, $ctxT]) extends IRTWrappedService[$ft, $ctxT] {
          |  final val _F: IRTIO2[$ft] = implicitly
@@ -136,6 +147,7 @@ final class DomainServiceRenderer(ctx: DomainSTContext) {
          |  val allMethods: Map[$irtMethodIdName, IRTMethodWrapper[$ft, $ctxT]] = {
          |    Seq[IRTMethodWrapper[$ft, $ctxT]]($methodRegs).map(m => m.signature.id -> m).toMap
          |  }
+         |  $mcpResourceOverride
          |  ${serverWrappedDecls.joinN().shift(2).trim}
          |}""".stripMargin
 

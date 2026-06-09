@@ -4,7 +4,7 @@ import scala.io.Source
 
 import io.circe.{Json, parser}
 import izumi.functional.bio.Exit
-import izumi.idealingua.runtime.rpc.{IRTOutputMiddleware, IRTServerMultiplexor}
+import izumi.idealingua.runtime.rpc.{IRTMethodId, IRTMethodName, IRTOutputMiddleware, IRTServerMultiplexor, IRTServiceId}
 import izumi.idealingua.runtime.rpc.http4s.{Http4sTransportTest, McpJsonRpcRoutes}
 import org.http4s.{HttpRoutes, Request}
 import org.http4s.blaze.server.BlazeServerBuilder
@@ -55,9 +55,31 @@ object McpDemoMain {
       try parser.parse(Source.fromInputStream(s, "UTF-8").mkString).toTry.get finally s.close()
     }
 
+    // Hand-assembled dispatch map (FQ tool name → (methodId, wrap)) wiring the
+    // single Shapes service inline; `McpServiceAssembler` derives this from
+    // `McpServiceMeta` deltas for the multi-service case.
+    def mid(name: String): IRTMethodId = IRTMethodId(IRTServiceId("Shapes"), IRTMethodName(name))
+    val dispatch: Map[String, (IRTMethodId, Boolean)] = Map(
+      "mcpdemo.Shapes.ping"        -> (mid("ping"),        false),
+      "mcpdemo.Shapes.upper"       -> (mid("upper"),       true),
+      "mcpdemo.Shapes.add"         -> (mid("add"),         true),
+      "mcpdemo.Shapes.echo"        -> (mid("echo"),        true),
+      "mcpdemo.Shapes.divmod"      -> (mid("divmod"),      false),
+      "mcpdemo.Shapes.reverse"     -> (mid("reverse"),     true),
+      "mcpdemo.Shapes.invertMap"   -> (mid("invertMap"),   true),
+      "mcpdemo.Shapes.maybeUpper"  -> (mid("maybeUpper"),  true),
+      "mcpdemo.Shapes.nextColor"   -> (mid("nextColor"),   true),
+      "mcpdemo.Shapes.makeProfile" -> (mid("makeProfile"), true),
+      "mcpdemo.Shapes.pay"         -> (mid("pay"),         true),
+      "mcpdemo.Shapes.divideSafe"  -> (mid("divideSafe"),  true),
+      "mcpdemo.Shapes.noteValue"   -> (mid("noteValue"),   true),
+    )
+
     val jsonRpc = new McpJsonRpcRoutes[BIO, Unit](
-      innerRoutes      = restRoutes,
+      mux              = mux,
       toolsListJson    = toolsListJson,
+      dispatch         = dispatch,
+      extractCtx       = extractUnit,
       serverName       = "mcpdemo-shapes",
       serverVersion    = "0.1.0",
       protocolVersion  = McpJsonRpcRoutes.DefaultProtocolVersion,
