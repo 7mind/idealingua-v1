@@ -1775,10 +1775,13 @@ lazy val `idealingua-v1` = (project in file("."))
       val rootDir = (ThisBuild / baseDirectory).value
       val lockfileOutput = rootDir / "deps.lock.json"
       val refreshCommand = Process(
-        Seq("nix", "develop", "--command", "mdl", ":flake-refresh"),
+        Seq("nix", "develop", "--command", "mdl", "--verbose", ":flake-refresh"),
         rootDir
       )
-      val result = refreshCommand.!(log)
+      // mdl/nix stream progress on stderr; route both streams to info so it
+      // surfaces live in the sbt console instead of as alarming [error] lines.
+      val refreshLogger = ProcessLogger(line => log.info(line), line => log.info(line))
+      val result = refreshCommand.!(refreshLogger)
       if (result != 0) {
         throw new MessageOnlyException(s"flake.nix update failed: mdl exited with $result")
       }

@@ -87,7 +87,7 @@ Refresh flake inputs and regenerate the coursier lock with squish-find-the-brain
 source ./.mdl/lib/env.sh
 prepare_build_env "${args.scala-version}"
 
-nix flake update
+nix flake update --log-format bar-with-logs -v
 squish-lockfile lockfile-config.json > deps.lock.json
 git add flake.nix flake.lock deps.lock.json || true
 bash sbtgen.sc --js # restore cross-build state of repository for scala-steward

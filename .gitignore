@@ -128,3 +128,4 @@ node_modules/
 # C# / .NET build artifacts
 **/bin/
 **/obj/
+.codegraph/
