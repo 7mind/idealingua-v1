@@ -5,8 +5,11 @@ import scala.annotation.nowarn
 import io.circe.Json
 import izumi.idealingua.runtime.rpc.{
   IRTMethodId,
+  IRTMethodName,
   IRTOutputMiddleware,
+  IRTServerMethod,
   IRTServerMultiplexor,
+  IRTServiceId,
   McpServiceMeta,
   McpToolMeta,
 }
@@ -275,6 +278,48 @@ final class McpServiceAssemblerSpec extends AnyWordSpec {
       intercept[McpToolNameCollisionException] {
         McpServiceAssembler.assembleOverMux(Seq(greeterMeta, collidingMeta), handBuiltMux)
       }
+    }
+
+    "resolve a RAW keyword tool name to its BACKTICK-escaped IRTMethodId key" in {
+      // When an IDL method name is a Scala keyword (e.g. `export`), codegen stores
+      // it backtick-escaped in IRTMethodName.value, so IRTMethodId.toString renders
+      // `Svc.`export``, while the MCP tool name carries the raw `Svc.export`.
+      // The assembler must match across that gap and return the backticked key
+      // unchanged so mux.invokeMethod hits the correct registry entry.
+      val keywordMethodId: IRTMethodId =
+        IRTMethodId(IRTServiceId("Svc"), IRTMethodName("`export`"))
+
+      val keywordMethod: IRTServerMethod[BIO, Unit] = new IRTServerMethod[BIO, Unit] {
+        override def methodId: IRTMethodId = keywordMethodId
+        override def invoke(context: Unit, parsedBody: Json): BIO[Throwable, Json] =
+          izumi.functional.bio.F.pure(Json.obj())
+      }
+
+      val keywordMux: IRTServerMultiplexor[BIO, Unit] =
+        new IRTServerMultiplexor.FromMethods[BIO, Unit](Map(keywordMethodId -> keywordMethod))
+
+      val keywordMeta: McpServiceMeta = McpServiceMeta(
+        serviceId = "Svc",
+        tools = List(
+          McpToolMeta(
+            toolName    = "com.example.apps.Svc.export",
+            description = "Export via a keyword-named method",
+            inputSchema  = Json.obj(),
+            outputSchema = Json.obj(),
+            wireInput   = "export.Input",
+            wireOutput  = "export.Output",
+            kind        = "Singular",
+            wrap        = true,
+          ),
+        ),
+      )
+
+      val over = McpServiceAssembler.assembleOverMux(Seq(keywordMeta), keywordMux)
+      val entry = over.dispatch.get("com.example.apps.Svc.export")
+      assert(entry.isDefined, "keyword tool not in dispatch map")
+      // The RETURNED key is the original backticked id, served by the supplied mux.
+      assert(entry.get._1 == keywordMethodId)
+      assert(keywordMux.methods.contains(entry.get._1))
     }
 
     "throw McpToolResolutionException when a tool name is absent from the supplied mux" in {

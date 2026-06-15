@@ -129,3 +129,4 @@ node_modules/
 **/bin/
 **/obj/
 .codegraph/
+.cq/

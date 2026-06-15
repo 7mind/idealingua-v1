@@ -111,12 +111,24 @@ object McpServiceAssembler {
     * [[IRTMethodId.toString]] == `"<Svc>.<method>"` (the last two dot-segments).
     * We match on that suffix.
     *
+    * Keyword-escaping: when an IDL method name is a Scala keyword (`export`,
+    * `type`, `match`, …) the codegen stores it in `IRTMethodName.value`
+    * backtick-escaped, so `IRTMethodId.toString` renders it as e.g.
+    * `` Svc.`export` `` while the MCP tool name carries the raw `Svc.export`.
+    * We therefore strip backticks from both sides before comparing. Real IDL
+    * method names never contain literal backticks (they appear only from this
+    * escaping), and intra-service names stay unique after stripping, so the
+    * normalization is unambiguous. The matched key is returned UNCHANGED (still
+    * backticked) so `mux.invokeMethod` uses the correct registry key.
+    *
     * @throws McpToolResolutionException if no method key matches the suffix
     */
   private def resolveMethodId(toolName: String, allMethodKeys: Set[IRTMethodId]): IRTMethodId = {
     val parts  = toolName.split('.')
     val suffix = parts.takeRight(2).mkString(".")
-    allMethodKeys.find(_.toString == suffix) match {
+    def unquote(s: String): String = s.replace("`", "")
+    val target = unquote(suffix)
+    allMethodKeys.find(k => unquote(k.toString) == target) match {
       case Some(id) => id
       case None =>
         throw new McpToolResolutionException(toolName, suffix, allMethodKeys.map(_.toString))
