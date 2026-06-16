@@ -222,28 +222,40 @@ function assert_mcp_schemas_valid() {
   local tmp
   tmp="$(mktemp -d)"
   local n=0
+  local mcp service header schema idx rest name kind seq
+  # One jq pass per file extracts every object-typed tool schema to its own
+  # file, then a single check-jsonschema run validates them all. Validation is
+  # trivially cheap per schema; the cost is interpreter startup, so spawning
+  # once over many files beats once per schema by orders of magnitude. -cr
+  # emits the header string raw (real tabs) while keeping each schema object on
+  # a single compact line.
   while IFS= read -r -d '' mcp; do
-    local count
-    count="$(jq '.tools | length' "$mcp")"
-    local i kind
-    for ((i = 0; i < count; i++)); do
-      for kind in inputSchema outputSchema; do
-        if jq -e ".tools[$i].$kind | type == \"object\"" "$mcp" >/dev/null; then
-          jq ".tools[$i].$kind" "$mcp" >"$tmp/schema.json"
-          if ! check-jsonschema --check-metaschema "$tmp/schema.json" >"$tmp/out" 2>&1; then
-            echo "FAIL: invalid $kind in $(basename "$mcp") tool #$i ($(jq -r ".tools[$i].name" "$mcp")):"
-            cat "$tmp/out"
-            exit 1
-          fi
-          n=$((n + 1))
-        fi
-      done
-    done
+    service="$(basename "$mcp" .mcp.json)"
+    while IFS= read -r header && IFS= read -r schema; do
+      idx="${header%%$'\t'*}"; rest="${header#*$'\t'}"
+      name="${rest%%$'\t'*}"; kind="${rest##*$'\t'}"
+      printf -v seq '%05d' "$n"
+      printf '%s\n' "$schema" >"$tmp/${seq}_${service}.${name}.${kind}.json"
+      n=$((n + 1))
+    done < <(jq -cr '
+      (.tools // []) | to_entries[]
+      | .key as $i | .value as $t
+      | ($t.name // ("tool_" + ($i|tostring))) as $nm
+      | ( {kind:"inputSchema", s:$t.inputSchema}, {kind:"outputSchema", s:$t.outputSchema} )
+      | select(.s != null and (.s|type == "object"))
+      | "\($i)\t\($nm)\t\(.kind)", (.s)
+    ' "$mcp")
   done < <(find "$scaladir" -name '*.mcp.json' -print0)
   [[ "$n" -gt 0 ]] || {
     echo "FAIL: no MCP tool schemas found under $scaladir"
     exit 1
   }
+  # xargs -0 packs paths up to the OS argv limit and splits into additional
+  # invocations only when needed, so this stays correct at any corpus size.
+  if ! find "$tmp" -name '*.json' -print0 | xargs -0 -r check-jsonschema --check-metaschema; then
+    echo "FAIL: MCP schema validation failed (offending file named above as <seq>_<service>.<tool>.<kind>.json)"
+    exit 1
+  fi
   echo "OK: $n MCP tool schemas valid (draft 2020-12 metaschema)"
 }
 
