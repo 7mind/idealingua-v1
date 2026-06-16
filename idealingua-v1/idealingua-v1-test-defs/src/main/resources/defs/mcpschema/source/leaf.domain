@@ -1,0 +1,9 @@
+domain mcpschema.leaf
+
+mixin Widget {
+  id: str
+}
+
+data Container {
+  widgets: list[mcpschema.leaf#Widget]
+}

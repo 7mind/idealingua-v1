@@ -2,7 +2,7 @@ package izumi.idealingua.translator.toschema.domain
 
 import io.circe.Json
 import izumi.idealingua.model.common.TypeId.{DTOId, InterfaceId}
-import izumi.idealingua.typer.ir.{Domain, TypeDef}
+import izumi.idealingua.typer.ir.{Domain, FlatField, TypeDef}
 
 /** Emits an Interface JSON Schema as a `oneOf` of single-key wrapper
   * objects keyed by the **full wireId** of each implementing DTO.
@@ -23,11 +23,15 @@ import izumi.idealingua.typer.ir.{Domain, TypeDef}
   * matching the legacy `DomainCirceTranslatorExtensionBase.emitForInterface`
   * ordering.
   */
-final class SchemaInterfaceRenderer(domain: Domain) {
+final class SchemaInterfaceRenderer(domain: Domain, dtoRenderer: SchemaDtoRenderer) {
+
+  private val InterfaceMirrorSuffix = "Struct"
 
   def render(ifc: TypeDef.Interface): Json = {
     val implementors = collectImplementors(ifc.id)
-    val branches     = implementors.map(branchSchema)
+    val branches     =
+      if (implementors.nonEmpty) implementors.map(branchSchema)
+      else List(mirrorBranch(ifc))
 
     val base = scala.collection.mutable.LinkedHashMap.empty[String, Json]
     base += "title"             -> Json.fromString(ifc.id.wireId)
@@ -36,6 +40,20 @@ final class SchemaInterfaceRenderer(domain: Domain) {
     base += "x-idealingua-kind" -> Json.fromString("interface")
 
     Json.fromFields(base.toList)
+  }
+
+  // A foreign interface has no implementors in this domain's `parents`, so it
+  // resolves to its own mirror struct instead of a `oneOf` of implementor wrappers.
+  private def mirrorBranch(ifc: TypeDef.Interface): Json = {
+    val mirror     = DTOId(ifc.id, InterfaceMirrorSuffix)
+    val flatFields = domain.findFlatStruct(ifc.id).map(_.fields)
+      .getOrElse(ifc.struct.fields.map(FlatField(_, ifc.id, 0)))
+    Json.obj(
+      "type"                 -> Json.fromString("object"),
+      "properties"           -> Json.obj(mirror.wireId -> dtoRenderer.renderFromFlat(mirror, flatFields, None)),
+      "required"             -> Json.arr(Json.fromString(mirror.wireId)),
+      "additionalProperties" -> Json.False,
+    )
   }
 
   private def branchSchema(impl: DTOId): Json = {

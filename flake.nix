@@ -90,6 +90,7 @@
             protobuf
 
             nodejs_24
+            check-jsonschema
             typescript
             yarn
 

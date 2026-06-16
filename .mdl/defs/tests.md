@@ -40,6 +40,26 @@ shellspec --format documentation --jobs "${NUMCPU}" -o junit --reportdir ./targe
 ret success:bool=true
 ```
 
+# action: test-scala-mcp-schema
+
+MCP tool schema validity: generate the MCP bridge for a corpus whose service
+takes a cross-domain interface parameter and assert every emitted tool schema is
+valid against the JSON Schema draft 2020-12 metaschema (catches an unresolved
+interface rendered as an empty `oneOf`).
+
+```bash
+dep action.gen
+
+source ./.mdl/lib/env.sh
+prepare_build_env "${args.scala-version}"
+ensure_numcpu
+
+mkdir -p ./target/spec-reports/scala-mcp-schema
+shellspec --format documentation --jobs "${NUMCPU}" -o junit --reportdir ./target/spec-reports/scala-mcp-schema ./.mdl/spec/mcp_schema_spec.sh
+
+ret success:bool=true
+```
+
 # action: test-ts
 
 TypeScript transpiler integration tests for Yarn and plain layouts.
@@ -146,6 +166,7 @@ Run the full integration test suite.
 ```bash
 dep action.test-scala
 dep action.test-scala-mcp
+dep action.test-scala-mcp-schema
 dep action.test-ts
 dep action.test-cs
 

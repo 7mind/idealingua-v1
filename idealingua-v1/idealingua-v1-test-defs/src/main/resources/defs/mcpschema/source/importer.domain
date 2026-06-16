@@ -1,0 +1,10 @@
+domain mcpschema.importer
+
+import mcpschema.leaf
+
+// `Widget` is reachable only transitively (via `Container`), so its flattened
+// struct is not registered in this domain — the renderer must fall back to the
+// interface's declared fields. This is the case that previously emitted an empty `oneOf`.
+service WidgetService {
+  def fetch(): mcpschema.leaf#Container
+}

@@ -211,3 +211,52 @@ function test_cs_plain_prj() {
   popd
   echo "IDL TEST DONE: $1"
 }
+
+# Validate every emitted MCP tool input/output schema against the JSON Schema
+# draft 2020-12 metaschema. Each tool schema is self-contained (embeds its
+# `$defs`), so an unresolved interface surfaces as an empty `oneOf`, which the
+# metaschema rejects.
+function assert_mcp_schemas_valid() {
+  set -euo pipefail
+  local scaladir="$1"
+  local tmp
+  tmp="$(mktemp -d)"
+  local n=0
+  while IFS= read -r -d '' mcp; do
+    local count
+    count="$(jq '.tools | length' "$mcp")"
+    local i kind
+    for ((i = 0; i < count; i++)); do
+      for kind in inputSchema outputSchema; do
+        if jq -e ".tools[$i].$kind | type == \"object\"" "$mcp" >/dev/null; then
+          jq ".tools[$i].$kind" "$mcp" >"$tmp/schema.json"
+          if ! check-jsonschema --check-metaschema "$tmp/schema.json" >"$tmp/out" 2>&1; then
+            echo "FAIL: invalid $kind in $(basename "$mcp") tool #$i ($(jq -r ".tools[$i].name" "$mcp")):"
+            cat "$tmp/out"
+            exit 1
+          fi
+          n=$((n + 1))
+        fi
+      done
+    done
+  done < <(find "$scaladir" -name '*.mcp.json' -print0)
+  [[ "$n" -gt 0 ]] || {
+    echo "FAIL: no MCP tool schemas found under $scaladir"
+    exit 1
+  }
+  echo "OK: $n MCP tool schemas valid (draft 2020-12 metaschema)"
+}
+
+# Generate the MCP bridge output for a domain and metaschema-validate every
+# emitted tool schema.
+function test_scala_mcp_schema_valid() {
+  set -euo pipefail
+  echo "IDL MCP SCHEMA VALIDATION ABOUT TO START: $1"
+  testname="$(basename "$1")"
+  tmpdir="$(mktemp -d -t "$testname".mcp-schema.XXXXXXXX)"
+
+  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=SBT -d sbt.scalaVersions=$SCALA_VERSION -d sbt.enableScalaJs=false -d emitMcpBridge=true"
+
+  assert_mcp_schemas_valid "$tmpdir/scala"
+  echo "IDL MCP SCHEMA VALIDATION DONE: $1"
+}

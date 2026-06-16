@@ -32,7 +32,7 @@ final class DomainServiceMcpRenderer(domain: Domain) {
   private val enumRenderer   = new SchemaEnumRenderer
   private val idRenderer     = new SchemaIdentifierRenderer(schemaResolver)
   private val adtRenderer    = new SchemaAdtRenderer
-  private val ifcRenderer    = new SchemaInterfaceRenderer(domain)
+  private val ifcRenderer    = new SchemaInterfaceRenderer(domain, dtoRenderer)
   private val jsonPrinter    = Printer.spaces2.copy(dropNullValues = false)
 
   // Resolver emits `#/components/schemas/<wireId>` (the OpenAPI convention
