@@ -22,7 +22,7 @@ final class SchemaTypeResolver(domain: Domain) {
     * reference).
     */
   def schemaFor(id: TypeId): Json = id match {
-    case p: Primitive => primitiveSchema(p)
+    case p: Primitive => SchemaTypeResolver.primitiveSchema(p)
     case g: Generic   => genericSchema(g)
     case a: AliasId   => schemaFor(dealias(a))
     case _            => refToComponent(id)
@@ -48,7 +48,68 @@ final class SchemaTypeResolver(domain: Domain) {
     cur
   }
 
-  private def primitiveSchema(p: Primitive): Json = p match {
+  private def genericSchema(g: Generic): Json = g match {
+    case Generic.TList(v) =>
+      Json.obj(
+        "type"  -> Json.fromString("array"),
+        "items" -> schemaFor(v),
+      )
+
+    case Generic.TSet(v) =>
+      Json.obj(
+        "type"                      -> Json.fromString("array"),
+        "items"                     -> schemaFor(v),
+        "uniqueItems"               -> Json.True,
+        "x-idealingua-iteration"    -> Json.fromString("insertion"),
+      )
+
+    // D20: TOption -> oneOf [T, null]; nullability also excludes the field
+    // from the surrounding object's `required` list (SchemaDtoRenderer).
+    case Generic.TOption(v) =>
+      Json.obj(
+        "oneOf" -> Json.arr(
+          schemaFor(v),
+          Json.obj("type" -> Json.fromString("null")),
+        )
+      )
+
+    case Generic.TMap(k, v) =>
+      val base = Json.obj(
+        "type"                 -> Json.fromString("object"),
+        "additionalProperties" -> schemaFor(v),
+      )
+      // String keys are the natural OpenAPI default; advisory annotation
+      // for any non-TString key (TUUID, integer-keyed maps, enum keys).
+      k match {
+        case Primitive.TString => base
+        case other             =>
+          base.deepMerge(
+            Json.obj("x-idealingua-key-type" -> Json.fromString(other.wireId))
+          )
+      }
+  }
+
+  /** Whether the *outermost* type of a field is `TOption[_]`. Used by the
+    * DTO renderer to drop the field from `required`.
+    */
+  def isOptional(id: TypeId): Boolean = id match {
+    case _: Generic.TOption => true
+    case a: AliasId         => isOptional(dealias(a))
+    case _                  => false
+  }
+}
+
+object SchemaTypeResolver {
+
+  // IEEE-754 double safe-integer ceiling (2^53 - 1); 64-bit integer bounds clamp to this range.
+  final val MaxSafeInteger: Long = 9007199254740991L
+
+  /** Schema fragment for a single primitive width. Pure — depends only on the
+    * `Primitive`, never on domain state — so the bound-clamping invariant
+    * (`SchemaIntegerBoundsSpec`) can be exercised exhaustively over every
+    * `Primitive` without materialising a `Domain`.
+    */
+  private[toschema] def primitiveSchema(p: Primitive): Json = p match {
     case TBool   => Json.obj("type" -> Json.fromString("boolean"))
     case TString => Json.obj("type" -> Json.fromString("string"))
 
@@ -58,8 +119,22 @@ final class SchemaTypeResolver(domain: Domain) {
       intBounded(Long.box(-32768L), Long.box(32767L))
     case TInt32 =>
       intBounded(Long.box(-2147483648L), Long.box(2147483647L))
+    // Hybrid integer-or-string (mirrors TUInt64): integer branch clamped to the
+    // safe range, string branch carries the full signed-64 range.
     case TInt64 =>
-      intBounded(Long.box(Long.MinValue), Long.box(Long.MaxValue))
+      Json.obj(
+        "oneOf" -> Json.arr(
+          Json.obj(
+            "type"    -> Json.fromString("integer"),
+            "minimum" -> Json.fromLong(-MaxSafeInteger),
+            "maximum" -> Json.fromLong(MaxSafeInteger),
+          ),
+          Json.obj(
+            "type"    -> Json.fromString("string"),
+            "pattern" -> Json.fromString("^-?[0-9]{1,19}$"),
+          ),
+        )
+      )
 
     case TUInt8 =>
       intBounded(Long.box(0L), Long.box(255L))
@@ -75,7 +150,7 @@ final class SchemaTypeResolver(domain: Domain) {
           Json.obj(
             "type"    -> Json.fromString("integer"),
             "minimum" -> Json.fromLong(0L),
-            "maximum" -> Json.fromLong(9007199254740991L),
+            "maximum" -> Json.fromLong(MaxSafeInteger),
           ),
           Json.obj(
             "type"    -> Json.fromString("string"),
@@ -137,54 +212,4 @@ final class SchemaTypeResolver(domain: Domain) {
       "minimum" -> Json.fromLong(min),
       "maximum" -> Json.fromLong(max),
     )
-
-  private def genericSchema(g: Generic): Json = g match {
-    case Generic.TList(v) =>
-      Json.obj(
-        "type"  -> Json.fromString("array"),
-        "items" -> schemaFor(v),
-      )
-
-    case Generic.TSet(v) =>
-      Json.obj(
-        "type"                      -> Json.fromString("array"),
-        "items"                     -> schemaFor(v),
-        "uniqueItems"               -> Json.True,
-        "x-idealingua-iteration"    -> Json.fromString("insertion"),
-      )
-
-    // D20: TOption -> oneOf [T, null]; nullability also excludes the field
-    // from the surrounding object's `required` list (SchemaDtoRenderer).
-    case Generic.TOption(v) =>
-      Json.obj(
-        "oneOf" -> Json.arr(
-          schemaFor(v),
-          Json.obj("type" -> Json.fromString("null")),
-        )
-      )
-
-    case Generic.TMap(k, v) =>
-      val base = Json.obj(
-        "type"                 -> Json.fromString("object"),
-        "additionalProperties" -> schemaFor(v),
-      )
-      // String keys are the natural OpenAPI default; advisory annotation
-      // for any non-TString key (TUUID, integer-keyed maps, enum keys).
-      k match {
-        case Primitive.TString => base
-        case other             =>
-          base.deepMerge(
-            Json.obj("x-idealingua-key-type" -> Json.fromString(other.wireId))
-          )
-      }
-  }
-
-  /** Whether the *outermost* type of a field is `TOption[_]`. Used by the
-    * DTO renderer to drop the field from `required`.
-    */
-  def isOptional(id: TypeId): Boolean = id match {
-    case _: Generic.TOption => true
-    case a: AliasId         => isOptional(dealias(a))
-    case _                  => false
-  }
 }

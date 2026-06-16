@@ -79,9 +79,12 @@ final class SchemaFixtureValidationSpec extends AnyFunSuite {
   // between the Scala-leg wire-format and the canonical JSON Schema:
   //
   //   * `F-M5-1` TUInt-Scala-wrap: Scala emits negative two's-complement integers for
-  //     TUInt8/16/32 (and integer-out-of-safe-range for TUInt64). The canonical
-  //     schema declares the proper unsigned bounds. Wire-fixture pointers carry
-  //     the Scala-leg byte form (e.g. `uint8: -56`) which fails bound checks.
+  //     TUInt8/16/32 (and integer-out-of-safe-range for the 64-bit widths TUInt64
+  //     and TInt64). The canonical schema declares the proper bounds — and, for the
+  //     64-bit widths, a hybrid integer-or-string `oneOf` whose integer branch is
+  //     clamped to the IEEE-754 safe-integer range (±(2^53-1)). Wire-fixture pointers
+  //     carry the Scala-leg byte form (e.g. `uint8: -56`, `int64: -9007199254740993`)
+  //     which fails the bound / `oneOf` checks.
   //
   //   * `Output.Singular`-ephemeral wrap (formerly F-M5-2, RESOLVED in M5.5 via
   //     annotation split): the `<Method>Output` ephemeral DTO wraps the singular
@@ -100,13 +103,16 @@ final class SchemaFixtureValidationSpec extends AnyFunSuite {
   }
 
   private def classifyKnownDivergence(wireId: String, msg: String): Option[DivergenceKind] = {
-    val uintWrap =
-      (msg.contains("/uint8") || msg.contains("/uint16") || msg.contains("/uint32") || msg.contains("/uint64")) &&
+    // The 64-bit widths (TUInt64 + TInt64) emit a raw out-of-safe-range integer on
+    // the Scala leg against a clamped integer-or-string `oneOf`; the narrower unsigned
+    // widths emit a negative two's-complement integer against an unsigned bound.
+    val numericRangeWrap =
+      (msg.contains("/uint8") || msg.contains("/uint16") || msg.contains("/uint32") || msg.contains("/uint64") || msg.contains("/int64")) &&
         (msg.contains("must have a minimum value") || msg.contains("must have a maximum value")
           || msg.contains("integer found, string expected") || msg.contains("must be valid to one and only one schema"))
     val wireTypeSingularWrap =
       wireId.endsWith("Output") && msg.contains("string found, object expected")
-    if (uintWrap) Some(DivergenceKind.FM51_UIntScalaWrap)
+    if (numericRangeWrap) Some(DivergenceKind.FM51_UIntScalaWrap)
     else if (wireTypeSingularWrap) Some(DivergenceKind.M55_WireTypeSingularWrap)
     else None
   }
@@ -171,7 +177,7 @@ final class SchemaFixtureValidationSpec extends AnyFunSuite {
       unmatched.foreach { case (p, w) => report.append(s"  - $w  (file: ${repoRoot.relativize(p)})\n") }
     }
     if (fm51Bucket.nonEmpty) {
-      report.append("\nF-M5-1 KNOWN DIVERGENCE (TUInt-Scala-wrap; informational):\n")
+      report.append("\nF-M5-1 KNOWN DIVERGENCE (TUInt/TInt64-Scala-wrap; informational):\n")
       fm51Bucket.foreach {
         case (p, w, msg) =>
           report.append(s"  - $w  (file: ${repoRoot.relativize(p)}): $msg\n")
