@@ -14,6 +14,12 @@
 #   (2) enableScalaJs=true  — cross JVM+JS; `sbt <id>JVM/compile` and
 #       `sbt <id>JS/compile` both exit 0 (platform-neutral; the JS side needs no
 #       http4s/cats.effect and does NOT compile the JVM-only interpreter).
+#
+# A third example validates the emitted tool schemas against the JSON Schema
+# draft 2020-12 metaschema over a corpus whose service takes a cross-domain
+# interface parameter (the case that previously emitted an empty `oneOf`). All
+# examples share one sbt server, so keep them in a single spec/action: running
+# the schema check as a separate concurrent mdl action contends on that server.
 
 Describe 'Scala MCP bridge (emitMcpBridge=true)'
   Include ./.mdl/lib/builders.sh
@@ -31,6 +37,10 @@ Describe 'Scala MCP bridge (emitMcpBridge=true)'
   # data object is actually emitted under emitMcpBridge=true).
   domain="./idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs/main-tests"
 
+  # mcpschema: a minimal corpus whose service takes a cross-domain interface
+  # parameter — the case that previously rendered an empty `oneOf`.
+  schema_domain="./idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs/mcpschema"
+
   It "compiles emitted MCP DATA in JVM-only mode (enableScalaJs=false)"
     When run test_scala_mcp_jvm_prj "$domain"
     The status should be success
@@ -40,6 +50,13 @@ Describe 'Scala MCP bridge (emitMcpBridge=true)'
 
   It "compiles emitted MCP DATA for both JVM and JS targets (enableScalaJs=true)"
     When run test_scala_mcp_cross_prj "$domain"
+    The status should be success
+    The output should match pattern '*'
+    The stderr should match pattern '*'
+  End
+
+  It "emits metaschema-valid tool schemas for a cross-domain interface parameter"
+    When run test_scala_mcp_schema_valid "$schema_domain"
     The status should be success
     The output should match pattern '*'
     The stderr should match pattern '*'

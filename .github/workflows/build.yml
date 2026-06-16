@@ -62,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [ ':test-scala', ':test-cs', ':test-ts' ]
+        test: [ ':test-scala', ':test-scala-mcp', ':test-cs', ':test-ts' ]
         scala: [ '2.13' ]
     steps:
       - uses: 7mind/github-env@minimal

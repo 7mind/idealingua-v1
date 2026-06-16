@@ -21,11 +21,16 @@ ret success:bool=true
 
 # action: test-scala-mcp
 
-MCP bridge compile-regression: for a domain with emitMcpBridge=true, assert the
-emitted platform-neutral `<Svc>Mcp` pointer object + `mcp/<Svc>.mcp.json` land in
-the SHARED sourceset and compile in BOTH manifest modes — JVM-only
-(enableScalaJs=false) and cross JVM+JS (enableScalaJs=true). Exactly two
-examples; there is no JS-only mode.
+MCP bridge regression. For a domain with emitMcpBridge=true, assert the emitted
+platform-neutral `<Svc>Mcp` pointer object + `mcp/<Svc>.mcp.json` land in the
+SHARED sourceset and compile in BOTH manifest modes — JVM-only
+(enableScalaJs=false) and cross JVM+JS (enableScalaJs=true). A third example
+validates the emitted tool schemas against the JSON Schema draft 2020-12
+metaschema over a corpus whose service takes a cross-domain interface parameter
+(catches an unresolved interface rendered as an empty `oneOf`).
+
+The three examples share a single sbt server, so they live in one spec/action;
+a separate concurrent action would contend on that server.
 
 ```bash
 dep action.gen
@@ -36,26 +41,6 @@ ensure_numcpu
 
 mkdir -p ./target/spec-reports/scala-mcp
 shellspec --format documentation --jobs "${NUMCPU}" -o junit --reportdir ./target/spec-reports/scala-mcp ./.mdl/spec/mcp_spec.sh
-
-ret success:bool=true
-```
-
-# action: test-scala-mcp-schema
-
-MCP tool schema validity: generate the MCP bridge for a corpus whose service
-takes a cross-domain interface parameter and assert every emitted tool schema is
-valid against the JSON Schema draft 2020-12 metaschema (catches an unresolved
-interface rendered as an empty `oneOf`).
-
-```bash
-dep action.gen
-
-source ./.mdl/lib/env.sh
-prepare_build_env "${args.scala-version}"
-ensure_numcpu
-
-mkdir -p ./target/spec-reports/scala-mcp-schema
-shellspec --format documentation --jobs "${NUMCPU}" -o junit --reportdir ./target/spec-reports/scala-mcp-schema ./.mdl/spec/mcp_schema_spec.sh
 
 ret success:bool=true
 ```
@@ -166,7 +151,6 @@ Run the full integration test suite.
 ```bash
 dep action.test-scala
 dep action.test-scala-mcp
-dep action.test-scala-mcp-schema
 dep action.test-ts
 dep action.test-cs
 
