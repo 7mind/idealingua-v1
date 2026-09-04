@@ -34,8 +34,8 @@ object Idealingua {
     val slf4j           = Version.VExpr("V.slf4j")
     val typesafe_config = Version.VExpr("V.typesafe_config")
 
-    val scala_java_time = Version.VExpr("V.scala_java_time")
-    val scodec_bits     = Version.VExpr("V.scodec_bits")
+    val scala_java_time       = Version.VExpr("V.scala_java_time")
+    val scodec_bits           = Version.VExpr("V.scodec_bits")
     val json_schema_validator = Version.VExpr("V.json_schema_validator")
   }
 
@@ -147,7 +147,7 @@ object Idealingua {
   import Deps._
 
   // DON'T REMOVE, these variables are read from CI build (build.sh)
-  final val scala213 = ScalaVersion("2.13.18")
+  final val scala213 = ScalaVersion("3.9.0")
   final val scala300 = ScalaVersion("3.8.3")
 
   object Groups {
@@ -384,7 +384,6 @@ object Idealingua {
     "fork" in (SettingScope.Test, Platform.Jvm) := true
   )
 
-
   final lazy val idealingua = Aggregate(
     name = Projects.idealingua.id,
     artifacts = Seq(
@@ -473,7 +472,7 @@ object Idealingua {
           Projects.idealingua.testDefs,
         ).map(_ in Scope.Compile.all),
         platforms = Targets.jvm3,
-        settings  = Seq(
+        settings = Seq(
           // R1a added `testcodegen.TestCodegenMain` alongside the public
           // `CommandlineIDLCompiler.main`. Without an explicit `mainClass`,
           // sbt-native-packager's staged launcher prompts `-main <class>`
@@ -482,22 +481,22 @@ object Idealingua {
           // positionally with `--root=…`). Pin the entry point to the
           // public compiler. (Was added to build.sbt directly in X2; moved
           // into sbtgen here so `mdl :gen` doesn't regress it.)
-          "mainClass" in SettingScope.Compile := """Some("izumi.idealingua.compiler.CommandlineIDLCompiler")""".raw,
+          "mainClass" in SettingScope.Compile := """Some("izumi.idealingua.compiler.CommandlineIDLCompiler")""".raw
         ),
         plugins = Plugins(
           Seq(Plugin("JavaAppPackaging"))
         ),
       ),
       Artifact(
-        name      = Projects.idealingua.testHarness,
-        libs      = Seq(Deps.json_schema_validator),
-        depends   = Seq(
+        name = Projects.idealingua.testHarness,
+        libs = Seq(Deps.json_schema_validator),
+        depends = Seq(
           Projects.idealingua.transpilers,
           Projects.idealingua.compiler,
           Projects.idealingua.testDefs,
         ).map(_ in Scope.Compile.all),
         platforms = Targets.jvm3,
-        settings  = Seq(
+        settings = Seq(
           // R1: test sources are generated at build time (under
           // `<harnessTarget>/generated-sources/test-harness/`) by the
           // `idealingua-v1-compiler` module's `TestCodegenMain` entrypoint.
@@ -513,32 +512,32 @@ object Idealingua {
           // `McpBridgeConsistencySpec` reads at test time. `scala-mcp-resources/`
           // is wired below as a `Compile` resource directory.
           "sourceGenerators" in SettingScope.Compile += """Def.task[Seq[File]] {
-                                   |  val log         = streams.value.log
-                                   |  val repoRoot    = (LocalRootProject / baseDirectory).value.toPath.toAbsolutePath
-                                   |  val genRoot     = (Compile / target).value.toPath.resolve("generated-sources/test-harness").toAbsolutePath
-                                   |  val codegenCp   = (`idealingua-v1-compiler` / Compile / fullClasspath).value.files
-                                   |  val codegenRun  = (`idealingua-v1-compiler` / Compile / runner).value
-                                   |  log.info(s"test-harness codegen: generating into $genRoot")
-                                   |  codegenRun.run(
-                                   |    "izumi.idealingua.compiler.testcodegen.TestCodegenMain",
-                                   |    codegenCp,
-                                   |    Seq(repoRoot.toString, genRoot.toString),
-                                   |    log,
-                                   |  ).failed.foreach(e => throw new MessageOnlyException(e.getMessage))
-                                   |  val scalaSubdir = genRoot.resolve("scala")
-                                   |  if (java.nio.file.Files.exists(scalaSubdir)) {
-                                   |    val s = java.nio.file.Files.walk(scalaSubdir)
-                                   |    try {
-                                   |      val it  = s.iterator()
-                                   |      val buf = scala.collection.mutable.ArrayBuffer.empty[java.io.File]
-                                   |      while (it.hasNext) {
-                                   |        val p = it.next()
-                                   |        if (java.nio.file.Files.isRegularFile(p) && p.getFileName.toString.endsWith(".scala")) buf += p.toFile
-                                   |      }
-                                   |      buf.toSeq
-                                   |    } finally s.close()
-                                   |  } else Seq.empty[java.io.File]
-                                   |}.taskValue""".stripMargin.raw,
+                                                          |  val log         = streams.value.log
+                                                          |  val repoRoot    = (LocalRootProject / baseDirectory).value.toPath.toAbsolutePath
+                                                          |  val genRoot     = (Compile / target).value.toPath.resolve("generated-sources/test-harness").toAbsolutePath
+                                                          |  val codegenCp   = (`idealingua-v1-compiler` / Compile / fullClasspath).value.files
+                                                          |  val codegenRun  = (`idealingua-v1-compiler` / Compile / runner).value
+                                                          |  log.info(s"test-harness codegen: generating into $genRoot")
+                                                          |  codegenRun.run(
+                                                          |    "izumi.idealingua.compiler.testcodegen.TestCodegenMain",
+                                                          |    codegenCp,
+                                                          |    Seq(repoRoot.toString, genRoot.toString),
+                                                          |    log,
+                                                          |  ).failed.foreach(e => throw new MessageOnlyException(e.getMessage))
+                                                          |  val scalaSubdir = genRoot.resolve("scala")
+                                                          |  if (java.nio.file.Files.exists(scalaSubdir)) {
+                                                          |    val s = java.nio.file.Files.walk(scalaSubdir)
+                                                          |    try {
+                                                          |      val it  = s.iterator()
+                                                          |      val buf = scala.collection.mutable.ArrayBuffer.empty[java.io.File]
+                                                          |      while (it.hasNext) {
+                                                          |        val p = it.next()
+                                                          |        if (java.nio.file.Files.isRegularFile(p) && p.getFileName.toString.endsWith(".scala")) buf += p.toFile
+                                                          |      }
+                                                          |      buf.toSeq
+                                                          |    } finally s.close()
+                                                          |  } else Seq.empty[java.io.File]
+                                                          |}.taskValue""".stripMargin.raw,
           "unmanagedResourceDirectories" in SettingScope.Compile += """(Compile / target).value / "generated-sources" / "test-harness" / "scala-mcp-resources"""".raw,
           // The sourceGenerator above emits ~150 IDL-generated `.scala`
           // files under `target/generated-sources/test-harness/scala/...`.
@@ -552,33 +551,33 @@ object Idealingua {
           // (test scaffolding is not the unit under measurement).
           "coverageEnabled" := false,
           "runWireFixtures" := """{
-                               |  val log      = streams.value.log
-                               |  val repoRoot = (LocalRootProject / baseDirectory).value.toPath
-                               |  log.info("runWireFixtures: starting")
-                               |  val cp = (Compile / fullClasspath).value.files
-                               |  val r  = (Compile / runner).value
-                               |  r.run("izumi.idealingua.harness.WireFixturesMain", cp, Seq(repoRoot.toString), log)
-                               |    .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
-                               |  def countJsons(p: java.nio.file.Path): Long = if (java.nio.file.Files.exists(p)) {
-                               |    val s = java.nio.file.Files.walk(p)
-                               |    try s.filter(x => java.nio.file.Files.isRegularFile(x) && x.toString.endsWith(".json")).count()
-                               |    finally s.close()
-                               |  } else 0L
-                               |  val sc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/scala"))
-                               |  val tc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/typescript"))
-                               |  val cc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/csharp"))
-                               |  log.info(s"runWireFixtures: all $sc Scala + $tc TypeScript + $cc CSharp fixtures match")
-                               |}""".stripMargin.raw,
+                                 |  val log      = streams.value.log
+                                 |  val repoRoot = (LocalRootProject / baseDirectory).value.toPath
+                                 |  log.info("runWireFixtures: starting")
+                                 |  val cp = (Compile / fullClasspath).value.files
+                                 |  val r  = (Compile / runner).value
+                                 |  r.run("izumi.idealingua.harness.WireFixturesMain", cp, Seq(repoRoot.toString), log)
+                                 |    .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
+                                 |  def countJsons(p: java.nio.file.Path): Long = if (java.nio.file.Files.exists(p)) {
+                                 |    val s = java.nio.file.Files.walk(p)
+                                 |    try s.filter(x => java.nio.file.Files.isRegularFile(x) && x.toString.endsWith(".json")).count()
+                                 |    finally s.close()
+                                 |  } else 0L
+                                 |  val sc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/scala"))
+                                 |  val tc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/typescript"))
+                                 |  val cc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/csharp"))
+                                 |  log.info(s"runWireFixtures: all $sc Scala + $tc TypeScript + $cc CSharp fixtures match")
+                                 |}""".stripMargin.raw,
           "runCrossLangInterop" := """{
-                            |  val log      = streams.value.log
-                            |  val repoRoot = (LocalRootProject / baseDirectory).value.toPath
-                            |  log.info("runCrossLangInterop: starting cross-language matrix")
-                            |  val cp = (Compile / fullClasspath).value.files
-                            |  val r  = (Compile / runner).value
-                            |  r.run("izumi.idealingua.harness.CrossLangMain", cp, Seq(repoRoot.toString), log)
-                            |    .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
-                            |  log.info("runCrossLangInterop: matrix verified")
-                            |}""".stripMargin.raw,
+                                     |  val log      = streams.value.log
+                                     |  val repoRoot = (LocalRootProject / baseDirectory).value.toPath
+                                     |  log.info("runCrossLangInterop: starting cross-language matrix")
+                                     |  val cp = (Compile / fullClasspath).value.files
+                                     |  val r  = (Compile / runner).value
+                                     |  r.run("izumi.idealingua.harness.CrossLangMain", cp, Seq(repoRoot.toString), log)
+                                     |    .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
+                                     |  log.info("runCrossLangInterop: matrix verified")
+                                     |}""".stripMargin.raw,
         ),
       ),
     ),

@@ -4,17 +4,7 @@ import izumi.idealingua.il.loader.{LocalModelLoaderContext, ModelResolver}
 import izumi.idealingua.model.loader.LoadedDomain
 import izumi.idealingua.model.publishing.BuildManifest
 import izumi.idealingua.model.publishing.BuildManifest.Common
-import izumi.idealingua.model.publishing.manifests.{
-  CSharpBuildManifest,
-  CSharpProjectLayout,
-  NugetOptions,
-  SbtOptions,
-  ScalaBuildManifest,
-  ScalaProjectLayout,
-  TypeScriptBuildManifest,
-  TypeScriptProjectLayout,
-  YarnOptions,
-}
+import izumi.idealingua.model.publishing.manifests.{CSharpBuildManifest, CSharpProjectLayout, NugetOptions, SbtOptions, ScalaBuildManifest, ScalaProjectLayout, TypeScriptBuildManifest, TypeScriptProjectLayout, YarnOptions}
 import izumi.idealingua.model.publishing.ProjectVersion
 import izumi.idealingua.translator.{ExtendedModule, IDLLanguage, TypespaceCompilerBaseFacade, UntypedCompilerOptions}
 
@@ -78,7 +68,7 @@ object TestSourceGenerator {
   private val scalaManifest: ScalaBuildManifest = ScalaBuildManifest(
     common = pinnedCommon,
     layout = ScalaProjectLayout.PLAIN,
-    sbt    = SbtOptions.example.copy(scalaVersions = List("2.13.18", "3.8.3")),
+    sbt    = SbtOptions.example.copy(scalaVersions = List("3.9.0", "3.8.3")),
   )
 
   private val typescriptManifest: TypeScriptBuildManifest = TypeScriptBuildManifest(
@@ -212,12 +202,12 @@ object TestSourceGenerator {
   }
 
   private def ensureIrtSymlink(genRoot: Path, repoRoot: Path): Unit = {
-    val target  = repoRoot
+    val target = repoRoot
       .resolve("idealingua-v1/idealingua-v1-runtime-rpc-typescript/src/main/resources/runtime/typescript/irt")
       .toAbsolutePath
     val linkDir = genRoot.resolve(TypescriptDir)
     Files.createDirectories(linkDir)
-    val link    = linkDir.resolve("irt")
+    val link = linkDir.resolve("irt")
     if (Files.isSymbolicLink(link)) {
       val existing = Files.readSymbolicLink(link)
       if (existing == target) return
@@ -263,11 +253,12 @@ object TestSourceGenerator {
     try {
       stream
         .sorted(java.util.Comparator.reverseOrder[Path])
-        .forEach { p =>
-          val isRoot = p == path
-          if (!isRoot && !Files.isSymbolicLink(p)) {
-            val _ = Files.deleteIfExists(p)
-          }
+        .forEach {
+          p =>
+            val isRoot = p == path
+            if (!isRoot && !Files.isSymbolicLink(p)) {
+              val _ = Files.deleteIfExists(p)
+            }
         }
     } finally stream.close()
   }
