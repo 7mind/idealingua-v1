@@ -6,7 +6,7 @@ import izumi.idealingua.model.il.ast.typed.{DomainMetadata, NodeMeta}
 import izumi.idealingua.model.loader.FSPath
 import izumi.idealingua.model.output.{Module, ModuleId}
 import izumi.idealingua.model.publishing.BuildManifest
-import izumi.idealingua.model.publishing.manifests.{ScalaBuildManifest, ScalaProjectLayout, SbtOptions}
+import izumi.idealingua.model.publishing.manifests.{SbtOptions, ScalaBuildManifest, ScalaProjectLayout}
 import izumi.idealingua.translator.{CompilerOptions, Translated}
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -33,10 +33,10 @@ final class ScalaLayouterSbtSpec extends AnyWordSpec {
       group        = testGroupId,
       izumiVersion = "sbt-spec-test-version",
     ),
-    layout        = ScalaProjectLayout.SBT,
-    sbt           = SbtOptions.example.copy(
+    layout = ScalaProjectLayout.SBT,
+    sbt = SbtOptions.example.copy(
       enableScalaJs = false,
-      scalaVersions = List("2.13.18"),
+      scalaVersions = List("3.9.0"),
     ),
     emitMcpBridge = true,
   )
@@ -56,10 +56,10 @@ final class ScalaLayouterSbtSpec extends AnyWordSpec {
   private def syntheticTranslated(): Translated = {
     val domainId = DomainId(Seq("com", "example", "test"), "myservice")
     val meta = DomainMetadata(
-      origin            = FSPath.Name("test"),
-      directInclusions  = Seq.empty,
-      directImports     = Seq.empty[Import],
-      meta              = NodeMeta.empty,
+      origin           = FSPath.Name("test"),
+      directInclusions = Seq.empty,
+      directImports    = Seq.empty[Import],
+      meta             = NodeMeta.empty,
     )
     val bridgeModule = Module(
       id      = ModuleId(Seq.empty, "MyServiceMcpRoutes.scala"),
@@ -103,10 +103,10 @@ final class ScalaLayouterSbtSpec extends AnyWordSpec {
       // Construct a translated with a resource module tagged platform=jvm + resource=true
       val domainId = DomainId(Seq("com", "example", "test"), "myservice")
       val meta = DomainMetadata(
-        origin            = FSPath.Name("test"),
-        directInclusions  = Seq.empty,
-        directImports     = Seq.empty[Import],
-        meta              = NodeMeta.empty,
+        origin           = FSPath.Name("test"),
+        directInclusions = Seq.empty,
+        directImports    = Seq.empty[Import],
+        meta             = NodeMeta.empty,
       )
       val resourceModule = Module(
         id      = ModuleId(Seq("mcp"), "MyService.mcp.json"),

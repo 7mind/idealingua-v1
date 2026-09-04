@@ -2,13 +2,7 @@ package izumi.idealingua.translator.compat
 
 import izumi.idealingua.il.loader.{LocalModelLoaderContext, ModelResolver}
 import izumi.idealingua.model.publishing.BuildManifest
-import izumi.idealingua.model.publishing.manifests.{
-  CSharpBuildManifest,
-  ScalaBuildManifest,
-  ScalaProjectLayout,
-  SbtOptions,
-  TypeScriptBuildManifest,
-}
+import izumi.idealingua.model.publishing.manifests.{CSharpBuildManifest, SbtOptions, ScalaBuildManifest, ScalaProjectLayout, TypeScriptBuildManifest}
 import izumi.idealingua.model.publishing.ProjectVersion
 import izumi.idealingua.translator.{IDLLanguage, TypespaceCompilerBaseFacade, UntypedCompilerOptions}
 import org.scalatest.wordspec.AnyWordSpec
@@ -62,7 +56,7 @@ final class NewTyperFeatureFlagSpec extends AnyWordSpec {
       version      = ProjectVersion(version = "0.0.0", release = true, snapshotQualifier = "smoke"),
     ),
     layout = ScalaProjectLayout.PLAIN,
-    sbt    = SbtOptions.example.copy(scalaVersions = List("2.13.18", "3.8.3")),
+    sbt    = SbtOptions.example.copy(scalaVersions = List("3.9.0", "3.8.3")),
   )
 
   private def loadEnumsDomain() = {
@@ -75,7 +69,7 @@ final class NewTyperFeatureFlagSpec extends AnyWordSpec {
     require(
       pick.isDefined,
       s"idltest.enums not found. corpusRoot=$corpusRoot exists=${Files.exists(corpusRoot)} " +
-        s"successful=${all.map(_.parsed.id).mkString(",")}",
+      s"successful=${all.map(_.parsed.id).mkString(",")}",
     )
     pick.get
   }

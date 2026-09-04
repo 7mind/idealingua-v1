@@ -3,7 +3,7 @@ package izumi.idealingua.translator.toscala.domain
 import izumi.idealingua.il.loader.{LocalModelLoaderContext, ModelResolver}
 import izumi.idealingua.model.publishing.BuildManifest
 import izumi.idealingua.model.publishing.ProjectVersion
-import izumi.idealingua.model.publishing.manifests.{ScalaBuildManifest, ScalaProjectLayout, SbtOptions}
+import izumi.idealingua.model.publishing.manifests.{SbtOptions, ScalaBuildManifest, ScalaProjectLayout}
 import izumi.idealingua.translator.{ExtendedModule, IDLLanguage, TypespaceCompilerBaseFacade, UntypedCompilerOptions}
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -25,7 +25,7 @@ final class DomainServiceMcpRendererSpec extends AnyWordSpec {
     var p: java.nio.file.Path     = cwd.toAbsolutePath
     while (p != null) {
       if (Files.exists(p.resolve("idealingua-v1/idealingua-v1-test-defs"))) found = p
-      p = p.getParent
+      p                                                                           = p.getParent
     }
     require(found != null, s"could not locate repo root from $cwd")
     found
@@ -40,9 +40,9 @@ final class DomainServiceMcpRendererSpec extends AnyWordSpec {
       izumiVersion = "mcp-renderer-spec",
       version      = ProjectVersion(version = "0.0.0", release = true, snapshotQualifier = "spec"),
     ),
-    layout         = ScalaProjectLayout.PLAIN,
-    sbt            = SbtOptions.example.copy(scalaVersions = List("2.13.18", "3.8.3")),
-    emitMcpBridge  = true,
+    layout        = ScalaProjectLayout.PLAIN,
+    sbt           = SbtOptions.example.copy(scalaVersions = List("3.9.0", "3.8.3")),
+    emitMcpBridge = true,
   )
 
   private def loadServiceDomain() = {
@@ -102,26 +102,27 @@ final class DomainServiceMcpRendererSpec extends AnyWordSpec {
       val out    = new TypespaceCompilerBaseFacade(scalaOptions).compile(Seq(loaded))
 
       val mcpModules = out.emodules.collect {
-        case ExtendedModule.DomainModule(_, m)
-            if m.id.name.endsWith("Mcp.scala") || m.id.name.endsWith(".mcp.json") => m
+        case ExtendedModule.DomainModule(_, m) if m.id.name.endsWith("Mcp.scala") || m.id.name.endsWith(".mcp.json") => m
       }
       assert(mcpModules.nonEmpty, "no MCP modules emitted with emitMcpBridge = true")
 
-      mcpModules.foreach { m =>
-        assert(
-          !m.meta.get("platform").contains("jvm"),
-          s"MCP module ${m.id.name} must NOT carry meta(platform=jvm); got meta=${m.meta}",
-        )
+      mcpModules.foreach {
+        m =>
+          assert(
+            !m.meta.get("platform").contains("jvm"),
+            s"MCP module ${m.id.name} must NOT carry meta(platform=jvm); got meta=${m.meta}",
+          )
       }
 
       // Verify the .mcp.json resource module still carries the resource=true tag.
       val resourceModules = mcpModules.filter(_.id.name.endsWith(".mcp.json"))
       assert(resourceModules.nonEmpty, "no .mcp.json resource module emitted")
-      resourceModules.foreach { m =>
-        assert(
-          m.meta.get("resource").contains("true"),
-          s".mcp.json module ${m.id.name} must carry meta(resource=true); got meta=${m.meta}",
-        )
+      resourceModules.foreach {
+        m =>
+          assert(
+            m.meta.get("resource").contains("true"),
+            s".mcp.json module ${m.id.name} must carry meta(resource=true); got meta=${m.meta}",
+          )
       }
     }
   }
