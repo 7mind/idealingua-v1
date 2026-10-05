@@ -60,10 +60,28 @@ object Idealingua {
   }
 
   val settings = GlobalSettings(
-    groupId        = "io.7mind.izumi",
-    sbtVersion     = None,
-    scalaJsVersion = PV.scala_js_version,
+    groupId                  = "io.7mind.izumi",
+    sbtTarget                = SbtTarget.Sbt2,
+    sbtVersion               = Some("2.0.9"),
+    scalaJsVersion           = PV.scala_js_version,
+    crossProjectVersion      = Version.VConst("1.4.0"),
+    bundlerVersion           = None,
+    sbtJsDependenciesVersion = None,
   )
+
+  private final val JvmRelease = "17"
+
+  private def withJvmRelease(options: Seq[Const]): Seq[Const] = {
+    options.filterNot {
+      case Const.CString(option) => option.startsWith("-release:")
+      case _                     => false
+    } :+ Const.CString(s"-release:$JvmRelease")
+  }
+
+  private def withoutBackendParallelism(options: Seq[Const]): Seq[Const] = {
+    val index = options.indexOf(Const.CString("-Ybackend-parallelism"))
+    if (index < 0) options else options.patch(index, Nil, 2)
+  }
 
   object Deps {
     final val fundamentals_collections = Library("io.7mind.izumi", "fundamentals-collections", V.izumi, LibraryType.Auto)
@@ -148,7 +166,7 @@ object Idealingua {
 
   // DON'T REMOVE, these variables are read from CI build (build.sh)
   final val scala213 = ScalaVersion("2.13.18")
-  final val scala300 = ScalaVersion("3.8.3")
+  final val scala300 = ScalaVersion("3.9.0")
 
   object Groups {
     final val idealingua = Set(Group("idealingua"))
@@ -229,7 +247,20 @@ object Idealingua {
         "crossScalaVersions" := "Nil".raw
       )
 
-      final val rootSettings = Defaults.SbtMetaRootOptions ++ Defaults.RootOptions ++ Seq(
+      private final val javacOptions = Seq(
+        "javacOptions" in SettingScope.Build ++= Seq(
+          "-encoding",
+          "UTF-8",
+          "--release",
+          JvmRelease,
+          "-deprecation",
+          "-parameters",
+          "-Xlint:all",
+          "-XDignore.symbol.file",
+        )
+      )
+
+      final val rootSettings = Defaults.SbtMetaRootOptions ++ Defaults.RootOptions.filterNot(_.name == "javacOptions") ++ javacOptions ++ Seq(
         "crossScalaVersions" := "Nil".raw,
         "libraryDependencies" := "Nil".raw,
         "coverageEnabled" := false,
@@ -273,7 +304,7 @@ object Idealingua {
             |    Seq.empty
             |  }
             |}""".stripMargin.raw,
-        "refreshFlakeTask" := """{
+        "refreshFlakeTask" := """Def.uncached {
                                 |  val log = streams.value.log
                                 |  val rootDir = (ThisBuild / baseDirectory).value
                                 |  val lockfileOutput = rootDir / "deps.lock.json"
@@ -317,8 +348,9 @@ object Idealingua {
         "scmInfo" in SettingScope.Build := """Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git"))""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalatest-version=$${${V.scalatest.asExpr}}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalajs-version=${PluginVersions.pv.scala_js_version}${"\"" * 3}""".raw,
-        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:bundler-version=$${${Idealingua.settings.bundlerVersion.asExpr}}${"\"" * 3}""".raw,
-        "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:sbt-js-version=$${${Idealingua.settings.sbtJsDependenciesVersion.asExpr}}${"\"" * 3}""".raw,
+        "scalacOptions" in SettingScope.Build += """s"-Xmacro-settings:generated-sbt-version=${V.generated_sbt}"""".raw,
+        "scalacOptions" in SettingScope.Build += """s"-Xmacro-settings:bundler-version=${V.generated_sbt_scalajs_bundler}"""".raw,
+        "scalacOptions" in SettingScope.Build += """s"-Xmacro-settings:sbt-js-version=${V.generated_sbt_jsdependencies}"""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:crossproject-version=$${${Idealingua.settings.crossProjectVersion.asExpr}}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += """s"-Xmacro-settings:is-ci=${insideCI.value}"""".raw,
       )
@@ -327,8 +359,8 @@ object Idealingua {
         "testOptions" in SettingScope.Test += """Tests.Argument("-oDF")""".raw,
         // "testOptions" in (SettingScope.Test, Platform.Jvm) ++= s"""Seq(Tests.Argument("-u"), Tests.Argument(s"$${target.value}/junit-xml-$${scalaVersion.value}"))""".raw,
         "scalacOptions" ++= Seq(
-          SettingKey(Some(scala213), None) := Defaults.Scala213Options,
-          SettingKey(Some(scala300), None) := Defaults.Scala3Options,
+          SettingKey(Some(scala213), None) := withJvmRelease(Defaults.Scala213Options),
+          SettingKey(Some(scala300), None) := withoutBackendParallelism(withJvmRelease(Defaults.Scala3Options :+ Const.CString("-Ximport-suggestion-timeout:0"))),
           SettingKey.Default := Const.EmptySeq,
         ),
         "scalacOptions" ++= Seq(
@@ -483,6 +515,11 @@ object Idealingua {
           // public compiler. (Was added to build.sbt directly in X2; moved
           // into sbtgen here so `mdl :gen` doesn't regress it.)
           "mainClass" in SettingScope.Compile := """Some("izumi.idealingua.compiler.CommandlineIDLCompiler")""".raw,
+          "target" in SettingScope.Raw("Universal") := """baseDirectory.value / "target" / "universal"""".raw,
+          "runtimeClasspathString" := """Def.uncached {
+                                       |  val converter = fileConverter.value
+                                       |  (Runtime / fullClasspath).value.map(entry => converter.toPath(entry.data).toString).mkString(java.io.File.pathSeparator)
+                                       |}""".stripMargin.raw,
         ),
         plugins = Plugins(
           Seq(Plugin("JavaAppPackaging"))
@@ -515,8 +552,9 @@ object Idealingua {
           "sourceGenerators" in SettingScope.Compile += """Def.task[Seq[File]] {
                                    |  val log         = streams.value.log
                                    |  val repoRoot    = (LocalRootProject / baseDirectory).value.toPath.toAbsolutePath
-                                   |  val genRoot     = (Compile / target).value.toPath.resolve("generated-sources/test-harness").toAbsolutePath
-                                   |  val codegenCp   = (`idealingua-v1-compiler` / Compile / fullClasspath).value.files
+                                   |  val genRoot     = baseDirectory.value.toPath.resolve("target/generated-sources/test-harness").toAbsolutePath
+                                   |  val converter   = fileConverter.value
+                                   |  val codegenCp   = (`idealingua-v1-compiler` / Compile / fullClasspath).value.map(entry => converter.toPath(entry.data))
                                    |  val codegenRun  = (`idealingua-v1-compiler` / Compile / runner).value
                                    |  log.info(s"test-harness codegen: generating into $genRoot")
                                    |  codegenRun.run(
@@ -539,7 +577,7 @@ object Idealingua {
                                    |    } finally s.close()
                                    |  } else Seq.empty[java.io.File]
                                    |}.taskValue""".stripMargin.raw,
-          "unmanagedResourceDirectories" in SettingScope.Compile += """(Compile / target).value / "generated-sources" / "test-harness" / "scala-mcp-resources"""".raw,
+          "unmanagedResourceDirectories" in SettingScope.Compile += """baseDirectory.value / "target" / "generated-sources" / "test-harness" / "scala-mcp-resources"""".raw,
           // The sourceGenerator above emits ~150 IDL-generated `.scala`
           // files under `target/generated-sources/test-harness/scala/...`.
           // scoverage instruments all `Compile / sources` (managed +
@@ -551,11 +589,12 @@ object Idealingua {
           // policy already in place for the runtime/transpiler modules
           // (test scaffolding is not the unit under measurement).
           "coverageEnabled" := false,
-          "runWireFixtures" := """{
+          "runWireFixtures" := """Def.uncached {
                                |  val log      = streams.value.log
                                |  val repoRoot = (LocalRootProject / baseDirectory).value.toPath
                                |  log.info("runWireFixtures: starting")
-                               |  val cp = (Compile / fullClasspath).value.files
+                               |  val converter = fileConverter.value
+                               |  val cp = (Compile / fullClasspath).value.map(entry => converter.toPath(entry.data))
                                |  val r  = (Compile / runner).value
                                |  r.run("izumi.idealingua.harness.WireFixturesMain", cp, Seq(repoRoot.toString), log)
                                |    .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
@@ -569,11 +608,12 @@ object Idealingua {
                                |  val cc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/csharp"))
                                |  log.info(s"runWireFixtures: all $sc Scala + $tc TypeScript + $cc CSharp fixtures match")
                                |}""".stripMargin.raw,
-          "runCrossLangInterop" := """{
+          "runCrossLangInterop" := """Def.uncached {
                             |  val log      = streams.value.log
                             |  val repoRoot = (LocalRootProject / baseDirectory).value.toPath
                             |  log.info("runCrossLangInterop: starting cross-language matrix")
-                            |  val cp = (Compile / fullClasspath).value.files
+                            |  val converter = fileConverter.value
+                            |  val cp = (Compile / fullClasspath).value.map(entry => converter.toPath(entry.data))
                             |  val r  = (Compile / runner).value
                             |  r.run("izumi.idealingua.harness.CrossLangMain", cp, Seq(repoRoot.toString), log)
                             |    .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
@@ -603,6 +643,7 @@ object Idealingua {
                |lazy val refreshFlakeTask    = taskKey[Unit]("Refresh flake.nix")
                |lazy val runWireFixtures     = taskKey[Unit]("Run Layer B wire-byte fixtures")
                |lazy val runCrossLangInterop = taskKey[Unit]("Run Layer C cross-language interop")
+               |lazy val runtimeClasspathString = taskKey[String]("Runtime classpath as a path-separator-joined list of files")
                |""".stripMargin),
     ),
     globalLibs = Seq(
