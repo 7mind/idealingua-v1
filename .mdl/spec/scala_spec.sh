@@ -8,8 +8,8 @@ Describe 'Scala transpiler'
   Include ./.mdl/lib/builders.sh
 
   setup() {
-    sbt --batch --no-server -Dsbt.server.forcestart=true -no-colors "$VERSION_COMMAND" publishLocal
-    export classpath="$(TERM=dumb sbt --batch --no-server -Dsbt.server.forcestart=true -no-colors --error "$VERSION_COMMAND" "export idealingua-v1-compiler/runtime:fullClasspath")"
+    sbt --server --batch --no-server -Dsbt.server.forcestart=true -no-colors "$VERSION_COMMAND" publishLocal
+    export classpath="$(TERM=dumb sbt --server --batch --no-server -Dsbt.server.forcestart=true -no-colors --error "$VERSION_COMMAND" "print idealingua-v1-compiler/runtimeClasspathString")"
   }
 
   BeforeAll 'setup'
@@ -41,7 +41,7 @@ Describe 'Scala transpiler (scala-only case)'
 
 
   setup() {
-    export classpath="$(TERM=dumb sbt --batch --no-server -Dsbt.server.forcestart=true -no-colors --error "$VERSION_COMMAND" "export idealingua-v1-compiler/runtime:fullClasspath")"
+    export classpath="$(TERM=dumb sbt --server --batch --no-server -Dsbt.server.forcestart=true -no-colors --error "$VERSION_COMMAND" "print idealingua-v1-compiler/runtimeClasspathString")"
   }
 
   BeforeAll 'setup'

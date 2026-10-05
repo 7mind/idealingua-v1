@@ -26,20 +26,15 @@ function ensure_numcpu() {
 
 function resolve_scala_version() {
   local requested="$1"
-  local scala212
   local scala213
   local scala3
 
-  scala212=$(grep 'val scala212 ' sbtgen/Deps.scala | sed -r 's/.*"(.*)".*/\1/')
   scala213=$(grep 'val scala213 ' sbtgen/Deps.scala | sed -r 's/.*"(.*)".*/\1/')
   scala3=$(grep 'val scala300 ' sbtgen/Deps.scala | sed -r 's/.*"(.*)".*/\1/')
 
   case "$requested" in
     "" )
       echo "$scala213"
-      ;;
-    2.12|2.12.* )
-      echo "$scala212"
       ;;
     2.13|2.13.* )
       echo "$scala213"

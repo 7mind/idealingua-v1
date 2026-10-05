@@ -28,7 +28,7 @@ Describe 'Scala MCP bridge (emitMcpBridge=true)'
     # Publish the idealingua runtime artifacts (incl. their _sjs1_ JS variants,
     # because the build cross-builds to JS) so the generated SBT project can
     # resolve idealingua-v1-runtime-rpc-scala / idealingua-v1-model in both modes.
-    sbt --batch --no-server -Dsbt.server.forcestart=true -no-colors "$VERSION_COMMAND" publishLocal
+    sbt --server --batch --no-server -Dsbt.server.forcestart=true -no-colors "$VERSION_COMMAND" publishLocal
   }
 
   BeforeAll 'setup'

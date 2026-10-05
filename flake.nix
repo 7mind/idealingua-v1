@@ -57,9 +57,9 @@
               ${if pkgs.stdenv.isDarwin then ''
                 HOME="$TMPDIR" \
                 SBT_OPTS="-Duser.home=$TMPDIR -Dsbt.global.base=$TMPDIR/.sbt -Dsbt.ivy.home=$TMPDIR/.ivy2 -Divy.home=$TMPDIR/.ivy2 -Dsbt.boot.directory=$TMPDIR/.sbt/boot" \
-                sbt "++2.13 clean" "++2.13 Universal/packageBin"
+                sbt --server "++ 2.13 clean" "++ 2.13 Universal/packageBin"
               '' else ''
-                sbt "++2.13 clean" "++2.13 Universal/packageBin"
+                sbt --server "++ 2.13 clean" "++ 2.13 Universal/packageBin"
               ''}
             '';
 

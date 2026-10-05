@@ -4,7 +4,7 @@ This file defines the mudyla build orchestration for idealingua-v1.
 
 # arguments
 
-- `args.scala-version`: Scala version selector (`2.12`, `2.13`, `3`, or full version)
+- `args.scala-version`: Scala version selector (`2.13`, `3`, or full version)
    - type: `string`
    - default: `"2.13"`
 
@@ -68,7 +68,7 @@ if [[ -n "${JAVA_HOME:-}" ]]; then
   sbt_args+=(--java-home "$JAVA_HOME")
 fi
 
-sbt -batch --no-server -Dsbt.server.forcestart=true -no-colors -v \
+sbt --server -batch --no-server -Dsbt.server.forcestart=true -no-colors -v \
   "${sbt_args[@]}" \
   "$VERSION_COMMAND clean" \
   coverage \
@@ -183,12 +183,12 @@ if [[ -z "${SONATYPE_SECRET:-}" || ! -f "${SONATYPE_SECRET}" ]]; then
 fi
 
 if [[ "${CI_BRANCH:-}" == "develop" ]]; then
-  sbt -batch -no-colors -v \
+  sbt --server -batch -no-colors -v \
     "$VERSION_COMMAND clean" \
     "$VERSION_COMMAND package" \
     "$VERSION_COMMAND publishSigned"
 else
-  sbt -batch -no-colors -v \
+  sbt --server -batch -no-colors -v \
     "$VERSION_COMMAND clean" \
     "$VERSION_COMMAND package" \
     "$VERSION_COMMAND publishSigned" \

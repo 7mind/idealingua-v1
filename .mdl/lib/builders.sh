@@ -6,7 +6,7 @@ function test_scala_sbt_prj() {
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
-  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=SBT -d sbt.scalaVersions=$SCALA_VERSION"
+  sbt --server "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=SBT -d sbt.scalaVersions=$SCALA_VERSION"
 
   pushd .
   cd "$tmpdir/scala"
@@ -22,7 +22,7 @@ function test_scala_plain_prj() {
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
-  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=PLAIN"
+  sbt --server "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=PLAIN"
 
   pushd .
   cd "$tmpdir/scala"
@@ -91,7 +91,7 @@ function test_scala_mcp_jvm_prj() {
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".mcp-jvm.XXXXXXXX)"
 
-  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=SBT -d sbt.scalaVersions=$SCALA_VERSION -d sbt.enableScalaJs=false -d emitMcpBridge=true"
+  sbt --server "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=SBT -d sbt.scalaVersions=$SCALA_VERSION -d sbt.enableScalaJs=false -d emitMcpBridge=true"
 
   pushd .
   cd "$tmpdir/scala"
@@ -113,7 +113,7 @@ function test_scala_mcp_cross_prj() {
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".mcp-cross.XXXXXXXX)"
 
-  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=SBT -d sbt.scalaVersions=$SCALA_VERSION -d sbt.enableScalaJs=true -d emitMcpBridge=true"
+  sbt --server "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=SBT -d sbt.scalaVersions=$SCALA_VERSION -d sbt.enableScalaJs=true -d emitMcpBridge=true"
 
   pushd .
   cd "$tmpdir/scala"
@@ -140,7 +140,7 @@ function test_ts_yarn_prj() {
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
-  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :typescript -d layout=YARN"
+  sbt --server "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :typescript -d layout=YARN"
 
   pushd .
   cd "$tmpdir/typescript"
@@ -159,7 +159,7 @@ function test_ts_plain_prj() {
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
-  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :typescript -d layout=PLAIN"
+  sbt --server "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :typescript -d layout=PLAIN"
 
   pushd .
   cd "$tmpdir/typescript"
@@ -178,7 +178,7 @@ function test_cs_msbuild_prj() {
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
-  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :csharp -d layout=NUGET -d enableNUnit=true"
+  sbt --server "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :csharp -d layout=NUGET -d enableNUnit=true"
 
   pushd .
   cd "$tmpdir/csharp"
@@ -199,7 +199,7 @@ function test_cs_plain_prj() {
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".XXXXXXXX)"
 
-  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :csharp -d layout=PLAIN -d enableNUnit=true"
+  sbt --server "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :csharp -d layout=PLAIN -d enableNUnit=true"
 
   pushd .
   cd "$tmpdir/csharp"
@@ -267,7 +267,7 @@ function test_scala_mcp_schema_valid() {
   testname="$(basename "$1")"
   tmpdir="$(mktemp -d -t "$testname".mcp-schema.XXXXXXXX)"
 
-  sbt "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=SBT -d sbt.scalaVersions=$SCALA_VERSION -d sbt.enableScalaJs=false -d emitMcpBridge=true"
+  sbt --server "$VERSION_COMMAND ; idealingua-v1-compiler/run --root=$1 --source=$1/source --overlay=$1/overlay --target=$tmpdir :scala -d layout=SBT -d sbt.scalaVersions=$SCALA_VERSION -d sbt.enableScalaJs=false -d emitMcpBridge=true"
 
   assert_mcp_schemas_valid "$tmpdir/scala"
   echo "IDL MCP SCHEMA VALIDATION DONE: $1"

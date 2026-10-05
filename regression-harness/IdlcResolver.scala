@@ -111,7 +111,7 @@ final class IdlcResolver(
     needsStage match {
       case Some(reason) =>
         Harness.say(s"staging idealingua-v1-compiler (self)… [$reason]")
-        val rc = Process(Seq("sbt", "-batch", "idealingua-v1-compiler/stage"), repoRoot.toFile).!
+        val rc = Process(Seq("sbt", "--server", "-batch", "idealingua-v1-compiler/stage"), repoRoot.toFile).!
         if (rc != 0) throw new RuntimeException(s"sbt stage failed (exit=$rc). Expected: a staged launcher at $launcher. Observed: sbt exited non-zero. Next: re-run `sbt idealingua-v1-compiler/stage` interactively to see the failure.")
         if (!Files.isExecutable(launcher)) {
           throw new RuntimeException(s"sbt stage succeeded but launcher missing. Expected: $launcher to exist and be executable. Observed: file missing. Next: inspect `target/universal/stage/` under idealingua-v1-compiler.")
@@ -136,7 +136,7 @@ final class IdlcResolver(
     if (!hasRuntimeArtifacts(ivy2Local, version, ivy2 = true)) {
       Harness.say(s"publishLocal runtime modules (self, ++ 2.13.18, version=$version)…")
       val rc = Process(
-        Seq("sbt", "-batch", "++ 2.13.18") ++ publishTargets("publishLocal"),
+        Seq("sbt", "--server", "-batch", "++ 2.13.18") ++ publishTargets("publishLocal"),
         repoRoot.toFile,
       ).!
       if (rc != 0) throw new RuntimeException(s"self publishLocal failed (exit=$rc). Expected: $RuntimeModules under $ivy2Local for version=$version. Observed: sbt exited non-zero. Next: re-run `sbt ++ 2.13.18 ${publishTargets("publishLocal").mkString(" ")}` interactively.")
@@ -256,7 +256,7 @@ final class IdlcResolver(
     val phase = if (needsScalaRuntime) "stage + 2.13 publishM2" else "stage (no publishM2 — non-Scala target)"
     Harness.say(s"worktree: sbt $phase (this may take a few minutes)…")
     val rc = Process(
-      Seq("sbt", "-batch") ++ sbtSysProps ++ sbtTargets,
+      Seq("sbt", "--server", "-batch") ++ sbtSysProps ++ sbtTargets,
       worktree.toFile,
     ).!
     if (rc != 0) {
