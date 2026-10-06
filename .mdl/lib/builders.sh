@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 
+function with_stderr_log() {
+  local log rc
+  log="$(mktemp)"
+  if "$@" 2>"$log"; then rc=0; else rc=$?; fi
+  if [[ $rc -ne 0 ]]; then cat "$log"; fi
+  rm -f "$log"
+  return $rc
+}
+
 function test_scala_sbt_prj() {
   set -euo pipefail
   echo "IDL TEST ABOUT TO START: $1"
