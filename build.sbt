@@ -1697,6 +1697,7 @@ lazy val `idealingua-v1` = (project in file("."))
     publish / skip := true,
     ThisBuild / libraryDependencySchemes += "io.circe" %% "circe-core" % VersionScheme.Always,
     ThisBuild / libraryDependencySchemes += "io.circe" %% "circe-core_sjs1" % VersionScheme.Always,
+    ThisBuild / com.github.sbt.git.SbtGit.GitKeys.useConsoleForROGit := true,
     ThisBuild / scalacOptions ++= Seq(
       s"-Xmacro-settings:sbt-version=${sbtVersion.value}",
       s"-Xmacro-settings:git-repo-clean=${com.github.sbt.git.SbtGit.GitKeys.gitUncommittedChanges.value}",
