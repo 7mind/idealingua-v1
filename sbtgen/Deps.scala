@@ -134,7 +134,7 @@ object Idealingua {
     final val scalameta = Library("org.scalameta", "scalameta", V.scalameta, LibraryType.Auto) in Scope.Compile.all
 
     final val projector = Library("org.typelevel", "kind-projector", V.kind_projector, LibraryType.Invariant)
-      .more(LibSetting.Raw("cross CrossVersion.full"))
+      .more(LibSetting.Raw("`cross` CrossVersion.full"))
 
     final val fastparse = Library("com.lihaoyi", "fastparse", V.fastparse, LibraryType.Auto) in Scope.Compile.all
 
@@ -340,13 +340,13 @@ object Idealingua {
                               |  commitNextVersion,
                               |  pushChanges
                               |)""".stripMargin.raw,
-        "homepage" in SettingScope.Build := """Some(url("https://izumi.7mind.io"))""".raw,
-        "licenses" in SettingScope.Build := """Seq("BSD-style" -> url("http://www.opensource.org/licenses/bsd-license.php"))""".raw,
+        "homepage" in SettingScope.Build := """Some(uri("https://izumi.7mind.io"))""".raw,
+        "licenses" in SettingScope.Build := """Seq("BSD-style" -> uri("http://www.opensource.org/licenses/bsd-license.php"))""".raw,
         "developers" in SettingScope.Build :=
           """List(
-          Developer(id = "7mind", name = "Septimal Mind", url = url("https://github.com/7mind"), email = "team@7mind.io"),
+          Developer(id = "7mind", name = "Septimal Mind", url = uri("https://github.com/7mind"), email = "team@7mind.io"),
         )""".raw,
-        "scmInfo" in SettingScope.Build := """Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git"))""".raw,
+        "scmInfo" in SettingScope.Build := """Some(ScmInfo(uri("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git"))""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalatest-version=$${${V.scalatest.asExpr}}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalajs-version=${PluginVersions.pv.scala_js_version}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += """s"-Xmacro-settings:generated-sbt-version=${V.generated_sbt}"""".raw,

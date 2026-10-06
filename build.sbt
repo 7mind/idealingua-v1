@@ -24,7 +24,7 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
       "io.7mind.izumi" %% "fundamentals-functional" % Izumi.version
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full),
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
     ) else Seq.empty }
   )
@@ -181,7 +181,7 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
       "io.7mind.izumi" %% "fundamentals-platform" % Izumi.version
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
@@ -342,7 +342,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
       "dev.zio" %% "izumi-reflect" % Izumi.Deps.fundamentals_bioJVM.dev_zio_izumi_reflect_version % Test
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full),
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
       "io.circe" %% "circe-derivation" % V.circe_derivation
     ) else Seq.empty },
@@ -520,7 +520,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
       "io.7mind.izumi" %% "logstage-adapter-slf4j" % Izumi.version
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
@@ -668,7 +668,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
       "io.circe" %% "circe-generic-extras" % V.circe_generic_extras
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full),
       "io.circe" %% "circe-derivation" % V.circe_derivation
     ) else Seq.empty },
     libraryDependencies ++= {
@@ -840,7 +840,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
       "dev.zio" %% "izumi-reflect" % Izumi.Deps.fundamentals_bioJVM.dev_zio_izumi_reflect_version
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
@@ -978,7 +978,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
@@ -1116,7 +1116,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
@@ -1262,7 +1262,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
       "com.typesafe" % "config" % V.typesafe_config
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
@@ -1412,7 +1412,7 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
       "com.networknt" % "json-schema-validator" % V.json_schema_validator % Test
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
@@ -1801,12 +1801,12 @@ lazy val `idealingua-v1` = (project in file("."))
       commitNextVersion,
       pushChanges
     ),
-    ThisBuild / homepage := Some(url("https://izumi.7mind.io")),
-    ThisBuild / licenses := Seq("BSD-style" -> url("http://www.opensource.org/licenses/bsd-license.php")),
+    ThisBuild / homepage := Some(uri("https://izumi.7mind.io")),
+    ThisBuild / licenses := Seq("BSD-style" -> uri("http://www.opensource.org/licenses/bsd-license.php")),
     ThisBuild / developers := List(
-              Developer(id = "7mind", name = "Septimal Mind", url = url("https://github.com/7mind"), email = "team@7mind.io"),
+              Developer(id = "7mind", name = "Septimal Mind", url = uri("https://github.com/7mind"), email = "team@7mind.io"),
             ),
-    ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git")),
+    ThisBuild / scmInfo := Some(ScmInfo(uri("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git")),
     ThisBuild / scalacOptions += s"""-Xmacro-settings:scalatest-version=${V.scalatest}""",
     ThisBuild / scalacOptions += s"""-Xmacro-settings:scalajs-version=1.22.0""",
     ThisBuild / scalacOptions += s"-Xmacro-settings:generated-sbt-version=${V.generated_sbt}",
