@@ -11,25 +11,20 @@ import scala.sys.process._
 lazy val refreshFlakeTask    = taskKey[Unit]("Refresh flake.nix")
 lazy val runWireFixtures     = taskKey[Unit]("Run Layer B wire-byte fixtures")
 lazy val runCrossLangInterop = taskKey[Unit]("Run Layer C cross-language interop")
+lazy val runtimeClasspathString = taskKey[String]("Runtime classpath as a path-separator-joined list of files")
 
-
-enablePlugins(SbtgenVerificationPlugin)
-
-ThisBuild / libraryDependencySchemes += "io.circe" %% "circe-core" % VersionScheme.Always
-
-ThisBuild / libraryDependencySchemes += "io.circe" %% "circe-core_sjs1" % VersionScheme.Always
 
 lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType(CrossType.Pure).in(file("idealingua-v1/idealingua-v1-model"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.scalatest" %%% "scalatest" % V.scalatest % Test,
-      "org.scodec" %%% "scodec-bits" % V.scodec_bits,
-      "io.7mind.izumi" %%% "fundamentals-collections" % Izumi.version,
-      "io.7mind.izumi" %%% "fundamentals-platform" % Izumi.version,
-      "io.7mind.izumi" %%% "fundamentals-functional" % Izumi.version
+      "org.scalatest" %% "scalatest" % V.scalatest % Test,
+      "org.scodec" %% "scodec-bits" % V.scodec_bits,
+      "io.7mind.izumi" %% "fundamentals-collections" % Izumi.version,
+      "io.7mind.izumi" %% "fundamentals-platform" % Izumi.version,
+      "io.7mind.izumi" %% "fundamentals-functional" % Izumi.version
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full),
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
     ) else Seq.empty }
   )
@@ -85,7 +80,6 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.13.18") => Seq(
-        "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
         "-P:kind-projector:underscore-placeholders",
@@ -104,10 +98,10 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
         "-Wunused:_",
         "-Wmacros:default",
         "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
+        "-Ycache-macro-class-loader:last-modified",
+        "-release:17"
       )
-      case (_, "3.8.3") => Seq(
-        "-release:17",
+      case (_, "3.9.0") => Seq(
         "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
@@ -115,8 +109,6 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
@@ -131,7 +123,9 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
+        "-Ximport-suggestion-timeout:0",
+        "-release:17"
       )
       case (_, _) => Seq.empty
     } },
@@ -140,7 +134,7 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
         "-opt:l:inline",
         "-opt-inline-from:izumi.**"
       )
-      case (false, "3.8.3") => Seq(
+      case (false, "3.9.0") => Seq(
         "-opt",
         "-opt-inline:izumi.**"
       )
@@ -150,7 +144,7 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
     scalacOptions += "-Wconf:msg=nowarn:silent",
     scalacOptions += "-Wconf:msg=pattern var charIn:silent",
     excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "3.8.3") => Seq(
+      case (_, "3.9.0") => Seq(
         "com.lihaoyi" % "sourcecode_2.13"
       )
       case (_, _) => Seq.empty
@@ -158,14 +152,14 @@ lazy val `idealingua-v1-model` = crossProject(JVMPlatform, JSPlatform).crossType
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -182,12 +176,12 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
   )
   .settings(
     libraryDependencies ++= Seq(
-      "org.scalatest" %%% "scalatest" % V.scalatest % Test,
-      "com.lihaoyi" %%% "fastparse" % V.fastparse,
-      "io.7mind.izumi" %%% "fundamentals-platform" % Izumi.version
+      "org.scalatest" %% "scalatest" % V.scalatest % Test,
+      "com.lihaoyi" %% "fastparse" % V.fastparse,
+      "io.7mind.izumi" %% "fundamentals-platform" % Izumi.version
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
@@ -242,7 +236,6 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.13.18") => Seq(
-        "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
         "-P:kind-projector:underscore-placeholders",
@@ -261,10 +254,10 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
         "-Wunused:_",
         "-Wmacros:default",
         "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
+        "-Ycache-macro-class-loader:last-modified",
+        "-release:17"
       )
-      case (_, "3.8.3") => Seq(
-        "-release:17",
+      case (_, "3.9.0") => Seq(
         "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
@@ -272,8 +265,6 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
@@ -288,7 +279,9 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
+        "-Ximport-suggestion-timeout:0",
+        "-release:17"
       )
       case (_, _) => Seq.empty
     } },
@@ -297,7 +290,7 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
         "-opt:l:inline",
         "-opt-inline-from:izumi.**"
       )
-      case (false, "3.8.3") => Seq(
+      case (false, "3.9.0") => Seq(
         "-opt",
         "-opt-inline:izumi.**"
       )
@@ -307,7 +300,7 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
     scalacOptions += "-Wconf:msg=nowarn:silent",
     scalacOptions += "-Wconf:msg=pattern var charIn:silent",
     excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "3.8.3") => Seq(
+      case (_, "3.9.0") => Seq(
         "com.lihaoyi" % "sourcecode_2.13"
       )
       case (_, _) => Seq.empty
@@ -315,14 +308,14 @@ lazy val `idealingua-v1-core` = crossProject(JVMPlatform, JSPlatform).crossType(
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -336,28 +329,28 @@ lazy val `idealingua-v1-coreJS` = `idealingua-v1-core`.js
 lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatform).crossType(CrossType.Pure).in(file("idealingua-v1/idealingua-v1-runtime-rpc-scala"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.scalatest" %%% "scalatest" % V.scalatest % Test,
-      "io.7mind.izumi" %%% "fundamentals-bio" % Izumi.version,
-      "io.7mind.izumi" %%% "fundamentals-platform" % Izumi.version,
-      "org.typelevel" %%% "cats-core" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version,
-      "org.typelevel" %%% "cats-effect" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version,
-      "io.circe" %%% "circe-parser" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
-      "io.circe" %%% "circe-literal" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
-      "io.circe" %%% "circe-generic-extras" % V.circe_generic_extras,
-      "dev.zio" %%% "zio" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version % Test,
-      "dev.zio" %%% "zio-interop-cats" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version % Test,
-      "dev.zio" %%% "izumi-reflect" % Izumi.Deps.fundamentals_bioJVM.dev_zio_izumi_reflect_version % Test
+      "org.scalatest" %% "scalatest" % V.scalatest % Test,
+      "io.7mind.izumi" %% "fundamentals-bio" % Izumi.version,
+      "io.7mind.izumi" %% "fundamentals-platform" % Izumi.version,
+      "org.typelevel" %% "cats-core" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_core_version,
+      "org.typelevel" %% "cats-effect" % Izumi.Deps.fundamentals_bioJVM.org_typelevel_cats_effect_version,
+      "io.circe" %% "circe-parser" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
+      "io.circe" %% "circe-literal" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
+      "io.circe" %% "circe-generic-extras" % V.circe_generic_extras,
+      "dev.zio" %% "zio" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_version % Test,
+      "dev.zio" %% "zio-interop-cats" % Izumi.Deps.fundamentals_bioJVM.dev_zio_zio_interop_cats_version % Test,
+      "dev.zio" %% "izumi-reflect" % Izumi.Deps.fundamentals_bioJVM.dev_zio_izumi_reflect_version % Test
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full),
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
-      "io.circe" %%% "circe-derivation" % V.circe_derivation
+      "io.circe" %% "circe-derivation" % V.circe_derivation
     ) else Seq.empty },
     libraryDependencies ++= {
       val version = scalaVersion.value
       if (version.startsWith("0.") || version.startsWith("3.")) {
         Seq(
-          "io.circe" %%% "circe-generic" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version
+          "io.circe" %% "circe-generic" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version
         )
       } else Seq.empty
     }
@@ -414,7 +407,6 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.13.18") => Seq(
-        "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
         "-P:kind-projector:underscore-placeholders",
@@ -433,10 +425,10 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
         "-Wunused:_",
         "-Wmacros:default",
         "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
+        "-Ycache-macro-class-loader:last-modified",
+        "-release:17"
       )
-      case (_, "3.8.3") => Seq(
-        "-release:17",
+      case (_, "3.9.0") => Seq(
         "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
@@ -444,8 +436,6 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
@@ -460,7 +450,9 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
+        "-Ximport-suggestion-timeout:0",
+        "-release:17"
       )
       case (_, _) => Seq.empty
     } },
@@ -469,7 +461,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
         "-opt:l:inline",
         "-opt-inline-from:izumi.**"
       )
-      case (false, "3.8.3") => Seq(
+      case (false, "3.9.0") => Seq(
         "-opt",
         "-opt-inline:izumi.**"
       )
@@ -479,7 +471,7 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
     scalacOptions += "-Wconf:msg=nowarn:silent",
     scalacOptions += "-Wconf:msg=pattern var charIn:silent",
     excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "3.8.3") => Seq(
+      case (_, "3.9.0") => Seq(
         "com.lihaoyi" % "sourcecode_2.13"
       )
       case (_, _) => Seq.empty
@@ -487,14 +479,14 @@ lazy val `idealingua-v1-runtime-rpc-scala` = crossProject(JVMPlatform, JSPlatfor
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -506,7 +498,7 @@ lazy val `idealingua-v1-runtime-rpc-scalaJVM` = `idealingua-v1-runtime-rpc-scala
 lazy val `idealingua-v1-runtime-rpc-scalaJS` = `idealingua-v1-runtime-rpc-scala`.js
   .settings(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % V.scala_java_time % Test
+      "io.github.cquiroz" %% "scala-java-time" % V.scala_java_time % Test
     )
   )
 
@@ -528,12 +520,12 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
       "io.7mind.izumi" %% "logstage-adapter-slf4j" % Izumi.version
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -588,7 +580,6 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.13.18") => Seq(
-        "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
         "-P:kind-projector:underscore-placeholders",
@@ -607,10 +598,10 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-Wunused:_",
         "-Wmacros:default",
         "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
+        "-Ycache-macro-class-loader:last-modified",
+        "-release:17"
       )
-      case (_, "3.8.3") => Seq(
-        "-release:17",
+      case (_, "3.9.0") => Seq(
         "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
@@ -618,8 +609,6 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
@@ -634,7 +623,9 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
+        "-Ximport-suggestion-timeout:0",
+        "-release:17"
       )
       case (_, _) => Seq.empty
     } },
@@ -643,7 +634,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
         "-opt:l:inline",
         "-opt-inline-from:izumi.**"
       )
-      case (false, "3.8.3") => Seq(
+      case (false, "3.9.0") => Seq(
         "-opt",
         "-opt-inline:izumi.**"
       )
@@ -653,7 +644,7 @@ lazy val `idealingua-v1-runtime-rpc-http4s` = project.in(file("idealingua-v1/ide
     scalacOptions += "-Wconf:msg=nowarn:silent",
     scalacOptions += "-Wconf:msg=pattern var charIn:silent",
     excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "3.8.3") => Seq(
+      case (_, "3.9.0") => Seq(
         "com.lihaoyi" % "sourcecode_2.13"
       )
       case (_, _) => Seq.empty
@@ -668,23 +659,23 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
   )
   .settings(
     libraryDependencies ++= Seq(
-      "org.scalatest" %%% "scalatest" % V.scalatest % Test,
-      "org.scala-lang.modules" %%% "scala-xml" % V.scala_xml,
-      "org.scalameta" %%% "scalameta" % V.scalameta,
-      "io.7mind.izumi" %%% "fundamentals-bio" % Izumi.version,
-      "io.circe" %%% "circe-parser" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
-      "io.circe" %%% "circe-literal" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
-      "io.circe" %%% "circe-generic-extras" % V.circe_generic_extras
+      "org.scalatest" %% "scalatest" % V.scalatest % Test,
+      "org.scala-lang.modules" %% "scala-xml" % V.scala_xml,
+      "org.scalameta" %% "scalameta" % V.scalameta,
+      "io.7mind.izumi" %% "fundamentals-bio" % Izumi.version,
+      "io.circe" %% "circe-parser" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
+      "io.circe" %% "circe-literal" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version,
+      "io.circe" %% "circe-generic-extras" % V.circe_generic_extras
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full),
-      "io.circe" %%% "circe-derivation" % V.circe_derivation
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full),
+      "io.circe" %% "circe-derivation" % V.circe_derivation
     ) else Seq.empty },
     libraryDependencies ++= {
       val version = scalaVersion.value
       if (version.startsWith("0.") || version.startsWith("3.")) {
         Seq(
-          "io.circe" %%% "circe-generic" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version
+          "io.circe" %% "circe-generic" % Izumi.Deps.fundamentals_json_circeJVM.io_circe_circe_core_version
         )
       } else Seq.empty
     }
@@ -741,7 +732,6 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.13.18") => Seq(
-        "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
         "-P:kind-projector:underscore-placeholders",
@@ -760,10 +750,10 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
         "-Wunused:_",
         "-Wmacros:default",
         "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
+        "-Ycache-macro-class-loader:last-modified",
+        "-release:17"
       )
-      case (_, "3.8.3") => Seq(
-        "-release:17",
+      case (_, "3.9.0") => Seq(
         "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
@@ -771,8 +761,6 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
@@ -787,7 +775,9 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
+        "-Ximport-suggestion-timeout:0",
+        "-release:17"
       )
       case (_, _) => Seq.empty
     } },
@@ -796,7 +786,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
         "-opt:l:inline",
         "-opt-inline-from:izumi.**"
       )
-      case (false, "3.8.3") => Seq(
+      case (false, "3.9.0") => Seq(
         "-opt",
         "-opt-inline:izumi.**"
       )
@@ -806,7 +796,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
     scalacOptions += "-Wconf:msg=nowarn:silent",
     scalacOptions += "-Wconf:msg=pattern var charIn:silent",
     excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "3.8.3") => Seq(
+      case (_, "3.9.0") => Seq(
         "com.lihaoyi" % "sourcecode_2.13"
       )
       case (_, _) => Seq.empty
@@ -814,7 +804,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
   )
   .jvmSettings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -822,7 +812,7 @@ lazy val `idealingua-v1-transpilers` = crossProject(JVMPlatform, JSPlatform).cro
   )
   .jsSettings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -850,12 +840,12 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
       "dev.zio" %% "izumi-reflect" % Izumi.Deps.fundamentals_bioJVM.dev_zio_izumi_reflect_version
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -910,7 +900,6 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.13.18") => Seq(
-        "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
         "-P:kind-projector:underscore-placeholders",
@@ -929,10 +918,10 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-Wunused:_",
         "-Wmacros:default",
         "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
+        "-Ycache-macro-class-loader:last-modified",
+        "-release:17"
       )
-      case (_, "3.8.3") => Seq(
-        "-release:17",
+      case (_, "3.9.0") => Seq(
         "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
@@ -940,8 +929,6 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
@@ -956,7 +943,9 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
+        "-Ximport-suggestion-timeout:0",
+        "-release:17"
       )
       case (_, _) => Seq.empty
     } },
@@ -965,7 +954,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
         "-opt:l:inline",
         "-opt-inline-from:izumi.**"
       )
-      case (false, "3.8.3") => Seq(
+      case (false, "3.9.0") => Seq(
         "-opt",
         "-opt-inline:izumi.**"
       )
@@ -975,7 +964,7 @@ lazy val `idealingua-v1-test-defs` = project.in(file("idealingua-v1/idealingua-v
     scalacOptions += "-Wconf:msg=nowarn:silent",
     scalacOptions += "-Wconf:msg=pattern var charIn:silent",
     excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "3.8.3") => Seq(
+      case (_, "3.9.0") => Seq(
         "com.lihaoyi" % "sourcecode_2.13"
       )
       case (_, _) => Seq.empty
@@ -989,12 +978,12 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -1049,7 +1038,6 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.13.18") => Seq(
-        "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
         "-P:kind-projector:underscore-placeholders",
@@ -1068,10 +1056,10 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-Wunused:_",
         "-Wmacros:default",
         "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
+        "-Ycache-macro-class-loader:last-modified",
+        "-release:17"
       )
-      case (_, "3.8.3") => Seq(
-        "-release:17",
+      case (_, "3.9.0") => Seq(
         "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
@@ -1079,8 +1067,6 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
@@ -1095,7 +1081,9 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
+        "-Ximport-suggestion-timeout:0",
+        "-release:17"
       )
       case (_, _) => Seq.empty
     } },
@@ -1104,7 +1092,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
         "-opt:l:inline",
         "-opt-inline-from:izumi.**"
       )
-      case (false, "3.8.3") => Seq(
+      case (false, "3.9.0") => Seq(
         "-opt",
         "-opt-inline:izumi.**"
       )
@@ -1114,7 +1102,7 @@ lazy val `idealingua-v1-runtime-rpc-typescript` = project.in(file("idealingua-v1
     scalacOptions += "-Wconf:msg=nowarn:silent",
     scalacOptions += "-Wconf:msg=pattern var charIn:silent",
     excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "3.8.3") => Seq(
+      case (_, "3.9.0") => Seq(
         "com.lihaoyi" % "sourcecode_2.13"
       )
       case (_, _) => Seq.empty
@@ -1128,12 +1116,12 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
       "org.scalatest" %% "scalatest" % V.scalatest % Test
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -1188,7 +1176,6 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.13.18") => Seq(
-        "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
         "-P:kind-projector:underscore-placeholders",
@@ -1207,10 +1194,10 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-Wunused:_",
         "-Wmacros:default",
         "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
+        "-Ycache-macro-class-loader:last-modified",
+        "-release:17"
       )
-      case (_, "3.8.3") => Seq(
-        "-release:17",
+      case (_, "3.9.0") => Seq(
         "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
@@ -1218,8 +1205,6 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
@@ -1234,7 +1219,9 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
+        "-Ximport-suggestion-timeout:0",
+        "-release:17"
       )
       case (_, _) => Seq.empty
     } },
@@ -1243,7 +1230,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
         "-opt:l:inline",
         "-opt-inline-from:izumi.**"
       )
-      case (false, "3.8.3") => Seq(
+      case (false, "3.9.0") => Seq(
         "-opt",
         "-opt-inline:izumi.**"
       )
@@ -1253,7 +1240,7 @@ lazy val `idealingua-v1-runtime-rpc-csharp` = project.in(file("idealingua-v1/ide
     scalacOptions += "-Wconf:msg=nowarn:silent",
     scalacOptions += "-Wconf:msg=pattern var charIn:silent",
     excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "3.8.3") => Seq(
+      case (_, "3.9.0") => Seq(
         "com.lihaoyi" % "sourcecode_2.13"
       )
       case (_, _) => Seq.empty
@@ -1275,12 +1262,12 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
       "com.typesafe" % "config" % V.typesafe_config
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -1335,7 +1322,6 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.13.18") => Seq(
-        "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
         "-P:kind-projector:underscore-placeholders",
@@ -1354,10 +1340,10 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-Wunused:_",
         "-Wmacros:default",
         "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
+        "-Ycache-macro-class-loader:last-modified",
+        "-release:17"
       )
-      case (_, "3.8.3") => Seq(
-        "-release:17",
+      case (_, "3.9.0") => Seq(
         "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
@@ -1365,8 +1351,6 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
@@ -1381,7 +1365,9 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
+        "-Ximport-suggestion-timeout:0",
+        "-release:17"
       )
       case (_, _) => Seq.empty
     } },
@@ -1390,7 +1376,7 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
         "-opt:l:inline",
         "-opt-inline-from:izumi.**"
       )
-      case (false, "3.8.3") => Seq(
+      case (false, "3.9.0") => Seq(
         "-opt",
         "-opt-inline:izumi.**"
       )
@@ -1400,12 +1386,17 @@ lazy val `idealingua-v1-compiler` = project.in(file("idealingua-v1/idealingua-v1
     scalacOptions += "-Wconf:msg=nowarn:silent",
     scalacOptions += "-Wconf:msg=pattern var charIn:silent",
     excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "3.8.3") => Seq(
+      case (_, "3.9.0") => Seq(
         "com.lihaoyi" % "sourcecode_2.13"
       )
       case (_, _) => Seq.empty
     } },
-    Compile / mainClass := Some("izumi.idealingua.compiler.CommandlineIDLCompiler")
+    Compile / mainClass := Some("izumi.idealingua.compiler.CommandlineIDLCompiler"),
+    Universal / target := baseDirectory.value / "target" / "universal",
+    runtimeClasspathString := Def.uncached {
+      val converter = fileConverter.value
+      (Runtime / fullClasspath).value.map(entry => converter.toPath(entry.data).toString).mkString(java.io.File.pathSeparator)
+    }
   )
   .enablePlugins(JavaAppPackaging, IzumiPlugin)
 
@@ -1421,12 +1412,12 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
       "com.networknt" % "json-schema-validator" % V.json_schema_validator % Test
     ),
     libraryDependencies ++= { if (scalaVersion.value.startsWith("2.")) Seq(
-      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector cross CrossVersion.full)
+      compilerPlugin("org.typelevel" % "kind-projector" % V.kind_projector `cross` CrossVersion.full)
     ) else Seq.empty }
   )
   .settings(
     crossScalaVersions := Seq(
-      "3.8.3",
+      "3.9.0",
       "2.13.18"
     ),
     scalaVersion := crossScalaVersions.value.head,
@@ -1481,7 +1472,6 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
     Test / testOptions += Tests.Argument("-oDF"),
     scalacOptions ++= { (isSnapshot.value, scalaVersion.value) match {
       case (_, "2.13.18") => Seq(
-        "-release:8",
         "-explaintypes",
         "-Xsource:3-cross",
         "-P:kind-projector:underscore-placeholders",
@@ -1500,10 +1490,10 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
         "-Wunused:_",
         "-Wmacros:default",
         "-Ycache-plugin-class-loader:always",
-        "-Ycache-macro-class-loader:last-modified"
+        "-Ycache-macro-class-loader:last-modified",
+        "-release:17"
       )
-      case (_, "3.8.3") => Seq(
-        "-release:17",
+      case (_, "3.9.0") => Seq(
         "-Xkind-projector:underscores",
         "-Yretain-trees",
         "-no-indent",
@@ -1511,8 +1501,6 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
         "-explain-types",
         "-explain-cyclic",
         "-Xmax-inlines:64",
-        "-Ybackend-parallelism",
-        math.min(16, math.max(1, sys.runtime.availableProcessors() - 1)).toString,
         "-Wenum-comment-discard",
         "-Wimplausible-patterns",
         "-Wnonunit-statement",
@@ -1527,7 +1515,9 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
         "-Wconf:name=UnusedNonUnitValue:silent",
         "-Wconf:name=ValueDiscarding:silent",
         "-Wconf:msg=eta-expanded even though:silent",
-        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning"
+        if (insideCI.value) "-Wconf:any:error" else "-Wconf:any:warning",
+        "-Ximport-suggestion-timeout:0",
+        "-release:17"
       )
       case (_, _) => Seq.empty
     } },
@@ -1536,7 +1526,7 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
         "-opt:l:inline",
         "-opt-inline-from:izumi.**"
       )
-      case (false, "3.8.3") => Seq(
+      case (false, "3.9.0") => Seq(
         "-opt",
         "-opt-inline:izumi.**"
       )
@@ -1546,7 +1536,7 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
     scalacOptions += "-Wconf:msg=nowarn:silent",
     scalacOptions += "-Wconf:msg=pattern var charIn:silent",
     excludeDependencies ++= { (isSnapshot.value, scalaVersion.value) match {
-      case (_, "3.8.3") => Seq(
+      case (_, "3.9.0") => Seq(
         "com.lihaoyi" % "sourcecode_2.13"
       )
       case (_, _) => Seq.empty
@@ -1554,8 +1544,9 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
     Compile / sourceGenerators += Def.task[Seq[File]] {
       val log         = streams.value.log
       val repoRoot    = (LocalRootProject / baseDirectory).value.toPath.toAbsolutePath
-      val genRoot     = (Compile / target).value.toPath.resolve("generated-sources/test-harness").toAbsolutePath
-      val codegenCp   = (`idealingua-v1-compiler` / Compile / fullClasspath).value.files
+      val genRoot     = baseDirectory.value.toPath.resolve("target/generated-sources/test-harness").toAbsolutePath
+      val converter   = fileConverter.value
+      val codegenCp   = (`idealingua-v1-compiler` / Compile / fullClasspath).value.map(entry => converter.toPath(entry.data))
       val codegenRun  = (`idealingua-v1-compiler` / Compile / runner).value
       log.info(s"test-harness codegen: generating into $genRoot")
       codegenRun.run(
@@ -1578,13 +1569,14 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
         } finally s.close()
       } else Seq.empty[java.io.File]
     }.taskValue,
-    Compile / unmanagedResourceDirectories += (Compile / target).value / "generated-sources" / "test-harness" / "scala-mcp-resources",
+    Compile / unmanagedResourceDirectories += baseDirectory.value / "target" / "generated-sources" / "test-harness" / "scala-mcp-resources",
     coverageEnabled := false,
-    runWireFixtures := {
+    runWireFixtures := Def.uncached {
       val log      = streams.value.log
       val repoRoot = (LocalRootProject / baseDirectory).value.toPath
       log.info("runWireFixtures: starting")
-      val cp = (Compile / fullClasspath).value.files
+      val converter = fileConverter.value
+      val cp = (Compile / fullClasspath).value.map(entry => converter.toPath(entry.data))
       val r  = (Compile / runner).value
       r.run("izumi.idealingua.harness.WireFixturesMain", cp, Seq(repoRoot.toString), log)
         .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
@@ -1598,11 +1590,12 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
       val cc = countJsons(repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/wire-fixtures/csharp"))
       log.info(s"runWireFixtures: all $sc Scala + $tc TypeScript + $cc CSharp fixtures match")
     },
-    runCrossLangInterop := {
+    runCrossLangInterop := Def.uncached {
       val log      = streams.value.log
       val repoRoot = (LocalRootProject / baseDirectory).value.toPath
       log.info("runCrossLangInterop: starting cross-language matrix")
-      val cp = (Compile / fullClasspath).value.files
+      val converter = fileConverter.value
+      val cp = (Compile / fullClasspath).value.map(entry => converter.toPath(entry.data))
       val r  = (Compile / runner).value
       r.run("izumi.idealingua.harness.CrossLangMain", cp, Seq(repoRoot.toString), log)
         .failed.foreach(e => throw new MessageOnlyException(e.getMessage))
@@ -1702,6 +1695,9 @@ lazy val `idealingua-v1` = (project in file("."))
     crossScalaVersions := Nil,
     libraryDependencies := Nil,
     publish / skip := true,
+    ThisBuild / libraryDependencySchemes += "io.circe" %% "circe-core" % VersionScheme.Always,
+    ThisBuild / libraryDependencySchemes += "io.circe" %% "circe-core_sjs1" % VersionScheme.Always,
+    ThisBuild / com.github.sbt.git.SbtGit.GitKeys.useConsoleForROGit := true,
     ThisBuild / scalacOptions ++= Seq(
       s"-Xmacro-settings:sbt-version=${sbtVersion.value}",
       s"-Xmacro-settings:git-repo-clean=${com.github.sbt.git.SbtGit.GitKeys.gitUncommittedChanges.value}",
@@ -1710,22 +1706,22 @@ lazy val `idealingua-v1` = (project in file("."))
       s"-Xmacro-settings:git-head-commit=${com.github.sbt.git.SbtGit.GitKeys.gitHeadCommit.value.getOrElse("")}"
     ),
     Global / onChangedBuildSource := ReloadOnSourceChanges,
+    Global / excludeLintKeys += SettingKey[Boolean]("ide-skip-project"),
+    Global / excludeLintKeys += SettingKey[Boolean]("coverage-enabled"),
+    Global / excludeLintKeys += publishMavenStyle,
     ThisBuild / publishMavenStyle := true,
     ThisBuild / scalacOptions ++= Seq(
       "-encoding",
       "UTF-8",
       "-feature",
       "-unchecked",
-      "-deprecation",
-      "-language:higherKinds"
+      "-deprecation"
     ),
     ThisBuild / javacOptions ++= Seq(
       "-encoding",
       "UTF-8",
-      "-source",
-      "1.8",
-      "-target",
-      "1.8",
+      "--release",
+      "17",
       "-deprecation",
       "-parameters",
       "-Xlint:all",
@@ -1770,7 +1766,7 @@ lazy val `idealingua-v1` = (project in file("."))
         Seq.empty
       }
     },
-    refreshFlakeTask := {
+    refreshFlakeTask := Def.uncached {
       val log = streams.value.log
       val rootDir = (ThisBuild / baseDirectory).value
       val lockfileOutput = rootDir / "deps.lock.json"
@@ -1805,20 +1801,21 @@ lazy val `idealingua-v1` = (project in file("."))
       commitNextVersion,
       pushChanges
     ),
-    ThisBuild / homepage := Some(url("https://izumi.7mind.io")),
-    ThisBuild / licenses := Seq("BSD-style" -> url("http://www.opensource.org/licenses/bsd-license.php")),
+    ThisBuild / homepage := Some(uri("https://izumi.7mind.io")),
+    ThisBuild / licenses := Seq("BSD-style" -> uri("http://www.opensource.org/licenses/bsd-license.php")),
     ThisBuild / developers := List(
-              Developer(id = "7mind", name = "Septimal Mind", url = url("https://github.com/7mind"), email = "team@7mind.io"),
+              Developer(id = "7mind", name = "Septimal Mind", url = uri("https://github.com/7mind"), email = "team@7mind.io"),
             ),
-    ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git")),
+    ThisBuild / scmInfo := Some(ScmInfo(uri("https://github.com/7mind/izumi"), "scm:git:https://github.com/7mind/izumi.git")),
     ThisBuild / scalacOptions += s"""-Xmacro-settings:scalatest-version=${V.scalatest}""",
-    ThisBuild / scalacOptions += s"""-Xmacro-settings:scalajs-version=1.21.0""",
-    ThisBuild / scalacOptions += s"""-Xmacro-settings:bundler-version=${"0.21.1"}""",
-    ThisBuild / scalacOptions += s"""-Xmacro-settings:sbt-js-version=${"1.0.2"}""",
-    ThisBuild / scalacOptions += s"""-Xmacro-settings:crossproject-version=${"1.3.2"}""",
+    ThisBuild / scalacOptions += s"""-Xmacro-settings:scalajs-version=1.22.0""",
+    ThisBuild / scalacOptions += s"-Xmacro-settings:generated-sbt-version=${V.generated_sbt}",
+    ThisBuild / scalacOptions += s"-Xmacro-settings:bundler-version=${V.generated_sbt_scalajs_bundler}",
+    ThisBuild / scalacOptions += s"-Xmacro-settings:sbt-js-version=${V.generated_sbt_jsdependencies}",
+    ThisBuild / scalacOptions += s"""-Xmacro-settings:crossproject-version=${"1.4.0"}""",
     ThisBuild / scalacOptions += s"-Xmacro-settings:is-ci=${insideCI.value}"
   )
-  .enablePlugins(IzumiPlugin)
+  .enablePlugins(IzumiPlugin, SbtgenVerificationPlugin)
   .aggregate(
     `idealingua`
   )

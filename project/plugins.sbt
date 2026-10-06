@@ -5,17 +5,11 @@
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % PV.scala_js_version)
 
 // https://github.com/portable-scala/sbt-crossproject
-addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.3.2")
-
-// https://scalacenter.github.io/scalajs-bundler/
-addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "0.21.1")
-
-// https://github.com/scala-js/jsdependencies
-addSbtPlugin("org.scala-js" % "sbt-jsdependencies" % "1.0.2")
+addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.4.0")
 
 ////////////////////////////////////////////////////////////////////////////////
 
-addSbtPlugin("io.7mind.izumi.sbt" % "sbt-izumi" % "0.0.118")
+addSbtPlugin("io.7mind.izumi.sbt" % "sbt-izumi" % "0.0.124")
 
 addSbtPlugin("com.github.sbt" % "sbt-pgp" % PV.sbt_pgp)
 

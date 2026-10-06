@@ -2,8 +2,6 @@ package izumi.idealingua.translator.toscala.types
 
 import izumi.idealingua.model.common.ExtendedField
 
-import scala.collection.compat._
-
 /** Field projection used by the Scala translator scaffolders.
   *
   * F-TextTree M8e: `ScalaField` is now String-native — `name` and

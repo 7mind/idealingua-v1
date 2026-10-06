@@ -64,7 +64,7 @@ EOF
     local resolved
     resolved=$(resolve_scala "$scala_ver")
     local ver_cmd="++ $resolved"
-    sbt --batch "$ver_cmd ; idealingua-v1-compiler/run --root=$testroot --source=$testroot/source --target=$tmpdir --overlay-version=$version_json :$lang $layout_flags" >&2
+    sbt --server --batch "$ver_cmd ; idealingua-v1-compiler/run --root=$testroot --source=$testroot/source --target=$tmpdir --overlay-version=$version_json :$lang $layout_flags" >&2
   }
 
   extract_log_qualifier() {
@@ -76,7 +76,7 @@ EOF
     resolved=$(resolve_scala "$scala_ver")
     local ver_cmd="++ $resolved"
     local log
-    log=$(sbt --batch "$ver_cmd ; idealingua-v1-compiler/run --root=$testroot --source=$testroot/source --target=$tmpdir --overlay-version=$version_json :$lang" 2>&1)
+    log=$(sbt --server --batch "$ver_cmd ; idealingua-v1-compiler/run --root=$testroot --source=$testroot/source --target=$tmpdir --overlay-version=$version_json :$lang" 2>&1)
     echo "$log" >&2
     echo "$log" | grep '"snapshotQualifier"' | sed 's/.*: *"\(.*\)".*/\1/'
   }

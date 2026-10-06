@@ -157,7 +157,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
           ExtendedModule.RuntimeModule(
             Module(
               ModuleId(Seq("project"), "build.properties"),
-              s"sbt.version = ${options.manifest.sbt.sbtVersion.getOrElse(MacroParameters.sbtVersion().getOrElse("1.8.0"))}",
+              s"sbt.version = ${options.manifest.sbt.sbtVersion.getOrElse(MacroParameters.macroSetting("generated-sbt-version").getOrElse("1.8.0"))}",
             )
           ),
           ExtendedModule.RuntimeModule(

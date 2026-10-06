@@ -105,10 +105,9 @@ final class McpBridgeRealServerSpec extends AnyWordSpec {
         .bindHttp(0, "127.0.0.1")
         .withHttpApp(routes.orNotFound)
         .resource
-    runUnsafe(resource.use { srv =>
-      val base = Uri.unsafeFromString(s"http://127.0.0.1:${srv.address.getPort}/mcp")
-      izumi.functional.bio.F.syncThrowable(body(base))
-    })
+    val (srv, release) = runUnsafe(resource.allocated)
+    try body(Uri.unsafeFromString(s"http://127.0.0.1:${srv.address.getPort}/mcp"))
+    finally runUnsafe(release)
   }
 
   private def client[A](body: org.http4s.client.Client[BIO[Throwable, *]] => BIO[Throwable, A]): A =
