@@ -384,7 +384,7 @@ object DomainCSJsonNetExtension {
       case g: Generic.TOption =>
         val optionType = DomainCSharpType(g.valueType)
         s"""if (${if (optionType.isNullable) src + " != null" else src + ".HasValue"}) {
-           |${writePropertyValue(domain, if (optionType.isNullable) src else src + ".Value", optionType, key).shift(4)}
+           |${writePropertyValue(domain, if (optionType.isNullable) src else src + ".Value", optionType, key, depth).shift(4)}
            |}
          """.stripMargin
       case al: AliasId => writePropertyValue(domain, src, DomainCSharpType(domain.aliases.getOrElse(al, al)), key, depth)
@@ -398,7 +398,7 @@ object DomainCSJsonNetExtension {
                   s"""writer.WriteStartObject();
                      |foreach(var $iter in $src) {
                      |    writer.WritePropertyName($iter.Key.ToString());
-                     |${writePropertyValue(domain, s"$iter.Value", DomainCSharpType(m.valueType), depth = depth + 1).shift(4)}
+                     |${writePropertyValue(domain, s"$iter.Value", DomainCSharpType(m.valueType), None, depth + 1).shift(4)}
                      |}
                      |writer.WriteEndObject();
                  """.stripMargin
@@ -406,7 +406,7 @@ object DomainCSJsonNetExtension {
                   val iter = s"lv${if (depth > 1) depth.toString else ""}"
                   s"""writer.WriteStartArray();
                      |foreach (var $iter in $src) {
-                     |${writePropertyValue(domain, s"$iter", DomainCSharpType(l.valueType), depth = depth + 1).shift(4)}
+                     |${writePropertyValue(domain, s"$iter", DomainCSharpType(l.valueType), None, depth + 1).shift(4)}
                      |}
                      |writer.WriteEndArray();
                  """.stripMargin
@@ -414,7 +414,7 @@ object DomainCSJsonNetExtension {
                   val iter = s"lv${if (depth > 1) depth.toString else ""}"
                   s"""writer.WriteStartArray();
                      |foreach (var $iter in $src) {
-                     |${writePropertyValue(domain, s"$iter", DomainCSharpType(s.valueType), depth = depth + 1).shift(4)}
+                     |${writePropertyValue(domain, s"$iter", DomainCSharpType(s.valueType), None, depth + 1).shift(4)}
                      |}
                      |writer.WriteEndArray();
                  """.stripMargin
