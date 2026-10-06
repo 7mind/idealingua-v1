@@ -76,8 +76,14 @@ Support Chats:
 Release process
 ---------------
 
-`nix` must be installed and available.
+`nix` must be installed and available. Run the release from the nix dev shell (`nix develop`):
 
 ```bash
-./build.sh release
+sbt release
+```
+
+or, to accept the default release and next versions without prompts:
+
+```bash
+sbt 'release with-defaults'
 ```
