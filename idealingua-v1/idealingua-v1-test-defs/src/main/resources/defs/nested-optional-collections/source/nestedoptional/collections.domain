@@ -1,0 +1,21 @@
+domain nestedoptional.collections
+
+data ListOfOptionalList {
+  values : list[opt[list[str]]]
+}
+
+data ListOfOptionalSet {
+  values : list[opt[set[str]]]
+}
+
+data SetOfOptionalList {
+  values : set[opt[list[str]]]
+}
+
+data SetOfOptionalSet {
+  values : set[opt[set[str]]]
+}
+
+data MapOfOptionalMap {
+  values : map[str, opt[map[str, str]]]
+}
