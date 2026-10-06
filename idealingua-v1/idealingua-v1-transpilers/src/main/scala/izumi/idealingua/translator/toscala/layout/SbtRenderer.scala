@@ -2,7 +2,7 @@ package izumi.idealingua.translator.toscala.layout
 
 import izumi.idealingua.model.publishing.BuildManifest
 
-class SbtRenderer {
+class SbtRenderer(targetsSbt2: Boolean) {
   def renderOp(pair: Tuple2[String, SbtDslOp]): String = {
     val key = pair._1
     val parts = pair._2 match {
@@ -47,7 +47,8 @@ class SbtRenderer {
             "None"
         }
       case u: BuildManifest.MFUrl =>
-        s"url(${renderValue(u.url)})"
+        val constructor = if (targetsSbt2) "uri" else "url"
+        s"$constructor(${renderValue(u.url)})"
       case l: BuildManifest.License =>
         s"${renderValue(l.name)} -> ${renderValue(l.url)}"
       case s: Seq[?] =>
