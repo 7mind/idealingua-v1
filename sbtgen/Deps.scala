@@ -537,8 +537,8 @@ object Idealingua {
           // Scala 3.9.0 -opt-inline can assert NoType in BTypeLoader.buildInlineInfoFromClassSymbol
           // while emitting generic signatures involving nested classes; source order affects the failure.
           // Replaying all 254 harness sources with BasicFailure.scala first fails with these flags and passes without them.
-          // Matching upstream regression: https://github.com/scala/scala3/issues/26987
-          // Upstream fix: https://github.com/scala/scala3/pull/27031; recheck the reproduction before restoring these options.
+          // Similar upstream two-file reproducer (nested AnyVal in a generic type): https://github.com/scala/scala3/issues/26987
+          // Upstream fix: https://github.com/scala/scala3/pull/27031; rerun that issue's reproducer before restoring these options.
           "scalacOptions" -= "-opt",
           "scalacOptions" -= "-opt-inline:izumi.**",
           // R1: test sources are generated at build time (under
