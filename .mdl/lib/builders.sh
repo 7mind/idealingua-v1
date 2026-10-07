@@ -20,7 +20,7 @@ function test_scala_sbt_prj() {
   pushd .
   cd "$tmpdir/scala"
   [[ -f build.sbt ]] || exit 1
-  sbt clean compile
+  SBT_OPTS="-Xmx4g -XX:+UseG1GC" sbt clean compile
   popd
   echo "IDL TEST DONE: $1"
 }
@@ -106,7 +106,7 @@ function test_scala_mcp_jvm_prj() {
   cd "$tmpdir/scala"
   [[ -f build.sbt ]] || exit 1
   assert_mcp_in_shared_sourceset "$tmpdir/scala"
-  sbt clean compile
+  SBT_OPTS="-Xmx4g -XX:+UseG1GC" sbt clean compile
   popd
   echo "IDL MCP JVM-ONLY TEST DONE: $1"
 }
@@ -138,7 +138,7 @@ function test_scala_mcp_cross_prj() {
   projid="$(basename "$apimod")"
   echo "MCP crossproject: $projid (JVM+JS)"
 
-  sbt clean "${projid}JVM/compile" "${projid}JS/compile"
+  SBT_OPTS="-Xmx4g -XX:+UseG1GC" sbt clean "${projid}JVM/compile" "${projid}JS/compile"
   popd
   echo "IDL MCP CROSS JVM+JS TEST DONE: $1"
 }
