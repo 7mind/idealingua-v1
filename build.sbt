@@ -1541,6 +1541,8 @@ lazy val `idealingua-v1-test-harness` = project.in(file("idealingua-v1/idealingu
       )
       case (_, _) => Seq.empty
     } },
+    scalacOptions -= "-opt",
+    scalacOptions -= "-opt-inline:izumi.**",
     Compile / sourceGenerators += Def.task[Seq[File]] {
       val log         = streams.value.log
       val repoRoot    = (LocalRootProject / baseDirectory).value.toPath.toAbsolutePath

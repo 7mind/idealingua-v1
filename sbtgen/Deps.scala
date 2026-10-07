@@ -534,6 +534,8 @@ object Idealingua {
         ).map(_ in Scope.Compile.all),
         platforms = Targets.jvm3,
         settings  = Seq(
+          "scalacOptions" -= "-opt",
+          "scalacOptions" -= "-opt-inline:izumi.**",
           // R1: test sources are generated at build time (under
           // `<harnessTarget>/generated-sources/test-harness/`) by the
           // `idealingua-v1-compiler` module's `TestCodegenMain` entrypoint.
