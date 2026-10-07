@@ -30,7 +30,5 @@ object V {
   // PR-04 IMPL-MCP-M5: JSON Schema 2020-12 validator (test-scope only).
   val json_schema_validator = "1.5.9"
 
-  val generated_sbt                 = "1.12.5"
-  val generated_sbt_scalajs_bundler = "0.21.1"
-  val generated_sbt_jsdependencies  = "1.0.2"
+  val generated_sbt = "2.0.9"
 }

@@ -12,8 +12,7 @@ case class RawExpr(e: String)
 class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter {
   private val naming      = new ScalaNamingConvention(options.manifest.sbt.projectNaming)
   private val idlcGroupId = MacroParameters.projectGroupId().getOrElse("UNSET-GROUP-ID")
-  private val sbtVersion  = options.manifest.sbt.sbtVersion.getOrElse(MacroParameters.macroSetting("generated-sbt-version").getOrElse("1.8.0"))
-  private val targetsSbt2 = sbtVersion.startsWith("2.")
+  private val sbtVersion = options.manifest.sbt.sbtVersion.getOrElse(MacroParameters.macroSetting("generated-sbt-version").getOrElse("2.0.9"))
 
   override def layout(outputs: Seq[Translated]): Layouted = {
     def regularProject(id: String): String = {
@@ -57,12 +56,12 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
         val idlVersion = options.manifest.common.izumiVersion
 
-        val renderer = new SbtRenderer(targetsSbt2)
+        val renderer = new SbtRenderer()
 
         val projectName = "name" -> Assign(options.manifest.common.name, Scope.Project)
 
         val projectDeps = renderer.renderOp {
-          val versionOp = if (options.manifest.sbt.enableScalaJs && !targetsSbt2) "%%%" else "%%"
+          val versionOp = "%%"
 
           "libraryDependencies" -> Append(
             Seq(
@@ -93,7 +92,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
 
         val root = {
           val rootId   = naming.pkgId
-          val rootName = if (targetsSbt2) s"\n   ${renderer.renderOp(projectName)}," else ""
+          val rootName = s"\n   ${renderer.renderOp(projectName)},"
           val rootSettings = {
             s""".settings($rootName
                |   crossScalaVersions := Nil,
@@ -135,18 +134,17 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
           )
         )
 
-        val resolvers = (idlVersion.endsWith("SNAPSHOT"), targetsSbt2) match {
-          case (true, true)   => Seq("resolvers" -> Append(RawExpr("Resolver.sonatypeCentralSnapshots")))
-          case (false, true)  => Seq.empty
-          case (true, false)  => Seq("resolvers" -> Append(RawExpr("Opts.resolver.sonatypeSnapshots")))
-          case (false, false) => Seq("resolvers" -> Append(RawExpr("Opts.resolver.sonatypeReleases")))
+        val resolvers = if (idlVersion.endsWith("SNAPSHOT")) {
+          Seq("resolvers" -> Append(RawExpr("Resolver.sonatypeCentralSnapshots")))
+        } else {
+          Seq.empty
         }
 
         val docs = Seq(
           "publishArtifact" -> Assign(options.manifest.sbt.enableDocs.getOrElse(false), List(Scope.ThisBuild, Scope.Custom("packageDoc")))
         )
 
-        val metadata = (if (targetsSbt2) Seq.empty else Seq(projectName)) ++ Seq(
+        val metadata = Seq(
           "organization" -> Assign(options.manifest.common.group),
           "version"      -> Assign(renderVersion(options.manifest.common.version)),
           "homepage"     -> Assign(Some(options.manifest.common.website)),
@@ -175,7 +173,7 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
                  |// https://github.com/portable-scala/sbt-crossproject
                  |addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "${MacroParameters
                   .macroSetting("crossproject-version").getOrElse("undefined-version")}")
-                 |$sbt1OnlyPlugins""".stripMargin,
+                 |""".stripMargin,
             )
           ),
         )
@@ -183,20 +181,6 @@ class ScalaLayouter(options: ScalaTranslatorOptions) extends TranslationLayouter
         projectModules ++ runtimeModules ++ sbtModules
     }
     Layouted(modules)
-  }
-
-  private def sbt1OnlyPlugins: String = {
-    if (targetsSbt2) {
-      ""
-    } else {
-      s"""
-         |// https://scalacenter.github.io/scalajs-bundler/
-         |addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "${MacroParameters.macroSetting("bundler-version").getOrElse("undefined-version")}")
-         |
-         |// https://github.com/scala-js/jsdependencies
-         |addSbtPlugin("org.scala-js" % "sbt-jsdependencies" % "${MacroParameters.macroSetting("sbt-js-version").getOrElse("undefined-version")}")
-         |""".stripMargin
-    }
   }
 
   private def asSbtModule(out: Seq[Module], did: DomainId): Seq[Module] = {

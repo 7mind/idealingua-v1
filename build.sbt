@@ -1810,8 +1810,6 @@ lazy val `idealingua-v1` = (project in file("."))
     ThisBuild / scalacOptions += s"""-Xmacro-settings:scalatest-version=${V.scalatest}""",
     ThisBuild / scalacOptions += s"""-Xmacro-settings:scalajs-version=1.22.0""",
     ThisBuild / scalacOptions += s"-Xmacro-settings:generated-sbt-version=${V.generated_sbt}",
-    ThisBuild / scalacOptions += s"-Xmacro-settings:bundler-version=${V.generated_sbt_scalajs_bundler}",
-    ThisBuild / scalacOptions += s"-Xmacro-settings:sbt-js-version=${V.generated_sbt_jsdependencies}",
     ThisBuild / scalacOptions += s"""-Xmacro-settings:crossproject-version=${"1.4.0"}""",
     ThisBuild / scalacOptions += s"-Xmacro-settings:is-ci=${insideCI.value}"
   )

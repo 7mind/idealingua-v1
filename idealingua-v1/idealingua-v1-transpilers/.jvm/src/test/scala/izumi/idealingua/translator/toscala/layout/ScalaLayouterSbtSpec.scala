@@ -168,13 +168,13 @@ final class ScalaLayouterSbtSpec extends AnyWordSpec {
     }
   }
 
-  private def crossJsLayout(sbtVersion: String, izumiVersion: String): Map[String, String] = {
+  private def crossJsLayout(izumiVersion: String): Map[String, String] = {
     val manifest = jvmOnlyManifest.copy(
       common = jvmOnlyManifest.common.copy(izumiVersion = izumiVersion),
       sbt = jvmOnlyManifest.sbt.copy(
         enableScalaJs = true,
         scalaVersions = List("3.9.0", "2.13.18"),
-        sbtVersion    = Some(sbtVersion),
+        sbtVersion    = Some("2.0.9"),
       ),
     )
     val layouter = new ScalaLayouter(options.copy(manifest = manifest))
@@ -188,7 +188,7 @@ final class ScalaLayouterSbtSpec extends AnyWordSpec {
   }
 
   "ScalaLayouter targeting sbt 2" should {
-    val files    = crossJsLayout("2.0.9", "1.0.0")
+    val files    = crossJsLayout("1.0.0")
     val buildSbt = files("build.sbt")
     val plugins  = files("project/plugins.sbt")
 
@@ -220,23 +220,8 @@ final class ScalaLayouterSbtSpec extends AnyWordSpec {
 
     "not reference the removed OSSRH resolvers" in {
       assert(!buildSbt.contains("Opts.resolver"), buildSbt)
-      assert(!crossJsLayout("2.0.9", "1.0.0-SNAPSHOT")("build.sbt").contains("Opts.resolver"))
-      assert(crossJsLayout("2.0.9", "1.0.0-SNAPSHOT")("build.sbt").contains("Resolver.sonatypeCentralSnapshots"))
-    }
-  }
-
-  "ScalaLayouter targeting sbt 1" should {
-    val files    = crossJsLayout("1.12.5", "1.0.0")
-    val buildSbt = files("build.sbt")
-    val plugins  = files("project/plugins.sbt")
-
-    "keep the sbt 1 plugins and dependency operator" in {
-      assert(plugins.contains("sbt-scalajs-bundler"), plugins)
-      assert(plugins.contains("sbt-jsdependencies"), plugins)
-      assert(buildSbt.contains("%%%"), buildSbt)
-      assert(buildSbt.linesIterator.exists(_.startsWith("name :=")), buildSbt)
-      assert(buildSbt.contains("Opts.resolver.sonatypeReleases"), buildSbt)
-      assert(buildSbt.contains("homepage := Some(url("), buildSbt)
+      assert(!crossJsLayout("1.0.0-SNAPSHOT")("build.sbt").contains("Opts.resolver"))
+      assert(crossJsLayout("1.0.0-SNAPSHOT")("build.sbt").contains("Resolver.sonatypeCentralSnapshots"))
     }
   }
 }

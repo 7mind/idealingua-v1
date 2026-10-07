@@ -350,8 +350,6 @@ object Idealingua {
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalatest-version=$${${V.scalatest.asExpr}}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:scalajs-version=${PluginVersions.pv.scala_js_version}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += """s"-Xmacro-settings:generated-sbt-version=${V.generated_sbt}"""".raw,
-        "scalacOptions" in SettingScope.Build += """s"-Xmacro-settings:bundler-version=${V.generated_sbt_scalajs_bundler}"""".raw,
-        "scalacOptions" in SettingScope.Build += """s"-Xmacro-settings:sbt-js-version=${V.generated_sbt_jsdependencies}"""".raw,
         "scalacOptions" in SettingScope.Build += s"""s${"\"" * 3}-Xmacro-settings:crossproject-version=$${${Idealingua.settings.crossProjectVersion.asExpr}}${"\"" * 3}""".raw,
         "scalacOptions" in SettingScope.Build += """s"-Xmacro-settings:is-ci=${insideCI.value}"""".raw,
       )
