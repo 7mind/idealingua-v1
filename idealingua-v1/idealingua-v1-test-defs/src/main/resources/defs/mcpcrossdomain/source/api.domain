@@ -1,0 +1,39 @@
+domain mcpcrossdomain.api
+
+import mcpcrossdomain.shared.{
+  Plain,
+  Choice,
+  Branch,
+  Problem,
+  Report,
+  Alpha,
+  Beta,
+  Listed,
+  SetMember,
+  MapValue,
+  OptItem,
+}
+
+data LocalInner {
+  text: str
+}
+
+adt LocalChoice {
+  LocalInner as local
+  Branch as branch
+}
+
+// Every data type of `shared` (and `leaf`) used here is reached through exactly
+// one position, so each method covers one way of reaching a foreign type.
+service ProbeService {
+  def plainParam(p: Plain) => Plain
+  def importedAdt(c: Choice) => Plain
+  def localAdtWithForeignBranch(c: LocalChoice) => Plain
+  def errorBranch(p: Plain) => Plain !! Problem
+  def successBranch(p: Plain) => Report !! Plain
+  def algebraicOutput(p: Plain) => ( Alpha | Beta )
+  def listArg(items: list[Listed]) => Plain
+  def setArg(items: set[SetMember]) => Plain
+  def mapArg(values: map[str, MapValue]) => Plain
+  def optArg(item: opt[OptItem]) => Plain
+}

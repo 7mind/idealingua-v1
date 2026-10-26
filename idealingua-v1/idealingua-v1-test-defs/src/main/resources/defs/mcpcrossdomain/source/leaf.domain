@@ -1,0 +1,7 @@
+domain mcpcrossdomain.leaf
+
+// Reached from `api` only through `opt[Deep]` inside a `shared` data type, so
+// this domain is never referenced directly by the service domain.
+data Deep {
+  depth: i32
+}

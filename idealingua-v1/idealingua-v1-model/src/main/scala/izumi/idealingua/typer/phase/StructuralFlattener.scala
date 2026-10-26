@@ -1,7 +1,7 @@
 package izumi.idealingua.typer.phase
 
 import izumi.idealingua.model.common.TypeId._
-import izumi.idealingua.model.common.{DomainId, Primitive, StructureId, TypeId}
+import izumi.idealingua.model.common.{DomainId, Generic, Primitive, StructureId, TypeId}
 import izumi.idealingua.model.il.ast.InputPosition
 import izumi.idealingua.model.il.ast.typed.Field
 import izumi.idealingua.typer.ir._
@@ -208,18 +208,37 @@ object StructuralFlattener {
         }
       }
 
-      // Helper shared by DTO and Interface branches of harvest: for each field
-      // of a freshly-harvested foreign struct, index the field's domain and
-      // recursively harvest any foreign StructureId referenced — so third-domain
-      // (and deeper) types are reached transitively (D06).
-      def harvestFieldTypes(fields: List[Field]): Unit = fields.foreach { f =>
-        val tid = f.typeId
-        val d   = tid.path.domain
-        if (d != rd.id) indexForeignUserTypes(d)
-        tid match {
-          case sid: StructureId if sid.path.domain != rd.id => harvest(sid)
-          case _                                             => ()
-        }
+      // Follows one type reference through every position that can reach a
+      // foreign type: generic arguments (`opt`/`list`/`set`/`map`), ADT
+      // alternatives (including the ADTs synthesized for `!!` and `( | )`
+      // method outputs), alias targets and identifier fields. Each foreign
+      // domain reached is indexed and each foreign DTO/Interface reached is
+      // harvested, so every foreign struct a renderer can emit (e.g. into an
+      // MCP `$defs` closure) has a flattened struct. Following only struct
+      // fields and supers left foreign structs reached through these positions
+      // unflattened, and domains reached only through them unindexed.
+      val visitedRefs = mutable.HashSet.empty[TypeId]
+
+      def visitTypeRef(tid: TypeId): Unit = tid match {
+        case g: Generic => g.args.foreach(visitTypeRef)
+        case _ if visitedRefs.add(tid) =>
+          val d = tid.path.domain
+          if (d != rd.id) indexForeignUserTypes(d)
+          tid match {
+            case sid: StructureId =>
+              if (d != rd.id) harvest(sid)
+            case _ =>
+              val defn = if (d == rd.id) rd.userTypes.get(tid) else resolveForeign(d).flatMap(_.userTypes.get(tid))
+              defn.foreach(visitNonStructRefs)
+          }
+        case _ => ()
+      }
+
+      def visitNonStructRefs(td: TypeDef): Unit = td match {
+        case adt: TypeDef.Adt          => adt.alternatives.foreach(m => visitTypeRef(m.typeId))
+        case alias: TypeDef.Alias      => visitTypeRef(alias.target)
+        case ident: TypeDef.Identifier => ident.fields.foreach(f => visitTypeRef(f.typeId))
+        case _                         => ()
       }
 
       def harvest(id: StructureId): Unit = {
@@ -241,7 +260,7 @@ object StructuralFlattener {
             directInterfaces.update(id, dto.struct.superclasses.interfaces)
             directConcepts.update(id, dto.struct.superclasses.concepts)
             (dto.struct.superclasses.interfaces ++ dto.struct.superclasses.concepts).foreach(harvest)
-            harvestFieldTypes(dto.struct.fields)
+            dto.struct.fields.foreach(f => visitTypeRef(f.typeId))
           case Some(ifc: TypeDef.Interface) =>
             views.update(
               id,
@@ -256,53 +275,20 @@ object StructuralFlattener {
             directInterfaces.update(id, ifc.struct.superclasses.interfaces)
             directConcepts.update(id, ifc.struct.superclasses.concepts)
             (ifc.struct.superclasses.interfaces ++ ifc.struct.superclasses.concepts).foreach(harvest)
-            harvestFieldTypes(ifc.struct.fields)
+            ifc.struct.fields.foreach(f => visitTypeRef(f.typeId))
           case _ => ()
         }
       }
 
-      // Snapshot keys to avoid concurrent-modification while we mutate views.
-      val seedSupers = directSupers.values.flatten.toList
-      seedSupers.foreach { sup =>
-        if (sup.path.domain != rd.id) harvest(sup)
-      }
-
-      // Seed foreign user-type harvest and DTO/Interface struct harvest from
-      // first-hop field-type references. With the new transitive harvest in
-      // `harvest` itself (D06), this seed only needs to find the *first-hop*
-      // foreign references — `harvest` follows deeper hops automatically.
-      val foreignFieldDomains = mutable.LinkedHashSet.empty[DomainId]
-      // Collect foreign StructureId (DTOId / InterfaceId) references seen in
-      // field positions. `harvest(sid)` populates `crossDomainFlattenedStructs`
-      // for those structs, which `canBeAnyValField` consults when classifying
-      // a local DTO that carries a single foreign DTO/Interface field. The
-      // super-driven harvest only follows mixin parents, so a foreign struct
-      // referenced purely as a field type (not as a mixin) would otherwise
-      // remain absent from `crossDomainFlattenedStructs` and the predicate
-      // would return `false`, breaking AnyVal emission for those shapes.
-      val foreignFieldStructs = mutable.LinkedHashSet.empty[StructureId]
-      def collectDomain(tid: TypeId): Unit = {
-        val d = tid.path.domain
-        if (d != rd.id) {
-          val _ = foreignFieldDomains.add(d)
-          tid match {
-            case sid: StructureId => val _ = foreignFieldStructs.add(sid)
-            case _                => ()
-          }
-        }
-      }
-      views.values.foreach(_.fields.foreach(f => collectDomain(f.typeId)))
-      rd.userTypes.values.foreach {
-        case TypeDef.Identifier(_, fields, _) => fields.foreach(f => collectDomain(f.typeId))
-        case TypeDef.Alias(_, target, _)      => collectDomain(target)
-        case _                                => ()
-      }
-      foreignFieldDomains.foreach(indexForeignUserTypes)
-      // Second pass: harvest foreign DTO/Interface structs referenced in field
-      // positions so `crossDomainFlattenedStructs` is populated for them.
-      // `harvest` calls `indexForeignUserTypes` internally, so the full foreign
-      // user-type set for any newly-visited domain is indexed for free.
-      foreignFieldStructs.foreach(harvest)
+      // Seed from every local reference: supers and fields of local structs
+      // and ephemerals (snapshotted, since harvesting adds foreign views), plus
+      // local ADTs (user-declared and synthesized), aliases and identifiers.
+      // `harvest` and `visitTypeRef` follow deeper hops on their own.
+      val localSupers    = directSupers.values.flatten.toList
+      val localFieldRefs = views.values.flatMap(_.fields.map(_.typeId)).toList
+      localSupers.foreach(visitTypeRef)
+      localFieldRefs.foreach(visitTypeRef)
+      rd.userTypes.values.foreach(visitNonStructRefs)
     }
 
     /** Walk only `interfaces` edges; recurses transitively. Returns the
