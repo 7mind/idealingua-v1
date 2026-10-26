@@ -9,15 +9,18 @@ import izumi.idealingua.typer.ir.TypeDef
   * Wire-format §4: each branch encodes as `{ "<discriminator>": <inner> }`
   * where the discriminator is the **short** member name —
   * `AdtMember.wireId = memberName.getOrElse(typeId.name)`. The inner value
-  * is the encoded branch. We emit a `$ref` to the branch's own component
-  * schema, which gives correct recursive composition for ADT-of-Interface:
-  * the referenced interface's schema is itself a `oneOf` of full-wireId
-  * wrappers, yielding the §4 nested shape
+  * is the encoded branch, described by `SchemaTypeResolver` like any other
+  * type position: an alias is dealiased (it has no component of its own),
+  * and a primitive or a generic (e.g. the `Success` branch synthesized for a
+  * `list[T] !! E` output) is inlined. A user type becomes a `$ref` to its
+  * component schema, which gives correct recursive composition for
+  * ADT-of-Interface: the referenced interface's schema is itself a `oneOf` of
+  * full-wireId wrappers, yielding the §4 nested shape
   * `{ "AFace": { "idltest.algebraics.SomeImpl": {...} } }` by construction.
   *
   * Branch order honours declaration order from `TypeDef.Adt.alternatives`.
   */
-final class SchemaAdtRenderer {
+final class SchemaAdtRenderer(resolver: SchemaTypeResolver) {
 
   def render(adt: TypeDef.Adt): Json = {
     val branches = adt.alternatives.map(branchSchema)
@@ -33,9 +36,7 @@ final class SchemaAdtRenderer {
 
   private def branchSchema(member: AdtMember): Json = {
     val discriminator = member.wireId
-    val ref           = Json.obj(
-      "$ref" -> Json.fromString(s"#/components/schemas/${member.typeId.wireId}")
-    )
+    val ref           = resolver.schemaFor(member.typeId)
     Json.obj(
       "type"                 -> Json.fromString("object"),
       "properties"           -> Json.obj(discriminator -> ref),

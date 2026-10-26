@@ -1,0 +1,15 @@
+domain branchrefs.base
+
+import branchrefs.leaf
+
+data Remote {
+  id: str
+}
+
+alias DeepRef = branchrefs.leaf#Deep
+
+// An ADT of another domain whose alternative names an alias of a third
+// domain's type.
+adt RemoteChoice {
+  DeepRef as deep
+}

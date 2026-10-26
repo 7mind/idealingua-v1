@@ -1,0 +1,63 @@
+domain branchrefs.api
+
+import branchrefs.base
+
+data LocalItem {
+  text: str
+}
+
+data ChainItem {
+  size: i32
+}
+
+data OutputItem {
+  flag: bool
+}
+
+data SuccessItem {
+  total: i64
+}
+
+data FailureItem {
+  code: i32
+}
+
+alias LocalRef    = LocalItem
+alias ChainTarget = ChainItem
+alias ChainRef    = ChainTarget
+alias ForeignRef  = branchrefs.base#Remote
+alias Label       = str
+alias OutputRef   = OutputItem
+alias SuccessRef  = SuccessItem
+alias FailureRef  = FailureItem
+
+adt LocalAliasChoice {
+  LocalRef as local
+}
+
+adt ChainAliasChoice {
+  ChainRef as chain
+}
+
+adt ForeignAliasChoice {
+  ForeignRef as foreign
+}
+
+adt PrimitiveAliasChoice {
+  Label as label
+}
+
+// Each method puts one kind of type into an ADT alternative: an alias in a
+// user-declared ADT, an alias in the ADT synthesized for a `( | )` output, or
+// an alias, a generic or a primitive in the ADT synthesized for a `!!` output.
+service ProbeService {
+  def localAlias(c: LocalAliasChoice) => str
+  def chainAlias(c: ChainAliasChoice) => str
+  def foreignAlias(c: ForeignAliasChoice) => str
+  def foreignAdt(c: branchrefs.base#RemoteChoice) => str
+  def primitiveAlias(c: PrimitiveAliasChoice) => str
+  def algebraicOutput() => ( OutputRef | LocalItem )
+  def alternativeOutput() => SuccessRef !! FailureRef
+  def genericAlternative() => list[str] !! map[str, i32]
+  def primitiveAlternative() => str !! i32
+}

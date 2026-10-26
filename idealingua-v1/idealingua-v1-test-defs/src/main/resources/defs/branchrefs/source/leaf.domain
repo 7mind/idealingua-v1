@@ -1,0 +1,7 @@
+domain branchrefs.leaf
+
+// Reached from `api` only through `base#DeepRef`, an alias named by an
+// alternative of the `base` ADT `RemoteChoice`.
+data Deep {
+  depth: i32
+}
