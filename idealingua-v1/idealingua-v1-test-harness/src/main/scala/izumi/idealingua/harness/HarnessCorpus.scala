@@ -22,6 +22,13 @@ object HarnessCorpus {
   def diamondApplyCorpusRoot(repoRoot: Path): Path =
     repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs/diamondapply/source")
 
+  /** Standalone corpus for MCP tool schemas that reference data types of other
+    * domains through ADT branches, output branches and generic arguments.
+    * Loaded directly by `McpCrossDomainSchemaSpec`.
+    */
+  def mcpCrossDomainCorpusRoot(repoRoot: Path): Path =
+    repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs/mcpcrossdomain/source")
+
   /** Build-time generated tree root (R1).
     *
     * Layout under `<repoRoot>/idealingua-v1/idealingua-v1-test-harness/target/generated-sources/test-harness/`:

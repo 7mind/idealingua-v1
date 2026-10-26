@@ -1,0 +1,65 @@
+domain mcpcrossdomain.shared
+
+import mcpcrossdomain.leaf.{
+  Deep
+}
+
+mixin Base {
+  message: str
+}
+
+data Plain {
+  value: str
+}
+
+data Inner {
+  text: str
+}
+
+data Holder {
+  deep: opt[Deep]
+}
+
+adt Choice {
+  Inner as inner
+  Holder as holder
+}
+
+data Branch {
+  label: str
+}
+
+data Problem {
+  + Base
+  code: i32
+}
+
+data Report {
+  + Base
+  total: i64
+}
+
+data Alpha {
+  a: str
+}
+
+data Beta {
+  b: str
+}
+
+data Listed {
+  + Base
+  rank: i32
+}
+
+data SetMember {
+  id: str
+}
+
+data MapValue {
+  amount: i64
+}
+
+data OptItem {
+  flag: bool
+}
