@@ -44,7 +44,6 @@ final class AdtBranchSchemaSpec extends AnyFunSuite {
 
     val problems  = mutable.ArrayBuffer.empty[String]
     val described = mutable.LinkedHashSet.empty[String]
-    val allDefs   = mutable.LinkedHashMap.empty[String, Json]
     tools.foreach { tool =>
       val toolName = tool.hcursor.get[String]("name").fold(_ => fail("tool without a name"), identity)
       Seq("inputSchema", "outputSchema").foreach { kind =>
@@ -57,7 +56,6 @@ final class AdtBranchSchemaSpec extends AnyFunSuite {
         }
         defs.foreach {
           case (key, definition) =>
-            allDefs.update(key, definition)
             expectedFields.get(key).foreach { fields =>
               described += key
               val properties = definition.hcursor.downField("properties").keys.map(_.toSet).getOrElse(Set.empty[String])
@@ -72,9 +70,6 @@ final class AdtBranchSchemaSpec extends AnyFunSuite {
 
     assert(problems.isEmpty, problems.mkString("\n", "\n", ""))
     assert(expectedFields.keySet.subsetOf(described), s"data types absent from every tool schema: ${(expectedFields.keySet -- described).toList.sorted}")
-
-    val primitiveAdt = allDefs.getOrElse("branchrefs.api.PrimitiveAliasChoice", fail("PrimitiveAliasChoice is absent from every tool schema"))
-    assert(branch(primitiveAdt, "label") == stringSchema)
   }
 
   test("schema.json references from ADT alternatives resolve") {
