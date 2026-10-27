@@ -3,7 +3,7 @@ package izumi.idealingua.translator.tocsharp.domain.extensions
 import izumi.fundamentals.platform.strings.IzString._
 import izumi.idealingua.model.common.TypeId._
 import izumi.idealingua.model.common.{Generic, Primitive, TypeId}
-import izumi.idealingua.model.il.ast.typed.DefMethod
+import izumi.idealingua.model.il.ast.typed.{AdtMember, DefMethod}
 import izumi.idealingua.model.il.ast.typed.DefMethod.Output.{Alternative, Singular}
 import izumi.idealingua.model.problems.IDLException
 import izumi.idealingua.translator.tocsharp.CSharpImports
@@ -216,7 +216,7 @@ object DomainCSJsonNetExtension {
         .map(m => s"""if (al is ${i.id.name}.${m.typename}) {
                      |    writer.WritePropertyName("${m.wireId}");
                      |    var v = (al as ${i.id.name}.${m.typename}).Value;
-                     |${renderSerialize(m.typeId, "v").shift(4)}
+                     |${renderAdtMemberSerialize(m, "v").shift(4)}
                      |} else""".stripMargin).mkString("\n").shift(8)}
        |        {
        |            throw new System.Exception("Unknown ${i.id.name} type: " + al);
@@ -231,7 +231,7 @@ object DomainCSJsonNetExtension {
        |        switch (kv.Name) {
        |${i.alternatives
         .map(m => s"""case "${m.wireId}": {
-                     |    var v = serializer.Deserialize<${DomainCSharpType(m.typeId).renderType(true)}>(kv.Value.CreateReader());
+                     |    var v = ${renderAdtMemberDeserialize(m, "kv.Value", i.id.uniqueDomainName)};
                      |    return new ${i.id.name}.${m.typename}(v);
                      |}
            """.stripMargin).mkString("\n").shift(12)}
@@ -347,6 +347,24 @@ object DomainCSJsonNetExtension {
        |    }
        |}
      """.stripMargin
+  }
+
+  /** A primitive alternative is written and read like a field of that type,
+    * in the idealingua wire format; `serializer` would use Json.NET's own
+    * formats for dates, times and timestamps.
+    */
+  private def renderAdtMemberSerialize(m: AdtMember, varName: String)(implicit im: CSharpImports, domain: Domain): String =
+    if (isPrimitiveMember(m)) writePropertyValue(domain, varName, DomainCSharpType(m.typeId))
+    else renderSerialize(m.typeId, varName)
+
+  private def renderAdtMemberDeserialize(m: AdtMember, src: String, currentDomain: String)(implicit im: CSharpImports, domain: Domain): String =
+    if (isPrimitiveMember(m)) readPropertyValue(domain, src, DomainCSharpType(m.typeId), currentDomain)
+    else s"serializer.Deserialize<${DomainCSharpType(m.typeId).renderType(true)}>($src.CreateReader())"
+
+  private def isPrimitiveMember(m: AdtMember)(implicit domain: Domain): Boolean = m.typeId match {
+    case _: Primitive => true
+    case a: AliasId   => domain.aliases.get(a).exists(_.isInstanceOf[Primitive])
+    case _            => false
   }
 
   private def renderSerialize(id: TypeId, varName: String): String = id match {

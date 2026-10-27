@@ -3,6 +3,7 @@ package izumi.idealingua.translator.totypescript.domain
 import izumi.fundamentals.platform.strings.IzString.*
 import izumi.fundamentals.platform.strings.TextTree
 import izumi.fundamentals.platform.strings.TextTree.*
+import izumi.idealingua.model.common.Primitive
 import izumi.idealingua.model.common.TypeId.*
 import izumi.idealingua.model.il.ast.typed.AdtMember
 import izumi.idealingua.translator.totypescript.products.CogenProduct.AdtProduct
@@ -52,15 +53,47 @@ final class DomainTSAdtRenderer(ctx: DomainTSContext) {
     val hasInterfaces = alternatives.count(al => al.typeId.isInstanceOf[InterfaceId]) > 0
     val exp           = if (exported) "export " else ""
 
+    val primitives: Map[AdtMember, Primitive] = alternatives.flatMap(alt => primitiveOf(alt).map(alt -> _)).toMap
+    def wrapperName(alt: AdtMember): String = primitiveWrapperName(name, alt)
+
     val nativeUnion: TextTree[TSRefHandle] =
-      alternatives.map(alt => TextTree.value[TSRefHandle](TSRefHandle.TypeRef(alt.typeId))).join(" | ")
+      alternatives.map(alt =>
+        if (primitives.contains(alt)) TextTree.text[TSRefHandle](wrapperName(alt))
+        else TextTree.value[TSRefHandle](TSRefHandle.TypeRef(alt.typeId))
+      ).join(" | ")
 
     val nativeSerializedUnion: TextTree[TSRefHandle] =
-      alternatives.map(alt => TextTree.value[TSRefHandle](TSRefHandle.SerializedTypeRef(alt.typeId))).join(" | ")
+      alternatives.map(alt =>
+        primitives.get(alt) match {
+          case Some(p) => TextTree.text[TSRefHandle](conv.toNativeType(p, forSerialized = true))
+          case None    => TextTree.value[TSRefHandle](TSRefHandle.SerializedTypeRef(alt.typeId))
+        }
+      ).join(" | ")
+
+    val wrappers: String =
+      primitives.toList.sortBy { case (alt, _) => alternatives.indexOf(alt) }.map {
+        case (alt, p) =>
+          // Exported even for a non-exported ADT: the alternatives of an
+          // inline method output appear in the exported service signatures.
+          s"""export class ${wrapperName(alt)} {
+             |    public constructor(public readonly value: ${conv.toNativeType(p)}) {
+             |    }
+             |
+             |    public getClassName(): string {
+             |        return '${alt.typeId.name}';
+             |    }
+             |
+             |    public serialize(): ${conv.toNativeType(p, forSerialized = true)} {
+             |        return ${conv.serializeValue("this.value", p, nonMember = true)};
+             |    }
+             |}
+             |""".stripMargin + "\n"
+      }.mkString
 
     val isInstanceOfChecks: String =
       alternatives.map(alt =>
-        if (alt.typeId.isInstanceOf[InterfaceId])
+        if (primitives.contains(alt)) s"o instanceof ${wrapperName(alt)}"
+        else if (alt.typeId.isInstanceOf[InterfaceId])
           s"${alt.typeId.name}${DomainTSStruct.implId(alt.typeId.asInstanceOf[InterfaceId]).name}.isRegisteredType(fullClassName)"
         else if (alt.typeId.isInstanceOf[AdtId]) s"${alt.typeId.name}Helpers.isInstanceOf(o)"
         else "o instanceof " + conv.toNativeType(alt.typeId)
@@ -69,6 +102,7 @@ final class DomainTSAdtRenderer(ctx: DomainTSContext) {
     val serializeReturn: String =
       alternatives.map(alt =>
         alt.typeId match {
+          case _ if primitives.contains(alt) => conv.toNativeType(primitives(alt), forSerialized = true)
           case interfaceId: InterfaceId => alt.typeId.name + DomainTSStruct.implId(interfaceId).name + "Serialized"
           case al: AliasId => {
             val dealiased = DomainTSImports.dealias(ctx.domain, al)
@@ -103,9 +137,15 @@ final class DomainTSAdtRenderer(ctx: DomainTSContext) {
     val returnSerialized = if (needsSerializedTmp) "serialized || " else ""
 
     val cases: String =
-      alternatives.map(a => "case '" + a.wireId + "': return " + conv.deserializeType("content", a.typeId, asAny = true) + ";").mkString("\n").shift(12)
+      alternatives.map { a =>
+        val value = primitives.get(a) match {
+          case Some(p) => s"new ${wrapperName(a)}(${deserializePrimitive("content", p)})"
+          case None    => conv.deserializeType("content", a.typeId, asAny = true)
+        }
+        "case '" + a.wireId + "': return " + value + ";"
+      }.mkString("\n").shift(12)
 
-    q"""${exp}type $name = $nativeUnion;
+    q"""$wrappers${exp}type $name = $nativeUnion;
        |${exp}type ${name}Serialized = $nativeSerializedUnion
        |
        |${exp}class ${name}Helpers {
@@ -140,6 +180,32 @@ final class DomainTSAdtRenderer(ctx: DomainTSContext) {
        |    }
        |}
      """.stripMargin
+  }
+
+  /** The TypeScript type of the values of an alternative. A primitive value
+    * carries no class name, so a primitive alternative is carried by a
+    * generated wrapper class (as the Scala and C# ADTs wrap every
+    * alternative); its wire form is the primitive's own.
+    */
+  def alternativeNativeType(adtName: String, alt: AdtMember): String =
+    if (primitiveOf(alt).isDefined) primitiveWrapperName(adtName, alt) else conv.toNativeType(alt.typeId)
+
+  private def primitiveWrapperName(adtName: String, alt: AdtMember): String = s"${adtName}_${alt.typename}"
+
+  private def primitiveOf(alt: AdtMember): Option[Primitive] =
+    DomainTSImports.dealias(ctx.domain, alt.typeId) match {
+      case p: Primitive => Some(p)
+      case _            => None
+    }
+
+  /** The inverse of `serializeValue(_, p, nonMember = true)`. */
+  private def deserializePrimitive(variable: String, p: Primitive): String = p match {
+    case Primitive.TTime => s"Formatter.readTime($variable)"
+    case Primitive.TDate => s"Formatter.readDate($variable)"
+    case Primitive.TTs   => s"Formatter.readLocalDateTime($variable)"
+    case Primitive.TTsTz => s"Formatter.readZoneDateTime($variable)"
+    case Primitive.TTsU  => s"Formatter.readUTCDateTime($variable)"
+    case _               => conv.deserializeType(variable, p, asAny = true)
   }
 
   private def adtHasAdt(alternatives: List[AdtMember]): Boolean =
