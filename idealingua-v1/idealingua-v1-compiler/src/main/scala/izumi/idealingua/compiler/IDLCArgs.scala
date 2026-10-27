@@ -30,6 +30,10 @@ case class IDLCArgs(
 )
 
 object IDLCArgs {
+  // The `bin/idealingua-v1-compiler` launcher (sbt-native-packager) takes `-d` and `-v` as its own
+  // `-debug` and `-verbose` switches; compiler arguments after `--` reach the compiler unchanged.
+  private final val launcherNote = "; with bin/idealingua-v1-compiler, use the long form or put the arguments after --"
+
   def default: IDLCArgs = IDLCArgs(
     Paths.get("."),
     Paths.get("source"),
@@ -46,8 +50,8 @@ object IDLCArgs {
     final val sourceDir          = arg("source", "s", "source directory", "<path>")
     final val targetDir          = arg("target", "t", "target directory", "<path>")
     final val overlayDir         = arg("overlay", "o", "overlay directory", "<path>")
-    final val overlayVersionFile = arg("overlay-version", "v", "version file", "<path>")
-    final val define             = arg("define", "d", "define value", "const.name=value")
+    final val overlayVersionFile = arg("overlay-version", "v", s"version file$launcherNote", "<path>")
+    final val define             = arg("define", "d", s"define value$launcherNote", "const.name=value")
     final val publish            = flag("publish", "p", "build and publish generated code")
     final val parallelism        = arg("parallelism", "j", "parallelism for parsing/translation/emission (default: availableProcessors)", "<int>")
   }
@@ -58,7 +62,7 @@ object IDLCArgs {
     final val credentials   = arg("credentials", "cr", "credentials file", "<path>")
     final val noRuntime     = flag("disable-runtime", "nr", "don't include builtin runtime")
     final val noZip         = flag("disable-zip", "nz", "don't zip outputs")
-    final val define        = arg("define", "d", "define value", "const.name=value")
+    final val define        = arg("define", "d", s"define value$launcherNote", "const.name=value")
   }
 
   object IP extends ParserDef
