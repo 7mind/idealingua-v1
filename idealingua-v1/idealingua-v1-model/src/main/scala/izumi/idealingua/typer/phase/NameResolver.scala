@@ -45,8 +45,11 @@ object NameResolver {
   def apply(scoped: ScopedDomain): ResolvedDomain =
     apply(scoped, IdealinguaFamilyManager(scoped.raw))
 
-  def apply(scoped: ScopedDomain, family: FamilyIndex): ResolvedDomain = {
-    val ctx = new Ctx(scoped, family)
+  def apply(scoped: ScopedDomain, family: FamilyIndex): ResolvedDomain =
+    apply(scoped, family, new AliasTargets.Family(family))
+
+  def apply(scoped: ScopedDomain, family: FamilyIndex, aliasTargets: AliasTargets): ResolvedDomain = {
+    val ctx = new Ctx(scoped, family, aliasTargets)
 
     val members = mutable.LinkedHashMap.empty[TypeId, Member]
     val userTypes = mutable.LinkedHashMap.empty[TypeId, TypeDef]
@@ -104,6 +107,20 @@ object NameResolver {
     )
   }
 
+  /** The immediate target of every alias declared in `scoped`, resolved in
+    * its scope. Backs `AliasTargets.Family`; resolves no mixins, so it never
+    * consults `aliasTargets` itself.
+    */
+  private[phase] def aliasTargets(scoped: ScopedDomain, family: FamilyIndex, aliasTargets: AliasTargets): Map[AliasId, TypeId] = {
+    val ctx = new Ctx(scoped, family, aliasTargets)
+    scoped.index.collect {
+      case (_: AliasId, d: RawTypeDef.Alias)   => ctx.fixAlias(d)
+      case (_: AliasId, d: RawTypeDef.NewType) => ctx.fixNewType(d)
+    }.collect {
+      case a: TypeDef.Alias => a.id -> a.target
+    }.toMap
+  }
+
   private def placeUserType(
     members: mutable.LinkedHashMap[TypeId, Member],
     userTypes: mutable.LinkedHashMap[TypeId, TypeDef],
@@ -126,7 +143,7 @@ object NameResolver {
     * caller can pre-seed `members` with `Member.Builtin` entries, and
     * accumulates phase-2 diagnostics.
     */
-  private final class Ctx(scoped: ScopedDomain, family: FamilyIndex) {
+  private final class Ctx(scoped: ScopedDomain, family: FamilyIndex, aliasTargets: AliasTargets) {
     val diagBuf: mutable.ArrayBuffer[Diagnostic] = mutable.ArrayBuffer.empty
     val referencedBuiltins: mutable.LinkedHashSet[Primitive] = mutable.LinkedHashSet.empty
 
@@ -310,13 +327,10 @@ object NameResolver {
 
     /** Re-target a parser-produced `InterfaceId` (which carries
       * `DomainId.Undefined` and only the bare name) to a definite id via
-      * `resolveRef`.  If the name resolves to an `AliasId` whose local target
-      * is a `StructureId`, dealias one hop so downstream phases see the
-      * concrete interface/DTO id — mirrors the legacy `fixSimpleId` arm at
-      * `IDLTyper.scala:549-561` that special-cases alias entries in the
-      * type-id index.  Multi-hop alias chains are handled by Phase 3
-      * (`AliasDealiaser`); a single hop is enough for the common case
-      * (`alias A = M ; data D { & A }`).
+      * `resolveRef`.  If the name resolves to an `AliasId`, dealias it
+      * (across domains) so downstream phases see the concrete interface/DTO
+      * id — mirrors the legacy `fixSimpleId` arm at `IDLTyper.scala:549-561`
+      * that special-cases alias entries in the type-id index.
       */
     private def resolveInterface(t: InterfaceId): InterfaceId = {
       val name = t.name
@@ -327,7 +341,7 @@ object NameResolver {
       resolved match {
         case i: InterfaceId => i
         case a: AliasId =>
-          dealiasOneHop(a) match {
+          aliasTargets.dealias(a) match {
             case i: InterfaceId => i
             case other =>
               diagBuf += Diagnostic.BadMixinTarget(scoped.raw.id.toTypeId, other, InputPosition.Undefined)
@@ -336,19 +350,6 @@ object NameResolver {
         case other =>
           diagBuf += Diagnostic.BadMixinTarget(scoped.raw.id.toTypeId, other, InputPosition.Undefined)
           t.copy(path = TypePath(scoped.domainId, Seq.empty))
-      }
-    }
-
-    /** Resolve a single alias hop using the raw type index.  Returns the
-      * alias's syntactic target as a `TypeId` (the immediate `.target` of the
-      * `RawTypeDef.Alias`).  Used by `resolveInterface` / `resolveStructure`
-      * to handle `& AliasOfMixin` references; multi-hop chasing is the job of
-      * Phase 3.
-      */
-    private def dealiasOneHop(a: AliasId): TypeId = {
-      scoped.index.get(a) match {
-        case Some(d: RawTypeDef.Alias) => resolveRef(d.target, InputPosition.Undefined)
-        case _                          => a
       }
     }
 
@@ -381,7 +382,7 @@ object NameResolver {
           // Mirror the legacy `fixSimpleId` alias-dealias arm
           // (`IDLTyper.scala:549-561`): `+ AliasOfMixin` is valid when the
           // alias targets a structural type.
-          dealiasOneHop(a) match {
+          aliasTargets.dealias(a) match {
             case s: StructureId => s
             case other =>
               diagBuf += Diagnostic.BadMixinTarget(scoped.raw.id.toTypeId, other, InputPosition.Undefined)

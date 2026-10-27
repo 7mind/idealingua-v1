@@ -8,6 +8,12 @@ data Remote {
 
 alias DeepRef = branchrefs.leaf#Deep
 
+mixin Named {
+  label: str
+}
+
+alias NamedRef = Named
+
 // An ADT of another domain whose alternative names an alias of a third
 // domain's type.
 adt RemoteChoice {

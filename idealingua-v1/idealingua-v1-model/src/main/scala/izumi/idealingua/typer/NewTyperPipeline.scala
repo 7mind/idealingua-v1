@@ -46,9 +46,10 @@ object NewTyperPipeline {
 
     val family   = IdealinguaFamilyManager(loaded)
     val scoped   = ScopeBuilder(parsed.id, loaded, family)
-    val resolved = NameResolver(scoped, family)
-    val dealiased    = AliasDealiaser(resolved)
-    val kindChecked  = KindChecker(dealiased)
+    val aliasTargets = new AliasTargets.Family(family)
+    val resolved     = NameResolver(scoped, family, aliasTargets)
+    val dealiased    = AliasDealiaser(resolved, aliasTargets)
+    val kindChecked  = KindChecker(dealiased, aliasTargets)
     val withCycles   = CycleDetector(kindChecked)
     // F8 fix (IMPL-7a.2): EphemeralSynthesizer must run before
     // StructuralFlattener so that synthesized input/output/mirror DTOs are
@@ -96,10 +97,11 @@ object NewTyperPipeline {
   /** Family-level post-pass: enrich each Domain's `aliases` map with resolved
     * alias targets from every other typed domain in the family.
     *
-    * The per-domain `AliasDealiaser` only walks aliases declared inside the
-    * current domain. For a cross-domain alias chain (e.g. `data D { x: B#Foo }`
-    * where `Foo = i64` lives in domain `B`), the local map carries no entry
-    * for `AliasId(B, "Foo")` and downstream translator dealias sites either
+    * The per-domain `AliasDealiaser` only records aliases declared inside the
+    * current domain (chasing their chains into other domains through
+    * `AliasTargets`). For a reference to a foreign alias (e.g.
+    * `data D { x: B#Foo }` where `Foo = i64` lives in domain `B`), the local
+    * map carries no entry for `AliasId(B, "Foo")` and downstream translator dealias sites either
     * throw (`DomainAnyvalExtension.canBeAnyValField`) or treat the AliasId as
     * itself (`domain.aliases.getOrElse(a, a)` callers), both of which diverge
     * from legacy `TypespaceImpl.dealias` which walked `transitivelyReferenced`.

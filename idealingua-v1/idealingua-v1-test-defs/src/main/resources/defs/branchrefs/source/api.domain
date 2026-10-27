@@ -42,6 +42,17 @@ adt ForeignAliasChoice {
   ForeignRef as foreign
 }
 
+// An alternative that names an alias declared in another domain.
+adt RemoteAliasChoice {
+  branchrefs.base#DeepRef as deep
+}
+
+// A mixin that names an alias declared in another domain.
+data Labelled {
+  & branchrefs.base#NamedRef
+  size: i32
+}
+
 // Each method puts one kind of type into an ADT alternative: an alias in a
 // user-declared ADT, an alias in the ADT synthesized for a `( | )` output, or
 // an alias, a generic or a primitive in the ADT synthesized for a `!!` output.
@@ -50,6 +61,8 @@ service ProbeService {
   def chainAlias(c: ChainAliasChoice) => str
   def foreignAlias(c: ForeignAliasChoice) => str
   def foreignAdt(c: branchrefs.base#RemoteChoice) => str
+  def remoteAlias(c: RemoteAliasChoice) => str
+  def labelled(l: Labelled) => str
   def algebraicOutput() => ( OutputRef | LocalItem )
   def alternativeOutput() => SuccessRef !! FailureRef
   def genericAlternative() => list[str] !! map[str, i32]

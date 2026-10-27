@@ -35,24 +35,28 @@ import scala.collection.mutable
   */
 object KindChecker {
 
-  def apply(resolved: ResolvedDomain): ResolvedDomain = {
+  def apply(resolved: ResolvedDomain): ResolvedDomain =
+    apply(resolved, new AliasTargets.Local(resolved))
+
+  def apply(resolved: ResolvedDomain, aliasTargets: AliasTargets): ResolvedDomain = {
     val diagBuf = mutable.ArrayBuffer.empty[Diagnostic]
 
     resolved.userTypes.values.foreach {
       case dto: TypeDef.Dto =>
-        checkConcepts(dto.id, dto.struct, resolved, diagBuf)
+        checkConcepts(dto.id, dto.struct, aliasTargets, diagBuf)
 
       case iface: TypeDef.Interface =>
-        checkConcepts(iface.id, iface.struct, resolved, diagBuf)
+        checkConcepts(iface.id, iface.struct, aliasTargets, diagBuf)
 
       case adt: TypeDef.Adt =>
         adt.alternatives.foreach {
           alt =>
-            // Dealias the branch first; an alias-to-ADT counts the same as a
-            // direct AdtId reference. Legacy `IDLTyper.toMember` accepts any
-            // resolved TypeId via the `TypeRef` arm and only rejects inline
+            // Dealias the branch first (also through aliases of other
+            // domains); an alias-to-ADT counts the same as a direct AdtId
+            // reference. Legacy `IDLTyper.toMember` accepts any resolved
+            // TypeId via the `TypeRef` arm and only rejects inline
             // `NestedDefn` (handled in `NameResolver.fixAdt`).
-            val effective = dealiasOnce(resolved, alt.typeId)
+            val effective = aliasTargets.dealias(alt.typeId)
             effective match {
               case _: DTOId | _: InterfaceId | _: IdentifierId | _: AdtId =>
                 ()
@@ -79,23 +83,18 @@ object KindChecker {
   private def checkConcepts(
     owner: TypeId,
     struct: Struct,
-    resolved: ResolvedDomain,
+    aliasTargets: AliasTargets,
     diagBuf: mutable.ArrayBuffer[Diagnostic],
   ): Unit = {
     val all = struct.superclasses.concepts ++ struct.superclasses.removedConcepts
     all.foreach {
       sid =>
-        val target = dealiasOnce(resolved, sid)
+        val target = aliasTargets.dealias(sid)
         target match {
           case _: DTOId | _: InterfaceId => ()
           case bad =>
             diagBuf += Diagnostic.BadMixinTarget(owner, bad, izumi.idealingua.model.il.ast.InputPosition.Undefined)
         }
     }
-  }
-
-  private def dealiasOnce(resolved: ResolvedDomain, id: TypeId): TypeId = id match {
-    case a: AliasId => resolved.aliases.getOrElse(a, a)
-    case other      => other
   }
 }
