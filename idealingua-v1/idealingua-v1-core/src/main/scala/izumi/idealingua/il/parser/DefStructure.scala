@@ -84,13 +84,13 @@ class DefStructure(context: IDLParserContext) extends Separators {
     }
 
 
-  def adtMember[$: P]: P[Member.TypeRef] = P(metaAgg.withMeta(ids.identifier ~ (`inline` ~ "as" ~/ (`inline` ~ ids.symbol)).?))
+  def adtMember[$: P]: P[Member.TypeRef] = P(metaAgg.withMeta(ids.identifier ~ (`inline` ~ kw.word("as") ~/ (`inline` ~ ids.symbol)).?))
     .map {
       case (meta, (tpe, alias)) =>
         Member.TypeRef(tpe.toIndefinite, alias, meta)
     }
 
-  def importMember[$: P]: P[ImportedId] = P(ids.symbol ~ (`inline` ~ "as" ~/ (`inline` ~ ids.symbol)).?).map {
+  def importMember[$: P]: P[ImportedId] = P(ids.symbol ~ (`inline` ~ kw.word("as") ~/ (`inline` ~ ids.symbol)).?).map {
     case (tpe, alias) =>
       ImportedId(tpe, alias)
   }

@@ -1,7 +1,7 @@
 package izumi.idealingua.il.parser
 
 import izumi.idealingua.il.parser.structure._
-import izumi.idealingua.model.il.ast.raw.defns.RawMethod
+import izumi.idealingua.model.il.ast.raw.defns.{RawMethod, RawStream}
 import org.scalatest.wordspec.AnyWordSpec
 import fastparse._
 
@@ -218,6 +218,73 @@ class BasicParserTest extends AnyWordSpec with ParserTestTools {
           | a.b.c#D
           |}""".stripMargin,
       )
+    }
+
+    "parse adt members that begin with a declaration keyword as type references" in {
+      def memberCount(src: String): Int = assertParses(defStructure.adtBlock(using _), src).alternatives.size
+
+      assert(memberCount("adt Choice { identity.base#Item as item }") == 1)
+      assert(memberCount("adt Choice { types.base#Item as item }") == 1)
+      assert(memberCount("adt Choice { data.base#Item }") == 1)
+      assert(memberCount("adt Choice { adtx.base#Item | enumx.base#Item | aliasx.base#Item | mixinx.base#Item | datax.base#Item }") == 5)
+      assert(memberCount("adt Choice = Local | identity.base#Item as item") == 2)
+      assert(memberCount("adt Choice ( Local | identity.base#Item as item )") == 2)
+      assert(
+        memberCount(
+          """adt Choice {
+            |  Local
+            |  identity.base#Item as item
+            |}""".stripMargin
+        ) == 2
+      )
+      assert(memberCount("adt Choice { Local assets.base#Item }") == 2)
+      assert(memberCount("adt Choice { Local as assets assets.base#Item }") == 2)
+      assert(memberCount("adt Choice { data Nested { a: str } Local }") == 2)
+    }
+
+    "parse inline method outputs that begin with a declaration keyword" in {
+      def defm[$: P]: P[RawMethod.RPCMethod] = defSignature.method(kw.defm)
+      def output(src: String): RawMethod.Output = assertParses(defm(using _), src).signature.output
+
+      for (name <- Seq("id", "identity", "typeName", "data", "dtoVersion", "enumValue", "aliasName", "mixinName")) {
+        output(s"def m() => ($name: str)") match {
+          case RawMethod.Output.Struct(s) => assert(s.fields.flatMap(_.name) == Seq(name))
+          case other                      => fail(s"Expected an inline struct output for `$name`, got $other")
+        }
+      }
+
+      output("def m() => (Local | identity.base#Item)") match {
+        case RawMethod.Output.Algebraic(alternatives) => assert(alternatives.size == 2)
+        case other                                    => fail(s"Expected an algebraic output, got $other")
+      }
+      output("def m() => Local !! (identity.base#Item | Err)") match {
+        case RawMethod.Output.Alternative(_, RawMethod.Output.Algebraic(alternatives)) => assert(alternatives.size == 2)
+        case other                                                                     => fail(s"Expected an alternative output, got $other")
+      }
+      output("def m() => (name: str) !! (id: str)") match {
+        case RawMethod.Output.Alternative(_: RawMethod.Output.Struct, _: RawMethod.Output.Struct) => ()
+        case other                                                                               => fail(s"Expected struct outputs, got $other")
+      }
+
+      def defe[$: P]: P[RawMethod.RPCMethod] = defSignature.method(kw.defe)
+      assertParses(defe(using _), "line e() => (id: str)")
+    }
+
+    "parse keyword spellings that extend a shorter spelling" in {
+      def defm[$: P]: P[RawMethod.RPCMethod] = defSignature.method(kw.defm)
+      assert(assertParses(defm(using _), "func m(a: str) => (b: str)").name == "m")
+      assert(assertParses(defm(using _), "fun m(a: str) => (b: str)").name == "m")
+
+      val streams = assertParses(
+        defStreams.streamsBlock(using _),
+        """streams Strm {
+          |  upstream s1(a: str)
+          |  downstream s2(a: str)
+          |  up s3(a: str)
+          |  down s4(a: str)
+          |}""".stripMargin,
+      )
+      assert(streams.v.streams.collect { case d: RawStream.Directed => d.name } == List("s1", "s2", "s3", "s4"))
     }
 
     "parse service definition" in {

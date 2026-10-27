@@ -1,13 +1,17 @@
 package izumi.idealingua.il.parser.structure
 
 import fastparse._, NoWhitespace._
+import fastparse.CharPredicates.{isDigit, isLetter}
 
 
 trait Keywords extends Separators {
-  def kw[$: P](s: String): P[Unit] = P(s ~ `inline`) //(sourcecode.Name(s"`$s`"))
+  /** Matches `s` only as a whole word, so that `id` does not match the beginning of `identity` */
+  def word[$: P](s: String): P[Unit] = P(s ~ !CharPred(c => isLetter(c) | isDigit(c) | c == '_'))
+
+  def kw[$: P](s: String): P[Unit] = P(word(s) ~ `inline`) //(sourcecode.Name(s"`$s`"))
 
   def kw[$: P](s: String, alt: String*): P[Unit] = {
-    def alts = alt.foldLeft(P(s)) { case (acc, v) => acc | v }
+    def alts = alt.foldLeft(P(word(s))) { case (acc, v) => acc | word(v) }
     P(alts ~ `inline`) //(sourcecode.Name(s"`$s | $alt`"))
   }
 
