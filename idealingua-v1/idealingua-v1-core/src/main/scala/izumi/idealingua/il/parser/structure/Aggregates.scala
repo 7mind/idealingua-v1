@@ -18,7 +18,8 @@ trait Aggregates
 
 
   def starting[T](keyword: => P[Unit], defparser: => P[T])(implicit v: P[?]): P[(ParsedId, T)] = {
-    kw(keyword, idShort ~ `inline` ~ defparser)
+    // the cut follows the name: a keyword followed by anything else (`id: str`) is not a declaration
+    P(keyword ~ idShort ~/ `inline` ~ defparser)
   }
 
   def block[T](keyword: => P[Unit], defparser: => P[T])(implicit v: P[?]): P[(ParsedId, T)] = {
