@@ -29,6 +29,12 @@ object HarnessCorpus {
   def mcpCrossDomainCorpusRoot(repoRoot: Path): Path =
     repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs/mcpcrossdomain/source")
 
+  /** Standalone corpus for schemas of ADT alternatives that name aliases,
+    * generics or primitives. Loaded directly by `AdtBranchSchemaSpec`.
+    */
+  def branchRefsCorpusRoot(repoRoot: Path): Path =
+    repoRoot.resolve("idealingua-v1/idealingua-v1-test-defs/src/main/resources/defs/branchrefs/source")
+
   /** Build-time generated tree root (R1).
     *
     * Layout under `<repoRoot>/idealingua-v1/idealingua-v1-test-harness/target/generated-sources/test-harness/`:

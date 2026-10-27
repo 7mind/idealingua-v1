@@ -34,7 +34,7 @@ final class DomainSchemaTranslator(
   private val dtoRenderer     = new SchemaDtoRenderer(domain, resolver)
   private val enumRenderer    = new SchemaEnumRenderer
   private val idRenderer      = new SchemaIdentifierRenderer(resolver)
-  private val adtRenderer     = new SchemaAdtRenderer
+  private val adtRenderer     = new SchemaAdtRenderer(resolver)
   private val ifcRenderer     = new SchemaInterfaceRenderer(domain, dtoRenderer)
   private val docBuilder      = new SchemaDocBuilder
   private val methodOutput    = new SchemaMethodOutput(resolver)

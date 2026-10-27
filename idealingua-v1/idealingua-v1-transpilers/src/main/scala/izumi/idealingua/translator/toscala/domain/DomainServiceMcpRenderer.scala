@@ -31,7 +31,7 @@ final class DomainServiceMcpRenderer(domain: Domain) {
   private val dtoRenderer    = new SchemaDtoRenderer(domain, schemaResolver)
   private val enumRenderer   = new SchemaEnumRenderer
   private val idRenderer     = new SchemaIdentifierRenderer(schemaResolver)
-  private val adtRenderer    = new SchemaAdtRenderer
+  private val adtRenderer    = new SchemaAdtRenderer(schemaResolver)
   private val ifcRenderer    = new SchemaInterfaceRenderer(domain, dtoRenderer)
   private val jsonPrinter    = Printer.spaces2.copy(dropNullValues = false)
 
