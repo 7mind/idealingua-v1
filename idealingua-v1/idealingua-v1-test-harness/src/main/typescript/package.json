@@ -6,7 +6,7 @@
     "driver": "tsx driver.ts"
   },
   "devDependencies": {
-    "tsx": "^4.20.0",
+    "tsx": "^4.22.4",
     "typescript": "5.9.3",
     "moment": "^2.29.4",
     "websocket": "^1.0.34",
