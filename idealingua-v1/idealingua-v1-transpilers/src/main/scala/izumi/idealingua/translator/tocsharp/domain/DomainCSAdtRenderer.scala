@@ -3,7 +3,8 @@ package izumi.idealingua.translator.tocsharp.domain
 import izumi.fundamentals.platform.strings.IzString._
 import izumi.fundamentals.platform.strings.TextTree
 import izumi.fundamentals.platform.strings.TextTree.*
-import izumi.idealingua.model.common.TypeId.InterfaceId
+import izumi.idealingua.model.common.Primitive
+import izumi.idealingua.model.common.TypeId.{AliasId, InterfaceId}
 import izumi.idealingua.model.il.ast.typed.AdtMember
 import izumi.idealingua.translator.tocsharp.CSharpImports
 import izumi.idealingua.translator.tocsharp.products.CogenProduct.AdtProduct
@@ -84,13 +85,22 @@ final class DomainCSAdtRenderer(@annotation.unused ctx: DomainCSContext) {
   }
 
   def renderAdtUsings(m: AdtMember)(implicit im: CSharpImports, domain: Domain): String = {
-    s"using _${m.typename} = ${DomainCSharpType(m.typeId).renderType(true)};"
+    // A `using` alias to a predefined type (`using _Label = string;`) needs
+    // C# 12; primitive alternatives name their type directly instead.
+    if (isPrimitive(m)) ""
+    else s"using _${m.typename} = ${DomainCSharpType(m.typeId).renderType(true)};"
+  }
+
+  private def isPrimitive(m: AdtMember)(implicit domain: Domain): Boolean = m.typeId match {
+    case _: Primitive => true
+    case a: AliasId   => domain.aliases.get(a).exists(_.isInstanceOf[Primitive])
+    case _            => false
   }
 
   private def renderAdtMember(adtName: String, member: AdtMember)(implicit im: CSharpImports, domain: Domain): String = {
     val needsFQN = im.imports.find(i => i.id == member.typeId)
     val nonambName =
-      if (needsFQN.isDefined && needsFQN.get.usingName == "")
+      if (isPrimitive(member) || (needsFQN.isDefined && needsFQN.get.usingName == ""))
         DomainCSharpType(member.typeId).renderType(true)
       else s"_${member.typename}"
 

@@ -48,7 +48,7 @@ final class DomainTSServiceMethodProduct(ctx: DomainTSContext, adtRenderer: Doma
 
   private def renderServiceMethodOutputType(output: DefMethod.Output, method: DefMethod.RPCMethod): String = output match {
     case _: Struct     => s"Out${method.name.capitalize}"
-    case al: Algebraic => al.alternatives.map(alt => conv.toNativeType(alt.typeId)).mkString(" | ")
+    case al: Algebraic => al.alternatives.map(alt => adtRenderer.alternativeNativeType(s"Out${method.name.capitalize}", alt)).mkString(" | ")
     case si: Singular  => conv.toNativeType(si.typeId)
     case _: Void       => "void"
     case at: Alternative =>

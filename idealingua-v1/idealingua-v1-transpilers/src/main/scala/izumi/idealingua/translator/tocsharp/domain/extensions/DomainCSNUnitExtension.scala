@@ -162,8 +162,15 @@ object DomainCSNUnitExtension {
     if (!isLocallyResolvable(a.id, domain)) return Seq.empty
     val name = a.id.name
     val alt  = a.alternatives.head
+    val isPrimitive = alt.typeId match {
+      case _: Primitive => true
+      case al: AliasId  => domain.aliases.get(al).exists(_.isInstanceOf[Primitive])
+      case _            => false
+    }
     val testValue = alt.typeId match {
       case _: StructureId =>
+        DomainCSharpType(alt.typeId).getRandomValue(3)
+      case _ if isPrimitive =>
         DomainCSharpType(alt.typeId).getRandomValue(3)
       case _ =>
         s"${DomainCSharpType(alt.typeId).renderType(true)}TestHelper.Create()"

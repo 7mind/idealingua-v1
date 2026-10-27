@@ -321,7 +321,7 @@ final case class DomainCSharpType(
 
   private def randomAdt(i: AdtId, depth: Int): String = {
     val adt = lookupAdt(i)
-    s"""new ${i.path.toPackage.map(p => p.capitalize).mkString(".") + "." + i.name}.${adt.alternatives.head.wireId}(
+    s"""new ${i.path.toPackage.map(p => p.capitalize).mkString(".") + "." + i.name}.${adt.alternatives.head.typename}(
        |${DomainCSharpType(adt.alternatives.head.typeId).getRandomValue(depth - 1).shift(4)}
        |)
      """.stripMargin

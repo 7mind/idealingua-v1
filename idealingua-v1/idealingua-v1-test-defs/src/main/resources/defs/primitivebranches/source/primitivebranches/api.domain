@@ -1,0 +1,92 @@
+domain primitivebranches.api
+
+data Item {
+  name: str
+}
+
+alias Label = str
+alias Text = Label
+alias Flag = bool
+alias Small = i08
+alias Medium = i16
+alias Count = i32
+alias Big = i64
+alias USmall = u08
+alias UMedium = u16
+alias UCount = u32
+alias UBig = u64
+alias Ratio = f32
+alias Precise = f64
+alias Key = uuid
+alias Bytes = blob
+alias Clock = time
+alias Day = date
+alias LocalStamp = tsl
+alias ZonedStamp = tsz
+alias UtcStamp = tsu
+
+// `adt` alternatives that name an alias of a primitive type (#624). Two
+// alternatives that carry the same primitive type stay distinguishable.
+adt TextChoice {
+  Label as label
+  Text as text
+}
+
+adt MixedChoice {
+  Item
+  Count as count
+}
+
+adt EveryPrimitive {
+  Flag as flag
+  Label as label
+  Small as small
+  Medium as medium
+  Count as count
+  Big as big
+  USmall as uSmall
+  UMedium as uMedium
+  UCount as uCount
+  UBig as uBig
+  Ratio as ratio
+  Precise as precise
+  Key as key
+  Bytes as bytes
+  Clock as clock
+  Day as day
+  LocalStamp as localStamp
+  ZonedStamp as zonedStamp
+  UtcStamp as utcStamp
+}
+
+// The C# NUnit fixture builds a value of the first alternative.
+adt BytesFirst {
+  Bytes as bytes
+  Item
+}
+
+adt KeyFirst {
+  Key as key
+  Item
+}
+
+adt StampFirst {
+  ZonedStamp as at
+  Item
+}
+
+data Holder {
+  choice: TextChoice
+  mixed: opt[MixedChoice]
+  every: list[EveryPrimitive]
+}
+
+service PrimitiveBranchService {
+  def text(c: TextChoice) => TextChoice
+  def mixed(c: MixedChoice) => MixedChoice
+  def every(c: EveryPrimitive, h: Holder) => EveryPrimitive
+  def inlineAlias() => ( Label as label | Item )
+  def inlinePrimitive() => ( str as text | Item )
+  def inlineStamp() => ( ZonedStamp as at | Item )
+  def failing() => Item !! ( Label as reason | Count as code )
+}
